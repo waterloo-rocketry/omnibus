@@ -36,9 +36,10 @@ fps = 0
 def update(_):
   global last, count, fps # yes, yes, I know
 
+  sent = time.time() + 1
   # Since our bottleneck is matplotlib, get all the data we can and graph it all at once
   while receiver.poll(1): # Timeout of 1 ms checking for new data
-    new = receiver.recv_pyobj() # pickle compression because I'm lazy
+    sent, new = receiver.recv_pyobj() # pickle compression because I'm lazy
 
     for channel, points, line in zip(data, new, lines):
       # Just plot the first data point. Since the server bulk reads 10 samples at
@@ -46,13 +47,13 @@ def update(_):
       channel.popleft()
       channel.append(points[0])
       line.set_ydata(channel)
-    count += 10
+    count += len(new[0])
 
   fps += 1
 
   if time.time() - last > 0.2:
     last = time.time()
-    print(f"\rSamples/second: {count*5}  FPS: {fps*5}  ", end='')
+    print(f"\rSamples/second: {count*5}  FPS: {fps*5}  Lag: {time.time() - sent:.2f}   ", end='')
     count = 0
     fps = 0
 
