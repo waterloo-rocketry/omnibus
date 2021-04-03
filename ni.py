@@ -3,8 +3,8 @@ import sys
 import nidaqmx
 import zmq
 
-SAMPLE_RATE = 1000 # Samples/sec. Also sets per-channel buffer size.
-READ_BULK = 10 # Read multiple samples at once for increased performance.
+SAMPLE_RATE = 10000 # Samples/sec.
+READ_BULK = 200 # Read multiple samples at once for increased performance.
 
 system = nidaqmx.system.System.local()
 if len(system.devices) == 0:
@@ -18,7 +18,7 @@ print(f"Found device {system.devices[0].product_type}.")
 
 context = zmq.Context()
 sender = context.socket(zmq.PUB)
-sender.connect("tcp://4.tcp.ngrok.io:12851") # or whatever url the server is running on
+sender.connect("tcp://4.tcp.ngrok.io:15529") # or whatever url the server is running on
 
 print("Connected to 0MQ server.")
 
@@ -40,12 +40,12 @@ with nidaqmx.Task() as task:
   while True:
     data = task.read(number_of_samples_per_channel=READ_BULK)
     # "Calibration" (just ai16 for testing)
-    data = [[(d - 0.000505) * 6550 for d in data[0]]] + data[1:]
+    data = (time.time(), [[(d - 0.000505) * 6550 for d in data[0]]] + data[1:])
     sender.send_pyobj(data) # Use pickle to seralize the data because I'm lazy
     count += READ_BULK
 
     if time.time() - last >= 0.2: # Update out output each second
       last = time.time()
-      # task.in_stream.avail_samp_per_chan is the number of samples currently in each channel's buffer (which has size SAMPLE_RATE)
-      print(f"\rSamples/sec: {count*5: >4}  Buffer health: {100 - task.in_stream.avail_samp_per_chan * 100 // SAMPLE_RATE: >3}%     ", end="")
+      # task.in_stream.avail_samp_per_chan is the number of samples currently in each channel's buffer, which has size task.in_stream.input_buf_size
+      print(f"\rSamples/sec: {count*5: >5}  Buffer health: {100 - task.in_stream.avail_samp_per_chan * 100 / task.in_stream.input_buf_size: >5.1f}%  ", end="")
       count = 0
