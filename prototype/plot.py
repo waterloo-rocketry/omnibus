@@ -3,6 +3,7 @@ import time
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
+import msgpack
 import numpy as np
 import zmq
 
@@ -40,7 +41,7 @@ def update(_):
     sent = time.time() + 1
     # Since our bottleneck is matplotlib, get all the data we can and graph it all at once
     while receiver.poll(1): # Timeout of 1 ms checking for new data
-        sent, new = receiver.recv_pyobj() # pickle compression because I'm lazy
+        sent, new = msgpack.unpackb(receiver.recv())
 
         for channel, points, line in zip(data, new, lines):
             # Just plot the first data point. Since the server bulk reads 10 samples at
