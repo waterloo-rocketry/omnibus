@@ -1,5 +1,6 @@
 import collections
 import time
+import msgpack
 from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg
 import numpy as np
@@ -27,7 +28,7 @@ curve = p6.plot(pen='y')
 ptr = 0
 def update():
     global curve, receiver, ptr, p6
-    sent, new = receiver.recv_pyobj()
+    sent, new = msgpack.unpackb(receiver.recv())
     curve.setData(new[0])
     if ptr == 0:
         p6.enableAutoRange('xy', False)  ## stop auto-scaling after the first data set is plotted

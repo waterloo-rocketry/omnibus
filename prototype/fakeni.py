@@ -1,6 +1,6 @@
 import time
 import sys
-
+import msgpack
 import random
 import zmq
 
@@ -16,6 +16,6 @@ print("Connected to 0MQ server.")
 
 while True:
 	start = time.time()
-    data = (time.time(), [[random.randint(-10,10) for _ in range(READ_BULK)] for _ in range(16)])##[[random.randint(-10,10) for _ in range(READ_BULK)] for _ in range(16)]
-    sender.send_pyobj(data) # Use pickle to seralize the data because I'm lazy
-    time.sleep(max(READ_BULK/SAMPLE_RATE - (time.time() - start), 0))
+	data = (time.time(), [[random.randint(-10,10) for _ in range(READ_BULK)] for _ in range(16)])
+	sender.send(msgpack.packb(data)) # Use pickle to seralize the data because I'm lazy
+	time.sleep(max(READ_BULK/SAMPLE_RATE - (time.time() - start), 0))
