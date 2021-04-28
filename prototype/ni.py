@@ -1,6 +1,7 @@
 import time
 import sys
 
+import msgpack
 import nidaqmx
 import zmq
 
@@ -43,7 +44,7 @@ with nidaqmx.Task() as task:
         data = task.read(number_of_samples_per_channel=READ_BULK)
         # "Calibration" (just ai16 for testing)
         data = (time.time(), [[(d - 0.000505) * 6550 for d in data[0]]] + data[1:])
-        sender.send_pyobj(data) # Use pickle to seralize the data because I'm lazy
+        sender.send(msgpack.packb(data))
         count += READ_BULK
 
         if time.time() - last >= 0.2: # Update our output
