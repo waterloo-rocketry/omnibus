@@ -1,0 +1,7 @@
+msgpack==1.0.2
+numpy==1.20.2
+PyQt6==6.0.3
+PyQt6-Qt6==6.0.2
+PyQt6-sip==13.0.1
+pyqtgraph==0.12.1
+pyzmq==22.0.3
