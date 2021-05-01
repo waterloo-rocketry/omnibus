@@ -22,25 +22,46 @@ win.setWindowTitle('pyqtgraph: Random Data Example')
 
 pg.setConfigOptions(antialias=True)
 
-p6 = win.addPlot(title="Updating plot")
-curve = p6.plot(pen='y')
+plots =  [] #[win.addPlot(title=("Updating plot" + i))
+for i in range(0,4):
+	for j in range(4*i,4*i + 4):
+		plots.append(win.addPlot(title=("Updating plot" + str(j))))
+	if(i != 3):
+		win.nextRow()
 
-ptr = 0
+curves = [plots[i].plot(pen='y') for i in range(16)]
+
+sent, new = msgpack.unpackb(receiver.recv())
+
+data_streams = [new[i] for i in range(len(new))] 
+
+last = time.time()
+fps = 0
 def update():
-    global curve, receiver, ptr, p6
-    sent, new = msgpack.unpackb(receiver.recv())
-    curve.setData(new[0])
-    if ptr == 0:
-        p6.enableAutoRange('xy', False)  ## stop auto-scaling after the first data set is plotted
-    ptr += 1
+	global curves, receiver, ptr, plots, last, fps
+
+	sent = time.time() + 1
+
+	while receiver.poll(1):
+		sent, new = msgpack.unpackb(receiver.recv())
+
+		for i in range(len(plots)):
+			data_streams[i].pop(0)
+			data_streams[i].append(new[i][0])
+	
+	for i in range(len(curves)):
+		curves[i].setData(data_streams[i])
+
+	fps += 1
+
+	if(time.time() - last > 0.2):
+		t = time.time()
+		print(f"\r lag:{t - sent:.2f} FPS:{fps * 5}", end="")
+		fps = 0
 
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
-timer.start(50)
+timer.start(0)
 
 if __name__ == '__main__':
     pg.mkQApp().exec_()
-
-while True:
-     sent, new = receiver.recv_pyobj()
-     print(new)
