@@ -8,6 +8,6 @@ To run, you must first choose which data source and sink to use. If you have an 
 ### set up
 1. git clone the repo
 2. create a python venv and activate it
-3. `pip install requirements.txt` to install all dependencies to your venv
-4. follow the [How to run the prototype](#How-to-run-the-prototype)
+3. cd into protptype directory and type `pip install requirements.txt` to install all dependencies to your venv
+4. follow the [How to run the prototype](#How-to-run-the-prototype) to run the prototype
 
