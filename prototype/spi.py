@@ -6,12 +6,11 @@
 
 # This driver can currently read analog data at ~20k samples/sec and interact with SPI at ~1100 bytes/sec (although with about 0.25 secs of latency between a write and its response).
 
-import numpy
-import queue
 import sys
 import threading
 import time
 
+import numpy
 import msgpack
 import nidaqmx
 from nidaqmx import stream_writers
@@ -26,6 +25,7 @@ MOSI = "ao1"
 SCLK_LOOPBACK = "ai0"
 MISO = "ai8"
 SS = "pfi4"
+SPI_VOLTAGE = 5
 
 system = nidaqmx.system.System.local()
 if len(system.devices) == 0:
@@ -44,7 +44,7 @@ sender.connect(SERVER_URL)
 # We control the analog outputs by writing to a buffer on the NI box which they then read from.
 # However, we use it in a mode where it will not loop back to old data in the buffer if it runs dry, and so if it runs dry it crashes instead.
 # This means that we need to keep the buffer saturated with zeroes. However, if we keep the buffer too full,
-# there is unreasonable latency between when we "write" data and when it actually gets sent out / we can read in the result. 
+# there is unreasonable latency between when we "write" data and when it actually gets sent out / we can read in the result.
 # This function constantly checks how full the buffer is and tries to keep it about 1/4 of a second full.
 # This function runs alone in a thread so it can loop all it likes.
 def saturate_zeros(ao, aow):
@@ -73,8 +73,8 @@ def read(ai):
         sclk, miso, *data = ai.read(number_of_samples_per_channel=READ_BULK, timeout=0.1)
         miso, lastMiso = lastMiso + miso[:-1], miso[-1:] # account for the sclk loopback / miso offset
         for i in range(len(sclk)):
-            if sclk[i] > 3: # Clock high, read a bit and add it to our WIP byte
-                byte |= (round(miso[i]) // 4) << bit
+            if sclk[i] > SPI_VOLTAGE / 2: # Clock high, read a bit and add it to our WIP byte
+                byte |= round(miso[i] / SPI_VOLTAGE) << bit
                 if bit == 0:
                     bit = 7
                     bytes_in.append(byte)
@@ -107,9 +107,9 @@ def send(aow, bytes_out):
     clkdata = []
     mosidata = []
     for byte_out in bytes_out:
-        # Since these are analog channels, a binary 1 is represented by 5 (volts).
-        clkdata += [5*(n % 2) for n in range(16)] + [0]
-        mosidata += [5*bool(byte_out & (1 << (n//2))) for n in range(15, -1, -1)] + [0] # keep data valid for a full clock pulse, 2 samples
+        # Since these are analog channels, a binary 1 is represented by a voltage.
+        clkdata += [SPI_VOLTAGE*(n % 2) for n in range(16)] + [0]
+        mosidata += [SPI_VOLTAGE*bool(byte_out & (1 << (n//2))) for n in range(15, -1, -1)] + [0] # keep data valid for a full clock pulse, 2 samples
     clkdata += [0]
     mosidata += [0]
 
