@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 
-import numpy
+import numpy as np
 import msgpack
 import nidaqmx
 from nidaqmx import stream_writers
@@ -41,6 +41,8 @@ context = zmq.Context()
 sender = context.socket(zmq.PUB)
 sender.connect(SERVER_URL)
 
+aow_lock = threading.Lock()
+
 # We control the analog outputs by writing to a buffer on the NI box which they then read from.
 # However, we use it in a mode where it will not loop back to old data in the buffer if it runs dry, and so if it runs dry it crashes instead.
 # This means that we need to keep the buffer saturated with zeroes. However, if we keep the buffer too full,
@@ -53,25 +55,26 @@ def saturate_zeros(ao, aow):
         buf = ao.out_stream.curr_write_pos - ao.out_stream.total_samp_per_chan_generated # This is the number of samples currently in the buffer
         diff = RATE // 4 - buf # try to keep 0.25s in the buffer
         if diff > 0:
-            aow.write_many_sample(numpy.zeros((2, diff), dtype=numpy.float64))
-        t += 1 / 8
+            with aow_lock:
+                aow.write_many_sample(np.zeros((2, diff), dtype=np.float64))
+        t += 0.25 / 2 # check at twice as fast as the amount we want in the buffer
         time.sleep(max(t - time.time(), 0))
 
 # Here we read both the incoming SPI bits and general analog data.
 # Note that because of how the synchronization works, our sclk loopback is actually one sample ahead of the corresponding miso value.
-def read(ai):
-    lastMiso = [0]
+def read_spi(ai):
+    last_miso = [0]
     bit = 7
     byte = 0
     bytes_in = []
 
     analog_avg = None
-    spi_avg = [1]
+    spi_avg = None
     spi_time = time.time()
     while True:
         analog_time = time.time()
         sclk, miso, *data = ai.read(number_of_samples_per_channel=READ_BULK, timeout=0.1)
-        miso, lastMiso = lastMiso + miso[:-1], miso[-1:] # account for the sclk loopback / miso offset
+        miso, last_miso = last_miso + miso[:-1], miso[-1:] # account for the sclk loopback / miso offset
         for i in range(len(sclk)):
             if sclk[i] > SPI_VOLTAGE / 2: # Clock high, read a bit and add it to our WIP byte
                 byte |= round(miso[i] / SPI_VOLTAGE) << bit
@@ -87,12 +90,12 @@ def read(ai):
         sender.send(msgpack.packb(data))
 
         if len(bytes_in) > TEST_SPI_BYTES: # we've amassed a full SPI response
-            if len(spi_avg) == 1:
+            if spi_avg is None:
                 spi_avg = [time.time() - spi_time for _ in range(100)]
             else:
                 spi_avg = spi_avg[1:] + [time.time() - spi_time]
-            sender.send(msgpack.packb((time.time(), "SPI", bytes_in[:TEST_SPI_BYTES])))
-            bytes_in = bytes_in[TEST_SPI_BYTES:]
+            spi_data, bytes_in = bytes_in[:TEST_SPI_BYTES], bytes_in[TEST_SPI_BYTES:]
+            sender.send(msgpack.packb((time.time(), "SPI", spi_data)))
             spi_time = time.time()
 
         if analog_avg is None:
@@ -100,7 +103,7 @@ def read(ai):
         else:
             analog_avg = analog_avg[1:] + [time.time() - analog_time]
 
-        print(f"\rAnalog Rate: {READ_BULK/(sum(analog_avg)/len(analog_avg)):.0f} samples/sec   SPI Rate: {TEST_SPI_BYTES/(sum(spi_avg)/len(spi_avg)):.0f} bytes/sec   Buffer health: {100 - ai.in_stream.avail_samp_per_chan * 100 / max(ai.in_stream.input_buf_size, 1): >5.1f}%   ", end='')
+        print(f"\rAnalog Rate: {READ_BULK/np.mean(analog_avg):.0f} samples/sec   SPI Rate: {TEST_SPI_BYTES/np.mean(spi_avg or [1]):.0f} bytes/sec   Buffer health: {100 - ai.in_stream.avail_samp_per_chan * 100 / max(ai.in_stream.input_buf_size, 1): >5.1f}%   ", end='')
 
 # Encodes some bytes into the SPI pulses needed to write them, adds said pulses to the write queue.
 def send(aow, bytes_out):
@@ -113,7 +116,8 @@ def send(aow, bytes_out):
     clkdata += [0]
     mosidata += [0]
 
-    aow.write_many_sample(numpy.array([clkdata, mosidata], dtype=numpy.float64))
+    with aow_lock:
+        aow.write_many_sample(np.array([clkdata, mosidata], dtype=np.float64))
 
 
 with nidaqmx.Task() as ao, nidaqmx.Task() as ai, nidaqmx.Task() as do:
@@ -137,7 +141,7 @@ with nidaqmx.Task() as ao, nidaqmx.Task() as ai, nidaqmx.Task() as do:
     ao.out_stream.output_buf_size = RATE # one second of buffer. For latency, we want to keep this buffer as empty as possible.
     aow = stream_writers.AnalogMultiChannelWriter(ao.out_stream) # Lets us stream data into the buffer and thus out onto the pin.
     aow.auto_start = False
-    aow.write_many_sample(numpy.zeros((2, RATE // 4), dtype=numpy.float64), timeout=0) # We need to write some data before we start the task, otherwise it complains
+    aow.write_many_sample(np.zeros((2, RATE // 4), dtype=np.float64), timeout=0) # We need to write some data before we start the task, otherwise it complains
 
     do.write(True) # SS high to sync with the slave
     ao.start()
@@ -148,7 +152,7 @@ with nidaqmx.Task() as ao, nidaqmx.Task() as ai, nidaqmx.Task() as do:
     do.write(False)
     ai.start()
 
-    threading.Thread(target=read, args=(ai,), daemon=True).start()
+    threading.Thread(target=read_spi, args=(ai,), daemon=True).start()
 
     inp = list(range(TEST_SPI_BYTES))
     while True:
