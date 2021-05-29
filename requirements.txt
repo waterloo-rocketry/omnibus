@@ -1,4 +1,12 @@
+attrs==21.2.0                                                                                                  
 autopep8==1.5.7
-msgpack==0.5.6
-pyzmq==22.1.0
+iniconfig==1.1.1
+msgpack==1.0.2
+packaging==20.9
+pluggy==0.13.1
+py==1.10.0
+pycodestyle==2.7.0
+pyparsing==2.4.7
 pytest==6.2.4
+pyzmq==22.1.0
+toml==0.10.2
