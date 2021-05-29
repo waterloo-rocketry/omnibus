@@ -1,4 +1,4 @@
-# Generates logged message and saves to
+# Generates logged message and saves to globalLog.log
 
 import logging
 
@@ -17,11 +17,11 @@ logger = logging.getLogger("global")
 # sets minimum logging level that will be recorded
 # the priorities from lowest to highest is: DEBUG, INFO, WARNING, ERROR, CRITICAL
 logger.setLevel(logging.DEBUG)
-# configures the logger to log into a designated file
+# adds filehandler to the logger to log into a designated file
 fileHdlr = logging.FileHandler(fname)
 fileHdlr.setLevel(logging.DEBUG)
 # generate formatting of logged messages
-# ex: "January 1, 2021, 00:00:00 : INFO : channel1 : Something went wrong."
+# ex: "68464665.21550 : INFO : fake : [123123,123]"
 formatter = logging.Formatter('%(timestamp)s :: %(channel)s :: %(levelname)s :: %(message)s')
 fileHdlr.setFormatter(formatter)
 logger.addHandler(fileHdlr)
