@@ -4,7 +4,7 @@ Omnibus is a unified data bus which manages the connection of various data sourc
 
 #### Requirements
 
-Python 3.7 or newer is required.
+Python 3.8 or newer is required.
 
 Required Python packages can be installed using `pip install -r requirements.txt`.
 
