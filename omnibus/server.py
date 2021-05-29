@@ -10,7 +10,7 @@ SINK_PORT = 5076
 
 def get_ip():
     """
-    Returns our best guess for this machines IP on the LAN.
+    Return our best guess for this machine's IP on the LAN.
     """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -25,7 +25,7 @@ def get_ip():
 
 def server():
     """
-    Runs the Omnibus server, displays the current messages/sec.
+    Run the Omnibus server, display the current messages/sec.
     """
     context = zmq.Context()
 
@@ -44,7 +44,7 @@ def server():
 
     # The monitor receives all proxied messages. With normal proxies this means
     # messages going in both directions, but since this is a pub/sub proxy it
-    # just recieves the same messages as any other sink.
+    # just receives the same messages as any other sink.
     monitor = context.socket(zmq.SUB)
     monitor.connect("inproc://mon")
     monitor.setsockopt(zmq.SUBSCRIBE, b"")
