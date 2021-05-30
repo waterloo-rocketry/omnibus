@@ -11,13 +11,9 @@ SERVER = "tcp://localhost:5076"
 CURTIME = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
 # Creates filename
 fname = CURTIME + ".log"
-
-f = open(fname, "w")
 receiver = Receiver(SERVER, CHANNEL)
-
-while True:
-    msg = receiver.recv_message()
-    line = [msg.timestamp, " :: ", msg.channel, " :: ", msg.payload]
-    f.writelines(str(line))
-
-f.close()
+# Creates new file
+with open(fname, "w") as f:
+    while True:
+        msg = receiver.recv_message()
+        f.write(f"{msg.timestamp} :: {msg.channel} :: {msg.payload}")
