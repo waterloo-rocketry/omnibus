@@ -1,32 +1,23 @@
-# Generates logged message and saves to globalLog.log
+# Global logger - Saves messages passed through bus to asc-time.log
 
-import logging
+from datetime import datetime
 
 from omnibus import Receiver
 
-# Set to listen to all channels -> ""
-channel = ""
-receiver = Receiver("tcp://localhost:5076", channel)
+# Will log all messages passing through bus
+CHANNEL = ""
+SERVER = "tcp://localhost:5076"
+# Retrieves current date and time
+CURTIME = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+# Creates filename
+fname = CURTIME + ".log"
 
-msg = receiver.recv_message()
-
-# name of the file the log is saved to
-fname = 'globalLog.log'
-# creates a new logger
-logger = logging.getLogger("global")
-# sets minimum logging level that will be recorded
-# the priorities from lowest to highest is: DEBUG, INFO, WARNING, ERROR, CRITICAL
-logger.setLevel(logging.DEBUG)
-# adds filehandler to the logger to log into a designated file
-fileHdlr = logging.FileHandler(fname)
-fileHdlr.setLevel(logging.DEBUG)
-# generate formatting of logged messages
-# ex: "68464665.21550 : INFO : fake : [123123,123]"
-formatter = logging.Formatter('%(timestamp)s :: %(channel)s :: %(levelname)s :: %(message)s')
-fileHdlr.setFormatter(formatter)
-logger.addHandler(fileHdlr)
+f = open(fname, "w")
+receiver = Receiver(SERVER, CHANNEL)
 
 while True:
     msg = receiver.recv_message()
-    # logs the message as info level
-    logger.info(msg.payload, extra={'timestamp': msg.timestamp, 'channel': msg.channel})
+    line = [msg.timestamp, " :: ", msg.channel, " :: ", msg.payload]
+    f.writelines(str(line))
+
+f.close()
