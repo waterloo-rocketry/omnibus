@@ -16,4 +16,4 @@ receiver = Receiver(SERVER, CHANNEL)
 with open(fname, "w") as f:
     while True:
         msg = receiver.recv_message()
-        f.write(f"{msg.timestamp} :: {msg.channel} :: {msg.payload}")
+        f.write(f"{msg.timestamp} :: {msg.channel} :: {msg.payload}\n")
