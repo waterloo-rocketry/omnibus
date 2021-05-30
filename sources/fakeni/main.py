@@ -8,8 +8,9 @@ from omnibus import Sender
 READ_BULK = 200  # mimic how the real NI box samples in bulk for better performance
 SAMPLE_RATE = 20000  # total samples/second
 CHANNELS = 8  # number of analog channels to read from
+SERVER = "tcp://localhost:5075"
 
-sender = Sender("tcp://localhost:5075", "NI/Fake")
+sender = Sender(SERVER, "NI/Fake")
 
 while True:
     start = time.time()
