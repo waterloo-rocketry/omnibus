@@ -1,0 +1,25 @@
+# Linter config
+
+.pylintrc
+
+# IDE files and directories
+
+.idea/
+.vscode/
+.pydevproject
+.project
+
+# Python
+
+[.]venv/
+
+__pycache__/
+*.py[cod]
+
+build/
+dist/
+*.egg-info/
+
+.coverage
+coverage.xml
+htmlcov
