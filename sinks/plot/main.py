@@ -1,21 +1,23 @@
-import time
+import sys
 
 from omnibus import Receiver
-import msgpack
+
 from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg
 import numpy as np
-import zmq
 
-context = zmq.Context()
+import time
 
-Receiver = context.socket(zmq.SUB)
-Receiver.connect("tcp://localhost:5076") # or whatever url the server is running on
-Receiver.setsockopt(zmq.SUBSCRIBE, b"") # subscribe to all messages
+SENSOR = 4
+SENSOR_ID = ["a","b","c","d"]
+
+CHANNEL = "CH1"
+
+
+receiver_list = Receiver("tcp://localhost:5076", CHANNEL)
 
 print("Connected to 0MQ server.")
 
-app = pg.mkQApp("test-random data")
 
 win = pg.GraphicsLayoutWidget(show=True, title="Random Data Example")
 win.resize(1000,600)
@@ -23,32 +25,32 @@ win.setWindowTitle('pyqtgraph: Random Data Example')
 
 pg.setConfigOptions(antialias=True)
 
+#Change the layouts here
 plots =  [] #[win.addPlot(title=("Updating plot" + i))
-for i in range(0,4):
-	for j in range(4*i,4*i + 4):
-		plots.append(win.addPlot(title=("Updating plot" + str(j))))
-	if(i != 3):
+
+min_col = np.ceil(np.sqrt(SENSOR))
+min_row = np.ceil(SENSOR / min_col)
+for i in range(0, min_row):
+	for j in range(min_col*i, min_col*(i+1) if i != (min_row - 1) else SENSOR):
+		plots.append(win.addPlot(title=("Updating sensor" + SENSOR_ID[j])))
+	if(i != min_row - 1):
 		win.nextRow()
 
-curves = [plots[i].plot(pen='y') for i in range(16)]
+curves = [plots[i].plot(pen='y') for i in range(SENSOR)]
 
-sent, new = msgpack.unpackb(Receiver.recv())
-
-data_streams = [new[i] for i in range(len(new))] 
+data_streams = [[0 for _ in range(10)] for _ in range(SENSOR)] #10 data points
 
 last = time.time()
 fps = 0
-def update():
-	global curves, Receiver, ptr, plots, last, fps
+def update(): #TBD Filtering by ID
+	global curves, Receiver, plots, last, fps
 
 	sent = time.time() + 1
 
-	while Receiver.poll(1):
-		sent, new = msgpack.unpackb(Receiver.recv())
-
+	while new_data := Receiver.recv(0):
 		for i in range(len(plots)):
 			data_streams[i].pop(0)
-			data_streams[i].append(new[i][0])
+			data_streams[i].append(new_data[i][0])
 	
 	for i in range(len(curves)):
 		curves[i].setData(data_streams[i])
