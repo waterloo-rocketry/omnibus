@@ -8,13 +8,14 @@ import numpy as np
 
 import time
 
-SENSOR = 4
-SENSOR_ID = ["a","b","c","d"]
+CHANNEL = { #Channel Name (Sensor name): Array Index
+	"CH1":1,
+	"CH2":2,
+	"CH3":3
+}
+CHANNEL_COUNT = len(CHANNEL)
 
-CHANNEL = "CH1"
-
-
-receiver_list = Receiver("tcp://localhost:5076", CHANNEL)
+receiver_list = Receiver("tcp://localhost:5076", "") #Receiving everything, filter by channel
 
 print("Connected to 0MQ server.")
 
@@ -25,35 +26,37 @@ win.setWindowTitle('pyqtgraph: Random Data Example')
 
 pg.setConfigOptions(antialias=True)
 
+#dict for channel index to plot data
+
 #Change the layouts here
 plots =  [] #[win.addPlot(title=("Updating plot" + i))
 
-min_col = np.ceil(np.sqrt(SENSOR))
-min_row = np.ceil(SENSOR / min_col)
+min_col = np.ceil(np.sqrt(CHANNEL_COUNT))
+min_row = np.ceil(CHANNEL_COUNT / min_col)
 for i in range(0, min_row):
-	for j in range(min_col*i, min_col*(i+1) if i != (min_row - 1) else SENSOR):
-		plots.append(win.addPlot(title=("Updating sensor" + SENSOR_ID[j])))
+	for j in range(min_col*i, min_col*(i+1) if i != (min_row - 1) else CHANNEL_COUNT):
+		plots.append(win.addPlot(title=("Updating sensor " + CHANNEL[j])))
 	if(i != min_row - 1):
 		win.nextRow()
 
-curves = [plots[i].plot(pen='y') for i in range(SENSOR)]
+curves = [plots[i].plot(pen='y') for i in range(CHANNEL_COUNT)]
 
-data_streams = [[0 for _ in range(10)] for _ in range(SENSOR)] #10 data points
+data_streams = [[0 for _ in range(10)] for _ in range(CHANNEL_COUNT)] #10 data points
 
 last = time.time()
 fps = 0
-def update(): #TBD Filtering by ID
+def update():
 	global curves, Receiver, plots, last, fps
 
 	sent = time.time() + 1
 
-	while new_data := Receiver.recv(0):
-		for i in range(len(plots)):
-			data_streams[i].pop(0)
-			data_streams[i].append(new_data[i][0])
-	
-	for i in range(len(curves)):
-		curves[i].setData(data_streams[i])
+	while new_data := Receiver.recv_message(0):
+		if (channel_index := CHANNEL[new_data[channel]] != None):
+			data_streams[channel_index].pop(0)
+			data_streams[channel_index].append(new_data[payload[0]]) #Update Data Stream
+
+			curves[channel_index].setData(data_streams[channel_index]) #Update Graph Stream
+			break
 
 	fps += 1
 
