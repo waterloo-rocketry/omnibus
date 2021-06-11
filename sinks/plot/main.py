@@ -8,15 +8,13 @@ import numpy as np
 
 import time
 
-CHANNEL = { #Channel Name (Sensor name): Array Index
-	"DAQ/Fake0":0,
-	"DAQ/Fake1":1,
-	"DAQ/Fake2":2,
-	"DAQ/Fake3":3
-}
-CHANNEL_COUNT = len(CHANNEL)
+CHANNEL = "DAQ"
 
-receiver_list = Receiver("tcp://localhost:5076", "") #Receiving everything, filter by channel
+SENSORS = ["Fake0","Fake1","Fake2","Fake3","Fake4","Fake5","Fake6","Fake7"]
+
+SENSOR_COUNT = len(SENSORS)
+
+receiver = Receiver(CHANNEL) #Receiving everything, filter by channel
 
 print("Connected to 0MQ server.")
 
@@ -32,40 +30,28 @@ pg.setConfigOptions(antialias=True)
 #Change the layouts here
 plots =  [] #[win.addPlot(title=("Updating plot" + i))
 
-min_col = int(np.ceil(np.sqrt(CHANNEL_COUNT)))
-min_row = int(np.ceil(CHANNEL_COUNT / min_col))
+min_col = int(np.ceil(np.sqrt(SENSOR_COUNT)))
+min_row = int(np.ceil(SENSOR_COUNT / min_col))
 for i in range(0, min_row):
-	for j in range(min_col*i, min_col*(i+1) if i != (min_row - 1) else CHANNEL_COUNT):
+	for j in range(min_col*i, min_col*(i+1) if i != (min_row - 1) else SENSOR_COUNT):
 		plots.append(win.addPlot(title=("Sensor " + str(j))))
 	if(i != min_row - 1):
 		win.nextRow()
 
-curves = [plots[i].plot(pen='y') for i in range(CHANNEL_COUNT)]
+curves = [plots[i].plot(pen='y') for i in range(SENSOR_COUNT)]
 
-data_streams = [[0 for _ in range(10)] for _ in range(CHANNEL_COUNT)] #10 data points
+data_streams = [[0 for _ in range(100)] for _ in range(SENSOR_COUNT)] #10 data points
 
-last = time.time()
-fps = 0
 def update():
-	global curves, Receiver, plots, last, fps
 
-	sent = time.time() + 1
+	while new_data := receiver.recv(0):
+		for i,sensor in enumerate(SENSORS):
+			data_streams[i].pop(0)
+			#print(new_data)
+			data_streams[i].append(new_data["data"][sensor][0]) #Update Data Stream, currently only grabbing the first element in the payload obj
+			
 
-	while new_data := Receiver.recv_message(0):
-		if (new_data.channel in CHANNEL):
-			channel_index = CHANNEL.get(new_data.channel)
-			data_streams[channel_index].pop(0)
-			data_streams[channel_index].append(new_data.payload[0]) #Update Data Stream, currently only grabbing the first element in the payload obj
-
-			curves[channel_index].setData(data_streams[channel_index]) #Update Graph Stream
-			break
-
-	fps += 1
-
-	if(time.time() - last > 0.2):
-		t = time.time()
-		print(f"\r lag:{t - sent:.2f} FPS:{fps * 5}", end="")
-		fps = 0
+			curves[i].setData(data_streams[i]) #Update Graph Stream
 
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
