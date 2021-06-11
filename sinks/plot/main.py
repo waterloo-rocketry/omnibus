@@ -9,10 +9,10 @@ import numpy as np
 import time
 
 CHANNEL = { #Channel Name (Sensor name): Array Index
-	"CH0":0,
-	"CH1":1,
-	"CH2":2,
-	"CH3":3
+	"DAQ/Fake0":0,
+	"DAQ/Fake1":1,
+	"DAQ/Fake2":2,
+	"DAQ/Fake3":3
 }
 CHANNEL_COUNT = len(CHANNEL)
 
