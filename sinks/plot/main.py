@@ -12,8 +12,9 @@ CHANNEL = "DAQ"
 
 SENSOR_COUNT = 8
 
+# Sensor names; make sure this matches the names at the source!
 SENSORS = []
-for i in range(8):
+for i in range(SENSOR_COUNT):
     SENSORS.append("Fake"+str(i))
 
 receiver = Receiver(CHANNEL)  # Receiving everything in DAQ channel
