@@ -10,48 +10,49 @@ import time
 
 CHANNEL = "DAQ"
 
-SENSORS = ["Fake0","Fake1","Fake2","Fake3","Fake4","Fake5","Fake6","Fake7"]
+SENSOR_COUNT = 8
 
-SENSOR_COUNT = len(SENSORS)
+SENSORS = []
+for i in range(8):
+    SENSORS.append("Fake"+str(i))
 
-receiver = Receiver(CHANNEL) #Receiving everything, filter by channel
+receiver = Receiver(CHANNEL)  # Receiving everything in DAQ channel
 
 print("Connected to 0MQ server.")
 
 
 win = pg.GraphicsLayoutWidget(show=True, title="Random Data Example")
-win.resize(1000,600)
+win.resize(1000, 600)
 win.setWindowTitle('pyqtgraph: Random Data Example')
 
 pg.setConfigOptions(antialias=True)
 
-#dict for channel index to plot data
-
-#Change the layouts here
-plots =  [] #[win.addPlot(title=("Updating plot" + i))
+# Layout Algorithm
+plots = []
 
 min_col = int(np.ceil(np.sqrt(SENSOR_COUNT)))
 min_row = int(np.ceil(SENSOR_COUNT / min_col))
 for i in range(0, min_row):
-	for j in range(min_col*i, min_col*(i+1) if i != (min_row - 1) else SENSOR_COUNT):
-		plots.append(win.addPlot(title=("Sensor " + str(j))))
-	if(i != min_row - 1):
-		win.nextRow()
+    for j in range(min_col*i, min_col*(i+1) if i != (min_row - 1) else SENSOR_COUNT):
+        plots.append(win.addPlot(title=("Sensor: " + SENSORS[j])))
+    if(i != min_row - 1):
+        win.nextRow()
 
+# plot generation
 curves = [plots[i].plot(pen='y') for i in range(SENSOR_COUNT)]
 
-data_streams = [[0 for _ in range(100)] for _ in range(SENSOR_COUNT)] #10 data points
+data_streams = [[0 for _ in range(100)] for _ in range(SENSOR_COUNT)]  # 100 data points
+
 
 def update():
+    while new_data := receiver.recv(0):
+        for i, sensor in enumerate(SENSORS):
+            data_streams[i].pop(0)
+            # Update Data Stream, currently only grabbing the first element in the payload obj
+            data_streams[i].append(new_data["data"][sensor][0])
 
-	while new_data := receiver.recv(0):
-		for i,sensor in enumerate(SENSORS):
-			data_streams[i].pop(0)
-			#print(new_data)
-			data_streams[i].append(new_data["data"][sensor][0]) #Update Data Stream, currently only grabbing the first element in the payload obj
-			
+            curves[i].setData(data_streams[i])  # Update Graph Stream
 
-			curves[i].setData(data_streams[i]) #Update Graph Stream
 
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
