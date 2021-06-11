@@ -1,1 +1,1 @@
-from .omnibus import Sender, Receiver
+from .omnibus import Sender, Receiver, Message
