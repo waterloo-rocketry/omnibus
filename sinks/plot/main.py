@@ -9,6 +9,7 @@ import numpy as np
 import time
 
 CHANNEL = { #Channel Name (Sensor name): Array Index
+	"CH0":0,
 	"CH1":1,
 	"CH2":2,
 	"CH3":3
@@ -31,11 +32,11 @@ pg.setConfigOptions(antialias=True)
 #Change the layouts here
 plots =  [] #[win.addPlot(title=("Updating plot" + i))
 
-min_col = np.ceil(np.sqrt(CHANNEL_COUNT))
-min_row = np.ceil(CHANNEL_COUNT / min_col)
+min_col = int(np.ceil(np.sqrt(CHANNEL_COUNT)))
+min_row = int(np.ceil(CHANNEL_COUNT / min_col))
 for i in range(0, min_row):
 	for j in range(min_col*i, min_col*(i+1) if i != (min_row - 1) else CHANNEL_COUNT):
-		plots.append(win.addPlot(title=("Updating sensor " + CHANNEL[j])))
+		plots.append(win.addPlot(title=("Sensor " + str(j))))
 	if(i != min_row - 1):
 		win.nextRow()
 
@@ -51,9 +52,10 @@ def update():
 	sent = time.time() + 1
 
 	while new_data := Receiver.recv_message(0):
-		if (channel_index := CHANNEL[new_data[channel]] != None):
+		if (new_data.channel in CHANNEL):
+			channel_index = CHANNEL.get(new_data.channel)
 			data_streams[channel_index].pop(0)
-			data_streams[channel_index].append(new_data[payload[0]]) #Update Data Stream
+			data_streams[channel_index].append(new_data.payload[0]) #Update Data Stream, currently only grabbing the first element in the payload obj
 
 			curves[channel_index].setData(data_streams[channel_index]) #Update Graph Stream
 			break
