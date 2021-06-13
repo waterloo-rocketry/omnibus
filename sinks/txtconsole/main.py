@@ -1,21 +1,16 @@
+import sys
+
 from omnibus import Receiver
 
-
-def print_console(channels_filterlst):
+def print_console():
     receiver = Receiver(CHANNEL)
-    print(channels_filterlst)
+    print('Cmd line arguments entered: ')
+    print(sys.argv)
     while True:
         msg = receiver.recv_message()
-        if msg.channel in channels_filterlst:
+        if msg.channel in sys.argv:
             print(msg.payload)
-
 
 if __name__ == '__main__':
     CHANNEL = ""  # all channels
-    channel_filter = list()
-    num_types = int(input("Enter number of message types: "))
-    print("Enter the message types separated with new lines. ")
-    for i in range(num_types):
-        new = input("Enter: ")
-        channel_filter.append(new)
-    print_console(channel_filter)
+    print_console()
