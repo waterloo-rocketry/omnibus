@@ -8,10 +8,13 @@ import numpy as np
 
 import time
 
-demo = True #Demo Mode
-CHANNEL = "DAQ"
+demo = True  # Demo Mode
+
+CHANNEL = ""
 SENSOR_COUNT = 0
 SENSORS = []
+
+SERVER = "tcp://localhost:5076"
 
 if (demo):
     CHANNEL = "DAQ"
@@ -23,10 +26,9 @@ if (demo):
     for i in range(SENSOR_COUNT):
         SENSORS.append("Fake"+str(i))
 
-    receiver = Receiver(CHANNEL)  # Receiving everything in DAQ channel
+receiver = Receiver(SERVER, CHANNEL)  # Receiving everything in DAQ channel
 
 print("Connected to 0MQ server.")
-
 
 win = pg.GraphicsLayoutWidget(show=True, title="Random Data Example")
 win.resize(1000, 600)
@@ -38,7 +40,7 @@ pg.setConfigOptions(antialias=True)
 plots = []
 
 min_col = int(np.sqrt(SENSOR_COUNT))+1
-min_row = (SENSOR_COUNT / min_col)+1
+min_row = int(SENSOR_COUNT / min_col)+1
 for i in range(0, min_row):
     for j in range(min_col*i, min_col*(i+1) if i != (min_row - 1) else SENSOR_COUNT):
         plots.append(win.addPlot(title=("Sensor: " + SENSORS[j])))
@@ -49,7 +51,8 @@ for i in range(0, min_row):
 curves = [plots[i].plot(pen='y') for i in range(SENSOR_COUNT)]
 
 graph_dp = 100 # 100 data points in the graph
-data_streams = [[0 for _ in range(graph_dp)] for _ in range(SENSOR_COUNT)]  
+
+data_streams = [[0 for _ in range(graph_dp)] for _ in range(SENSOR_COUNT)]
 
 
 def update():
