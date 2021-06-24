@@ -279,7 +279,7 @@ def parse_line(args, line):
     for data in parsed_data[start_data:]:
         output = output + '{:<20}'.format(data)
     
-    #sender.send(output)
+    sender.send(output)
     print(output)
     
 
