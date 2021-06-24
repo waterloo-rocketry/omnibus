@@ -56,7 +56,6 @@ data_streams = [[0 for _ in range(graph_dp)] for _ in range(SENSOR_COUNT)]
 def update():
     while new_data := receiver.recv(0):
         for i, sensor in enumerate(SENSORS):
-            data_streams[i].pop(0)
             # Update Data Stream, currently only grabbing the first element in the payload obj
             data_streams[i].append(new_data["data"][sensor][0])
             # new_data is the received the payload object of class message (see omnibus.py)
@@ -64,6 +63,9 @@ def update():
             # the dictionary should have a key value pair where the key is the "data type", in this case "data"
             # the value is then a list of sensors, which consist of a list of data registered from each sensor
             # currently we are only plotting the first data point in each sensor
+
+            data_streams[i].pop(0)
+
             curves[i].setData(data_streams[i])  # Update Graph Stream
 
 
