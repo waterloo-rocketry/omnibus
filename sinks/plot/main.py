@@ -14,8 +14,6 @@ CHANNEL = ""
 SENSOR_COUNT = 0
 SENSORS = []
 
-SERVER = "tcp://localhost:5076"
-
 if (demo):
     CHANNEL = "DAQ"
 
@@ -26,7 +24,7 @@ if (demo):
     for i in range(SENSOR_COUNT):
         SENSORS.append("Fake"+str(i))
 
-receiver = Receiver(SERVER, CHANNEL)  # Receiving everything in DAQ channel
+receiver = Receiver(CHANNEL)  # Receiving everything in DAQ channel
 
 print("Connected to 0MQ server.")
 
