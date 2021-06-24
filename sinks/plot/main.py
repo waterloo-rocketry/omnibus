@@ -28,7 +28,12 @@ receiver = Receiver(CHANNEL)  # Receiving everything in DAQ channel
 
 print("Connected to 0MQ server.")
 
-win = pg.GraphicsLayoutWidget(show=True, title="Random Data Example")
+min_col = int(np.sqrt(SENSOR_COUNT))+1
+min_row = int(SENSOR_COUNT / min_col)+1
+layout_size = (min_col, min_row)
+last_row_count = SENSOR_COUNT - min_col*(min_row - 1)
+
+win = pg.GraphicsLayoutWidget(show=True, title="Random Data Example", size=layout_size)
 win.resize(1000, 600)
 win.setWindowTitle('pyqtgraph: Random Data Example')
 
@@ -37,13 +42,9 @@ pg.setConfigOptions(antialias=True)
 # Layout Algorithm
 plots = []
 
-min_col = int(np.sqrt(SENSOR_COUNT))+1
-min_row = int(SENSOR_COUNT / min_col)+1
 for i in range(0, min_row):
-    for j in range(min_col*i, min_col*(i+1) if i != (min_row - 1) else SENSOR_COUNT):
-        plots.append(win.addPlot(title=("Sensor: " + SENSORS[j])))
-    if(i != min_row - 1):
-        win.nextRow()
+    for j in range(min_col if i != (min_row - 1) else last_row_count):
+        plots.append(win.addPlot(row=i, col=j, title=("Sensor: " + SENSORS[i*min_col + j])))
 
 # plot generation
 curves = [plots[i].plot(pen='y') for i in range(SENSOR_COUNT)]
