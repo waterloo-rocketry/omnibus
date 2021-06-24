@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-import socket
 import time
 
 import msgpack
 import zmq
 
-from . import server
+context = zmq.Context()
 
 
 @dataclass(frozen=True)
@@ -18,46 +17,7 @@ class Message:
     payload: 'typing.Any'
 
 
-class OmnibusCommunicator:
-    """
-    Handles state shared between senders and receivers.
-    """
-    server_ip = None
-    context = None
-
-    def __init__(self):
-        if self.context is None:
-            OmnibusCommunicator.context = zmq.Context()
-        if self.server_ip is None:
-            OmnibusCommunicator.server_ip = self._recv_ip()
-
-    def _recv_ip(self):
-        """
-        Listen for a UDP broadcast from the server telling us its IP. If the
-        broadcast isn't received, prompt to manually enter the IP.
-        """
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:  # UDP
-            # Allow the address to be re-used for when running multiple
-            # components on the same machine
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            sock.settimeout(5)  # 5 second timeout
-            sock.bind(('', server.BROADCAST_PORT))  # listen for broadcasts
-            print("Listening for server IP...")
-            while True:
-                try:
-                    data, (addr, _) = sock.recvfrom(16)
-                    if data == b'omnibus':
-                        print(f"Found {addr}")
-                        return addr
-                except socket.timeout:
-                    pass
-                print("Could not detect server IP. Please ensure it is running.")
-                if ip := input("Press enter to retry or manually enter the server IP: ").strip():
-                    return ip
-                print("Retrying...")
-
-
-class Sender(OmnibusCommunicator):
+class Sender:
     """
     Allows messages to be sent to all of the receivers listening on a channel.
 
@@ -66,10 +26,9 @@ class Sender(OmnibusCommunicator):
     it to send_message.
     """
 
-    def __init__(self, channel: str):
-        super().__init__()
-        self.publisher = self.context.socket(zmq.PUB)
-        self.publisher.connect(f"tcp://{self.server_ip}:{server.SOURCE_PORT}")
+    def __init__(self, server: str, channel: str):
+        self.publisher = context.socket(zmq.PUB)
+        self.publisher.connect(server)
         self.channel = channel
 
     def send_message(self, message: Message):
@@ -93,7 +52,7 @@ class Sender(OmnibusCommunicator):
         self.send_message(message)
 
 
-class Receiver(OmnibusCommunicator):
+class Receiver:
     """
     Listens to a channel and receives all messages sent to it.
 
@@ -103,10 +62,9 @@ class Receiver(OmnibusCommunicator):
     messages.
     """
 
-    def __init__(self, channel: str):
-        super().__init__()
-        self.subscriber = self.context.socket(zmq.SUB)
-        self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")
+    def __init__(self, server: str, channel: str):
+        self.subscriber = context.socket(zmq.SUB)
+        self.subscriber.connect(server)
         self.subscriber.setsockopt(zmq.SUBSCRIBE, channel.encode("utf-8"))
 
     def recv_message(self, timeout=None):

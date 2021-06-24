@@ -1,5 +1,4 @@
 import socket
-import threading
 import time
 
 import zmq
@@ -7,7 +6,6 @@ from zmq.devices import ThreadProxy
 
 SOURCE_PORT = 5075
 SINK_PORT = 5076
-BROADCAST_PORT = 5077
 
 
 def get_ip():
@@ -25,25 +23,6 @@ def get_ip():
         s.close()
 
 
-def ip_broadcast():
-    """
-    Periodically send a UDP broadcast to the LAN. Sources and sinks can listen
-    to who sent the broadcast (filtering based on the content) to find our ip.
-    """
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:  # UDP socket
-        # Allow the address to be re-used for when running multiple components
-        # on the same machine
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # broadcast to LAN
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-        # This runs in a separate thread so we can loop
-        while True:
-            # 255.255.255.255 is a magic IP that means 'broadcast to the LAN'
-            sock.sendto(b"omnibus", ('255.255.255.255', BROADCAST_PORT))
-            time.sleep(2)
-
-
 def server():
     """
     Run the Omnibus server, display the current messages/sec.
@@ -59,8 +38,6 @@ def server():
     proxy.context_factory = lambda: context
 
     proxy.start()
-    # periodically broadcast our IP
-    threading.Thread(target=ip_broadcast, daemon=True).start()
 
     local_ip = get_ip()
     print(f"Serving {local_ip}:{SOURCE_PORT} -> {local_ip}:{SINK_PORT}")
