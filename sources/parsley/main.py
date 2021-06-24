@@ -5,8 +5,8 @@ import serial
 from serial import Serial
 from omnibus import Sender
 
-
-
+disp = serial.Serial('COM5',9600)
+sender = Sender("CAN/Parsley")
 
 def parse_gen_cmd(msg_data):
     timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
@@ -279,7 +279,8 @@ def parse_line(args, line):
     for data in parsed_data[start_data:]:
         output = output + '{:<20}'.format(data)
     
-    sender.send(output)
+    #sender.send(output)
+    print(output)
     
 
 
@@ -287,8 +288,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--format', help='Options: logger, usb. Parse input in RocketCAN Logger or USB format')
     args = parser.parse_args()
-    disp = serial.Serial('COM5',9600)
-    sender = Sender("CAN/Parsley")
+    
     
     while True:
         
