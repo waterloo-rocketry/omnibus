@@ -31,21 +31,22 @@ plots = []
 
 for i in range(min_row - 1):
     for j in range(min_col):
-        plots.append(win.addPlot(row=i, col=j, title=("Sensor: " + SENSORS[i*min_col + j]), left = "Data", bottom = "Time"))
+        plots.append(win.addPlot(row=i, col=j, title=("Sensor: " + SENSORS[i*min_col + j]), left = "Data", bottom = "Seconds"))
         #win.addLabel(left = "Data", row=i, col=j)
 
 for j in range(last_row_count):
     plots.append(win.addPlot(row=min_row - 1, col=j,
-                 title=("Sensor: " + SENSORS[min_col*(min_row - 1) + i]), left = "Data", bottom = "Time"))
+                 title=("Sensor: " + SENSORS[min_col*(min_row - 1) + i]), left = "Data", bottom = "Seconds"))
 # plot generation
-curves = [plots[i].plot(pen='y') for i in range(SENSOR_COUNT)]
-
+times = [[0 for _ in range(GRAPH_DP)] for _ in range(SENSOR_COUNT)]
 data_streams = [[0 for _ in range(GRAPH_DP)] for _ in range(SENSOR_COUNT)]
+
+curves = [plots[i].plot(times[i], data_streams[i], pen = 'y') for i in range(SENSOR_COUNT)]
 
 fps = 0
 
 last = time.time()
-
+start = time.time()
 def update():
     global fps, last
 
@@ -56,6 +57,7 @@ def update():
             if sensor in new_data["data"]:
                 # Update Data Stream, currently only grabbing the first element in the payload obj
                 data_streams[i].append(new_data["data"][sensor][0])
+                times[i].append(new_data["timestamp"] - start)
                 # new_data is the received the payload object of class message (see omnibus.py)
                 # whereby the payload is currently parsed as dictionary (of datatypes) in a dictionary (which contains a list of readings as value)
                 # See gist below
@@ -70,7 +72,8 @@ def update():
                 }
                 """
                 data_streams[i].pop(0)
-                curves[i].setData(data_streams[i])  # Update Graph Stream
+                times[i].pop(0)
+                curves[i].setData(times[i], data_streams[i])  # Update Graph Stream
             
         latency = time.time() - new_data["timestamp"]
         
