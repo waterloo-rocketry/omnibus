@@ -48,6 +48,9 @@ last = time.time()
 
 def update():
     global fps, last
+
+    latency = 0
+    
     while new_data := receiver.recv(0):
         for i, sensor in enumerate(SENSORS):
             if sensor in new_data["data"]:
@@ -68,14 +71,15 @@ def update():
                 """
                 data_streams[i].pop(0)
                 curves[i].setData(data_streams[i])  # Update Graph Stream
+            
+        latency = time.time() - new_data["timestamp"]
         
-        fps += 1
+    fps += 1
 
-        if(time.time() - last > 0.2):
-            last = time.time()
-            latency = last - new_data["timestamp"]
-            print(f"\r lag:{latency:.3f} FPS:{fps * 5}", end="")
-            fps = 0
+    if(time.time() - last > 0.2):
+        last = time.time()
+        print(f"\r lag:{latency:.3f} FPS:{fps * 5}", end="")
+        fps = 0
 
 
 timer = QtCore.QTimer()
