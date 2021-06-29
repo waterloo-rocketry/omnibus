@@ -4,6 +4,7 @@ from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 import numpy as np
 
+import time
 # Definitions are for demonstration purposes, please change them as needed.
 CHANNEL = "DAQ"
 SENSORS = ["Fake0", "Fake1", "Fake2", "Fake3", "Fake4", "Fake5", "Fake6", "Fake7"]
@@ -41,8 +42,12 @@ curves = [plots[i].plot(pen='y') for i in range(SENSOR_COUNT)]
 
 data_streams = [[0 for _ in range(GRAPH_DP)] for _ in range(SENSOR_COUNT)]
 
+fps = 0
+
+last = time.time()
 
 def update():
+    global fps, last
     while new_data := receiver.recv(0):
         for i, sensor in enumerate(SENSORS):
             if sensor in new_data["data"]:
@@ -63,6 +68,14 @@ def update():
                 """
                 data_streams[i].pop(0)
                 curves[i].setData(data_streams[i])  # Update Graph Stream
+        
+        fps += 1
+
+        if(time.time() - last > 0.2):
+            last = time.time()
+            latency = last - new_data["timestamp"]
+            print(f"\r lag:{latency:.3f} FPS:{fps * 5}", end="")
+            fps = 0
 
 
 timer = QtCore.QTimer()
