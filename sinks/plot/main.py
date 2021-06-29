@@ -81,7 +81,7 @@ def update():
 
     if(time.time() - last > 0.2):
         last = time.time()
-        print(f"\r lag:{latency:.3f} FPS:{fps * 5}", end="")
+        win.setWindowTitle("pyqtgraph: Data Graph   " + f"Lag: {latency:.3f} FPS: {fps * 5}")
         fps = 0
 
 
