@@ -120,7 +120,7 @@ class Receiver(OmnibusCommunicator):
 
         if self.subscriber.poll(timeout):
             channel, timestamp, payload = self.subscriber.recv_multipart()
-            return Message(channel.decode("utf-8"), msgpack.unpackb(timestamp))
+            return Message(channel.decode("utf-8"), msgpack.unpackb(timestamp), msgpack.unpackb(payload))
         return None
 
     def recv(self, timeout=None):
