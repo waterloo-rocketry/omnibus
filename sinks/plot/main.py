@@ -30,11 +30,12 @@ plots = []
 
 for i in range(min_row - 1):
     for j in range(min_col):
-        plots.append(win.addPlot(row=i, col=j, title=("Sensor: " + SENSORS[i*min_col + j])))
+        plots.append(win.addPlot(row=i, col=j, title=("Sensor: " + SENSORS[i*min_col + j]), left = "Data", bottom = "Time"))
+        #win.addLabel(left = "Data", row=i, col=j)
 
 for j in range(last_row_count):
     plots.append(win.addPlot(row=min_row - 1, col=j,
-                 title=("Sensor: " + SENSORS[min_col*(min_row - 1) + i])))
+                 title=("Sensor: " + SENSORS[min_col*(min_row - 1) + i]), left = "Data", bottom = "Time"))
 # plot generation
 curves = [plots[i].plot(pen='y') for i in range(SENSOR_COUNT)]
 
