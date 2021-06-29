@@ -9,7 +9,7 @@ CHANNEL = "DAQ"
 SENSORS = ["Fake0", "Fake1", "Fake2", "Fake3", "Fake4", "Fake5", "Fake6", "Fake7"]
 SENSOR_COUNT = len(SENSORS)
 
-graph_dp = 100  # 100 data points in the graph
+GRAPH_DP = 100  # 100 data points in the graph
 
 receiver = Receiver(CHANNEL)  # Receiving everything in DAQ channel
 
@@ -19,7 +19,7 @@ min_col = int(np.sqrt(SENSOR_COUNT))+1
 min_row = int(SENSOR_COUNT / min_col)+1
 last_row_count = SENSOR_COUNT - min_col*(min_row - 1)
 
-win = pg.GraphicsLayoutWidget(show=True, title="Random Data Example", size=(min_row, min_col))
+win = pg.GraphicsLayoutWidget(show=True, title="Data Example", size=(min_row, min_col))
 win.resize(1000, 600)
 win.setWindowTitle('pyqtgraph: Data Graph')
 
@@ -39,7 +39,7 @@ for j in range(last_row_count):
 # plot generation
 curves = [plots[i].plot(pen='y') for i in range(SENSOR_COUNT)]
 
-data_streams = [[0 for _ in range(graph_dp)] for _ in range(SENSOR_COUNT)]
+data_streams = [[0 for _ in range(GRAPH_DP)] for _ in range(SENSOR_COUNT)]
 
 
 def update():
