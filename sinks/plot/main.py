@@ -31,27 +31,30 @@ plots = []
 
 for i in range(min_row - 1):
     for j in range(min_col):
-        plots.append(win.addPlot(row=i, col=j, title=("Sensor: " + SENSORS[i*min_col + j]), left = "Data", bottom = "Seconds"))
+        plots.append(win.addPlot(row=i, col=j, title=(
+            "Sensor: " + SENSORS[i*min_col + j]), left="Data", bottom="Seconds"))
         #win.addLabel(left = "Data", row=i, col=j)
 
 for j in range(last_row_count):
     plots.append(win.addPlot(row=min_row - 1, col=j,
-                 title=("Sensor: " + SENSORS[min_col*(min_row - 1) + i]), left = "Data", bottom = "Seconds"))
+                 title=("Sensor: " + SENSORS[min_col*(min_row - 1) + i]), left="Data", bottom="Seconds"))
 # plot generation
 times = [[0 for _ in range(GRAPH_DP)] for _ in range(SENSOR_COUNT)]
 data_streams = [[0 for _ in range(GRAPH_DP)] for _ in range(SENSOR_COUNT)]
 
-curves = [plots[i].plot(times[i], data_streams[i], pen = 'y') for i in range(SENSOR_COUNT)]
+curves = [plots[i].plot(times[i], data_streams[i], pen='y') for i in range(SENSOR_COUNT)]
 
 fps = 0
 
 last = time.time()
 start = time.time()
+
+
 def update():
     global fps, last
 
     latency = 0
-    
+
     while new_data := receiver.recv(0):
         for i, sensor in enumerate(SENSORS):
             if sensor in new_data["data"]:
@@ -59,7 +62,8 @@ def update():
                 data_streams[i].append(new_data["data"][sensor][0])
                 times[i].append(new_data["timestamp"] - start)
                 # new_data is the received the payload object of class message (see omnibus.py)
-                # whereby the payload is currently parsed as dictionary (of datatypes) in a dictionary (which contains a list of readings as value)
+                # whereby the payload is currently parsed as dictionary (of datatypes) in a dictionary 
+                # which contains a sensor name - reading list key-value pair
                 # See gist below
                 """
                 {
@@ -74,20 +78,28 @@ def update():
                 data_streams[i].pop(0)
                 times[i].pop(0)
                 curves[i].setData(times[i], data_streams[i])  # Update Graph Stream
-            
+
         latency = time.time() - new_data["timestamp"]
-        
+
     fps += 1
 
-    if(time.time() - last > 0.2):
+    if(time.time() - last > 1):  # Updates for every second
         last = time.time()
-        win.setWindowTitle("pyqtgraph: Data Graph   " + f"Lag: {latency:.3f} FPS: {fps * 5}")
+        win.setWindowTitle("pyqtgraph: Data Graph   " + f"Lag: {latency:.3f} FPS: {fps}")
         fps = 0
+
+        # Updates X-Axis of the graph
+        for i in range(SENSOR_COUNT):
+            bottom_axis = plots[i].getAxis('bottom')
+            # Define ticks on X-Axis here, simply adding items into the list will do
+            # Currently defined to display integer increments (of seconds) in range of timestamps
+            ticks = [i for i in range(int(times[i][0]), int(times[i][GRAPH_DP-1]))]
+            bottom_axis.setTicks([[(i, str(i)) for i in ticks]])
 
 
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
-timer.start(16) # Capped at 60 Fps, 1000 ms / 16 ~= 60 
+timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
 if __name__ == '__main__':
     pg.mkQApp().exec()
