@@ -7,17 +7,17 @@ import numpy as np
 import time
 # Definitions are for demonstration purposes, please change them as needed.
 CHANNEL = "DAQ"
-SENSORS = ["Fake0", "Fake1", "Fake2", "Fake3", "Fake4", "Fake5", "Fake6", "Fake7"]
+SENSORS = ["P5 - Pneumatics", "P4 - Ox Fill", "P3 - Ox Tank", "P2 - CC", "Thrust", "SP1 - Nozzle", "FAST", "Omega S-Type", "T8 - Tank Heating"]
 SENSOR_COUNT = len(SENSORS)
 
-GRAPH_DP = 100  # 100 data points in the graph
+GRAPH_DP = 30*10 # 10 points/second
 
 receiver = Receiver(CHANNEL)  # Receiving everything in DAQ channel
 
 print("Connected to 0MQ server.")
 
-min_col = int(np.sqrt(SENSOR_COUNT))+1
-min_row = int(SENSOR_COUNT / min_col)+1
+min_col = int(np.ceil(np.sqrt(SENSOR_COUNT)))
+min_row = int(np.ceil(SENSOR_COUNT / min_col))
 last_row_count = SENSOR_COUNT - min_col*(min_row - 1)
 
 win = pg.GraphicsLayoutWidget(show=True, title="Data Example", size=(min_row, min_col))
@@ -37,10 +37,10 @@ for i in range(min_row - 1):
 
 for j in range(last_row_count):
     plots.append(win.addPlot(row=min_row - 1, col=j,
-                 title=("Sensor: " + SENSORS[min_col*(min_row - 1) + i]), left="Data", bottom="Seconds"))
+                 title=("Sensor: " + SENSORS[min_col*(min_row - 1) + j]), left="Data", bottom="Seconds"))
 # plot generation
-times = [[0 for _ in range(GRAPH_DP)] for _ in range(SENSOR_COUNT)]
-data_streams = [[0 for _ in range(GRAPH_DP)] for _ in range(SENSOR_COUNT)]
+times = [np.zeros(GRAPH_DP) for _ in range(SENSOR_COUNT)]
+data_streams = [np.zeros(GRAPH_DP) for _ in range(SENSOR_COUNT)]
 
 curves = [plots[i].plot(times[i], data_streams[i], pen='y') for i in range(SENSOR_COUNT)]
 
@@ -48,19 +48,28 @@ fps = 0
 
 last = time.time()
 start = time.time()
-
+downsample = 0
+first = True
 
 def update():
-    global fps, last
+    global fps, last, downsample, first
 
     latency = 0
 
     while new_data := receiver.recv(0):
+        downsample += 1
+        if downsample % 5 != 0: # 50 msgs/sec downsampled to 10 points/sec
+            continue
         for i, sensor in enumerate(SENSORS):
             if sensor in new_data["data"]:
+                if first:
+                    data_streams[i].fill(new_data["data"][sensor][0])
+                    times[i].fill(new_data["timestamp"] - start)
                 # Update Data Stream, currently only grabbing the first element in the payload obj
-                data_streams[i].append(new_data["data"][sensor][0])
-                times[i].append(new_data["timestamp"] - start)
+                data_streams[i][:-1] = data_streams[i][1:]
+                data_streams[i][-1] = new_data["data"][sensor][0]
+                times[i][:-1] = times[i][1:]
+                times[i][-1] = new_data["timestamp"] - start
                 # new_data is the received the payload object of class message (see omnibus.py)
                 # whereby the payload is currently parsed as dictionary (of datatypes) in a dictionary 
                 # which contains a sensor name - reading list key-value pair
@@ -75,9 +84,9 @@ def update():
                     }
                 }
                 """
-                data_streams[i].pop(0)
-                times[i].pop(0)
                 curves[i].setData(times[i], data_streams[i])  # Update Graph Stream
+
+        first = False
 
         latency = time.time() - new_data["timestamp"]
 
@@ -88,18 +97,9 @@ def update():
         win.setWindowTitle("pyqtgraph: Data Graph   " + f"Lag: {latency:.3f} FPS: {fps}")
         fps = 0
 
-        # Updates X-Axis of the graph
-        for i in range(SENSOR_COUNT):
-            bottom_axis = plots[i].getAxis('bottom')
-            # Define ticks on X-Axis here, simply adding items into the list will do
-            # Currently defined to display integer increments (of seconds) in range of timestamps
-            ticks = [i for i in range(int(times[i][0]), int(times[i][GRAPH_DP-1]))]
-            bottom_axis.setTicks([[(i, str(i)) for i in ticks]])
-
-
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
 timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
 if __name__ == '__main__':
-    pg.mkQApp().exec()
+    pg.mkQApp().exec_()
