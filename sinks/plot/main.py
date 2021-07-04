@@ -7,10 +7,13 @@ import numpy as np
 import time
 # Definitions are for demonstration purposes, please change them as needed.
 CHANNEL = "DAQ"
-SENSORS = ["P5 - Pneumatics", "P4 - Ox Fill", "P3 - Ox Tank", "P2 - CC", "Thrust", "SP1 - Nozzle", "FAST", "Omega S-Type", "T8 - Tank Heating"]
+SENSORS = ["P5 - Pneumatics", "P4 - Ox Fill", "P3 - Ox Tank", "P2 - CC",
+           "Thrust", "SP1 - Nozzle", "FAST", "Omega S-Type", "T8 - Tank Heating"]
 SENSOR_COUNT = len(SENSORS)
 
-GRAPH_DP = 30*10 # 10 points/second
+DOWNSAMPLE_RATE = 5  # 1/DOWNSAMPLE_RATE = % of data shown
+
+GRAPH_DP = 30*10  # 10 points/second
 
 receiver = Receiver(CHANNEL)  # Receiving everything in DAQ channel
 
@@ -33,7 +36,6 @@ for i in range(min_row - 1):
     for j in range(min_col):
         plots.append(win.addPlot(row=i, col=j, title=(
             "Sensor: " + SENSORS[i*min_col + j]), left="Data", bottom="Seconds"))
-        #win.addLabel(left = "Data", row=i, col=j)
 
 for j in range(last_row_count):
     plots.append(win.addPlot(row=min_row - 1, col=j,
@@ -51,6 +53,7 @@ start = time.time()
 downsample = 0
 first = True
 
+
 def update():
     global fps, last, downsample, first
 
@@ -58,7 +61,7 @@ def update():
 
     while new_data := receiver.recv(0):
         downsample += 1
-        if downsample % 5 != 0: # 50 msgs/sec downsampled to 10 points/sec
+        if downsample % DOWNSAMPLE_RATE != 0:  # 50 msgs/sec downsampled to 10 points/sec
             continue
         for i, sensor in enumerate(SENSORS):
             if sensor in new_data["data"]:
@@ -66,12 +69,14 @@ def update():
                     data_streams[i].fill(new_data["data"][sensor][0])
                     times[i].fill(new_data["timestamp"] - start)
                 # Update Data Stream, currently only grabbing the first element in the payload obj
+                # shift every element in the data_stream back by 1 (except last one)
                 data_streams[i][:-1] = data_streams[i][1:]
+                # fill in last element with new data
                 data_streams[i][-1] = new_data["data"][sensor][0]
-                times[i][:-1] = times[i][1:]
+                times[i][:-1] = times[i][1:]  # similar to above
                 times[i][-1] = new_data["timestamp"] - start
                 # new_data is the received the payload object of class message (see omnibus.py)
-                # whereby the payload is currently parsed as dictionary (of datatypes) in a dictionary 
+                # whereby the payload is currently parsed as dictionary (of datatypes) in a dictionary
                 # which contains a sensor name - reading list key-value pair
                 # See gist below
                 """
@@ -96,6 +101,7 @@ def update():
         last = time.time()
         win.setWindowTitle("pyqtgraph: Data Graph   " + f"Lag: {latency:.3f} FPS: {fps}")
         fps = 0
+
 
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
