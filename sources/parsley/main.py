@@ -6,7 +6,7 @@ from serial import Serial
 from omnibus import Sender
 
 disp = serial.Serial('COM5',9600)
-#sender = Sender("CAN/Parsley")
+sender = Sender("CAN/Parsley")
 
 def parse_gen_cmd(msg_data):
     timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
