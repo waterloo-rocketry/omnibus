@@ -178,7 +178,7 @@ def parse_fill_lvl(msg_data):
     timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
     fill_lvl = msg_data[3]
     direction = mt.fill_direction_str[msg_data[4]]
-    parsed_str = f"t={str(timestamp)}ms, lvl={fill_lvl}, direction={direction}"
+    parsed_str = ['t=', str(timestamp) + 'ms', 'LEVEL=' + str(fill_lvl), 'DIRECTION=' + str(direction)]
     return parsed_str
 
 
@@ -265,6 +265,9 @@ def parse_line(args, line):
     elif msg_type == 'GPS_INFO':
         parsed_data.extend(parse_gps_info(msg_data))
 
+    elif msg_type == 'FILL_LVL':
+        parsed_data.extend(parse_fill_lvl(msg_data))
+
     else:
         parsed_data.extend('Message type not known, original message: ' + line)
 
@@ -279,7 +282,7 @@ def parse_line(args, line):
     for data in parsed_data[start_data:]:
         output = output + '{:<20}'.format(data)
     
-    #sender.send(output)
+    sender.send(output)
     print(output)
     
 
