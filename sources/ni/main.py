@@ -8,6 +8,8 @@ from omnibus import Sender, Message
 import config
 import calibration
 
+calibration.Sensor.print()
+
 system = nidaqmx.system.System.local()
 if len(system.devices) == 0:
     print("Error: No device detected.")

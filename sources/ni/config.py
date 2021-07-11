@@ -12,7 +12,7 @@ Sensor("P5 - Pneumatics", "ai7", 10, Connection.SINGLE, LinearCalibration(620, -
 Sensor("P4 - Ox Fill", "ai6", 10, Connection.SINGLE, LinearCalibration(615, -44.1, "psi")) # Calibrated 2/7/2021
 Sensor("P3 - Ox Tank", "ai0", 10, Connection.SINGLE, LinearCalibration(605, -53.3, "psi")) # Calibrated 2/7/2021
 Sensor("T8 - Tank Heating", "ai23", 10, Connection.SINGLE, ThermistorCalibration(10000, 3434, 0.099524))
-Sensor("SP1 - Nozzle", "ai5", 0.2, Connection.DIFFERENTIAL, LinearCalibration(5000, 0, "psi")) # RECALIBRATE
+Sensor("SP1 - Nozzle", "ai5", 0.2, Connection.DIFFERENTIAL, LinearCalibration(171346, -99.8, "psi")) # Calibrated 2/7/2021
 
 if CC:
     Sensor("P2 - CC", "ai4", 10, Connection.SINGLE, LinearCalibration(594.86, -231.2, "psi")) # Could use a calibration

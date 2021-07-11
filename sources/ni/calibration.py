@@ -67,6 +67,12 @@ class Sensor:
                 min_val=-sensor.input_range, max_val=sensor.input_range,
                 terminal_config=sensor.connection.value)
 
+    @staticmethod
+    def print():
+        print("Sensors:")
+        for sensor in Sensor.sensors:
+            print(f"  {sensor.name} on {sensor.channel} (max {sensor.calibration.calibrate(sensor.input_range):.0f} {sensor.calibration.unit})")
+
     def parse(data):
         res = {}
         for i, sensor in enumerate(Sensor.sensors):
