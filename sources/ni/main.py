@@ -1,7 +1,8 @@
-import sys
 import threading
 import time
+import sys
 
+import msgpack
 import nidaqmx
 
 from omnibus import Sender, Message
@@ -24,17 +25,23 @@ sender = Sender("DAQ")
 def read_data(ai):
     rates = []
 
-    while True:
-        rates.append(time.time())
-        if len(rates) > 50:
-            rates.pop(0)
-        data = ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5)
+    now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+    with open(f"log_{now}.dat", "wb") as log:
+        while True:
+            rates.append(time.time())
+            if len(rates) > 50:
+                rates.pop(0)
+            data = ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5)
 
-        sender.send({
-            "timestamp": time.time(),
-            "data": calibration.Sensor.parse(data)
-        })
-        print(f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ", end='')
+            data = {
+                "timestamp": time.time(),
+                "data": calibration.Sensor.parse(data)
+            }
+
+            log.write(msgpack.packb(data))
+
+            sender.send(data)
+            print(f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ", end='')
 
 
 with nidaqmx.Task() as ai:
