@@ -4,20 +4,33 @@ import math
 import nidaqmx
 
 class Connection(Enum):
-    SINGLE = nidaqmx.constants.TerminalConfiguration.RSE
+    """
+    Represents how a sensor is wired into the NI box.
+    """
+    SINGLE = nidaqmx.constants.TerminalConfiguration.RSE # ground referenced single ended
     DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.DIFFERENTIAL
 
 class Calibration:
+    """
+    Represents a calibration curve which transforms a voltage input into a value
+    with units.
+    """
     def __init__(self, unit):
         self.unit = unit
 
     def calibrate(self, value):
+        """
+        Apply the calibration to an input voltage.
+        """
         return value
 
     def __repr__(self):
         return f"x ({self.unit})"
 
 class LinearCalibration(Calibration):
+    """
+    Represents a linear calibration with a configurable slope and zero offset.
+    """
     def __init__(self, slope, offset, unit):
         super().__init__(unit)
         self.slope = slope
@@ -30,13 +43,17 @@ class LinearCalibration(Calibration):
         return f"{self.slope}*x + {self.offset} ({self.unit})"
 
 class ThermistorCalibration(Calibration):
+    """
+    Represents the calibration for a thermistor.
+    """
     def __init__(self, resistance, B, r_inf):
         super().__init__("C")
-        self.resistance = resistance
-        self.B = B
-        self.r_inf = r_inf
+        self.resistance = resistance # voltage divider resistance
+        self.B = B # not sure, pulled from the LabVIEW
+        self.r_inf = r_inf # not sure, pulled from the LabVIEW
 
     def calibrate(self, value):
+        # thermistor magic pulled from the LabVIEW
         R_therm = (value * self.resistance) / (5 - value)
         if R_therm <= 0:
             return 0
@@ -48,20 +65,24 @@ class ThermistorCalibration(Calibration):
 class Sensor:
     sensors = []
     """
-    Represent a sensor plugged into the NI box
+    Represents a sensor plugged into the NI box. Instantiating members of this
+    class sets up the sensors used with the static methods.
     """
     def __init__(self, name: str, channel: str, input_range: float,
                  connection: Connection,
                  calibration: Calibration):
         self.name = name
-        self.channel = channel
-        self.input_range = input_range
-        self.connection = connection
+        self.channel = channel # NI box channel, eg ai8
+        self.input_range = input_range # Voltage range for the NI box. 10, 5, 1 or 0.2.
+        self.connection = connection # single or differential
         self.calibration = calibration
         Sensor.sensors.append(self)
 
     @staticmethod
     def setup(ai):
+        """
+        Set up the NI analog input task with the initialized sensors.
+        """
         for sensor in Sensor.sensors:
             ai.ai_channels.add_ai_voltage_chan(f"Dev1/{sensor.channel}",
                 min_val=-sensor.input_range, max_val=sensor.input_range,
@@ -69,12 +90,18 @@ class Sensor:
 
     @staticmethod
     def print():
+        """
+        Pretty print the initialized sensors.
+        """
         print("Sensors:")
         for sensor in Sensor.sensors:
             print(f"  {sensor.name} ({sensor.calibration.unit}) on {sensor.channel}")
 
     @staticmethod
     def parse(data):
+        """
+        Apply each sensor's calibration to voltages from the NI box.
+        """
         res = {}
         for i, sensor in enumerate(Sensor.sensors):
             res[sensor.name] = [sensor.calibration.calibrate(d) for d in data[i]]
