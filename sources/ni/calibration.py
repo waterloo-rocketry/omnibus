@@ -1,5 +1,6 @@
 from enum import Enum
 import math
+import sys
 
 import nidaqmx
 
@@ -76,6 +77,11 @@ class Sensor:
         self.input_range = input_range # Voltage range for the NI box. 10, 5, 1 or 0.2.
         self.connection = connection # single or differential
         self.calibration = calibration
+        for sensor in Sensor.sensors:
+            if sensor.name == self.name:
+                print(f"Error: Duplicate sensors named {self.name}.")
+                sys.exit(1)
+
         Sensor.sensors.append(self)
 
     @staticmethod
