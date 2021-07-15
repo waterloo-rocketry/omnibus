@@ -1,23 +1,30 @@
 import numpy as np
 
+import config
+
 class Series:
     series = []
-    def __init__(self, name, rate, parser, GRAPH_RESOLUTION, GRAPH_DURATION):
+    def __init__(self, name, rate, parser):
         self.name = name
         self.parser = parser
 
-        if rate > GRAPH_RESOLUTION:
-            size = GRAPH_RESOLUTION * GRAPH_DURATION
-            self.downsample = rate // GRAPH_RESOLUTION
+        if rate > config.GRAPH_RESOLUTION:
+            size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
+            self.downsample = rate // config.GRAPH_RESOLUTION
         else:
-            size = rate * GRAPH_DURATION
+            size = rate * config.GRAPH_DURATION
             self.downsample = 1
         self.downsampleCount = 0
         self.times = np.zeros(size)
         self.points = np.zeros(size)
         self.first = True
 
+        self.callback = None
+
         Series.series.append(self)
+
+    def registerUpdate(self, callback):
+        self.callback = callback
 
     def add(self, payload):
         self.downsampleCount += 1
@@ -36,11 +43,11 @@ class Series:
             self.times[:-1] = self.times[1:]
             self.times[-1] = time
 
+        if self.callback:
+            self.callback()
+
     @staticmethod
     def parse(channel, payload):
-        changed = False
         for series in Series.series:
             if channel.startswith(series.parser.channel):
                 series.add(payload)
-                changed = True
-        return changed
