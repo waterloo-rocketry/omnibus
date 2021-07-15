@@ -32,7 +32,10 @@ class Series:
             return
         self.downsampleCount = 0
 
-        time, point = self.parser.parse(payload)
+        parsed = self.parser.parse(payload)
+        if parsed is None:
+            return
+        time, point = parsed
         if self.first:
             self.first = False
             self.times.fill(time)

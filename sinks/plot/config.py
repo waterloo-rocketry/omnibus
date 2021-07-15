@@ -1,4 +1,4 @@
-from parser import DAQParser
+from parsers import DAQParser, FillSensingParser
 from series import Series
 
 GRAPH_DURATION = 30 # size of x axis in seconds
@@ -10,3 +10,5 @@ def setup():
   DAQ_SENSORS = [f"Fake{i}" for i in range(8)]
   for sensor in DAQ_SENSORS:
     Series(sensor, 50, DAQParser("DAQ", sensor))
+
+  Series("Fill Sensing", 1, FillSensingParser("CAN/Parsley"))
