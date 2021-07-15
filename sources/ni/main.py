@@ -8,7 +8,12 @@ from omnibus import Sender
 import config
 import calibration
 
-config.setup() # initialize the sensors
+try:
+    config.setup() # initialize the sensors
+except KeyError as e:
+    print(f"Error: {''.join(e.args)}.")
+    sys.exit(1)
+
 calibration.Sensor.print() # print out sensors and their ai channels
 
 system = nidaqmx.system.System.local()

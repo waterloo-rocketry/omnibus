@@ -1,6 +1,5 @@
 from enum import Enum
 import math
-import sys
 
 import nidaqmx
 
@@ -79,8 +78,7 @@ class Sensor:
         self.calibration = calibration
         for sensor in Sensor.sensors:
             if sensor.name == self.name:
-                print(f"Error: Duplicate sensors named {self.name}.")
-                sys.exit(1)
+                raise KeyError(f"Duplicate sensors named {self.name}")
 
         Sensor.sensors.append(self)
 
