@@ -12,4 +12,5 @@ def setup():
     Series(sensor, 50, DAQParser("DAQ", sensor))
 
   Series("Fill Sensing", 1, FillSensingParser("CAN/Parsley"))
-  Series("T1", 6, TemperatureParser("CAN/Parsley", 1))
+  Series("T10", 6, TemperatureParser("CAN/Parsley", 10))
+  Series("T11", 6, TemperatureParser("CAN/Parsley", 11))

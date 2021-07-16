@@ -36,20 +36,20 @@ class FillSensingParser(Parser):
 class TemperatureParser(Parser):
     timeMatcher = re.compile("t= *(\d+)ms")
     sensorMatcher = re.compile("SENSOR=(\d+)")
-    tempMatcher = re.compile("TEMP=([\d.]+)")
+    tempMatcher = re.compile("TEMP=(-?[\d.]+)")
     def __init__(self, channel, sensor):
         super().__init__(channel)
         self.sensor = sensor
 
     def parse(self, payload):
-        if not payload.startswith("[ FILL_LVL "):
+        if not payload.startswith("[ SENSOR_TEMP "):
             return
 
-        sensor = int(FillSensingParser.sensorMatcher.search(payload).group(1))
+        sensor = int(TemperatureParser.sensorMatcher.search(payload).group(1))
         if sensor != self.sensor:
             return
 
-        t = int(FillSensingParser.timeMatcher.search(payload).group(1)) / 1000
-        temp = int(FillSensingParser.tempMatcher.search(payload).group(1))
+        t = int(TemperatureParser.timeMatcher.search(payload).group(1)) / 1000
+        temp = float(TemperatureParser.tempMatcher.search(payload).group(1))
 
         return t, temp
