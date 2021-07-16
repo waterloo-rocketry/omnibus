@@ -35,6 +35,7 @@ msg_type_hex = {
     "GENERAL_BOARD_STATUS": 0x520,
     "RECOVERY_STATUS": 0x540,
 
+    "SENSOR_TEMP": 0x540,
     "SENSOR_ALTITUDE": 0x560,
     "SENSOR_ACC": 0x580,
     "SENSOR_GYRO": 0x5E0,
@@ -73,7 +74,9 @@ board_id_hex = {
     "FILL": 0x0F,
     "FILL_SPARE": 0x010,
     "ARMING": 0x11,
-    "ARMING_SPARE": 0X12
+    "ARMING_SPARE" : 0X12,
+    "TEMP_SENSE": 0x15,
+    "TEMP_SENSE_SPARE": 0x16
 }
 board_id_str = {v: k for k, v in board_id_hex.items()}
 
