@@ -1,4 +1,4 @@
-from parsers import DAQParser, FillSensingParser
+from parsers import DAQParser, FillSensingParser, TemperatureParser
 from series import Series
 
 GRAPH_DURATION = 30 # size of x axis in seconds
@@ -12,3 +12,4 @@ def setup():
     Series(sensor, 50, DAQParser("DAQ", sensor))
 
   Series("Fill Sensing", 1, FillSensingParser("CAN/Parsley"))
+  Series("T1", 6, TemperatureParser("CAN/Parsley", 1))
