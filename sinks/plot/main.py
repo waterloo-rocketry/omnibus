@@ -1,15 +1,16 @@
-import signal
-
 from omnibus import Receiver
 import config
+from series import Series
 from plot import Plotter
 
-signal.signal(signal.SIGINT, signal.SIG_DFL)
+config.setup() # set up the series we want to plot
 
-config.setup()
+receiver = Receiver("") # subscribe to all channels
+def update(): # gets called every frame
+    # read all the messages in the queue and no more (zero timeout)
+    while msg := receiver.recv_message(0):
+        # update whatever series subscribed to this channel
+        Series.parse(msg.channel, msg.payload)
 
-receiver = Receiver("")
-plotter = Plotter(receiver)
-
-if __name__ == '__main__':
-    plotter.exec()
+plotter = Plotter(Series.series, update)
+plotter.exec()

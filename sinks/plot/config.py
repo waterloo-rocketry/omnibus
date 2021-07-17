@@ -5,12 +5,11 @@ GRAPH_DURATION = 30 # size of x axis in seconds
 GRAPH_RESOLUTION = 10 # data points per second
 
 def setup():
-  # DAQ_SENSORS = ["P5 - Pneumatics", "P4 - Ox Fill", "P3 - Ox Tank", "P2 - CC",
-  #                "Thrust", "SP1 - Nozzle", "FAST", "Omega S-Type", "T8 - Tank Heating"]
-  DAQ_SENSORS = [f"Fake{i}" for i in range(8)]
-  for sensor in DAQ_SENSORS:
-    Series(sensor, 50, DAQParser("DAQ", sensor))
+    DAQ_SENSORS = ["P5 (PT-5) - SRAD Vent Valve", "P4 (PT-1) - Ox Fill",
+        "P3 (PT-2) - Ox Tank", "P2 (PT-3) - CC", "Thrust", "SP1 (PT-4) - Nozzle",
+        "FAST", "Omega S-Type", "T8 - Tank Heating"]
+    for sensor in DAQ_SENSORS:
+        Series(sensor, 50, DAQParser("DAQ", sensor))
 
-  Series("Fill Sensing", 1, FillSensingParser("CAN/Parsley"))
-  Series("T10", 6, TemperatureParser("CAN/Parsley", 10))
-  Series("T11", 6, TemperatureParser("CAN/Parsley", 11))
+    Series("Fill Sensing", 1, FillSensingParser("CAN/Parsley"))
+    Series("T10 - CC", 6, TemperatureParser("CAN/Parsley", 10))
