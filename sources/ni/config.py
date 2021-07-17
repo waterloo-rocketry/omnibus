@@ -15,7 +15,7 @@ def setup():
 
     if CC:
         Sensor("P2 (PT-3) - CC", "ai4", 10, Connection.SINGLE, LinearCalibration(621, -267, "psi")) # Calibrated 13/7/2021
-        Sensor("Thrust", "ai2", 0.2, Connection.DIFFERENTIAL, LinearCalibration(98.07*328.2, -30.56, "lbs")) # RECALIBRATE
+        Sensor("Thrust", "ai2", 0.2, Connection.DIFFERENTIAL, LinearCalibration(65445, -20.9, "lbs")) # Roughly calibrated 17/7/2021
         Sensor("SP1 (PT-4) - Nozzle", "ai5", 0.2, Connection.DIFFERENTIAL, LinearCalibration(171346, -99.8, "psi")) # Calibrated 2/7/2021
         Sensor("FAST", "ai1", 10, Connection.SINGLE, LinearCalibration(35.3, -34.2, "psi")) # Calibrated 13/7/2021
         Sensor("T1 - CC", "ai16", 10, Connection.SINGLE, ThermistorCalibration(10000, 3434, 0.099524)) # Calibration pulled from LabVIEW
