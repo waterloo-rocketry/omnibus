@@ -1,3 +1,7 @@
+# NI Logs
+
+log_*.dat
+
 # Linter config
 
 .pylintrc
