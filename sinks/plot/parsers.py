@@ -69,6 +69,7 @@ class TemperatureParser(Parser):
 
         # time is in milliseconds
         t = int(TemperatureParser.timeMatcher.search(payload).group(1)) / 1000
-        temp = float(TemperatureParser.tempMatcher.search(payload).group(1))
+        # thermistors read 21 degrees low because why wouldn't they
+        temp = float(TemperatureParser.tempMatcher.search(payload).group(1)) + 21
 
         return t, temp
