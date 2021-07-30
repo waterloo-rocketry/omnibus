@@ -55,7 +55,7 @@ class Plot:
     def __init__(self, series):
         self.series = series
         # update when data is added to the series
-        self.series.registerUpdate(self.update)
+        self.series.register_update(self.update)
 
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')

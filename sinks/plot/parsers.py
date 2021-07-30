@@ -1,7 +1,4 @@
 import re
-import time
-
-start = time.time()
 
 class Parser:
     """
@@ -20,6 +17,9 @@ class DAQParser(Parser):
     """
     Parses DAQ messages, returning the first datapoint for a specific sensor
     """
+
+    start = None # The unix timestamp of the first message received (so the x axis is reasonable)
+
     def __init__(self, channel, sensor):
         super().__init__(channel)
         self.sensor = sensor
@@ -28,14 +28,18 @@ class DAQParser(Parser):
         if self.sensor not in payload["data"]:
             return None
 
-        return payload["timestamp"] - start, payload["data"][self.sensor][0]
+        if DAQParser.start is None:
+            DAQParser.start = payload["timestamp"]
+
+        return payload["timestamp"] - DAQParser.start, payload["data"][self.sensor][0]
 
 class FillSensingParser(Parser):
     """
-    Parses fill sensing messages from parsley.
+    Parses fill sensing messages from parsley of the form:
+[ FILL_LVL                  FILL       ] t=      123ms  LEVEL=4             DIRECTION=FILLING
     """
-    timeMatcher = re.compile(r"t= *(\d+)ms")
-    levelMatcher = re.compile(r"LEVEL=(\d+)")
+    timeMatcher = re.compile(r"t= *(\d+)ms") # match `t=    1234ms`
+    levelMatcher = re.compile(r"LEVEL=(\d+)") # match `LEVEL=12`
 
     def parse(self, payload):
         if not payload.startswith("[ FILL_LVL "):
@@ -49,11 +53,12 @@ class FillSensingParser(Parser):
 
 class TemperatureParser(Parser):
     """
-    Parses temperature messages from parsley for a specific temperature sensor.
+    Parses temperature messages from parsley for a specific temperature sensor of the form:
+[ SENSOR_TEMP               TEMP_SENSE ] t=      123ms  SENSOR=4            TEMP=56.789
     """
-    timeMatcher = re.compile(r"t= *(\d+)ms")
-    sensorMatcher = re.compile(r"SENSOR=(\d+)")
-    tempMatcher = re.compile(r"TEMP=(-?[\d.]+)")
+    timeMatcher = re.compile(r"t= *(\d+)ms") # match `t=    1234ms`
+    sensorMatcher = re.compile(r"SENSOR=(\d+)") # match `SENSOR=12`
+    tempMatcher = re.compile(r"TEMP=(-?[\d.]+)") # match `TEMP=-12.34`
 
     def __init__(self, channel, sensor):
         super().__init__(channel)
@@ -67,9 +72,8 @@ class TemperatureParser(Parser):
         if sensor != self.sensor:
             return None
 
-        # time is in milliseconds
+        # time is in milliseconds but we want seconds
         t = int(TemperatureParser.timeMatcher.search(payload).group(1)) / 1000
-        # thermistors read 21 degrees low because why wouldn't they
-        temp = float(TemperatureParser.tempMatcher.search(payload).group(1)) + 21
+        temp = float(TemperatureParser.tempMatcher.search(payload).group(1))
 
         return t, temp
