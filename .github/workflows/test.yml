@@ -39,7 +39,8 @@ jobs:
         pip install flake8
         pip install pytest-cov
         pip install codecov
-        find . -name requirements.txt -type f -exec pip install -r {} \;
+        pip install -r requirements.txt
+        find sinks/ sources/ -name requirements.txt -type f -exec pip install -r {} \;
 
     - name: Lint with flake8
       run: |
