@@ -27,7 +27,7 @@ class Series:
 
         Series.series.append(self)
 
-    def registerUpdate(self, callback):
+    def register_update(self, callback):
         # called every time data is added
         self.callback = callback
 
