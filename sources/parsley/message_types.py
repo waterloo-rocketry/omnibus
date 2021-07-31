@@ -74,7 +74,7 @@ board_id_hex = {
     "FILL": 0x0F,
     "FILL_SPARE": 0x010,
     "ARMING": 0x11,
-    "ARMING_SPARE" : 0X12,
+    "ARMING_SPARE": 0X12,
     "TEMP_SENSE": 0x15,
     "TEMP_SENSE_SPARE": 0x16
 }
@@ -98,7 +98,7 @@ arm_states_hex = {
     "DISARMED": 0,
     "ARMED": 1
 }
-arm_states_str = dict([[v, k] for k, v in arm_states_hex.items()])
+arm_states_str = {v: k for k, v in arm_states_hex.items()}
 
 
 # BOARD GENERAL STATUS ERROR CODES
