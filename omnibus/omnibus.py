@@ -40,7 +40,7 @@ class OmnibusCommunicator:
             # Allow the address to be re-used for when running multiple
             # components on the same machine
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            sock.settimeout(5)  # 5 second timeout
+            sock.settimeout(0.6)  # 0.6 second timeout
             sock.bind(('', server.BROADCAST_PORT))  # listen for broadcasts
             print("Listening for server IP...")
             while True:

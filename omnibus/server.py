@@ -41,7 +41,7 @@ def ip_broadcast():
         while True:
             # 255.255.255.255 is a magic IP that means 'broadcast to the LAN'
             sock.sendto(b"omnibus", ('255.255.255.255', BROADCAST_PORT))
-            time.sleep(2)
+            time.sleep(0.5)
 
 
 def server():
