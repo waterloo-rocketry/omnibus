@@ -116,7 +116,7 @@ class TestParsley:
         assert res["req_state"] == "VALVE_CLOSED"
         assert res["cur_state"] == "VALVE_UNK"
 
-    def test_sensor_analog(self, timestamp):
+    def test_sensor_analog(self):
         msg_data = struct.pack(">HbH", 12345, mt.sensor_id_hex["SENSOR_BARO"], 54321)
         res = parsley.parse_sensor_analog(msg_data)
         assert res["time"] == 12345
