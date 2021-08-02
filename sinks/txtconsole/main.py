@@ -2,6 +2,7 @@ import sys
 
 from omnibus import Receiver
 
+
 def print_console(channels_filter):
     receiver = Receiver(CHANNEL)
     print('Filter/Cmd line arguments entered: ')
@@ -10,6 +11,7 @@ def print_console(channels_filter):
         msg = receiver.recv_message()
         if msg.channel in channels_filter:
             print(msg.payload)
+
 
 if __name__ == '__main__':
     CHANNEL = ""  # all channels
