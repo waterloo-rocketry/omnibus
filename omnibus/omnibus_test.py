@@ -8,14 +8,15 @@ import pytest
 from omnibus import Sender, Receiver, Message, server
 from omnibus.omnibus import OmnibusCommunicator
 
+
 class TestOmnibus:
     @pytest.fixture(autouse=True, scope="class")
     def server(self):
         # start server
-        ctx = mp.get_context('spawn') # threadsafe multiprocess method
+        ctx = mp.get_context('spawn')  # threadsafe multiprocess method
         p = ctx.Process(target=server.server)
         p.start()
-        OmnibusCommunicator.server_ip = "127.0.0.1" # skip discovery
+        OmnibusCommunicator.server_ip = "127.0.0.1"  # skip discovery
 
         # wait until the server is alive
         s = Sender("_ALIVE")
@@ -31,13 +32,13 @@ class TestOmnibus:
 
     @pytest.fixture()
     def sender(self):
-        return Sender # for consistency with receiver
+        return Sender  # for consistency with receiver
 
     @pytest.fixture()
     def receiver(self):
         def _receiver(channel):
             r = Receiver(channel)
-            time.sleep(0.05) # let the receiver connect to the server so messages aren't dropped
+            time.sleep(0.05)  # let the receiver connect to the server so messages aren't dropped
             return r
         return _receiver
 
@@ -70,6 +71,7 @@ class TestOmnibus:
         assert m.channel == "CHAN"
         assert m.timestamp == 10
         assert m.payload == "PAYLOAD"
+
 
 class TestIPBroadcast:
     @pytest.fixture()
