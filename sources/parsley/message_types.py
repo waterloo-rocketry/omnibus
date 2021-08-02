@@ -74,7 +74,7 @@ board_id_hex = {
     "FILL": 0x0F,
     "FILL_SPARE": 0x010,
     "ARMING": 0x11,
-    "ARMING_SPARE" : 0X12,
+    "ARMING_SPARE": 0X12,
     "TEMP_SENSE": 0x15,
     "TEMP_SENSE_SPARE": 0x16
 }
