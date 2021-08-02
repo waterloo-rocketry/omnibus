@@ -1,6 +1,6 @@
 import message_types as mt
 
-func_map = {}
+_func_map = {}
 
 
 # decorator for parse functions to save a massive if chain
@@ -10,16 +10,20 @@ def register(msg_types):
 
     def wrapper(fn):
         for msg_type in msg_types:
-            if msg_type in func_map:
+            if msg_type in _func_map:
                 raise KeyError(f"Duplicate parsers for message type {msg_type}")
-            func_map[msg_type] = fn
+            _func_map[msg_type] = fn
         return fn
     return wrapper
 
 
+def _parse_timestamp(msg_data):
+    return msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+
+
 @register("GENERAL_CMD")
 def parse_gen_cmd(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     cmd = mt.gen_cmd_str[msg_data[3]]
 
     return {"time": timestamp, "command": cmd}
@@ -27,7 +31,7 @@ def parse_gen_cmd(msg_data):
 
 @register(["VENT_VALVE_CMD", "INJ_VALVE_CMD"])
 def parse_valve_cmd(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     valve_state = mt.valve_states_str[msg_data[3]]
 
     return {"time": timestamp, "req_state": valve_state}
@@ -35,7 +39,7 @@ def parse_valve_cmd(msg_data):
 
 @register(["VENT_VALVE_STATUS", "INJ_VALVE_STATUS"])
 def parse_valve_status(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     valve_state = mt.valve_states_str[msg_data[3]]
     req_valve_state = mt.valve_states_str[msg_data[4]]
 
@@ -44,7 +48,7 @@ def parse_valve_status(msg_data):
 
 @register("ALT_ARM_CMD")
 def parse_arm_cmd(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     arm_state = mt.arm_states_str[msg_data[3] >> 4]
     alt_number = msg_data[3] & 0x0F
 
@@ -53,7 +57,7 @@ def parse_arm_cmd(msg_data):
 
 @register("ALT_ARM_STATUS")
 def parse_arm_status(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     arm_state = mt.arm_states_str[msg_data[3] >> 4]
     alt_number = msg_data[3] & 0x0F
     v_drogue = msg_data[4] << 8 | msg_data[5]
@@ -67,11 +71,12 @@ def parse_arm_status(msg_data):
 
 @register("DEBUG_MSG")
 def parse_debug_msg(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     debug_level = (msg_data[3] & 0xf0) >> 4
-    line_number = (msg_data[3] & 0x0f) << 4 | (msg_data[4] & 0xf)
+    line_number = (msg_data[3] & 0x0f) << 8 | msg_data[4]
+    data = msg_data[5:]
 
-    return {"time": timestamp, "level": debug_level, "line": line_number}
+    return {"time": timestamp, "level": debug_level, "line": line_number, "data": data}
 
 
 @register("DEBUG_PRINTF")
@@ -83,7 +88,7 @@ def parse_debug_printf(msg_data):
 
 @register("GENERAL_BOARD_STATUS")
 def parse_board_status(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     board_stat = mt.board_stat_str[msg_data[3]]
 
     res = {"time": timestamp, "status": board_stat}
@@ -129,7 +134,7 @@ def parse_sensor_analog(msg_data):
 
 @register("SENSOR_ALTITUDE")
 def parse_sensor_altitude(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     altitude = int(msg_data[3] << 24 | msg_data[4] << 16 | msg_data[5] << 8 | msg_data[6])
 
     if altitude & 0x80000000:  # check if the value is negative
@@ -140,7 +145,7 @@ def parse_sensor_altitude(msg_data):
 
 @register("SENSOR_TEMP")
 def parse_sensor_temp(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     sensor = msg_data[3]
     temperature = int.from_bytes(bytes(msg_data[4:7]), "big", signed=True) / 2**10
 
@@ -149,54 +154,50 @@ def parse_sensor_temp(msg_data):
 
 @register("GPS_TIMESTAMP")
 def parse_gps_timestamp(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     utc_hours = msg_data[3]
     utc_mins = msg_data[4]
     utc_secs = msg_data[5]
     utc_dsecs = msg_data[6]
-    secs = float(f"{utc_secs}.{utc_dsecs}")
 
-    return {"time": timestamp, "hrs": utc_hours, "mins": utc_mins, "secs": secs}
+    return {"time": timestamp, "hrs": utc_hours, "mins": utc_mins, "secs": utc_secs, "dsecs": utc_dsecs}
 
 
 @register("GPS_LATITUDE")
 def parse_gps_latitude(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
-    degrees = msg_data[3]
-    minutes = msg_data[4]
-    dminutes = msg_data[5] << 8 | msg_data[6]
-    minutes = float(f"{minutes}.{dminutes}")
+    timestamp = _parse_timestamp(msg_data[:3])
+    degs = msg_data[3]
+    mins = msg_data[4]
+    dmins = msg_data[5] << 8 | msg_data[6]
     direction = chr(msg_data[7])
 
-    return {"time": timestamp, "degs": degrees, "mins": minutes, "direction": direction}
+    return {"time": timestamp, "degs": degs, "mins": mins, "dmins": dmins, "direction": direction}
 
 
 @register("GPS_LONGITUDE")
 def parse_gps_longitude(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
-    degrees = msg_data[3]
-    minutes = msg_data[4]
-    dminutes = msg_data[5] << 8 | msg_data[6]
-    minutes = float(f"{minutes}.{dminutes}")
+    timestamp = _parse_timestamp(msg_data[:3])
+    degs = msg_data[3]
+    mins = msg_data[4]
+    dmins = msg_data[5] << 8 | msg_data[6]
     direction = chr(msg_data[7])
 
-    return {"time": timestamp, "degs": degrees, "mins": minutes, "direction": direction}
+    return {"time": timestamp, "degs": degs, "mins": mins, "dmins": dmins, "direction": direction}
 
 
 @register("GPS_ALTITUDE")
 def parse_gps_altitude(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     altitude = msg_data[3] << 8 | msg_data[4]
     daltitude = msg_data[5]
-    altitude = float(f"{altitude}.{daltitude}")
     unit = chr(msg_data[6])
 
-    return {"time": timestamp, "altitude": altitude, "unit": unit}
+    return {"time": timestamp, "altitude": altitude, "daltitude": daltitude, "unit": unit}
 
 
 @register("GPS_INFO")
 def parse_gps_info(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     numsat = msg_data[3]
     quality = msg_data[4]
 
@@ -205,7 +206,7 @@ def parse_gps_info(msg_data):
 
 @register("FILL_LVL")
 def parse_fill_lvl(msg_data):
-    timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
+    timestamp = _parse_timestamp(msg_data[:3])
     fill_lvl = msg_data[3]
     direction = mt.fill_direction_str[msg_data[4]]
 
@@ -219,8 +220,8 @@ def parse(msg_sid, msg_data):
 
     res = {"msg_type": msg_type, "board_id": board_id}
 
-    if msg_type in func_map:
-        res["data"] = func_map[msg_type](msg_data)
+    if msg_type in _func_map:
+        res["data"] = _func_map[msg_type](msg_data)
     else:
         res["data"] = {"unknown": msg_data}
 
