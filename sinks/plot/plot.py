@@ -5,13 +5,15 @@ import numpy as np
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 
+
 class Plotter:
     """
     Displays a grid of plots in a window
     """
+
     def __init__(self, series, callback):
         self.series = series
-        self.callback = callback # called every frame to get new data
+        self.callback = callback  # called every frame to get new data
 
         # try for a square layout
         columns = int(np.ceil(np.sqrt(len(self.series))))
@@ -48,10 +50,12 @@ class Plotter:
 
         pg.mkQApp().exec_()
 
+
 class Plot:
     """
     Manages displaying and updating a single plot.
     """
+
     def __init__(self, series):
         self.series = series
         # update when data is added to the series

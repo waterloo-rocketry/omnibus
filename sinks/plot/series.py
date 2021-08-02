@@ -2,20 +2,21 @@ import numpy as np
 
 import config
 
+
 class Series:
     """
     Stores and downsamples the datapoints of a single series
     """
-    series = [] # keep track of all initialized series
+    series = []  # keep track of all initialized series
 
     def __init__(self, name, rate, parser):
         self.name = name
         self.parser = parser
 
-        if rate > config.GRAPH_RESOLUTION: # we need to downsample
+        if rate > config.GRAPH_RESOLUTION:  # we need to downsample
             size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
             self.downsample = rate // config.GRAPH_RESOLUTION
-        else: # don't downsample
+        else:  # don't downsample
             size = rate * config.GRAPH_DURATION
             self.downsample = 1
         self.downsampleCount = 0
@@ -41,8 +42,8 @@ class Series:
             return
         self.downsampleCount = 0
 
-        parsed = self.parser.parse(payload) # turn the message into a datapoint
-        if parsed is None: # the message didn't represent a valid datapoint
+        parsed = self.parser.parse(payload)  # turn the message into a datapoint
+        if parsed is None:  # the message didn't represent a valid datapoint
             return
         time, point = parsed
         # fill the arrays with our first datapoint to avoid plotting (0, 0)

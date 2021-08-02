@@ -2,6 +2,7 @@ import pytest
 
 from parsers import DAQParser, TemperatureParser, FillSensingParser
 
+
 class TestDAQParser:
     @pytest.fixture
     def parser(self):
@@ -13,7 +14,7 @@ class TestDAQParser:
             "data": {"NOTSENSOR": [1, 2, 3], "SENSOR": [4, 5, 6]}
         }
         time, data = parser.parse(payload)
-        assert time == 0 # uses first timestamp recieved as zero
+        assert time == 0  # uses first timestamp recieved as zero
         assert data == 4
 
     def test_no_data(self, parser):
@@ -31,7 +32,8 @@ class TestDAQParser:
         parser.parse(payload)
         payload["timestamp"] = 20
         time, _ = parser.parse(payload)
-        assert time == 10 # uses first timestamp recieved as zero
+        assert time == 10  # uses first timestamp recieved as zero
+
 
 class TestFillSensingParser:
     @pytest.fixture
@@ -47,6 +49,7 @@ class TestFillSensingParser:
     def test_other_message(self, parser):
         payload = "[ SENSOR_TEMP               TEMP_SENSE ] t=      123ms  SENSOR=4            TEMP=56.789"
         assert parser.parse(payload) is None
+
 
 class TestTemperatureParser:
     @pytest.fixture

@@ -1,8 +1,9 @@
 from parsers import DAQParser, FillSensingParser, TemperatureParser
 from series import Series
 
-GRAPH_DURATION = 30 # size of x axis in seconds
-GRAPH_RESOLUTION = 10 # data points per second
+GRAPH_DURATION = 30  # size of x axis in seconds
+GRAPH_RESOLUTION = 10  # data points per second
+
 
 def setup():
     DAQ_SENSORS = [
