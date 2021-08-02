@@ -52,11 +52,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest --cov --cov-report=xml:coverage.xml
-
-    - name: Upload coverage report
-      run: |
-        codecov
+        pytest
 
     - uses: k0kubun/action-slack@v2.0.0
       with:
