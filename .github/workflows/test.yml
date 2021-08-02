@@ -55,8 +55,9 @@ jobs:
         pytest
 
     - name: Enforce autopep8
+      shell: bash
       run: |
-        autopep8 -d -r sources/ sinks/ omnibus/ --exit-code >/dev/null
+        autopep8 -d -r sources/ sinks/ omnibus/ --exit-code
 
     - uses: k0kubun/action-slack@v2.0.0
       with:
