@@ -2,6 +2,7 @@ import pytest
 
 from calibration import LinearCalibration, ThermistorCalibration
 
+
 class TestLinearCalibration:
     def test_const_zero(self):
         c = LinearCalibration(0, 0, "unit")
@@ -26,6 +27,7 @@ class TestLinearCalibration:
         assert c.calibrate(0) == 3
         assert c.calibrate(-10) == -47
         assert c.calibrate(15) == 78
+
 
 class TestThermistorCalibration:
     def test_thermistor(self):
