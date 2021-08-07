@@ -59,18 +59,14 @@ class OmnibusCommunicator:
 
 class Sender(OmnibusCommunicator):
     """
-    Allows messages to be sent to all of the receivers listening on a channel.
-
-    Although it is instantiated with a set channel it is actually possible
-    to send messages on any channel by building the message yourself and passing
-    it to send_message.
+    Allows messages to be sent to all of the receivers listening on a provided
+    channel.
     """
 
-    def __init__(self, channel: str):
+    def __init__(self):
         super().__init__()
         self.publisher = self.context.socket(zmq.PUB)
         self.publisher.connect(f"tcp://{self.server_ip}:{server.SOURCE_PORT}")
-        self.channel = channel
 
     def send_message(self, message: Message):
         """
@@ -85,17 +81,17 @@ class Sender(OmnibusCommunicator):
             msgpack.packb(message.payload)
         ])
 
-    def send(self, payload):
+    def send(self, channel: str, payload):
         """
-        Wrap a payload in a message object and send it on the sender's channel.
+        Wrap a payload in a message object and send it on a provided channel.
         """
-        message = Message(self.channel, time.time(), payload)
+        message = Message(channel, time.time(), payload)
         self.send_message(message)
 
 
 class Receiver(OmnibusCommunicator):
     """
-    Listens to a channel and receives all messages sent to it.
+    Listens to a number of channels and receives all messages sent to it.
 
     Filtering is based on only the beginning of the channel name, so for example
     a receiver listening to the channel 'foo' will also receive messages sent
@@ -103,11 +99,16 @@ class Receiver(OmnibusCommunicator):
     messages.
     """
 
-    def __init__(self, channel: str):
+    def __init__(self, *channels):
         super().__init__()
+
+        if len(channels) == 0:
+            raise Exception("At least one channel must be provided")
+
         self.subscriber = self.context.socket(zmq.SUB)
         self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")
-        self.subscriber.setsockopt(zmq.SUBSCRIBE, channel.encode("utf-8"))
+        for channel in channels:
+            self.subscriber.setsockopt(zmq.SUBSCRIBE, channel.encode("utf-8"))
 
     def recv_message(self, timeout=None):
         """

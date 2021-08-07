@@ -6,7 +6,7 @@ from serial import Serial
 from omnibus import Sender
 
 disp = serial.Serial('COM5', 9600)
-sender = Sender("CAN/Parsley")
+sender = Sender()
 
 
 def parse_gen_cmd(msg_data):
@@ -131,7 +131,7 @@ def parse_sensor_altitude(msg_data):
 def parse_sensor_temp(msg_data):
     timestamp = msg_data[0] << 16 | msg_data[1] << 8 | msg_data[2]
     sensor = msg_data[3]
-    temperature = int.from_bytes(bytes(msg_data[4:7]) , "big", signed=True) / 2**10
+    temperature = int.from_bytes(bytes(msg_data[4:7]), "big", signed=True) / 2**10
     parsed_str = ['t=', str(timestamp) + 'ms', 'SENSOR=' + str(sensor), f'TEMP={temperature:.3f}']
     return parsed_str
 
@@ -301,7 +301,7 @@ def parse_line(args, line):
     for data in parsed_data[start_data:]:
         output = output + '{:<20}'.format(data)
 
-    sender.send(output)
+    sender.send("CAN/Parsley", output)
     print(output)
 
 
