@@ -8,6 +8,8 @@ from omnibus import Sender
 import config
 import calibration
 
+CHANNEL = "DAQ"
+
 try:
     config.setup()  # initialize the sensors
 except KeyError as e:
@@ -50,7 +52,7 @@ def read_data(ai):
             # we can concatenate msgpack outputs as a backup logging option
             log.write(msgpack.packb(data))
 
-            sender.send("DAQ", data)  # send data to omnibus
+            sender.send(CHANNEL, data)  # send data to omnibus
 
             print(
                 f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ", end='')

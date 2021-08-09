@@ -5,6 +5,8 @@ import serial
 from serial import Serial
 from omnibus import Sender
 
+CHANNEL = "CAN/Parsley"
+
 disp = serial.Serial('COM5', 9600)
 sender = Sender()
 
@@ -301,7 +303,7 @@ def parse_line(args, line):
     for data in parsed_data[start_data:]:
         output = output + '{:<20}'.format(data)
 
-    sender.send("CAN/Parsley", output)
+    sender.send(CHANNEL, output)
     print(output)
 
 

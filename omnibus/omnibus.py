@@ -59,7 +59,7 @@ class OmnibusCommunicator:
 
 class Sender(OmnibusCommunicator):
     """
-    Allows messages to be sent to all of the receivers listening on a provided
+    Allows messages to be sent to all of the receivers listening on the provided
     channel.
     """
 
@@ -91,7 +91,7 @@ class Sender(OmnibusCommunicator):
 
 class Receiver(OmnibusCommunicator):
     """
-    Listens to a number of channels and receives all messages sent to it.
+    Listens to a number of channels and receives all messages sent to them.
 
     Filtering is based on only the beginning of the channel name, so for example
     a receiver listening to the channel 'foo' will also receive messages sent
@@ -103,7 +103,7 @@ class Receiver(OmnibusCommunicator):
         super().__init__()
 
         if len(channels) == 0:
-            raise Exception("At least one channel must be provided")
+            print('Receiver instantiated listening to no channels')
 
         self.subscriber = self.context.socket(zmq.SUB)
         self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")

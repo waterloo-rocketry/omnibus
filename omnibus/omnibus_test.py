@@ -36,8 +36,8 @@ class TestOmnibus:
 
     @pytest.fixture()
     def receiver(self):
-        def _receiver(*channel):
-            r = Receiver(*channel)
+        def _receiver(*channels):
+            r = Receiver(*channels)
             time.sleep(0.05)  # let the receiver connect to the server so messages aren't dropped
             return r
         return _receiver
@@ -74,13 +74,13 @@ class TestOmnibus:
 
     def test_multi_channel_recieving(self, sender, receiver):
         s = sender()
-        r = receiver("A", "B", "C")
-        s.send("A", "message1")
-        assert r.recv(10) == "message1"
-        s.send("B", "message2")
-        assert r.recv(10) == "message2"
-        s.send("C", "message3")
-        assert r.recv(10) == "message3"
+        r = receiver("CHAN1", "CHAN2", "CHAN3")
+        s.send("CHAN1", "A")
+        assert r.recv(10) == "A"
+        s.send("CHAN2", "B")
+        assert r.recv(10) == "B"
+        s.send("CHAN3", "C")
+        assert r.recv(10) == "C"
 
 
 class TestIPBroadcast:
