@@ -1,12 +1,12 @@
 import pytest
 
-from parsers import DAQParser, TemperatureParser, FillSensingParser
+import parsers
 
 
 class TestDAQParser:
     @pytest.fixture
     def parser(self):
-        return DAQParser("CHANNEL", "SENSOR")
+        return parsers.DAQParser("CHANNEL", "SENSOR")
 
     def test_nominal(self, parser):
         payload = {
@@ -35,37 +35,120 @@ class TestDAQParser:
         assert time == 10  # uses first timestamp recieved as zero
 
 
+class TestParsleyParser:
+    @pytest.fixture
+    def parser(self):
+        return parsers.ParsleyParser("CHANNEL", "MSG_TYPE", "KEY")
+
+    def test_nominal(self, parser):
+        payload = {
+            "msg_type": "MSG_TYPE",
+            "board_id": "BOARD_ID",
+            "data": {"time": 10000, "KEY": "VALUE"}
+        }
+        t, v = parser.parse(payload)
+        assert t == 10
+        assert v == "VALUE"
+
+    def test_msg_type(self, parser):
+        payload = {
+            "msg_type": "NOT_MSG_TYPE",
+            "board_id": "BOARD_ID",
+            "data": {"time": 10000, "KEY": "VALUE"}
+        }
+        assert parser.parse(payload) is None
+
+    def test_filter(self, parser):
+        parser.filter = lambda payload: "IGNORE" not in payload["data"]
+        payload = {
+            "msg_type": "MSG_TYPE",
+            "board_id": "BOARD_ID",
+            "data": {"time": 10000, "KEY": "VALUE", "IGNORE": "ME"}
+        }
+        assert parser.parse(payload) is None
+
+    def test_time(self, parser):
+        payload = {
+            "msg_type": "MSG_TYPE",
+            "board_id": "BOARD_ID",
+            "data": {"time": 1000, "KEY": "VALUE"}
+        }
+        parser.parse(payload)
+        payload["data"]["time"] = 0
+        assert parser.parse(payload)[0] == 1
+        payload["data"]["time"] = 2000
+        assert parser.parse(payload)[0] == 3
+
+
 class TestFillSensingParser:
     @pytest.fixture
     def parser(self):
-        return FillSensingParser("CHANNEL")
+        return parsers.FillSensingParser("CHANNEL")
 
     def test_nominal(self, parser):
-        payload = "[ FILL_LVL                  FILL       ] t=      123ms  LEVEL=4             DIRECTION=FILLING"
-        time, data = parser.parse(payload)
-        assert time == 0.123
-        assert data == 4
-
-    def test_other_message(self, parser):
-        payload = "[ SENSOR_TEMP               TEMP_SENSE ] t=      123ms  SENSOR=4            TEMP=56.789"
-        assert parser.parse(payload) is None
+        payload = {
+            "msg_type": "FILL_LVL",
+            "data": {"time": 1000, "level": 3}
+        }
+        t, v = parser.parse(payload)
+        assert t == 1
+        assert v == 3
 
 
 class TestTemperatureParser:
     @pytest.fixture
     def parser(self):
-        return TemperatureParser("CHANNEL", 0)
+        return parsers.TemperatureParser("CHANNEL", "SENSOR")
 
     def test_nominal(self, parser):
-        payload = "[ SENSOR_TEMP               TEMP_SENSE ] t=      123ms  SENSOR=0            TEMP=56.789"
-        time, data = parser.parse(payload)
-        assert time == 0.123
-        assert data == 56.789
+        payload = {
+            "msg_type": "SENSOR_TEMP",
+            "data": {"time": 1000, "temperature": 3, "sensor_id": "SENSOR"}
+        }
+        t, v = parser.parse(payload)
+        assert t == 1
+        assert v == 3
 
-    def test_other_sensor(self, parser):
-        payload = "[ SENSOR_TEMP               TEMP_SENSE ] t=      123ms  SENSOR=10           TEMP=56.789"
+    def test_filter(self, parser):
+        payload = {
+            "msg_type": "SENSOR_TEMP",
+            "data": {"time": 1000, "temperature": 3, "sensor_id": "NOT_SENSOR"}
+        }
         assert parser.parse(payload) is None
 
-    def test_other_message(self, parser):
-        payload = "[ FILL_LVL                  FILL       ] t=      123ms  LEVEL=4             DIRECTION=FILLING"
+
+class TestAccelParser:
+    @pytest.fixture
+    def parser(self):
+        return parsers.AccelParser("CHANNEL", "AXIS")
+
+    def test_nominal(self, parser):
+        payload = {
+            "msg_type": "SENSOR_ACC",
+            "data": {"time": 1000, "AXIS": 3}
+        }
+        t, v = parser.parse(payload)
+        assert t == 1
+        assert v == 3
+
+
+class TestAnalogSensorParser:
+    @pytest.fixture
+    def parser(self):
+        return parsers.AnalogSensorParser("CHANNEL", "SENSOR")
+
+    def test_nominal(self, parser):
+        payload = {
+            "msg_type": "SENSOR_ANALOG",
+            "data": {"time": 1000, "value": 3, "sensor_id": "SENSOR"}
+        }
+        t, v = parser.parse(payload)
+        assert t == 1
+        assert v == 3
+
+    def test_filter(self, parser):
+        payload = {
+            "msg_type": "SENSOR_ANALOG",
+            "data": {"time": 1000, "value": 3, "sensor_id": "NOT_SENSOR"}
+        }
         assert parser.parse(payload) is None
