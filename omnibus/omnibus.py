@@ -102,9 +102,6 @@ class Receiver(OmnibusCommunicator):
     def __init__(self, *channels):
         super().__init__()
 
-        if len(channels) == 0:
-            print('Receiver instantiated listening to no channels')
-
         self.subscriber = self.context.socket(zmq.SUB)
         self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")
         for channel in channels:

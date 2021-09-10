@@ -8,8 +8,6 @@ from omnibus import Sender
 import config
 import calibration
 
-CHANNEL = "DAQ"
-
 try:
     config.setup()  # initialize the sensors
 except KeyError as e:
@@ -28,6 +26,7 @@ if len(system.devices) > 1:
 print(f"Found device {system.devices[0].product_type}.")
 
 sender = Sender()  # omnibus channel
+CHANNEL = "DAQ"
 
 
 def read_data(ai):

@@ -8,9 +8,9 @@ from omnibus import Sender
 READ_BULK = 200  # mimic how the real NI box samples in bulk for better performance
 SAMPLE_RATE = 20000  # total samples/second
 CHANNELS = 8  # number of analog channels to read from
-CHANNEL = "DAQ/Fake"
 
 sender = Sender()
+CHANNEL = "DAQ/Fake"
 
 while True:
     start = time.time()

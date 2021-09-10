@@ -5,10 +5,9 @@ import serial
 from serial import Serial
 from omnibus import Sender
 
-CHANNEL = "CAN/Parsley"
-
 disp = serial.Serial('COM5', 9600)
 sender = Sender()
+CHANNEL = "CAN/Parsley"
 
 
 def parse_gen_cmd(msg_data):
