@@ -19,10 +19,10 @@ class TestOmnibus:
         OmnibusCommunicator.server_ip = "127.0.0.1"  # skip discovery
 
         # wait until the server is alive
-        s = Sender("_ALIVE")
+        s = Sender()
         r = Receiver("_ALIVE")
         while r.recv(1) is None:
-            s.send("_ALIVE")
+            s.send("_ALIVE", "_ALIVE")
 
         yield
 
@@ -36,41 +36,51 @@ class TestOmnibus:
 
     @pytest.fixture()
     def receiver(self):
-        def _receiver(channel):
-            r = Receiver(channel)
+        def _receiver(*channels):
+            r = Receiver(*channels)
             time.sleep(0.05)  # let the receiver connect to the server so messages aren't dropped
             return r
         return _receiver
 
     def test_nominal(self, sender, receiver):
-        s = sender("CHAN")
+        s = sender()
         r = receiver("CHAN")
-        s.send("A")
+        s.send("CHAN", "A")
         assert r.recv(10) == "A"
 
     def test_channels(self, sender, receiver):
-        s1 = sender("CHAN1")
+        s1 = sender()
         r1 = receiver("CHAN1")
-        s2 = sender("CHAN2")
+        s2 = sender()
         r2 = receiver("CHAN2")
         r3 = receiver("CHAN")
-        s1.send("A")
+        s1.send("CHAN1", "A")
         assert r1.recv(10) == "A"
         assert r3.recv(10) == "A"
         assert r2.recv(10) is None
-        s2.send("B")
+        s2.send("CHAN2", "B")
         assert r2.recv(10) == "B"
         assert r3.recv(10) == "B"
         assert r1.recv(10) is None
 
     def test_msg_objects(self, sender, receiver):
-        s = sender("NOTCHAN")
+        s = sender()
         r = receiver("CHAN")
         s.send_message(Message("CHAN", 10, "PAYLOAD"))
         m = r.recv_message(10)
         assert m.channel == "CHAN"
         assert m.timestamp == 10
         assert m.payload == "PAYLOAD"
+
+    def test_multi_channel_recieving(self, sender, receiver):
+        s = sender()
+        r = receiver("CHAN1", "CHAN2", "CHAN3")
+        s.send("CHAN1", "A")
+        assert r.recv(10) == "A"
+        s.send("CHAN2", "B")
+        assert r.recv(10) == "B"
+        s.send("CHAN3", "C")
+        assert r.recv(10) == "C"
 
 
 class TestIPBroadcast:
