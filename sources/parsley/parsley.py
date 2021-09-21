@@ -152,6 +152,16 @@ def parse_sensor_temp(msg_data):
     return {"time": timestamp, "sensor_id": sensor, "temperature": temperature}
 
 
+@register("SENSOR_ACC")
+def parse_sensor_acc(msg_data):
+    timestamp = msg_data[0] << 8 | msg_data[1]
+    x = int.from_bytes(bytes(msg_data[2:4]), "big", signed=True)
+    y = int.from_bytes(bytes(msg_data[4:6]), "big", signed=True)
+    z = int.from_bytes(bytes(msg_data[6:8]), "big", signed=True)
+
+    return {"time": timestamp, "x": x, "y": y, "z": z}
+
+
 @register("GPS_TIMESTAMP")
 def parse_gps_timestamp(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
@@ -259,9 +269,6 @@ def fmt_line(parsed_data):
     board_id = parsed_data['board_id']
     data = parsed_data["data"]
     res = f"[ {msg_type:<{MSG_TYPE_LEN}} {board_id:<{BOARD_ID_LEN}} ]"
-    if "time" in data:
-        t = data.pop("time")
-        res += f" time: {t:>8}"
     for k, v in data.items():
-        res += f"  {k}: {v:>2}"
+        res += f" {k}: {v}"
     return res
