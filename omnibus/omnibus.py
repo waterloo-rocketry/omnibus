@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import socket
 import time
+import typing
 
 import msgpack
 import zmq
@@ -15,7 +16,7 @@ class Message:
     """
     channel: str
     timestamp: float
-    payload: 'typing.Any'
+    payload: typing.Any
 
 
 class OmnibusCommunicator:
