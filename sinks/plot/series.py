@@ -23,7 +23,8 @@ class Series:
         self.times = np.zeros(size)
         self.points = np.zeros(size)
         self.first = True
-
+        self.sum = 0 # Sum of series
+        self.size = size # Size of series
         self.callback = None
 
         Series.series.append(self)
@@ -51,7 +52,10 @@ class Series:
             self.first = False
             self.times.fill(time)
             self.points.fill(point)
+            self.sum += point
         else:
+            self.sum -= self.points[0]
+            self.sum += point
             self.points[:-1] = self.points[1:]
             self.points[-1] = point
             self.times[:-1] = self.times[1:]
@@ -60,6 +64,9 @@ class Series:
         if self.callback:
             self.callback()
 
+    def getRunningAvg(self):
+        return (self.sum / self.size)
+    
     @staticmethod
     def parse(channel, payload):
         """
