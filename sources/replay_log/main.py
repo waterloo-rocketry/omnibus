@@ -1,11 +1,10 @@
 # Replay Log: Replays previous logs from the Global Log sink 
-from omnibus import Sender;
+
+from omnibus import Sender, Message
+import time
 import os
 import msgpack
 from datetime import datetime
-
-# sender = Sender()
-# CHANNEL = ""
 
 LOGS = "../../sinks/globallog/"
 
@@ -33,9 +32,9 @@ def get_replay_log(max_log_files=10):
 
   log_files = log_files[:max_log_files]
 
+  print(f"(R): Most recent")
   for option, log_file in enumerate(log_files):
     print(f"({option}): {log_file}")
-  print(f"(R): Most recent")
 
   selection = input("Input the log to repeat (no brackets): ")
   if selection == 'R':
@@ -60,15 +59,14 @@ def unpack_log(log_file):
     unpacker = msgpack.Unpacker(file_like=f)
 
     try:
-      log = None
-      while log := unpacker.unpack():
-        logs.append(log)
+      log_entry = None
+      while log_entry := unpacker.unpack():
+        logs.append(log_entry)
     except msgpack.exceptions.OutOfData as e:
       pass
     
     f.close()
-  for log in logs:
-    print(log[1])
+  logs = [Message(channel, timestamp, payload) for channel, timestamp, payload in logs]
   
   return logs
 
@@ -77,8 +75,27 @@ def replay_log(log_file):
   Replays the contents of a log_file.
   """
 
-  unpack_log(log_file)
-  # pass
+  log_msgs = unpack_log(log_file)
+  r_start_time = time.time() # real time
+  l_start_time = log_msgs[0].timestamp # log time
+
+  sender = Sender()
+  for message in log_msgs:
+    r_time = time.time()
+    l_time = message.timestamp
+
+    delta_r_time = r_time - r_start_time 
+    delta_l_time = l_time - l_start_time 
+
+    # wait for the real time to catch up to the delta time
+    wait_time = max(0, delta_l_time - delta_r_time)
+    time.sleep(wait_time)
+
+    """
+    Note that we use send_message() over send() here, 
+    keeping the old timestamp, message.timestamp.
+    """
+    sender.send_message(message)
 
 if __name__ == "__main__":
   replay_log_file = get_replay_log()
