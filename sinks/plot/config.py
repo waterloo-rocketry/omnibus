@@ -6,15 +6,18 @@ GRAPH_RESOLUTION = 10  # data points per second
 
 
 def setup():
+    # DAQ_SENSORS = [
+    #     "P5 (PT-5) - SRAD Vent Valve",
+    #     "P4 (PT-1) - Ox Fill",
+    #     "P3 (PT-2) - Ox Tank",
+    #     "P2 (PT-3) - CC", "Thrust",
+    #     "SP1 (PT-4) - Nozzle",
+    #     "FAST", "Omega S-Type",
+    #     "T8 - Tank Heating"
+    # ]
     DAQ_SENSORS = [
-        "P5 (PT-5) - SRAD Vent Valve",
-        "P4 (PT-1) - Ox Fill",
-        "P3 (PT-2) - Ox Tank",
-        "P2 (PT-3) - CC", "Thrust",
-        "SP1 (PT-4) - Nozzle",
-        "FAST", "Omega S-Type",
-        "T8 - Tank Heating"
-    ]
+        "Fake0", "Fake1", "Fake2", "Fake3", "Fake4", "Fake5", "Fake6", "Fake7"]
+
     for sensor in DAQ_SENSORS:
         Series(sensor, 50, DAQParser("DAQ", sensor))
 
