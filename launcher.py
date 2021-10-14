@@ -1,5 +1,6 @@
 import sys
-import subprocess
+from subprocess import Popen, CREATE_NEW_CONSOLE
+
 
 profiles = {
     "test": ['python -m omnibus',
@@ -19,4 +20,4 @@ except (KeyError, IndexError):
 
 
 for process in processes:
-    subprocess.Popen(process)
+    Popen(process, creationflags=CREATE_NEW_CONSOLE)
