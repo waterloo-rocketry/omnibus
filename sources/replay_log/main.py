@@ -1,18 +1,18 @@
 # Replay Log: Replays previous logs from the Global Log sink 
 from omnibus import Sender;
 import os
+import msgpack
 from datetime import datetime
 
-sender = Sender()
-CHANNEL = ""
+# sender = Sender()
+# CHANNEL = ""
 
-logs_path = "../../sinks/globallog/"
+LOGS = "../../sinks/globallog/"
 
 def retreive_log_files():
-  log_files = [file for file in os.list_dir(logs_path) if file.contains(".log")]
-  return log_files
+  return [file for file in os.listdir(LOGS) if file.split(".")[-1] == "log"]
 
-def parse_filename_datetime(filename):
+def get_datetime(filename):
   """
   Assumes file was produced by globallog/main.py.
   Produces datatime object for filename.
@@ -29,7 +29,7 @@ def get_replay_log(max_log_files=10):
   """
   log_files = retreive_log_files()
   # sort files by datetime, newest to oldest
-  log_files = sorted(log_files, key=parse_filename_datetime)[::-1]
+  log_files = sorted(log_files, key=get_datetime)[::-1]
 
   log_files = log_files[:max_log_files]
 
@@ -49,13 +49,36 @@ def get_replay_log(max_log_files=10):
       print("Error: invalid selection. Showing most recent log.")
       selection = 0
   
-  return log_files[selection]
+  return os.path.join(LOGS, log_files[selection])
+
+def unpack_log(log_file):
+  """
+  Retreives list of message objects from a log_file.
+  """
+  logs = []
+  with open(log_file, 'rb') as f:
+    unpacker = msgpack.Unpacker(file_like=f)
+
+    try:
+      log = None
+      while log := unpacker.unpack():
+        logs.append(log)
+    except msgpack.exceptions.OutOfData as e:
+      pass
+    
+    f.close()
+  for log in logs:
+    print(log[1])
+  
+  return logs
 
 def replay_log(log_file):
   """
   Replays the contents of a log_file.
   """
-  pass
+
+  unpack_log(log_file)
+  # pass
 
 if __name__ == "__main__":
   replay_log_file = get_replay_log()
