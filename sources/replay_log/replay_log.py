@@ -15,7 +15,7 @@ from omnibus import Sender, Message
 
 def replay(log_file, replay_speed):
     """
-    Replays the contents of a log_file.
+    Replays the contents of a log_file
     """
     unpacker = None
     with open(log_file, 'rb') as f:
@@ -39,18 +39,20 @@ def replay(log_file, replay_speed):
             Note that we use send_message() over send() here, 
             keeping the old timestamp, message.timestamp.
             """
-            print(message.timestamp)
             sender.send_message(message)
 
-# fetch next message from unpacker
+
 def fetch_message(unpacker):
+    """
+    Fetch the next message from unpacker
+    """
     try:
         channel, timestamp, payload = unpacker.unpack()
         return Message(channel, timestamp, payload)
     except msgpack.exceptions.OutOfData as e:
         return None
 
-# wait for real time to catch-up to log time
+
 def wait_for_logtime(message, r_start_time, l_start_time, replay_speed):
     r_delta = (time.time() - r_start_time) * replay_speed
     l_delta = message.timestamp - l_start_time

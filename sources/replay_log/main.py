@@ -34,6 +34,9 @@ def get_replay_log(max_logs):
 
     log_files = log_files[:max_logs]
 
+    if len(log_files) == 0:
+        return None # no global logs to replay 
+    
     print(f"(R): Most recent")
     for option, log_file in enumerate(log_files):
         print(f"({option}): {log_file}")
