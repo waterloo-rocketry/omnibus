@@ -2,3 +2,4 @@ autopep8==1.5.7
 msgpack==1.0.2
 pytest==6.2.4
 pyzmq==22.1.0
+flake8==4.0.1
