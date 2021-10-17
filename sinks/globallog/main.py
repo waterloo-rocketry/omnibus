@@ -18,4 +18,3 @@ with open(fname, "ab") as f:
     while True:
         msg = receiver.recv_message()
         f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
-    f.close()
