@@ -14,7 +14,7 @@ CURTIME = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
 fname = CURTIME + ".log"
 receiver = Receiver(CHANNEL)
 # Creates new file
-with open(fname, "ab") as f:
+with open(fname, "wb") as f:
     while True:
         msg = receiver.recv_message()
         f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
