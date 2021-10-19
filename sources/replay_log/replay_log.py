@@ -8,6 +8,7 @@ See python3 main.py --help for options.
 """
 
 import time
+
 import msgpack
 
 from omnibus import Sender, Message
