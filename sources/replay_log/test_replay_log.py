@@ -34,8 +34,8 @@ class TestReplayLog:
         yield
 
         # destroy test files
-        os.remove(TEST_LOG_IN)
-        os.remove(TEST_LOG_OUT)
+        delete_file(TEST_LOG_IN)
+        delete_file(TEST_LOG_OUT)
         
     def test_replay_consistency(self, input_log, sender):
         ReplayLogSource.replay(TEST_LOG_IN, 1)
@@ -96,3 +96,9 @@ def logs_match(in_log, out_log):
 
 def rand_str(l=10):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=l))
+
+def delete_file(f):
+    try:
+        os.remove(f)
+    except Exception:
+        pass
