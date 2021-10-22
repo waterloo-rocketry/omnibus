@@ -1,4 +1,6 @@
 import time
+from filecmp import cmp
+from contextlib import suppress
 import os
 import string
 import random
@@ -6,7 +8,7 @@ import random
 import msgpack
 import pytest
 
-import replay_log as ReplayLogSource
+import replay_log 
 from omnibus import Sender
 
 TEST_LOG_IN = "./sources/replay_log/test_log_in.log"
@@ -39,45 +41,44 @@ class TestReplayLog:
         delete_file(TEST_LOG_OUT)
 
     def test_replay_consistency(self, input_log, sender):
-        ReplayLogSource.replay(TEST_LOG_IN, 1)
-        assert logs_match(TEST_LOG_IN, TEST_LOG_OUT)
+        replay_log.replay(TEST_LOG_IN, 1)
+        assert cmp(TEST_LOG_IN, TEST_LOG_OUT, shallow=False)
 
     def test_replay_consistency_w_speed_change(self, input_log, sender):
-        ReplayLogSource.replay(TEST_LOG_IN, 3)
-        assert logs_match(TEST_LOG_IN, TEST_LOG_OUT)
+        replay_log.replay(TEST_LOG_IN, 3)
+        assert cmp(TEST_LOG_IN, TEST_LOG_OUT, shallow=False)
 
     def test_replay_speed_increase(self, input_log, sender):
         s1 = time.time()
-        ReplayLogSource.replay(TEST_LOG_IN, 1)
+        replay_log.replay(TEST_LOG_IN, 1)
         t1 = time.time() - s1
 
         s2 = time.time()
-        ReplayLogSource.replay(TEST_LOG_IN, 4)
+        replay_log.replay(TEST_LOG_IN, 4)
         t2 = time.time() - s2
 
-        # timing is not very percise, 4x speed should be at least 2x faster
-        assert t2 <= t1 / 2
+        # timing isn't perfect 
+        assert t2 <= t1 / 3.9 
 
     def test_replay_speed_decrease(self, input_log, sender):
         s1 = time.time()
-        ReplayLogSource.replay(TEST_LOG_IN, 1)
+        replay_log.replay(TEST_LOG_IN, 1)
         t1 = time.time() - s1
 
         s2 = time.time()
-        ReplayLogSource.replay(TEST_LOG_IN, 0.25)
+        replay_log.replay(TEST_LOG_IN, 0.25)
         t2 = time.time() - s2
 
-        # timing is not very percise, a quarter to speed should be at least half as fast
-        assert t2 >= t1 * 2
+        # timing isn't perfect 
+        assert t2 >= t1 * 3.9 
 
 
 # replaces Sender.send_message
 def mock_send_message(self, message):
     mock_receive_message(message)
 
+
 # mocks the receipt of a message
-
-
 def mock_receive_message(msg):
     if msg == None:
         return
@@ -85,26 +86,10 @@ def mock_receive_message(msg):
         f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
 
 
-def logs_match(in_log, out_log):
-    with open(in_log, "rb") as f1:
-        with open(out_log, "rb") as f2:
-            unpacker1 = msgpack.Unpacker(file_like=f1)
-            unpacker2 = msgpack.Unpacker(file_like=f2)
-            while True:
-                msg1 = ReplayLogSource.fetch_message(unpacker1)
-                msg2 = ReplayLogSource.fetch_message(unpacker2)
-                if msg1 != msg2:
-                    return False
-                if msg1 == None and msg2 == None:
-                    return True
-
-
 def rand_str(l=10):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=l))
 
 
 def delete_file(f):
-    try:
+    with suppress(FileNotFoundError):
         os.remove(f)
-    except Exception:
-        pass

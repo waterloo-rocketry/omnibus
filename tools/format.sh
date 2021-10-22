@@ -17,10 +17,7 @@ then
     autopep8 -i $FILES
 fi
 
-# Copied from CL 
-# --- 
-# stop the build if there are Python syntax errors or undefined names
-# error codes shown by `--select` can be found
+# Check for syntax errors or undefined names
 # here (F): https://flake8.pycqa.org/en/latest/user/error-codes.html
 # and here (E): https://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
 flake8 . --select=E9,F63,F7,F82
