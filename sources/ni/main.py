@@ -42,6 +42,8 @@ def read_data(ai):
 
             # read data config.READ_BULK at a time
             data = ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5)
+            if data != [] and not isinstance(data[0], list):
+                data = [data]
 
             data = {
                 "timestamp": time.time(),
