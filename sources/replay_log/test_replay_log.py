@@ -17,11 +17,11 @@ TEST_LOG_OUT = "./sources/replay_log/test_log_out.log"
 
 class TestReplayLog:
     @pytest.fixture
-    def sender(self, mocker):
-        mocker.patch.object(
+    def sender(self, monkeypatch):
+        monkeypatch.setattr(
             Sender,
             'send_message',
-            new=mock_send_message
+            mock_send_message
         )
 
     @pytest.fixture
