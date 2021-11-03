@@ -53,24 +53,28 @@ class TestReplayLog:
         replay_log.replay(TEST_LOG_IN, 1)
         t1 = time.time() - s1
 
+        speed_inc = 4
+
         s2 = time.time()
-        replay_log.replay(TEST_LOG_IN, 4)
+        replay_log.replay(TEST_LOG_IN, speed_inc)
         t2 = time.time() - s2
 
-        # timing isn't perfect 
-        assert t2 <= t1 / 3.9 
+        # < 2% error 
+        assert percent_error(t1, t2 * speed_inc) < 2 
 
     def test_replay_speed_decrease(self, input_log, sender):
         s1 = time.time()
         replay_log.replay(TEST_LOG_IN, 1)
         t1 = time.time() - s1
 
+        speed_dec = 0.25 
+
         s2 = time.time()
-        replay_log.replay(TEST_LOG_IN, 0.25)
+        replay_log.replay(TEST_LOG_IN, speed_dec)
         t2 = time.time() - s2
 
-        # timing isn't perfect 
-        assert t2 >= t1 * 3.9 
+        # < 2% error 
+        assert percent_error(t1, t2 * speed_dec) < 2 
 
 
 # replaces Sender.send_message
@@ -93,3 +97,7 @@ def rand_str(l=10):
 def delete_file(f):
     with suppress(FileNotFoundError):
         os.remove(f)
+
+
+def percent_error(expected, received):
+    return abs(expected - received) / expected * 100
