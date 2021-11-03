@@ -18,7 +18,7 @@ class Plotter:
         self.callback = callback  # called every frame to get new data
 
         # try for a square layout
-        columns = int(np.ceil(np.sqrt(len(self.series))))
+        columns = int(np.ceil(np.sqrt(len(self.series) + 1)))
 
         # window that lays out plots in a grid
         self.win = pg.GraphicsLayoutWidget(show=True, title="Omnibus Plotter")
@@ -30,24 +30,27 @@ class Plotter:
             self.plots.append(plot)
             # add the plot to a specific coordinate in the window
             self.win.addItem(plot.plot, i // columns, i % columns)
-        #self.fps_label = LabelItem(str(self.fps))
         self.fps = 0
-        self.fps_label = LabelItem("FPS = " + str(self.fps))
-        self.win.addItem(self.fps_label)
+        self.labelText = ""
+        self.label = LabelItem(self.labelText)
+        self.win.addItem(self.label, columns - 1, len(self.series) % columns)
+        #self.win.addItem(self.label, 0, 0)
         self.rates = []
 
     # called every frame
     def update(self):
+        self.labelText = ""
         self.rates.append(time.time())
         if len(self.rates) > 50:
             self.rates.pop(0)
         if (time.time() - self.rates[0] > 0):
-            #self.win.removeItem(self.fps_label)
             self.fps = len(self.rates)/(time.time() - self.rates[0])
-            self.fps_label = LabelItem("FPS = " + str(self.fps))
-            self.fps_label = LabelItem(str(self.fps))
+            self.labelText= f"FPS: {self.fps: >4.0f}"
             print(f"\rFPS: {self.fps: >4.0f}  ", end='')
-
+        #for s in self.series:
+        #    self.labelText += ("\navg of " + s.name + f": {s.getRunningAvg(): <4.4f}")
+        self.label.setText(self.labelText)
+        
         self.callback()
 
     def exec(self):
@@ -68,18 +71,16 @@ class Plot:
 
     def __init__(self, series):
         self.series = series
+        self.avg = 0
         # update when data is added to the series
         self.series.register_update(self.update)
 
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
-        self.label = pg.TextItem(text="Test Text", color=(0,0,0)) # not sure why but this does drop the FPS by a lot
-        #self.plot.addItem(self.label)
-
+        
     def update(self):
         # update the displayed data
         self.curve.setData(self.series.times, self.series.points)
 
         # current value readout in the title
         self.plot.setTitle(f"{self.series.name} ({self.series.points[-1]:.1f})")
-        #self.label.setText(f"Running Avg: {self.series.getRunningAvg()}") 
