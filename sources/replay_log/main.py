@@ -13,7 +13,8 @@ def valid_replay_speed(n):
     if n <= 0:
         raise Exception("Invalid replay speed: replay_speed > 0")
     return n
-    
+
+
 def parse_arguments():
     """
     Parses command line arguments.
@@ -45,9 +46,10 @@ def get_replay_log(max_logs):
     for option, log_file in enumerate(log_files):
         print(f"({option}): {log_file}")
 
-    while selection := input("Input the log to repeat (no brackets): "):
+    while selection:
+        = input("Input the log to repeat (no brackets): "):
         if selection == 'R' or (selection.isdigit() and 0 <= int(selection) <= len(log_files)):
-            selection = 0 if selection == 'R' else int(selection) 
+            selection = 0 if selection == 'R' else int(selection)
             break
         else:
             print("Invalid selection.")
@@ -58,7 +60,7 @@ def get_replay_log(max_logs):
 if __name__ == "__main__":
     args = parse_arguments()
     max_logs = args.max_logs
-    replay_speed = args.replay_speed 
+    replay_speed = args.replay_speed
     log_file = args.log_file if args.log_file != None else get_replay_log(max_logs)
 
     print(f"replaying log: {log_file}")

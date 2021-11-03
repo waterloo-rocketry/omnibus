@@ -40,7 +40,7 @@ def replay(log_file, replay_speed):
 
 
 def wait_for_logtime(msg_timestamp, r_start_time, l_start_time, replay_speed):
-    r_delta = 0 
+    r_delta = 0
     l_delta = msg_timestamp - l_start_time
 
     # wait for real time to catch-up to log time

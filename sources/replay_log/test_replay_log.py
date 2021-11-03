@@ -8,7 +8,7 @@ import random
 import msgpack
 import pytest
 
-import replay_log 
+import replay_log
 from omnibus import Sender
 
 TEST_LOG_IN = "./sources/replay_log/test_log_in.log"
@@ -59,22 +59,22 @@ class TestReplayLog:
         replay_log.replay(TEST_LOG_IN, speed_inc)
         t2 = time.time() - s2
 
-        # < 2% error 
-        assert percent_error(t1, t2 * speed_inc) < 2 
+        # < 2% error
+        assert percent_error(t1, t2 * speed_inc) < 2
 
     def test_replay_speed_decrease(self, input_log, sender):
         s1 = time.time()
         replay_log.replay(TEST_LOG_IN, 1)
         t1 = time.time() - s1
 
-        speed_dec = 0.25 
+        speed_dec = 0.25
 
         s2 = time.time()
         replay_log.replay(TEST_LOG_IN, speed_dec)
         t2 = time.time() - s2
 
-        # < 2% error 
-        assert percent_error(t1, t2 * speed_dec) < 2 
+        # < 2% error
+        assert percent_error(t1, t2 * speed_dec) < 2
 
 
 # replaces Sender.send_message
