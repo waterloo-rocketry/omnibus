@@ -46,8 +46,7 @@ def get_replay_log(max_logs):
     for option, log_file in enumerate(log_files):
         print(f"({option}): {log_file}")
 
-    while selection:
-        = input("Input the log to repeat (no brackets): "):
+    while selection := input("Input the log to repeat (no brackets): "):
         if selection == 'R' or (selection.isdigit() and 0 <= int(selection) <= len(log_files)):
             selection = 0 if selection == 'R' else int(selection)
             break
