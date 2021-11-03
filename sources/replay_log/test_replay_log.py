@@ -21,7 +21,7 @@ class TestReplayLog:
         monkeypatch.setattr(
             Sender,
             'send_message',
-            mock_send_message
+            mock_send_recv_msg
         )
 
     @pytest.fixture
@@ -77,13 +77,9 @@ class TestReplayLog:
         assert percent_error(t1, t2 * speed_dec) < 2
 
 
+# mocks the sending and receipt of messages
 # replaces Sender.send_message
-def mock_send_message(self, message):
-    mock_receive_message(message)
-
-
-# mocks the receipt of a message
-def mock_receive_message(msg):
+def mock_send_recv_msg(self, msg):
     if msg == None:
         return
     with open(TEST_LOG_OUT, "ab") as f:
