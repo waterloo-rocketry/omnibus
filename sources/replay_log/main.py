@@ -8,6 +8,7 @@ import replay_log
 
 GLOBAL_LOGS = Path("../../sinks/globallog/")
 
+
 def parse_arguments():
     """
     Parses command line arguments.
