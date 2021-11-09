@@ -41,7 +41,7 @@ def get_replay_log(max_logs):
     log_files = log_files[:max_logs]
 
     if len(log_files) == 0:
-        return None 
+        return None
 
     print(f"(R): Most recent")
     for option, log_file in enumerate(log_files):
