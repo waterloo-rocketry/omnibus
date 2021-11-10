@@ -31,10 +31,11 @@ class Plotter:
             # add the plot to a specific coordinate in the window
             self.win.addItem(plot.plot, i // columns, i % columns)
         self.fps = 0
+
+        # adding a label masquerading as a graph
         self.labelText = ""
         self.label = LabelItem(self.labelText)
         self.win.addItem(self.label, columns - 1, len(self.series) % columns)
-        #self.win.addItem(self.label, 0, 0)
         self.rates = []
 
     # called every frame
@@ -45,8 +46,8 @@ class Plotter:
             self.rates.pop(0)
         if (time.time() - self.rates[0] > 0):
             self.fps = len(self.rates)/(time.time() - self.rates[0])
-            self.labelText= f"FPS: {self.fps: >4.0f}"
-            print(f"\rFPS: {self.fps: >4.0f}  ", end='')
+            self.labelText= f"FPS: {self.fps: >4.2f}"
+            print(f"\rFPS: {self.fps: >4.2f}  ", end='')
         #for s in self.series:
         #    self.labelText += ("\navg of " + s.name + f": {s.getRunningAvg(): <4.4f}")
         self.label.setText(self.labelText)
