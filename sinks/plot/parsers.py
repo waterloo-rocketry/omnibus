@@ -39,8 +39,9 @@ class ParsleyParser(Parser):
         super().__init__(channel)
         self.msg_type = msg_type
         self.key = key
-        self.last_time = 0
-        self.time_offset = 0
+        # the timestamp of CAN messages wraps around decently frequently, account for it by storing
+        self.last_time = 0  # the last recievied the time (to detect wrap arounds)
+        self.time_offset = 0  # and what to add to each timestamp we recieve
 
     def parse(self, payload):
         if payload["msg_type"] != self.msg_type:
@@ -50,8 +51,8 @@ class ParsleyParser(Parser):
             return None
 
         if "time" in payload["data"]:
-            if payload["data"]["time"] < self.last_time:
-                self.time_offset += self.last_time
+            if payload["data"]["time"] < self.last_time:  # if we've wrapped around
+                self.time_offset += self.last_time  # increase the amount we need to add
             self.last_time = payload["data"]["time"]
             payload["data"]["time"] += self.time_offset
 
