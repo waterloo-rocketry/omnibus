@@ -1,6 +1,3 @@
-import re
-
-
 class Parser:
     """
     Turns omnibus messages into up to one datapoint
@@ -37,48 +34,64 @@ class DAQParser(Parser):
         return payload["timestamp"] - DAQParser.start, payload["data"][self.sensor][0]
 
 
-class FillSensingParser(Parser):
-    """
-    Parses fill sensing messages from parsley of the form:
-[ FILL_LVL                  FILL       ] t=      123ms  LEVEL=4             DIRECTION=FILLING
-    """
-    timeMatcher = re.compile(r"t= *(\d+)ms")  # match `t=    1234ms`
-    levelMatcher = re.compile(r"LEVEL=(\d+)")  # match `LEVEL=12`
+class ParsleyParser(Parser):
+    def __init__(self, channel, msg_type, key):
+        super().__init__(channel)
+        self.msg_type = msg_type
+        self.key = key
+        # the timestamp of CAN messages wraps around decently frequently, account for it by storing
+        self.last_time = 0  # the last recievied the time (to detect wrap arounds)
+        self.time_offset = 0  # and what to add to each timestamp we recieve
 
     def parse(self, payload):
-        if not payload.startswith("[ FILL_LVL "):
+        if payload["msg_type"] != self.msg_type:
             return None
 
-        # time is in milliseconds
-        t = int(FillSensingParser.timeMatcher.search(payload).group(1)) / 1000
-        level = int(FillSensingParser.levelMatcher.search(payload).group(1))
+        if not self.filter(payload):
+            return None
 
-        return t, level
+        if "time" in payload["data"]:
+            if payload["data"]["time"] < self.last_time:  # if we've wrapped around
+                self.time_offset += self.last_time  # increase the amount we need to add
+            self.last_time = payload["data"]["time"]
+            payload["data"]["time"] += self.time_offset
+
+        return self.parse_can(payload)
+
+    def filter(self, payload):
+        return True
+
+    def parse_can(self, payload):
+        # time is in milliseconds but we want seconds
+        t = payload["data"]["time"] / 1000
+        v = payload["data"][self.key]
+
+        return t, v
 
 
-class TemperatureParser(Parser):
-    """
-    Parses temperature messages from parsley for a specific temperature sensor of the form:
-[ SENSOR_TEMP               TEMP_SENSE ] t=      123ms  SENSOR=4            TEMP=56.789
-    """
-    timeMatcher = re.compile(r"t= *(\d+)ms")  # match `t=    1234ms`
-    sensorMatcher = re.compile(r"SENSOR=(\d+)")  # match `SENSOR=12`
-    tempMatcher = re.compile(r"TEMP=(-?[\d.]+)")  # match `TEMP=-12.34`
+class FillSensingParser(ParsleyParser):
+    def __init__(self, channel):
+        super().__init__(channel, "FILL_LVL", "level")
 
+
+class TemperatureParser(ParsleyParser):
     def __init__(self, channel, sensor):
-        super().__init__(channel)
+        super().__init__(channel, "SENSOR_TEMP", "temperature")
         self.sensor = sensor
 
-    def parse(self, payload):
-        if not payload.startswith("[ SENSOR_TEMP "):
-            return None
+    def filter(self, payload):
+        return payload["data"]["sensor_id"] == self.sensor
 
-        sensor = int(TemperatureParser.sensorMatcher.search(payload).group(1))
-        if sensor != self.sensor:
-            return None
 
-        # time is in milliseconds but we want seconds
-        t = int(TemperatureParser.timeMatcher.search(payload).group(1)) / 1000
-        temp = float(TemperatureParser.tempMatcher.search(payload).group(1))
+class AccelParser(ParsleyParser):
+    def __init__(self, channel, axis):
+        super().__init__(channel, "SENSOR_ACC", axis)
 
-        return t, temp
+
+class AnalogSensorParser(ParsleyParser):
+    def __init__(self, channel, sensor):
+        super().__init__(channel, "SENSOR_ANALOG", "value")
+        self.sensor = sensor
+
+    def filter(self, payload):
+        return payload["data"]["sensor_id"] == self.sensor
