@@ -7,10 +7,13 @@ from pathlib import Path
 import msgpack
 
 # called on the data array for each channel for each message, do whatever processing you want
+
+
 def process(channel):
     return sum(channel) / len(channel)
 
-def writeCSV(infile, outfile):
+
+def write_CSV(infile, outfile):
     writer = csv.writer(outfile)
     channels = None  # columns of CSV file
     start = None  # offset timestamp so CSV file starts at 0
@@ -20,7 +23,9 @@ def writeCSV(infile, outfile):
             channels = sorted(data.keys())
             writer.writerow(["Timestamp"] + channels)  # write header
             start = timestamp
-        writer.writerow([f"{timestamp - start:.6f}"] + [f"{process(data[c]):.6f}" for c in channels])
+        writer.writerow([f"{timestamp - start:.6f}"] +
+                        [f"{process(data[c]):.6f}" for c in channels])
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -29,6 +34,6 @@ if __name__ == "__main__":
 
     outfilename = Path(args.file).with_suffix(".csv")
     with open(args.file, 'rb') as infile, open(outfilename, 'w', encoding='utf-8', newline='') as outfile:
-        writeCSV(infile, outfile)
+        write_CSV(infile, outfile)
 
     print(f"Successfully wrote data to {outfilename}")

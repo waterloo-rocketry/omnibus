@@ -40,7 +40,7 @@ jobs:
         pip install pytest-cov
         pip install codecov
         pip install -r requirements.txt
-        find sinks/ sources/ -name requirements.txt -type f -exec pip install -r {} \;
+        find sinks/ sources/ tools/ -name requirements.txt -type f -exec pip install -r {} \;
 
     - name: Lint with flake8
       run: |
@@ -48,7 +48,7 @@ jobs:
         # error codes shown by `--select` can be found
         # here (F): https://flake8.pycqa.org/en/latest/user/error-codes.html
         # and here (E): https://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
-        flake8 . --select=E9,F63,F7,F82
+        flake8 sources/ sinks/ omnibus/ tools/ --select=E9,F63,F7,F82
 
     - name: Test with pytest
       run: |
@@ -57,4 +57,4 @@ jobs:
     - name: Enforce autopep8
       shell: bash
       run: |
-        autopep8 -d -r sources/ sinks/ omnibus/ --exit-code
+        autopep8 -d -r sources/ sinks/ omnibus/ tools/ --exit-code
