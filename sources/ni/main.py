@@ -56,8 +56,7 @@ def read_data(ai):
 
             sender.send(CHANNEL, data)  # send data to omnibus
             
-            print(
-                f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ", end='')
+            print(f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ", end='')
 
 
 with nidaqmx.Task() as ai:
