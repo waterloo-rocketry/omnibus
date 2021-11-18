@@ -9,6 +9,8 @@ import config
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
+import config
+
 
 class Plotter:
     """
@@ -74,6 +76,8 @@ class Plot:
         self.series.register_update(self.update)
 
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
+        self.plot.setMouseEnabled(x=False, y=False)
+        self.plot.hideButtons()
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
 
     def update(self):
@@ -83,3 +87,7 @@ class Plot:
         # current value readout in the title
         self.plot.setTitle(
             f"{self.series.name} [{self.series.get_running_avg(): <4.4f}]")
+
+        # round the time to the nearest GRAPH_STEP
+        t = round(self.series.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
+        self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP, t + config.GRAPH_STEP, padding=0)
