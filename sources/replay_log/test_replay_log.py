@@ -59,8 +59,8 @@ class TestReplayLog:
         replay_log.replay(TEST_LOG_IN, speed_inc)
         t2 = time.time() - s2
 
-        # < 3% error
-        assert percent_error(t1, t2 * speed_inc) < 3
+        # < 10% error
+        assert percent_error(t1, t2 * speed_inc) < 10
 
     def test_replay_speed_decrease(self, input_log, sender):
         s1 = time.time()
@@ -73,8 +73,8 @@ class TestReplayLog:
         replay_log.replay(TEST_LOG_IN, speed_dec)
         t2 = time.time() - s2
 
-        # < 3% error
-        assert percent_error(t1, t2 * speed_dec) < 3
+        # < 10% error
+        assert percent_error(t1, t2 * speed_dec) < 10
 
 
 # mocks the sending and receipt of messages
