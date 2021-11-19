@@ -10,6 +10,7 @@ from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
 import config
+from parsers import Parser
 
 
 class Plotter:
@@ -17,19 +18,26 @@ class Plotter:
     Displays a grid of plots in a window
     """
 
-    def __init__(self, series, callback):
-        self.series = series
+    def __init__(self, callback):
         self.callback = callback  # called every frame to get new data
 
+        # use 1 second of messages to determine which series are available
+        # note: this is very temporary and will be replaced by dynamic plotter layouts soon
+        print("Listening for series...")
+        listen = time.time()
+        while time.time() < listen + 1:
+            callback()
+        series = Parser.get_series()
+
         # try for a square layout
-        columns = int(np.ceil(np.sqrt(len(self.series) + 1)))
+        columns = int(np.ceil(np.sqrt(len(series) + 1)))
 
         # window that lays out plots in a grid
         self.win = pg.GraphicsLayoutWidget(show=True, title="Omnibus Plotter")
         self.win.resize(1000, 600)
 
         self.plots = []
-        for i, s in enumerate(self.series):
+        for i, s in enumerate(series):
             plot = Plot(s)
             self.plots.append(plot)
             # add the plot to a specific coordinate in the window
@@ -38,8 +46,10 @@ class Plotter:
 
         # adding a label masquerading as a graph
         self.label = LabelItem("")
-        self.win.addItem(self.label, columns - 1, len(self.series) % columns)
+        self.win.addItem(self.label, columns - 1, len(series) % columns)
         self.rates = []
+
+        self.exec()
 
     # called every frame
     def update(self):

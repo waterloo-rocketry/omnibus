@@ -1,28 +1,43 @@
+from collections import defaultdict
+
 import pytest
 
 import parsers
 
 
+class MockSeries:
+    def __init__(self):
+        self.data = []
+
+    def add(self, time, point):
+        self.data.append((time, point))
+
+
 class TestDAQParser:
     @pytest.fixture
     def parser(self):
-        return parsers.DAQParser("CHANNEL", "SENSOR")
+        p = parsers.DAQParser()
+        p.series = defaultdict(MockSeries)
+        return p
 
     def test_nominal(self, parser):
         payload = {
-            "timestamp": 10,
-            "data": {"NOTSENSOR": [1, 2, 3], "SENSOR": [4, 5, 6]}
+            "timestamp": 0,
+            "data": {"SENSOR 1": [1, 2, 3], "SENSOR 2": [4, 5, 6]}
         }
-        time, data = parser.parse(payload)
-        assert time == 0  # uses first timestamp recieved as zero
-        assert data == 4
+        parser.parse(payload)
+        assert parser.series.get("SENSOR 1").data == [(0, 1)]
+        assert parser.series.get("SENSOR 2").data == [(0, 4)]
 
-    def test_no_data(self, parser):
+    def test_multiple(self, parser):
         payload = {
-            "timestamp": 10,
-            "data": {"NOTSENSOR": [1, 2, 3]}
+            "timestamp": 00,
+            "data": {"SENSOR": [1, 2, 3]}
         }
-        assert parser.parse(payload) is None
+        parser.parse(payload)
+        payload["timestamp"] = 10
+        parser.parse(payload)
+        assert parser.series.get("SENSOR").data == [(0, 1), (10, 1)]
 
     def test_time_offset(self, parser):
         payload = {
@@ -31,124 +46,116 @@ class TestDAQParser:
         }
         parser.parse(payload)
         payload["timestamp"] = 20
-        time, _ = parser.parse(payload)
-        assert time == 10  # uses first timestamp recieved as zero
+        parser.parse(payload)
+        assert parser.series.get("SENSOR").data == [(0, 4), (10, 4)]  # uses first timestamp recieved as zero
 
 
 class TestParsleyParser:
     @pytest.fixture
     def parser(self):
-        return parsers.ParsleyParser("CHANNEL", "MSG_TYPE", "KEY")
+        data = []
+        p = parsers.ParsleyParser("MSG_TYPE")
+        p.parse_can = data.append
+        return p, data
 
     def test_nominal(self, parser):
+        parser, data = parser
         payload = {
             "msg_type": "MSG_TYPE",
             "board_id": "BOARD_ID",
             "data": {"time": 10000, "KEY": "VALUE"}
         }
-        t, v = parser.parse(payload)
-        assert t == 10
-        assert v == "VALUE"
+        parser.parse(payload)
+        assert data[0]["data"]["time"] == 10
 
     def test_msg_type(self, parser):
+        parser, data = parser
         payload = {
             "msg_type": "NOT_MSG_TYPE",
             "board_id": "BOARD_ID",
             "data": {"time": 10000, "KEY": "VALUE"}
         }
-        assert parser.parse(payload) is None
-
-    def test_filter(self, parser):
-        parser.filter = lambda payload: "IGNORE" not in payload["data"]
-        payload = {
-            "msg_type": "MSG_TYPE",
-            "board_id": "BOARD_ID",
-            "data": {"time": 10000, "KEY": "VALUE", "IGNORE": "ME"}
-        }
-        assert parser.parse(payload) is None
+        parser.parse(payload)
+        assert data == []
 
     def test_time(self, parser):
+        parser, data = parser
         payload = {
             "msg_type": "MSG_TYPE",
             "board_id": "BOARD_ID",
             "data": {"time": 1000, "KEY": "VALUE"}
         }
         parser.parse(payload)
+        assert data[-1]["data"]["time"] == 1
         payload["data"]["time"] = 0
-        assert parser.parse(payload)[0] == 1
+        parser.parse(payload)
+        assert data[-1]["data"]["time"] == 1
         payload["data"]["time"] = 2000
-        assert parser.parse(payload)[0] == 3
+        parser.parse(payload)
+        assert data[-1]["data"]["time"] == 3
 
 
 class TestFillSensingParser:
     @pytest.fixture
     def parser(self):
-        return parsers.FillSensingParser("CHANNEL")
+        p = parsers.FillSensingParser()
+        p.series = defaultdict(MockSeries)
+        return p
 
     def test_nominal(self, parser):
         payload = {
             "msg_type": "FILL_LVL",
             "data": {"time": 1000, "level": 3}
         }
-        t, v = parser.parse(payload)
-        assert t == 1
-        assert v == 3
+        parser.parse(payload)
+        assert parser.series.get("Fill Level").data == [(1, 3)]
 
 
 class TestTemperatureParser:
     @pytest.fixture
     def parser(self):
-        return parsers.TemperatureParser("CHANNEL", "SENSOR")
+        p = parsers.TemperatureParser()
+        p.series = defaultdict(MockSeries)
+        return p
 
     def test_nominal(self, parser):
         payload = {
             "msg_type": "SENSOR_TEMP",
             "data": {"time": 1000, "temperature": 3, "sensor_id": "SENSOR"}
         }
-        t, v = parser.parse(payload)
-        assert t == 1
-        assert v == 3
-
-    def test_filter(self, parser):
-        payload = {
-            "msg_type": "SENSOR_TEMP",
-            "data": {"time": 1000, "temperature": 3, "sensor_id": "NOT_SENSOR"}
-        }
-        assert parser.parse(payload) is None
+        parser.parse(payload)
+        assert parser.series.get("Temperature SENSOR").data == [(1, 3)]
 
 
 class TestAccelParser:
     @pytest.fixture
     def parser(self):
-        return parsers.AccelParser("CHANNEL", "AXIS")
+        p = parsers.AccelParser()
+        p.series = defaultdict(MockSeries)
+        return p
 
     def test_nominal(self, parser):
         payload = {
             "msg_type": "SENSOR_ACC",
-            "data": {"time": 1000, "AXIS": 3}
+            "data": {"time": 1000, "x": 1, "y": 2, "z": 3}
         }
-        t, v = parser.parse(payload)
-        assert t == 1
-        assert v == 3
+        parser.parse(payload)
+        assert parser.series.get("Acceleration (x)").data == [(1, 1)]
+        assert parser.series.get("Acceleration (y)").data == [(1, 2)]
+        assert parser.series.get("Acceleration (z)").data == [(1, 3)]
 
 
 class TestAnalogSensorParser:
     @pytest.fixture
     def parser(self):
-        return parsers.AnalogSensorParser("CHANNEL", "SENSOR")
+        p = parsers.AnalogSensorParser()
+        p.series = defaultdict(MockSeries)
+        return p
 
     def test_nominal(self, parser):
         payload = {
             "msg_type": "SENSOR_ANALOG",
             "data": {"time": 1000, "value": 3, "sensor_id": "SENSOR"}
         }
-        t, v = parser.parse(payload)
-        assert t == 1
-        assert v == 3
-
-    def test_filter(self, parser):
-        payload = {
-            "msg_type": "SENSOR_ANALOG",
-            "data": {"time": 1000, "value": 3, "sensor_id": "NOT_SENSOR"}
-        }
-        assert parser.parse(payload) is None
+        parser.parse(payload)
+        assert parser.series.get("CAN Sensor SENSOR").data == [(1, 3)]
