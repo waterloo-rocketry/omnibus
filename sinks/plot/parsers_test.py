@@ -47,7 +47,8 @@ class TestDAQParser:
         parser.parse(payload)
         payload["timestamp"] = 20
         parser.parse(payload)
-        assert parser.series.get("SENSOR").data == [(0, 4), (10, 4)]  # uses first timestamp recieved as zero
+        # uses first timestamp recieved as zero
+        assert parser.series.get("SENSOR").data == [(0, 4), (10, 4)]
 
 
 class TestParsleyParser:

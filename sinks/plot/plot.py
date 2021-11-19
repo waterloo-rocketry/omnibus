@@ -100,4 +100,5 @@ class Plot:
 
         # round the time to the nearest GRAPH_STEP
         t = round(self.series.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
-        self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP, t + config.GRAPH_STEP, padding=0)
+        self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
+                            t + config.GRAPH_STEP, padding=0)

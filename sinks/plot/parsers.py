@@ -7,6 +7,7 @@ class SeriesDefaultDict(defaultdict):
     """
     Let us call `self.series["xyz"].add(...)` whether or not "xyz" is an existing series.
     """
+
     def __missing__(self, key):
         self[key] = Series(key)
         return self[key]
@@ -52,7 +53,8 @@ class DAQParser(Parser):
 
     def __init__(self):
         super().__init__("DAQ")
-        self.start = None  # The unix timestamp of the first message received (so the x axis is reasonable)
+        # The unix timestamp of the first message received (so the x axis is reasonable)
+        self.start = None
 
     def parse(self, payload):
         if self.start is None:
@@ -62,6 +64,8 @@ class DAQParser(Parser):
 
         for sensor, data in payload["data"].items():
             self.series[sensor].add(time, data[0])
+
+
 DAQParser()
 
 
@@ -69,6 +73,7 @@ class ParsleyParser(Parser):
     """
     Handles rolling over of parsley timestamps.
     """
+
     def __init__(self, msg_type):
         super().__init__("CAN/Parsley")
         self.msg_type = msg_type
@@ -104,6 +109,8 @@ class FillSensingParser(ParsleyParser):
         v = payload["data"]["level"]
 
         self.series["Fill Level"].add(t, v)
+
+
 FillSensingParser()
 
 
@@ -117,6 +124,8 @@ class TemperatureParser(ParsleyParser):
         v = payload["data"]["temperature"]
 
         self.series[f"Temperature {s}"].add(t, v)
+
+
 TemperatureParser()
 
 
@@ -129,6 +138,8 @@ class AccelParser(ParsleyParser):
 
         for axis in "xyz":
             self.series[f"Acceleration ({axis})"].add(t, payload["data"][axis])
+
+
 AccelParser()
 
 
@@ -142,4 +153,6 @@ class AnalogSensorParser(ParsleyParser):
         v = payload["data"]["value"]
 
         self.series[f"CAN Sensor {s}"].add(t, v)
+
+
 AnalogSensorParser()
