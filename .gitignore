@@ -1,7 +1,7 @@
 # NI Logs
 
 log_*.dat
-
+.DS_Store
 # Linter config
 
 .pylintrc
