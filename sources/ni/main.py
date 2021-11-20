@@ -41,7 +41,8 @@ def read_data(ai):
                 rates.pop(0)
 
             # read data config.READ_BULK at a time
-            data = ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5) # ai.read returns a single array if there is only one sensor and a nested array otherwise
+            # ai.read returns a single array if there is only one sensor and a nested array otherwise
+            data = ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5)
             # make sure the data is a nested list to ensure consistency
             if data != [] and not isinstance(data[0], list):
                 data = [data]
@@ -55,8 +56,9 @@ def read_data(ai):
             log.write(msgpack.packb(data))
 
             sender.send(CHANNEL, data)  # send data to omnibus
-            
-            print(f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ", end='')
+
+            print(
+                f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ", end='')
 
 
 with nidaqmx.Task() as ai:
