@@ -84,4 +84,4 @@ class Plot:
         self.curve.setData(self.series.times, self.series.points)
 
         # current value readout in the title
-        self.plot.setTitle(f"{self.series.name} ({self.series.points[-1]:.1f}) [{self.series.getRunningAvg(): <4.4f}]")
+        self.plot.setTitle(f"{self.series.name} ({self.series.points[-1]:.1f}) [{self.series.get_running_avg(): <4.4f}]")
