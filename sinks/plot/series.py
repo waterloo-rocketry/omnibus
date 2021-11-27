@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.core.fromnumeric import size
 
 import config
 
@@ -52,7 +53,7 @@ class Series:
             self.first = False
             self.times.fill(time)
             self.points.fill(point)
-            self.sum += point
+            self.sum += point * self.size
         else:
             self.sum -= self.points[0]
             self.sum += point
@@ -63,9 +64,8 @@ class Series:
 
         if self.callback:
             self.callback()
-
-    def getRunningAvg(self):
-        return (self.sum / self.size)
+    def get_running_avg(self):
+        return self.sum / self.size
     
     @staticmethod
     def parse(channel, payload):
