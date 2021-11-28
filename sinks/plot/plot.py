@@ -41,14 +41,14 @@ class Plotter:
 
     # called every frame
     def update(self):
-        self.labelText = ""
         self.rates.append(time.time())
         if len(self.rates) > 50:
             self.rates.pop(0)
         if (time.time() - self.rates[0] > 0):
             self.fps = len(self.rates)/(time.time() - self.rates[0])
             print(f"\rFPS: {self.fps: >4.2f}", end='')
-        self.label.setText(f"FPS: {self.fps: >4.2f}, Running Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
+        self.label.setText(
+            f"FPS: {self.fps: >4.2f}, Running Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
 
         self.callback()
 
