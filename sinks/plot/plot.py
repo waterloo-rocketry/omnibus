@@ -70,7 +70,6 @@ class Plot:
 
     def __init__(self, series):
         self.series = series
-        self.avg = 0
         # update when data is added to the series
         self.series.register_update(self.update)
 
