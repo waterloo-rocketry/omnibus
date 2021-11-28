@@ -4,9 +4,11 @@ import time
 import numpy as np
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
+import config
 
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
+
 
 class Plotter:
     """
@@ -33,8 +35,7 @@ class Plotter:
         self.fps = 0
 
         # adding a label masquerading as a graph
-        self.labelText = ""
-        self.label = LabelItem(self.labelText)
+        self.label = LabelItem("")
         self.win.addItem(self.label, columns - 1, len(self.series) % columns)
         self.rates = []
 
@@ -46,12 +47,9 @@ class Plotter:
             self.rates.pop(0)
         if (time.time() - self.rates[0] > 0):
             self.fps = len(self.rates)/(time.time() - self.rates[0])
-            self.labelText= f"FPS: {self.fps: >4.2f}"
-            print(f"\rFPS: {self.fps: >4.2f}  ", end='')
-        #for s in self.series:
-        #    self.labelText += ("\navg of " + s.name + f": {s.getRunningAvg(): <4.4f}")
-        self.label.setText(self.labelText)
-        
+            print(f"\rFPS: {self.fps: >4.2f}", end='')
+        self.label.setText(f"FPS: {self.fps: >4.2f}, Running Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
+
         self.callback()
 
     def exec(self):
@@ -78,10 +76,11 @@ class Plot:
 
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
-        
+
     def update(self):
         # update the displayed data
         self.curve.setData(self.series.times, self.series.points)
 
         # current value readout in the title
-        self.plot.setTitle(f"{self.series.name} ({self.series.points[-1]:.1f}) [{self.series.get_running_avg(): <4.4f}]")
+        self.plot.setTitle(
+            f"{self.series.name} [{self.series.get_running_avg(): <4.4f}]")

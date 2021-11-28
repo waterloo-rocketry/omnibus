@@ -3,6 +3,7 @@ from numpy.core.fromnumeric import size
 
 import config
 
+
 class Series:
     """
     Stores and downsamples the datapoints of a single series
@@ -23,8 +24,9 @@ class Series:
         self.times = np.zeros(self.size)
         self.points = np.zeros(self.size)
         self.first = True
-        self.sum = 0 # Sum of series
-        self.avgSize = config.RUNNING_AVG_DURATION * min(rate, config.GRAPH_RESOLUTION) # "size" of running average 
+        self.sum = 0  # Sum of series
+        self.avgSize = config.RUNNING_AVG_DURATION * \
+            min(rate, config.GRAPH_RESOLUTION)  # "size" of running average
         self.callback = None
 
         Series.series.append(self)
@@ -60,12 +62,13 @@ class Series:
             self.points[-1] = point
             self.times[:-1] = self.times[1:]
             self.times[-1] = time
-        
+
         if self.callback:
             self.callback()
+
     def get_running_avg(self):
         return self.sum / self.avgSize
-    
+
     @staticmethod
     def parse(channel, payload):
         """
