@@ -9,12 +9,12 @@ profiles = {  # Note: enter each command as a string enclosed with double quotat
     "texas": ['"python sources/parsley/main.py"',
               '"python sources/ni/main.py"',
               '"python -m omnibus"']
+    #   Add other profiles in here
 }
 
 
 try:
     if(sys.argv[1] == "_wrap"):
-
         p = Popen(sys.argv[2])
         p.wait()
         print('...')
