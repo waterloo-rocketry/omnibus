@@ -2,7 +2,7 @@ import sys
 from subprocess import Popen, CREATE_NEW_CONSOLE
 
 
-profiles = {
+profiles = {  # Note: enter each command as a string enclosed with double quotations
     "test": ['"python -m omnibus"',
              '"python sinks/plot/main.py"',
              '"python sources/fakeni/main.py"'],
@@ -16,8 +16,9 @@ try:
     if(sys.argv[1] == "_wrap"):
 
         p = Popen(sys.argv[2])
+        p.wait()
         print('...')
-        x = input()
+        x = input('Press enter to quit')
 
     else:
         selection = sys.argv[1]
