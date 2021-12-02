@@ -4,6 +4,10 @@ import time
 import numpy as np
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
+import config
+
+from pyqtgraph.graphicsItems.LabelItem import LabelItem
+from pyqtgraph.graphicsItems.TextItem import TextItem
 
 
 class Plotter:
@@ -16,7 +20,7 @@ class Plotter:
         self.callback = callback  # called every frame to get new data
 
         # try for a square layout
-        columns = int(np.ceil(np.sqrt(len(self.series))))
+        columns = int(np.ceil(np.sqrt(len(self.series) + 1)))
 
         # window that lays out plots in a grid
         self.win = pg.GraphicsLayoutWidget(show=True, title="Omnibus Plotter")
@@ -28,7 +32,11 @@ class Plotter:
             self.plots.append(plot)
             # add the plot to a specific coordinate in the window
             self.win.addItem(plot.plot, i // columns, i % columns)
+        self.fps = 0
 
+        # adding a label masquerading as a graph
+        self.label = LabelItem("")
+        self.win.addItem(self.label, columns - 1, len(self.series) % columns)
         self.rates = []
 
     # called every frame
@@ -36,7 +44,11 @@ class Plotter:
         self.rates.append(time.time())
         if len(self.rates) > 50:
             self.rates.pop(0)
-        print(f"\rFPS: {len(self.rates)/(time.time() - self.rates[0]): >4.0f}  ", end='')
+        if (time.time() - self.rates[0] > 0):
+            self.fps = len(self.rates)/(time.time() - self.rates[0])
+            print(f"\rFPS: {self.fps: >4.2f}", end='')
+        self.label.setText(
+            f"FPS: {self.fps: >4.2f}, Running Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
 
         self.callback()
 
@@ -69,4 +81,5 @@ class Plot:
         self.curve.setData(self.series.times, self.series.points)
 
         # current value readout in the title
-        self.plot.setTitle(f"{self.series.name} ({self.series.points[-1]:.1f})")
+        self.plot.setTitle(
+            f"{self.series.name} [{self.series.get_running_avg(): <4.4f}]")

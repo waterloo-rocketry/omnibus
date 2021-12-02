@@ -12,18 +12,20 @@ class Series:
     def __init__(self, name, rate, parser):
         self.name = name
         self.parser = parser
-
+        self.size = 0
         if rate > config.GRAPH_RESOLUTION:  # we need to downsample
-            size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
+            self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
             self.downsample = rate // config.GRAPH_RESOLUTION
         else:  # don't downsample
-            size = rate * config.GRAPH_DURATION
+            self.size = rate * config.GRAPH_DURATION
             self.downsample = 1
         self.downsampleCount = 0
-        self.times = np.zeros(size)
-        self.points = np.zeros(size)
+        self.times = np.zeros(self.size)
+        self.points = np.zeros(self.size)
         self.first = True
-
+        self.sum = 0  # Sum of series
+        self.avgSize = config.RUNNING_AVG_DURATION * \
+            min(rate, config.GRAPH_RESOLUTION)  # "size" of running average
         self.callback = None
 
         Series.series.append(self)
@@ -51,7 +53,10 @@ class Series:
             self.first = False
             self.times.fill(time)
             self.points.fill(point)
+            self.sum += point * self.avgSize
         else:
+            self.sum -= self.points[self.size - self.avgSize]
+            self.sum += point
             self.points[:-1] = self.points[1:]
             self.points[-1] = point
             self.times[:-1] = self.times[1:]
@@ -59,6 +64,9 @@ class Series:
 
         if self.callback:
             self.callback()
+
+    def get_running_avg(self):
+        return self.sum / self.avgSize
 
     @staticmethod
     def parse(channel, payload):

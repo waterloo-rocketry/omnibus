@@ -4,6 +4,9 @@ from series import Series
 GRAPH_DURATION = 30  # size of x axis in seconds
 GRAPH_RESOLUTION = 10  # data points per second
 
+# last n seconds to be accounted for in running average, please don't set it larger than GRAPH_DURATION
+RUNNING_AVG_DURATION = 2
+
 
 def setup():
     DAQ_SENSORS = [
