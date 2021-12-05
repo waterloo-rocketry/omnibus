@@ -19,7 +19,7 @@ try:
     if sys.argv[1] == "_wrap":
         p = Popen(sys.argv[2])
         if p.wait() != 0:
-            close = input('Press enter to quit')
+            input('Press enter to quit')
 
     else:
         selection = sys.argv[1]
@@ -27,12 +27,10 @@ try:
         args = sys.argv[2:]
 
         for process in processes:
-            if '$arg' in process:
-                command = process.replace('$arg', args[0])
+            while '$arg' in process:
+                process = process.replace('$arg', args[0], 1)
                 args.pop(0)
-            else:
-                command = process
-            Popen(f'python launcher.py _wrap "{command}"', creationflags=CREATE_NEW_CONSOLE)
+            Popen(f'python launcher.py _wrap "{process}"', creationflags=CREATE_NEW_CONSOLE)
 
 except (KeyError, IndexError):
     print('Please enter a single valid profile selection (ex. python launcher.py texas)')
