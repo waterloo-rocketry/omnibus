@@ -48,7 +48,7 @@ class Parser:
 
 class DAQParser(Parser):
     """
-    Parses DAQ messages, returning the first datapoint for each sensor in each message
+    Parses DAQ messages, returning the average for each sensor in each message
     """
 
     def __init__(self):
@@ -63,7 +63,7 @@ class DAQParser(Parser):
         time = payload["timestamp"] - self.start
 
         for sensor, data in payload["data"].items():
-            self.series[sensor].add(time, data[0])
+            self.series[sensor].add(time, sum(data)/len(data))
 
 
 DAQParser()

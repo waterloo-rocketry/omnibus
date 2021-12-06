@@ -23,16 +23,17 @@ class TestDAQParser:
     def test_nominal(self, parser):
         payload = {
             "timestamp": 0,
-            "data": {"SENSOR 1": [1, 2, 3], "SENSOR 2": [4, 5, 6]}
+            "data": {"SENSOR 1": [1, 2, 6], "SENSOR 2": [4, 5, 6]}
         }
         parser.parse(payload)
-        assert parser.series.get("SENSOR 1").data == [(0, 1)]
-        assert parser.series.get("SENSOR 2").data == [(0, 4)]
+        # values should be averagd
+        assert parser.series.get("SENSOR 1").data == [(0, 3)]
+        assert parser.series.get("SENSOR 2").data == [(0, 5)]
 
     def test_multiple(self, parser):
         payload = {
             "timestamp": 00,
-            "data": {"SENSOR": [1, 2, 3]}
+            "data": {"SENSOR": [1]}
         }
         parser.parse(payload)
         payload["timestamp"] = 10
@@ -42,7 +43,7 @@ class TestDAQParser:
     def test_time_offset(self, parser):
         payload = {
             "timestamp": 10,
-            "data": {"SENSOR": [4, 5, 6]}
+            "data": {"SENSOR": [4]}
         }
         parser.parse(payload)
         payload["timestamp"] = 20
