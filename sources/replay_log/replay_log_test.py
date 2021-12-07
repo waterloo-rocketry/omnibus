@@ -9,11 +9,14 @@ import pytest
 import replay_log
 from omnibus import Sender
 
+
 def get_rand_str(l=10):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=l))
 
+
 def get_percent_error(expected, received):
     return abs(expected - received) / expected
+
 
 def bind_mock_send(mock_file):
     def mock_send(self, msg):
@@ -23,11 +26,13 @@ def bind_mock_send(mock_file):
         mock_file.write(packed_bytes)
     return mock_send
 
+
 def generate_mock_writetimes(size, max_incr):
     last = time.time()
     for _ in range(size):
         yield last
         last += max_incr * random.random()
+
 
 class TestReplayLog:
     @pytest.fixture
