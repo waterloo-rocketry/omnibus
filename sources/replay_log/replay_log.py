@@ -13,36 +13,24 @@ import msgpack
 
 from omnibus import Sender, Message
 
-
-def replay(log_file, replay_speed):
-    """
-    Replays the contents of a log_file
-    """
-
-    with open(log_file, 'rb') as f:
-        unpacker = msgpack.Unpacker(file_like=f)
-
-        r_start_time = time.time()  # real start time
-        l_start_time = None         # log start time
-
-        sender = Sender()
-        for channel, timestamp, payload in unpacker:
-            if l_start_time == None:
-                l_start_time = timestamp
-
-            wait_for_logtime(timestamp, r_start_time, l_start_time, replay_speed)
-
-            """
-            Note that we use send_message() over send(), 
-            keeping the old timestamp.
-            """
-            sender.send_message(Message(channel, timestamp, payload))
-
-
-def wait_for_logtime(msg_timestamp, r_start_time, l_start_time, replay_speed):
+def wait_for_logtime(msg_timestamp, real_start, log_start, replay_speed):
     r_delta = 0
-    l_delta = msg_timestamp - l_start_time
-
+    l_delta = msg_timestamp - log_start
     # wait for real time to catch-up to log time
     while r_delta < l_delta:
-        r_delta = (time.time() - r_start_time) * replay_speed
+        r_delta = (time.time() - real_start) * replay_speed
+
+def replay(log_buffer, replay_speed):
+    """
+    Replays the contents of a log_buffer
+    """
+    unpacker = msgpack.Unpacker(file_like=log_buffer)
+    real_start = time.time()
+    log_start = None
+    sender = Sender()
+    for channel, timestamp, payload in unpacker:
+        if log_start == None:
+            log_start = timestamp
+        wait_for_logtime(timestamp, real_start, log_start, replay_speed)
+        # send_message(...) instead of send(...) keeps old timestamp
+        sender.send_message(Message(channel, timestamp, payload))
