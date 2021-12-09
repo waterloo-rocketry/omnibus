@@ -68,16 +68,12 @@ class TestReplayLog:
         replay_log.replay(mock_input, replay_speed)
         assert mock_sender.getvalue() == mock_input.getvalue()
 
-    def test_live_replay_speed(self, mock_sender, mock_input):
-        replay_times = [1, 4, 0.25]
-        runtimes = []
-        for replay_time in replay_times:
-            start = time.time()
-            replay_log.replay(mock_input, replay_time)
-            end = time.time()
-            runtimes.append(end - start)
-            mock_input.seek(0)
-        for i, duration in enumerate(runtimes[1:]):
-            expected_runtime = duration * replay_times[i + 1] / replay_times[0]
-            percent_error = get_percent_error(runtimes[0], expected_runtime)
-            assert percent_error < 0.10
+    @pytest.mark.parametrize("replay_speed", [0.25, 4])
+    def test_replay_live_speed(self, mock_sender, mock_input, replay_speed):
+        BENCHMARK_SPEED = 1
+        benchmark_runtime = get_runtime(replay_log.replay, mock_input, BENCHMARK_SPEED)
+        mock_input.seek(0)
+        runtime = get_runtime(replay_log.replay, mock_input, replay_speed)
+        expected_runtime = runtime * replay_speed
+        percent_error = get_percent_error(benchmark_runtime, expected_runtime)
+        assert percent_error < 0.10
