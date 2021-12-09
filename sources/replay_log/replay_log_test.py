@@ -63,8 +63,8 @@ class TestReplayLog:
         yield mocked_input
         mocked_input.close()
 
-    @pytest.mark.parametrize("replay_speed", [1, 3])
     def test_replay_output(self, mock_sender, mock_input, replay_speed):
+    @pytest.mark.parametrize("replay_speed", [1, 0.25, 4])
         replay_log.replay(mock_input, replay_speed)
         assert mock_sender.getvalue() == mock_input.getvalue()
 
