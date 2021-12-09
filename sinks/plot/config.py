@@ -18,6 +18,7 @@ def setup():
         "FAST", "Omega S-Type",
         "T8 - Tank Heating"
     ]
+
     for sensor in DAQ_SENSORS:
         Series(sensor, 50, DAQParser("DAQ", sensor))
 
