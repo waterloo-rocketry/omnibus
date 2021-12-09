@@ -7,7 +7,6 @@ import msgpack
 import pytest
 
 import replay_log
-from omnibus import Sender
 
 
 def get_rand_str(l=10):
@@ -18,15 +17,6 @@ def get_percent_error(expected, received):
     return abs(expected - received) / expected
 
 
-def bind_mock_send(mock_file):
-    def mock_send(self, msg):
-        if msg is None:
-            return
-        packed_bytes = msgpack.packb([msg.channel, msg.timestamp, msg.payload])
-        mock_file.write(packed_bytes)
-    return mock_send
-
-
 def generate_mock_writetimes(size, max_incr):
     last = time.time()
     for _ in range(size):
@@ -34,21 +24,33 @@ def generate_mock_writetimes(size, max_incr):
         last += max_incr * random.random()
 
 
+def get_runtime(func, *args, **kwargs):
+    start = time.time()
+    func(*args, **kwargs)
+    end = time.time()
+    return end - start
+
+
+class MockSender:
+    mock_file = None
+
+    def send_message(self, msg):
+        if msg is None:
+            return
+        packed_bytes = msgpack.packb([msg.channel, msg.timestamp, msg.payload])
+        self.mock_file.write(packed_bytes)
+
+
 class TestReplayLog:
     @pytest.fixture
     def mock_sender(self, monkeypatch):
-        mock_file = io.BytesIO()
+        MockSender.mock_file = io.BytesIO()
         monkeypatch.setattr(
-            Sender,
-            'send_message',
-            bind_mock_send(mock_file)
+            replay_log,
+            'Sender',
+            MockSender
         )
-        monkeypatch.setattr(
-            Sender,
-            '__init__',
-            lambda _: None
-        )
-        return mock_file
+        return MockSender.mock_file
 
     @pytest.fixture
     def mock_input(self):
