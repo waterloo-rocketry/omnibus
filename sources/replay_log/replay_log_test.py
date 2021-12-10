@@ -32,12 +32,10 @@ def get_runtime(func, *args, **kwargs):
 
 
 class MockSender:
-    """class used to mock omnibus.Sender
-    mocking ombnibus.Sender supresses constructor side effects
-    and mocks send_message attribute
     """
-    # mock file to record sent messages
-    # has class scope to simplify monkeypatching
+    Mocks provides mock for omnibus.Sender.
+    """
+    # mock_file records sent messages and has class scope to simplify monkeypatching
     mock_file = None
 
     def send_message(self, msg):
@@ -50,7 +48,8 @@ class MockSender:
 class TestReplayLog:
     @pytest.fixture
     def mock_sender(self, monkeypatch):
-        """mock omnibus.Sender and return sender's mock_file
+        """
+        Mock omnibus.Sender and return sender's mock_file.
         """
         MockSender.mock_file = io.BytesIO()
         monkeypatch.setattr(
@@ -62,8 +61,8 @@ class TestReplayLog:
 
     @pytest.fixture
     def mock_input(self):
-        """manages and yields mock log stream
-        mock log stream is first arg passed to replay_log.replay
+        """
+        Yield mock log stream (first arg passed to replay_log.replay).
         """
         INPUT_LENGTH = 50
         mocked_input = io.BytesIO()
@@ -78,14 +77,16 @@ class TestReplayLog:
 
     @pytest.mark.parametrize("replay_speed", [1, 0.25, 4])
     def test_replay_output_independent_of_speed(self, mock_sender, mock_input, replay_speed):
-        """tests that output consistent and independent of replay speed
+        """
+        Test that output is consistent and independent of replay speed.
         """
         replay_log.replay(mock_input, replay_speed)
         assert mock_sender.getvalue() == mock_input.getvalue()
 
     @pytest.mark.parametrize("replay_speed", [0.25, 4])
     def test_replay_live_speed(self, mock_sender, mock_input, replay_speed):
-        """tests that replay_log.replay sends data at given replay_speed
+        """
+        Test that replay_log.replay sends data at specified replay_speed.
         """
         BENCHMARK_SPEED = 1
         benchmark_runtime = get_runtime(replay_log.replay, mock_input, BENCHMARK_SPEED)
