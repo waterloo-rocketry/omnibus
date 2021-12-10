@@ -74,6 +74,6 @@ class TestReplayLog:
         benchmark_runtime = get_runtime(replay_log.replay, mock_input, BENCHMARK_SPEED)
         mock_input.seek(0)
         runtime = get_runtime(replay_log.replay, mock_input, replay_speed)
-        expected_runtime = runtime * replay_speed
-        percent_error = get_percent_error(benchmark_runtime, expected_runtime)
+        expected_runtime = benchmark_runtime / replay_speed
+        percent_error = get_percent_error(runtime, expected_runtime)
         assert percent_error < 0.10
