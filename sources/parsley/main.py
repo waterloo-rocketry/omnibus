@@ -20,7 +20,8 @@ def main():
     parser.add_argument('port', help='the serial port to read from, or - for stdin')
     parser.add_argument('--format', default='usb',
                         help='Options: logger, usb. Parse input in RocketCAN Logger or USB format')
-    parser.add_argument('--solo', action='store_true', help="Don't connect to omnibus - just print to stdout.")
+    parser.add_argument('--solo', action='store_true',
+                        help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
 
     readline = reader(args.port)
