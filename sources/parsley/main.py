@@ -20,12 +20,14 @@ def main():
     parser.add_argument('port', help='the serial port to read from, or - for stdin')
     parser.add_argument('--format', default='usb',
                         help='Options: logger, usb. Parse input in RocketCAN Logger or USB format')
+    parser.add_argument('--solo', action='store_true', help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
 
     readline = reader(args.port)
     parser = parsley.parse_logger if args.format == 'logger' else parsley.parse_usb_debug
-    sender = Sender()
-    CHANNEL = "CAN/Parsley"
+    if not args.solo:
+        sender = Sender()
+        CHANNEL = "CAN/Parsley"
 
     while True:
         line = readline()
@@ -41,7 +43,8 @@ def main():
         parsed_data = parsley.parse(msg_sid, msg_data)
 
         print(parsley.fmt_line(parsed_data))
-        sender.send(CHANNEL, parsed_data)
+        if not args.solo:
+            sender.send(CHANNEL, parsed_data)
 
 
 if __name__ == '__main__':
