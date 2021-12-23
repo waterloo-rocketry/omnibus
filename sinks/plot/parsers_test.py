@@ -57,6 +57,8 @@ class TestParsleyParser:
     def parser(self):
         data = []
         p = parsers.ParsleyParser("MSG_TYPE")
+        # mock out parser.parse_can to just append to data
+        # mutability is an easy way to override functionality here without needing a subclass
         p.parse_can = data.append
         return p, data
 
