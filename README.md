@@ -16,9 +16,16 @@ The Omnibus library is required to run any of the sources or sinks. To install i
     * If you have git configured with SSH, run `git clone git@github.com:waterloo-rocketry/omnibus.git`
     * If you don't have git configured with SSH (or you're not sure what that means), run `git clone https://github.com/waterloo-rocketry/omnibus.git`
 2. Enter the newly-cloned repo with `cd omnibus`
-3. Run `pip install wheel`, which will help install the rest of the packages more quickly.
-4. Install Python dependencies with `pip install -r requirements.txt`. If you get a permissions error, try `pip install --user -r requirements.txt` instead.
-5. Install the Omnibus library locally with `pip install -e .`. Don't forget the `.`! This allows the sources and sinks (and you) to import Omnibus.
+3. Create a virtual environment:
+   - For osx/linux: `python -m venv venv`
+   - For windows: `python -m venv venv`
+4. Activate the virtual environment:
+   - For osx/linux: `source venv/bin/activate`
+   - For windows: `venv\Scripts\activate`
+5. Upgrade pip version: `pip install --upgrade pip`
+6. Run `pip install wheel`, which will help install the rest of the packages more quickly.
+7. Install Python dependencies with `pip install -r requirements.txt`. If you get a permissions error, try `pip install --user -r requirements.txt` instead.
+8. Install the Omnibus library locally with `pip install -e .`. Don't forget the `.`! This allows the sources and sinks (and you) to import Omnibus.
 
 #### Usage
 
