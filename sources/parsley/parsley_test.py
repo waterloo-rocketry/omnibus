@@ -24,19 +24,23 @@ class TestParsley:
         assert res["time"] == 12345
         assert res["command"] == "BUS_DOWN_WARNING"
 
-    def test_valve_cmd(self, timestamp):
+    def test_actuator_cmd(self, timestamp):
         msg_data = timestamp()
-        msg_data += struct.pack(">b", mt.valve_states_hex["VALVE_CLOSED"])
-        res = parsley.parse_valve_cmd(msg_data)
-        assert res["req_state"] == "VALVE_CLOSED"
+        msg_data += struct.pack(">b", mt.actuator_id_hex["VENT_VALVE"])
+        msg_data += struct.pack(">b", mt.actuator_states_hex["ACTUATOR_CLOSED"])
+        res = parsley.parse_actuator_cmd(msg_data)
+        assert res["actuator"] == "VENT_VALVE"
+        assert res["req_state"] == "ACTUATOR_CLOSED"
 
-    def test_valve_status(self, timestamp):
+    def test_actuator_status(self, timestamp):
         msg_data = timestamp()
+        msg_data += struct.pack(">b", mt.actuator_id_hex["INJECTOR_VALVE"])
         msg_data += struct.pack(">bb",
-                                mt.valve_states_hex["VALVE_UNK"], mt.valve_states_hex["VALVE_CLOSED"])
-        res = parsley.parse_valve_status(msg_data)
-        assert res["req_state"] == "VALVE_CLOSED"
-        assert res["cur_state"] == "VALVE_UNK"
+                                mt.actuator_states_hex["ACTUATOR_UNK"], mt.actuator_states_hex["ACTUATOR_CLOSED"])
+        res = parsley.parse_actuator_status(msg_data)
+        assert res["actuator"] == "INJECTOR_VALVE"
+        assert res["req_state"] == "ACTUATOR_CLOSED"
+        assert res["cur_state"] == "ACTUATOR_UNK"
 
     def test_arm_cmd(self, timestamp):
         msg_data = timestamp() + b'\x17'
@@ -107,14 +111,14 @@ class TestParsley:
         assert res["status"] == "E_SENSOR"
         assert res["sensor_id"] == "SENSOR_BARO"
 
-    def test_board_status_valve(self, timestamp):
+    def test_board_status_actuator(self, timestamp):
         msg_data = timestamp()
-        msg_data += struct.pack(">bbb", mt.board_stat_hex["E_VALVE_STATE"],
-                                mt.valve_states_hex["VALVE_CLOSED"], mt.valve_states_hex["VALVE_UNK"])
+        msg_data += struct.pack(">bbb", mt.board_stat_hex["E_ACTUATOR_STATE"],
+                                mt.actuator_states_hex["ACTUATOR_CLOSED"], mt.actuator_states_hex["ACTUATOR_UNK"])
         res = parsley.parse_board_status(msg_data)
-        assert res["status"] == "E_VALVE_STATE"
-        assert res["req_state"] == "VALVE_CLOSED"
-        assert res["cur_state"] == "VALVE_UNK"
+        assert res["status"] == "E_ACTUATOR_STATE"
+        assert res["req_state"] == "ACTUATOR_CLOSED"
+        assert res["cur_state"] == "ACTUATOR_UNK"
 
     def test_sensor_analog(self):
         msg_data = struct.pack(">HbH", 12345, mt.sensor_id_hex["SENSOR_BARO"], 54321)
