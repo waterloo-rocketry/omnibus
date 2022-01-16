@@ -30,6 +30,7 @@ class Series:
         Add a datapoint to this series.
         """
 
+        # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last < 1 / config.GRAPH_RESOLUTION:
             return
 

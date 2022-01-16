@@ -23,6 +23,7 @@ class TestDAQParser:
     def test_nominal(self, parser):
         payload = {
             "timestamp": 0,
+            # [1, 2, 6] to make sure its not just returning the middle element
             "data": {"SENSOR 1": [1, 2, 6], "SENSOR 2": [4, 5, 6]}
         }
         parser.parse(payload)
