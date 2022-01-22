@@ -6,11 +6,10 @@ from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 import config
 
-from pyqtgraph.graphicsItems.LabelItem import LabelItem
-from pyqtgraph.graphicsItems.TextItem import TextItem
-
-import config
 from parsers import Parser
+from sinks.plot.tick_counter import TickCounter
+
+import tick_counter
 
 
 class Plotter:
@@ -44,10 +43,10 @@ class Plotter:
             self.win.addItem(plot.plot, i // columns, i % columns)
         self.fps = 0
 
-        # adding a label masquerading as a graph
-        self.label = LabelItem("")
-        self.win.addItem(self.label, columns - 1, len(series) % columns)
+        # Analytics & Tick Counter
         self.rates = []
+        self.analytics = {"FPS": 0, "Running Average Duration (s)": 0}
+        self.counter = TickCounter()
 
         self.exec()
 
@@ -58,10 +57,10 @@ class Plotter:
             self.rates.pop(0)
         if (time.time() - self.rates[0] > 0):
             self.fps = len(self.rates)/(time.time() - self.rates[0])
-            print(f"\rFPS: {self.fps: >4.2f}", end='')
-        self.label.setText(
-            f"FPS: {self.fps: >4.2f}, Running Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
 
+        self.analytics["FPS"] = str(round(self.fps, 2))
+        self.analytics["Running Average Duration (s)"] = str(config.RUNNING_AVG_DURATION)
+        self.counter.update(self.analytics)
         self.callback()
 
     def exec(self):
