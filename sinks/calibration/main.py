@@ -13,6 +13,12 @@ samples = [
 	##msg.timestamp, msg.payload
 ]
 
-while True:
-    msg = receiver.recv_message()
-    print(data)
+def callback():
+    while msg := receiver.recv_message(0)
+        samples.push_back([msg.timestamp, msg.payload])
+        if len(samples) > 50:
+            samples.pop(0)
+
+    return samples
+
+initGUI(callback)

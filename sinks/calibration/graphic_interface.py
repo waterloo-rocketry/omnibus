@@ -10,6 +10,7 @@ from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
 BIG_CONSTANT = 10 ** 2
+FRAME_DELAY = 500
 
 class TextInputWidget(QWidget):
     def __init__(self, callback):
@@ -91,7 +92,7 @@ class CalibrationWidget(QWidget):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.renderFrame)
-        self.timer.start(1000)
+        self.timer.start(FRAME_DELAY)
 
         self.move(300, 150)
         self.setWindowTitle('Calibration Sink')
@@ -110,24 +111,28 @@ class CalibrationWidget(QWidget):
     def onButtonPress(self):
         new_y = sum(self.live_data_points[1]) / len(self.live_data_points[1])
         new_x = self.inputWidget.getInputtedValue()
+
         self.line_plot_points += [{'pos': [new_x, new_y], 'data':1}]
+
         if len(self.line_plot_points) >= 2:
             x_vals = np.array([i['pos'][0] for i in self.line_plot_points])
             y_vals = np.array([i['pos'][1] for i in self.line_plot_points])
-            print([i['pos'][0] for i in self.line_plot_points])
-            print([i['pos'][1] for i in self.line_plot_points])
+
             m, b = np.polyfit(x_vals, y_vals, 1)
+
             self.inputWidget.setSlopeAndOffset(m, b)
+
             line_x = [-BIG_CONSTANT, BIG_CONSTANT]
             line_y = [-BIG_CONSTANT * m + b, BIG_CONSTANT * m + b]
+
             if self.line_of_best_fit_line == None:
                 self.line_of_best_fit_line = self.line_of_best_fit.plot(line_x, line_y, pen=(0,255,0))
             else:
                 self.line_of_best_fit_line.setData(line_x, line_y)
+
             scatter_plot_x_range = (min([i['pos'][0] for i in self.line_plot_points]), max([i['pos'][0] for i in self.line_plot_points]))
             scatter_plot_y_range = (min([i['pos'][1] for i in self.line_plot_points]), max([i['pos'][1] for i in self.line_plot_points]))
-            print(scatter_plot_x_range)
-            print(scatter_plot_y_range)
+
             self.line_of_best_fit.setXRange(scatter_plot_x_range[0], scatter_plot_x_range[1])
             self.line_of_best_fit.setYRange(scatter_plot_y_range[0], scatter_plot_y_range[1])
         return self.line_plot_points
