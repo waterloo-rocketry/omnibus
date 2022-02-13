@@ -1,5 +1,6 @@
 from omnibus import Receiver
 from graphic_interface import initGUI
+import sys
 
 # Take a channel as a command line argument. Defaults to all channels.
 channel = ""
@@ -14,8 +15,9 @@ samples = [
 ]
 
 def callback():
-    while msg := receiver.recv_message(0)
-        samples.push_back([msg.timestamp, msg.payload])
+    while msg := receiver.recv_message(0):
+        ## need to adjust for the format
+        samples.append([msg.timestamp, msg.payload])
         if len(samples) > 50:
             samples.pop(0)
 
