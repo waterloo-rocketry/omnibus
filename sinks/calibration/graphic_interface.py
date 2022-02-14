@@ -1,7 +1,7 @@
 import sys
-from PyQt5.QtWidgets import (QApplication, QWidget,
+from PySide6.QtWidgets import (QApplication, QWidget,
 QPushButton, QGridLayout, QLabel, QTextEdit)
-from PyQt5.QtCore import QTimer
+from PySide6.QtCore import QTimer
 import numpy as np
 
 import pyqtgraph as pg
