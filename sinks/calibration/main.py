@@ -17,7 +17,8 @@ samples = [
 def callback():
     while msg := receiver.recv_message(0):
         ## need to adjust for the format
-        samples.append([msg.timestamp, msg.payload])
+        for sensor, data in msg.payload['data'].items():
+            samples.append([msg.timestamp, sum(data)/len(data)])
         if len(samples) > 50:
             samples.pop(0)
 
