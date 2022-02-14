@@ -11,16 +11,19 @@ receiver = Receiver(channel)
 # Record the payload and time stamp of every message
 # recieved.
 samples = [
-	##msg.timestamp, msg.payload
+	[], []
 ]
 
 def callback():
     while msg := receiver.recv_message(0):
         ## need to adjust for the format
         for sensor, data in msg.payload['data'].items():
-            samples.append([msg.timestamp, sum(data)/len(data)])
-        if len(samples) > 50:
-            samples.pop(0)
+            samples[0].append(msg.timestamp)
+            samples[1].append(sum(data)/len(data))
+
+        while len(samples[0]) > 50:
+            samples[0].pop(0)
+            samples[1].pop(0)
 
     return samples
 
