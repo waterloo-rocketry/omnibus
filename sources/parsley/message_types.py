@@ -22,16 +22,14 @@
 
 msg_type_hex = {
     "GENERAL_CMD": 0x060,
-    "VENT_VALVE_CMD": 0x0C0,
-    "INJ_VALVE_CMD": 0x120,
+    "ACTUATOR_CMD": 0x0C0,
     "ALT_ARM_CMD": 0x140,
 
     "DEBUG_MSG": 0x180,
     "DEBUG_PRINTF": 0x1E0,
 
     "ALT_ARM_STATUS": 0x440,
-    "VENT_VALVE_STATUS": 0x460,
-    "INJ_VALVE_STATUS": 0x4C0,
+    "ACTUATOR_STATUS": 0x460,
     "GENERAL_BOARD_STATUS": 0x520,
     "RECOVERY_STATUS": 0x540,
 
@@ -84,14 +82,14 @@ board_id_str = {v: k for k, v in board_id_hex.items()}
 gen_cmd_hex = {"BUS_DOWN_WARNING": 0}
 gen_cmd_str = {v: k for k, v in gen_cmd_hex.items()}
 
-# VALVE_CMD/STATUS STATES
-valve_states_hex = {
-    "VALVE_OPEN":  0,
-    "VALVE_CLOSED": 1,
-    "VALVE_UNK": 2,
-    "VALVE_ILLEGAL": 3
+# ACTUATOR_CMD/STATUS STATES
+actuator_states_hex = {
+    "ACTUATOR_OPEN":  0,
+    "ACTUATOR_CLOSED": 1,
+    "ACTUATOR_UNK": 2,
+    "ACTUATOR_ILLEGAL": 3
 }
-valve_states_str = {v: k for k, v in valve_states_hex.items()}
+actuator_states_str = {v: k for k, v in actuator_states_hex.items()}
 
 # ARM_CMD/STATUS STATES
 arm_states_hex = {
@@ -118,7 +116,7 @@ board_stat_hex = {
     "E_MISSING_CRITICAL_BOARD": 8,    # board_id         x                   x                   x
     "E_RADIO_SIGNAL_LOST": 9,         # time_s_high      time_s_low          x                   x
 
-    "E_VALVE_STATE": 10,              # expected_state   valve_state         x                   x
+    "E_ACTUATOR_STATE": 10,              # expected_state   valve_state         x                   x
     "E_CANNOT_INIT_DACS": 11,         # x                x                   x                   x
     "E_VENT_POT_RANGE": 12,            # lim_upper (mV)   lim_lower (mV)      pot (mV)            x
 
@@ -157,3 +155,9 @@ fill_direction_hex = {
     "EMPTYING": 1,
 }
 fill_direction_str = {v: k for k, v in fill_direction_hex.items()}
+
+actuator_id_hex = {
+    "VENT_VALVE": 0,
+    "INJECTOR_VALVE": 1,
+}
+actuator_id_str = {v: k for k, v in actuator_id_hex.items()}

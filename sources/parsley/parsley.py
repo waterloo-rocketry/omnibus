@@ -29,21 +29,23 @@ def parse_gen_cmd(msg_data):
     return {"time": timestamp, "command": cmd}
 
 
-@register(["VENT_VALVE_CMD", "INJ_VALVE_CMD"])
-def parse_valve_cmd(msg_data):
+@register("ACTUATOR_CMD")
+def parse_actuator_cmd(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
-    valve_state = mt.valve_states_str[msg_data[3]]
+    actuator = mt.actuator_id_str[msg_data[3]]
+    actuator_state = mt.actuator_states_str[msg_data[4]]
 
-    return {"time": timestamp, "req_state": valve_state}
+    return {"time": timestamp, "actuator": actuator, "req_state": actuator_state}
 
 
-@register(["VENT_VALVE_STATUS", "INJ_VALVE_STATUS"])
-def parse_valve_status(msg_data):
+@register("ACTUATOR_STATUS")
+def parse_actuator_status(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
-    valve_state = mt.valve_states_str[msg_data[3]]
-    req_valve_state = mt.valve_states_str[msg_data[4]]
+    actuator = mt.actuator_id_str[msg_data[3]]
+    actuator_state = mt.actuator_states_str[msg_data[4]]
+    req_actuator_state = mt.actuator_states_str[msg_data[5]]
 
-    return {"time": timestamp, "req_state": req_valve_state, "cur_state": valve_state}
+    return {"time": timestamp, "actuator": actuator, "req_state": req_actuator_state, "cur_state": actuator_state}
 
 
 @register("ALT_ARM_CMD")
@@ -114,9 +116,9 @@ def parse_board_status(msg_data):
         sensor_id = mt.sensor_id_str[msg_data[4]]
         res["sensor_id"] = sensor_id
 
-    elif board_stat == "E_VALVE_STATE":
-        expected_state = mt.valve_states_str[msg_data[4]]
-        cur_state = mt.valve_states_str[msg_data[5]]
+    elif board_stat == "E_ACTUATOR_STATE":
+        expected_state = mt.actuator_states_str[msg_data[4]]
+        cur_state = mt.actuator_states_str[msg_data[5]]
         res["req_state"] = expected_state
         res["cur_state"] = cur_state
 
