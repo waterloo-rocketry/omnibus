@@ -6,10 +6,11 @@ from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 import config
 
-from parsers import Parser
-from sinks.plot.tick_counter import TickCounter
+from pyqtgraph.graphicsItems.LabelItem import LabelItem
+from pyqtgraph.graphicsItems.TextItem import TextItem
 
-import tick_counter
+import config
+from parsers import Parser
 
 
 class Plotter:
@@ -43,10 +44,14 @@ class Plotter:
             self.win.addItem(plot.plot, i // columns, i % columns)
         self.fps = 0
 
-        # Analytics & Tick Counter
+        # adding a viewbox with a textItem in it masquerading as a graph
+        self.textvb = self.win.addViewBox(col = columns - 1, row = len(series) % columns)
+        self.txitem = TextItem("", (255, 255, 255))
+        self.textvb.autoRange()
+        self.txitem.setPos(0.25, 0.6)  # Centralize the Text
+        self.textvb.addItem(self.txitem)
+
         self.rates = []
-        self.analytics = {"FPS": 0, "Running Average Duration (s)": 0}
-        self.counter = TickCounter()
 
         self.exec()
 
@@ -57,10 +62,10 @@ class Plotter:
             self.rates.pop(0)
         if (time.time() - self.rates[0] > 0):
             self.fps = len(self.rates)/(time.time() - self.rates[0])
+            print(f"\rFPS: {self.fps: >4.2f}", end='')
+        self.txitem.setText(
+            f"FPS: {self.fps: >4.2f}\nRunning Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
 
-        self.analytics["FPS"] = str(round(self.fps, 2))
-        self.analytics["Running Average Duration (s)"] = str(config.RUNNING_AVG_DURATION)
-        self.counter.update(self.analytics)
         self.callback()
 
     def exec(self):
