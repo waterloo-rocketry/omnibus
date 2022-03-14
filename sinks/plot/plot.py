@@ -52,7 +52,7 @@ class Plotter:
         self.txitem.setPos(0.25, 0.6)  # Centralize the Text
         self.textvb.addItem(self.txitem)
 
-        self.counter = TickCounter()
+        self.counter = TickCounter(50)
 
         self.exec()
 
@@ -61,8 +61,8 @@ class Plotter:
         self.counter.tick()
         fps = self.counter.tps()
 
-        # Filter for 10 ticks every display update
-        if not(self.counter.tick_count() % 10):
+        # Filter to 5 frames per update on analytics
+        if not(self.counter.tick_count() % 5):
             self.txitem.setText(
                 f"FPS: {fps: >4.2f}\nRunning Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
             print(f"\rFPS: {fps: >4.2f}", end='')
