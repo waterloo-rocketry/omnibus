@@ -5,7 +5,6 @@ from omnibus.util import TickCounter
 
 
 class TestTickCounter():
-    @pytest.fixture()
     def test_instantaneous(self):
         t = TickCounter(2)
         t.tick()
@@ -14,7 +13,6 @@ class TestTickCounter():
         assert(round(t.tick_rate()) == 1)
         assert(t.tick_count() == 2)
 
-    @pytest.fixture()
     def test_running_avg(self):
         t = TickCounter(5)
         for _ in range(5):
