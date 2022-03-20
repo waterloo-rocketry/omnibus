@@ -1,6 +1,5 @@
 import pytest
 import time
-from unittest import TestCase
 
 from tick_counter import TickCounter
 
