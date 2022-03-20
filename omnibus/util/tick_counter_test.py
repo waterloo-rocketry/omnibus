@@ -7,7 +7,7 @@ from tick_counter import TickCounter
 class TestTickCounter():
     @pytest.fixture()
     def test_instantaneous(self):
-        t = TickCounter()
+        t = TickCounter(2)
         t.tick()
         time.sleep(1)
         t.tick()
@@ -16,7 +16,7 @@ class TestTickCounter():
 
     @pytest.fixture()
     def test_running_avg(self):
-        t = TickCounter()
+        t = TickCounter(5)
         for _ in range(5):
             t.tick()
             time.sleep(0.2)
