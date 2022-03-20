@@ -5,6 +5,7 @@ from tick_counter import TickCounter
 
 
 class TickCounterTest:
+    @pytest.fixture()
     def test_instantaneous(self):
         t = TickCounter()
         t.tick()
@@ -13,6 +14,7 @@ class TickCounterTest:
         assert(int(t.tick_rate()) == 1)
         assert(t.tick_count() == 2)
 
+    @pytest.fixture()
     def test_running_avg(self):
         t = TickCounter()
         for _ in range(5):
