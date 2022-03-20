@@ -1,7 +1,7 @@
 import pytest
 import time
 
-from util import TickCounter
+from omnibus.util import TickCounter
 
 
 class TestTickCounter():
