@@ -1,7 +1,7 @@
 import pytest
 import time
 
-from tick_counter import TickCounter
+from util import TickCounter
 
 
 class TestTickCounter():
