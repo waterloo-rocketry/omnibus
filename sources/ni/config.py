@@ -8,13 +8,12 @@ CC = False
 
 def setup():
     Sensor("Big Omega S-type", "ai18", 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(1/(2.9991 / 1000 * 10 / 1000), -10.1, "kg"))  # Roughly calibrated 2/7/2021
+           LinearCalibration(1/(2.9991 / 1000 * 10 / 1000), -10.1, "kg"))  # calibrated 3/13/2021
     Sensor("Honeywell S-type", "ai17", 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(5116, -0.94, "kgs"))  # Roughly calibrated 2/7/2021
+           LinearCalibration(5116, -0.94, "kgs"))  # calibrated 3/13/2021
     Sensor("Omega S-type", "ai16", 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(3025.7, -1.3675, "kgs"))  # Roughly calibrated 2/7/2021
+           LinearCalibration(3025.7, -1.3675, "kgs"))  # calibrated 3/13/2021
     """
-    # Sensor("Honeywell S-Type", "", 0.2, Connection.DIFFERENTIAL, LinearCalibration(18.3*61.2, -0.59, "lbs")) # RECALIBRATE
     Sensor("P5 (PT-5) - SRAD Vent Valve", "ai7", 10, Connection.SINGLE,
            LinearCalibration(620, -39.1, "psi"))  # Calibrated 2/7/2021
     Sensor("P4 (PT-1) - Ox Fill", "ai6", 10, Connection.SINGLE,
