@@ -3,12 +3,17 @@ from calibration import Sensor, Connection, LinearCalibration, ThermistorCalibra
 RATE = 10000  # Analog data sample rate
 READ_BULK = 200  # Number of samples to read at once for better performance
 
-CC = True
+CC = False
 
 
 def setup():
-    Sensor("Omega S-Type", "ai3", 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(6637, -4.3, "lbs"))  # Roughly calibrated 2/7/2021
+    Sensor("Big Omega S-type", "ai18", 0.2, Connection.DIFFERENTIAL,
+           LinearCalibration(1/(2.9991 / 1000 * 10 / 1000), -10.1, "kg"))  # Roughly calibrated 2/7/2021
+    Sensor("Honeywell S-type", "ai17", 0.2, Connection.DIFFERENTIAL,
+           LinearCalibration(5116, -0.94, "kgs"))  # Roughly calibrated 2/7/2021
+    Sensor("Omega S-type", "ai16", 0.2, Connection.DIFFERENTIAL,
+           LinearCalibration(3025.7, -1.3675, "kgs"))  # Roughly calibrated 2/7/2021
+    """
     # Sensor("Honeywell S-Type", "", 0.2, Connection.DIFFERENTIAL, LinearCalibration(18.3*61.2, -0.59, "lbs")) # RECALIBRATE
     Sensor("P5 (PT-5) - SRAD Vent Valve", "ai7", 10, Connection.SINGLE,
            LinearCalibration(620, -39.1, "psi"))  # Calibrated 2/7/2021
@@ -18,6 +23,7 @@ def setup():
            LinearCalibration(605, -53.3, "psi"))  # Calibrated 2/7/2021
     Sensor("T8 - Tank Heating", "ai23", 10, Connection.SINGLE,
            ThermistorCalibration(10000, 3434, 0.099524))  # Calibration pulled from LabVIEW
+    """
 
     if CC:
         Sensor("P2 (PT-3) - CC", "ai4", 10, Connection.SINGLE,
