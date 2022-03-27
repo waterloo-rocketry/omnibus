@@ -8,9 +8,9 @@ class TestTickCounter():
     def test_instantaneous(self):
         t = TickCounter(2)
         t.tick()
-        time.sleep(0.1)
+        time.sleep(0.2)
         t.tick()
-        assert(round(t.tick_rate()) == 10)
+        assert(round(t.tick_rate()) == 5)
         assert(t.tick_count() == 2)
 
     def test_running_avg(self):
