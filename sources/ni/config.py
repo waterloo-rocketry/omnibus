@@ -22,15 +22,25 @@ def setup():
     Sensor("SP1 (PT-1) - Ox Fill", "ai16", 0.2, Connection.DIFFERENTIAL,
             LinearCalibration(167706, -91.5, "psi")) # Calibrated 25/3/2022
 
-    # Rough thermocouple approximation. 1000 mV/V / 18.3 gain / 0.041 mV/C
-    Sensor("T1 - Ox Tank Temp A", "ai0", 2, Connection.SINGLE,
-            LinearCalibration(1000 / 18.3 / 0.041, 0, "C"))
-    Sensor("T2 - Ox Tank Temp B", "ai8", 2, Connection.SINGLE,
-            LinearCalibration(1000 / 18.3 / 0.041, 0, "C"))
-    Sensor("T3 - Fuel Tank Temp A", "ai1", 2, Connection.SINGLE,
-            LinearCalibration(1000 / 18.3 / 0.041, 0, "C"))
-    Sensor("T4 - Fuel Tank Temp B", "ai9", 2, Connection.SINGLE,
-            LinearCalibration(1000 / 18.3 / 0.041, 0, "C"))
+    
+
+    #Sensor("T1 - Ox Tank Temp A", "ai0", 2, Connection.SINGLE,
+    #        LinearCalibration(1000 / 18.3 / 0.041, 0, "C"))
+    #Sensor("T2 - Ox Tank Temp B", "ai8", 2, Connection.SINGLE,
+    #        LinearCalibration(1000 / 18.3 / 0.041, 0, "C"))
+    #Sensor("T3 - Fuel Tank Temp A", "ai1", 2, Connection.SINGLE,
+    #        LinearCalibration(1000 / 18.3 / 0.041, 0, "C"))
+    #Sensor("T4 - Fuel Tank Temp B", "ai9", 2, Connection.SINGLE,
+    #        LinearCalibration(1000 / 18.3 / 0.041, 0, "C")) 
+
+    Sensor("T1 - Ox Tank Temp A", "ai0", 0.2, Connection.DIFFERENTIAL,
+            LinearCalibration(1 / (41 / 1000 / 1000), 0.0009 / (41 / 1000 / 1000), "C"))
+    Sensor("T2 - Ox Tank Temp B", "ai1", 0.2, Connection.DIFFERENTIAL,
+            LinearCalibration(1 / (41 / 1000 / 1000), 0.0009 / (41 / 1000 / 1000), "C"))
+    Sensor("T3 - Fuel Tank Temp A", "ai3", 0.2, Connection.DIFFERENTIAL,
+            LinearCalibration(1 / (41 / 1000 / 1000), 0.0009 / (41 / 1000 / 1000), "C"))
+    Sensor("T4 - Fuel Tank Temp B", "ai4", 0.2, Connection.DIFFERENTIAL,
+            LinearCalibration(1 / (41 / 1000 / 1000), 0.0009 / (41 / 1000 / 1000), "C"))
 
     #Sensor("Big Omega S-Type", "ai18", 0.2, Connection.DIFFERENTIAL,
     #        # Factory calibration: 1000 kG / (2.9991 mV/V * 10 V)
