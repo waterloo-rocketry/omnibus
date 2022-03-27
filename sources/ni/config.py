@@ -5,34 +5,24 @@ READ_BULK = 20  # Number of samples to read at once for better performance
 
 
 def setup():
-    Sensor("Honeywell S-Type - ? Tank Mass", "ai17", 0.2, Connection.DIFFERENTIAL,
+    Sensor("Honeywell S-Type - Fuel Tank Mass", "ai17", 0.2, Connection.DIFFERENTIAL,
             LinearCalibration(5116, -0.94, "kg")) # calibrated 13/3/2022
-    Sensor("Omega S-Type - ? Tank Mass", "ai18", 0.2, Connection.DIFFERENTIAL,
+    Sensor("Omega S-Type - Ox Tank Mass", "ai18", 0.2, Connection.DIFFERENTIAL,
             LinearCalibration(3025.7, -1.37, "kg")) # calibrated 13/3/2022
 
     Sensor("PNew (PT-5) - Ox Injector", "ai5", 2, Connection.SINGLE,
             # Factory calibration mapping 4-20mA to 0-3000psi
             LinearCalibration(1/98.1*3000/0.016, -0.004*3000/0.016, "psi"))
-    Sensor("P5 (PT-2) - Ox Tank", "ai19", 10, Connection.SINGLE,
+    Sensor("P5 (PT-2) - Ox Fill", "ai19", 10, Connection.SINGLE,
             LinearCalibration(600, -54.9, "psi")) # calibrated 25/3/2022
     Sensor("P7 (PT-3) - Fuel Tank", "ai20", 10, Connection.SINGLE,
             LinearCalibration(600, -60.2, "psi")) # calibrated 25/3/2022
     Sensor("P9 - Fuel Injector", "ai21", 10, Connection.SINGLE,
             LinearCalibration(601, -57.7, "psi")) # calibrated 26/3/2022
-    Sensor("SP1 (PT-1) - Ox Fill", "ai16", 0.2, Connection.DIFFERENTIAL,
+    Sensor("SP1 (PT-1) - Ox Tank", "ai16", 0.2, Connection.DIFFERENTIAL,
             LinearCalibration(167706, -91.5, "psi")) # Calibrated 25/3/2022
 
-    
-
-    #Sensor("T1 - Ox Tank Temp A", "ai0", 2, Connection.SINGLE,
-    #        LinearCalibration(1000 / 18.3 / 0.041, 0, "C"))
-    #Sensor("T2 - Ox Tank Temp B", "ai8", 2, Connection.SINGLE,
-    #        LinearCalibration(1000 / 18.3 / 0.041, 0, "C"))
-    #Sensor("T3 - Fuel Tank Temp A", "ai1", 2, Connection.SINGLE,
-    #        LinearCalibration(1000 / 18.3 / 0.041, 0, "C"))
-    #Sensor("T4 - Fuel Tank Temp B", "ai9", 2, Connection.SINGLE,
-    #        LinearCalibration(1000 / 18.3 / 0.041, 0, "C")) 
-
+    # Directly plugging in K-type thermocouples. 41uV / C and a cold junction temperature guessed at 23 C.
     Sensor("T1 - Ox Tank Temp A", "ai0", 0.2, Connection.DIFFERENTIAL,
             LinearCalibration(1 / (41 / 1000 / 1000), 0.0009 / (41 / 1000 / 1000), "C"))
     Sensor("T2 - Ox Tank Temp B", "ai1", 0.2, Connection.DIFFERENTIAL,
