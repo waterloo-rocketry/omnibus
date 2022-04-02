@@ -54,7 +54,7 @@ class Plotter:
         self.txitem.setPos(0.55, 0.5)
         self.textvb.addItem(self.txitem)
 
-        self.counter = TickCounter(50)
+        self.counter = TickCounter(1)
 
         self.exec()
 
