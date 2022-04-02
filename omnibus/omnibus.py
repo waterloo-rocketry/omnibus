@@ -18,6 +18,7 @@ except ImportError:
 if __name__ == "__main__":
     server.server()
 
+
 @dataclass(frozen=True)
 class Message:
     """
