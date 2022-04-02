@@ -17,10 +17,10 @@ def setup():
             LinearCalibration(600, -54.9, "psi")) # calibrated 25/3/2022
     Sensor("P7 (PT-3) - Fuel Tank", "ai20", 10, Connection.SINGLE,
             LinearCalibration(600, -60.2, "psi")) # calibrated 25/3/2022
-    Sensor("P9 - Fuel Injector", "ai21", 10, Connection.SINGLE,
+    Sensor("P9 - Ox tank PT2", "ai21", 10, Connection.SINGLE,
             LinearCalibration(601, -57.7, "psi")) # calibrated 26/3/2022
-    Sensor("SP1 (PT-1) - Ox Tank", "ai16", 0.2, Connection.DIFFERENTIAL,
-            LinearCalibration(167706, -91.5, "psi")) # Calibrated 25/3/2022
+    #Sensor("SP1 (PT-1) - Ox Tank", "ai16", 0.2, Connection.DIFFERENTIAL,
+    #        LinearCalibration(167706, -91.5, "psi")) # Calibrated 25/3/2022
 
     # Directly plugging in K-type thermocouples. 41uV / C and a cold junction temperature guessed at 23 C.
     Sensor("T1 - Ox Tank Temp A", "ai0", 0.2, Connection.DIFFERENTIAL,
