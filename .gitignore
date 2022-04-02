@@ -15,7 +15,8 @@ log_*.dat
 
 # Python
 
-[.]venv/
+venv/
+.venv/
 
 __pycache__/
 *.py[cod]

@@ -6,8 +6,17 @@ import typing
 import msgpack
 import zmq
 
-from . import server
+try:
+    from . import server
+except ImportError:
+    # Python complains if we run `python -m omnibus` from the omnibus folder.
+    # This works around that complaint.
+    import server
 
+# Python also doesn't execute __main__ if we're in the omnibus folder.
+# If that is the case (we were directly executed), start the server ourselves.
+if __name__ == "__main__":
+    server.server()
 
 @dataclass(frozen=True)
 class Message:
