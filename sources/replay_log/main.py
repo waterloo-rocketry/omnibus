@@ -70,4 +70,5 @@ if __name__ == "__main__":
     print(f"replaying log: {log_file}")
     print(f"replay speed: {replay_speed}x")
 
-    replay_log.replay(log_file, replay_speed)
+    with open(log_file, 'rb') as f:
+        replay_log.replay(f, replay_speed)
