@@ -12,6 +12,8 @@ from pyqtgraph.graphicsItems.TextItem import TextItem
 import config
 from parsers import Parser
 
+from omnibus.util import TickCounter
+
 
 class Plotter:
     """
@@ -42,25 +44,30 @@ class Plotter:
             self.plots.append(plot)
             # add the plot to a specific coordinate in the window
             self.win.addItem(plot.plot, i // columns, i % columns)
-        self.fps = 0
 
-        # adding a label masquerading as a graph
-        self.label = LabelItem("")
-        self.win.addItem(self.label, columns - 1, len(series) % columns)
-        self.rates = []
+        # add a viewbox with a textItem in it masquerading as a graph
+        self.textvb = self.win.addViewBox(
+            col=columns - 1, row=len(series) % columns, enableMenu=False, enableMouse=False)
+        self.txitem = TextItem("", color=(255, 255, 255), anchor=(0.5, 0.5))
+        self.textvb.autoRange()
+        # Center the Text, x set to 0.55 because 0.5 looks off-centre to the left somehow
+        self.txitem.setPos(0.55, 0.5)
+        self.textvb.addItem(self.txitem)
+
+        self.counter = TickCounter(1)
 
         self.exec()
 
     # called every frame
     def update(self):
-        self.rates.append(time.time())
-        if len(self.rates) > 50:
-            self.rates.pop(0)
-        if (time.time() - self.rates[0] > 0):
-            self.fps = len(self.rates)/(time.time() - self.rates[0])
-            print(f"\rFPS: {self.fps: >4.2f}", end='')
-        self.label.setText(
-            f"FPS: {self.fps: >4.2f}, Running Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
+        self.counter.tick()
+
+        # Filter to 5 frames per update on analytics
+        if not(self.counter.tick_count() % 5):
+            fps = self.counter.tick_rate()
+            self.txitem.setText(
+                f"FPS: {fps: >4.2f}\nRunning Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
+            print(f"\rFPS: {fps: >4.2f}", end='')
 
         self.callback()
 
