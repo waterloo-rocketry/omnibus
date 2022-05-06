@@ -4,7 +4,7 @@ Omnibus is a unified data bus which manages the connection of various data sourc
 
 #### Requirements
 
-Python 3.8 or newer is required. For Linux users, python package with C headers (such as `python3-dev`) is necessary. 
+Python 3.8 or newer is required. For Linux users, a python package with C headers (such as `python3-dev`) is necessary. 
 
 Required Python packages can be installed using `pip install -r requirements.txt`.
 
