@@ -1,7 +1,7 @@
 dash
 pandas
-msgpack==1.0.2
-numpy==1.20.2
-PySide6==6.1.0
-pyqtgraph==0.12.1
-pyzmq==22.0.3
+msgpack
+numpy
+PySide6
+pyqtgraph
+pyzmq
