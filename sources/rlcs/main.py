@@ -18,6 +18,7 @@ msg_index = [
     "injector_valve_state"
 ]
 
+
 def parse_rlcs(line):
     res = {}
     # timestamp and msg_type
@@ -38,7 +39,6 @@ def reader(port):
     def _reader():
         return s.readline().strip(b'\r\n').decode('utf-8')
     return _reader
-
 
 
 def generate_line():
@@ -69,15 +69,15 @@ def main():
                         help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
 
-    # readline = reader(args.port)
+    readline = reader(args.port)
     # parser = parsley.parse_logger if args.format == 'logger' else parsley.parse_usb_debug
     if not args.solo:
         sender = Sender()
         CHANNEL = "CAN/RLCS"
 
     while True:
-        # line = readline()
-        line = generate_line()
+        line = readline()
+        # line = generate_line()
         if not line:
             break
 
