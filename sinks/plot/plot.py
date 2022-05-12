@@ -5,11 +5,15 @@ import numpy as np
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 import config
+from pyqtgraph.console import ConsoleWidget
+from pyqtgraph.dockarea.Dock import Dock
+from pyqtgraph.dockarea.DockArea import DockArea
+from pyqtgraph.Qt import QtWidgets
 
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
-import config
+from config import *
 from parsers import Parser
 
 from omnibus.util import TickCounter
@@ -32,27 +36,45 @@ class Plotter:
         series = Parser.get_series()
 
         # try for a square layout
-        columns = int(np.ceil(np.sqrt(len(series) + 1)))
+        # columns = int(np.ceil(np.sqrt(len(series) + 1)))
 
         # window that lays out plots in a grid
-        self.win = pg.GraphicsLayoutWidget(show=True, title="Omnibus Plotter")
+        self.app = pg.mkQApp("Plotter UI")
+        self.win = QtWidgets.QMainWindow()
+        self.win.setWindowTitle("Omnibus Plotter")
         self.win.resize(1000, 600)
+        
+        self.area = DockArea()
+        self.win.setCentralWidget(self.area)
+
 
         self.plots = []
+        self.anchor = []
         for i, s in enumerate(series):
             plot = Plot(s)
             self.plots.append(plot)
             # add the plot to a specific coordinate in the window
-            self.win.addItem(plot.plot, i // columns, i % columns)
-
+            if not(i):
+                self.area.addDock(plot.dock, 'left')
+                self.anchor.append(plot.dock)
+            elif (i < ITEMS_PER_ROW): 
+                self.area.addDock(plot.dock, 'right', self.anchor[i-1])
+                self.anchor.append(plot.dock)
+                #plot.dock.resize(200,200)
+                #plot.dock.setStretch(10,10)
+                #self.area.addContainer("tab", plot.dock)
+            else:
+                self.area.addDock(plot.dock, 'bottom', self.anchor[i % ITEMS_PER_ROW])
+                self.anchor[i % ITEMS_PER_ROW] = plot.dock
+            
         # add a viewbox with a textItem in it masquerading as a graph
-        self.textvb = self.win.addViewBox(
-            col=columns - 1, row=len(series) % columns, enableMenu=False, enableMouse=False)
-        self.txitem = TextItem("", color=(255, 255, 255), anchor=(0.5, 0.5))
-        self.textvb.autoRange()
+        #self.textvb = self.win.addViewBox(
+        #    col=columns - 1, row=len(series) % columns, enableMenu=False, enableMouse=False)
+        #self.txitem = TextItem("", color=(255, 255, 255), anchor=(0.5, 0.5))
+        #self.textvb.autoRange()
         # Center the Text, x set to 0.55 because 0.5 looks off-centre to the left somehow
-        self.txitem.setPos(0.55, 0.5)
-        self.textvb.addItem(self.txitem)
+        #self.txitem.setPos(0.55, 0.5)
+        #self.textvb.addItem(self.txitem)
 
         self.counter = TickCounter(1)
 
@@ -65,9 +87,9 @@ class Plotter:
         # Filter to 5 frames per update on analytics
         if not(self.counter.tick_count() % 5):
             fps = self.counter.tick_rate()
-            self.txitem.setText(
-                f"FPS: {fps: >4.2f}\nRunning Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
-            print(f"\rFPS: {fps: >4.2f}", end='')
+            #self.txitem.setText(
+            #    f"FPS: {fps: >4.2f}\nRunning Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
+            #print(f"\rFPS: {fps: >4.2f}", end='')
 
         self.callback()
 
@@ -78,7 +100,7 @@ class Plotter:
 
         # make ctrl+c close the window
         signal.signal(signal.SIGINT, signal.SIG_DFL)
-
+        self.win.show()
         pg.mkQApp().exec_()
 
 
@@ -96,7 +118,10 @@ class Plot:
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
-
+        
+        self.widget = pg.PlotWidget(plotItem = self.plot)
+        self.dock = Dock("Dock4 (tabbed) - Plot", size=(DOCK_SIZE_X,DOCK_SIZE_Y))
+        self.dock.addWidget(self.widget)
     def update(self):
         # update the displayed data
         self.curve.setData(self.series.times, self.series.points)
