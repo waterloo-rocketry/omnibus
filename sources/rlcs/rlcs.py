@@ -16,7 +16,7 @@ def parse_rlcs(line):
     res = {}
     # timestamp and msg_type
     res["msg_type"] = "rlcs"
-    res["timestamp"] = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+    res["timestamp"] = time.time()
     res["data"] = {}
     # items
     for i, s in enumerate(msg_index):
