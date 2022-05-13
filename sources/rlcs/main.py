@@ -9,7 +9,7 @@ import rlcs
 def reader(port):
     if port == "-":
         return input
-    s = serial.Serial(port, 9600)  # this is just copied from parsley, change if needed
+    s = serial.Serial(port, 115200) # listen on the RLCS port
 
     def _reader():
         return s.readline().strip(b'\r\n').decode('utf-8')
