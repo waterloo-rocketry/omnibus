@@ -56,6 +56,6 @@ def setup():
         LinearCalibration(1/(41*18.1/1000000), 0, "C"))
 
     Sensor("Tank Heating", "ai29", 10, Connection.SINGLE,
-           ThermistorCalibration(12, 98, 3434, 0.099524))  # Calibration pulled from LabVIEW
+           ThermistorCalibration(5, 10200, 3434, 0.099524))  # Calibration pulled from LabVIEW
     Sensor("Vent Thermistor", "ai21", 10, Connection.SINGLE,
-           ThermistorCalibration(12, 98, 3434, 0.099524))  # Calibration pulled from LabVIEW
+           ThermistorCalibration(5, 10200, 3434, 0.099524))  # Calibration pulled from LabVIEW
