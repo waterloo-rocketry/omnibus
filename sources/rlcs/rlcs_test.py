@@ -4,7 +4,7 @@ import pytest
 
 from random import random
 import rlcs
-from message_types import msg_index
+from rlcs_message_types import msg_index
 
 
 class TestRLCS:

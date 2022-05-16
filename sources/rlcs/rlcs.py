@@ -1,5 +1,5 @@
 import time
-from message_types import msg_index
+from rlcs_message_types import msg_index
 
 
 def fmt_line(parsed_data):
