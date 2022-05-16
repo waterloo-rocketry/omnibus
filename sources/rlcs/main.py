@@ -35,18 +35,11 @@ def main():
         line = readline()
         if not line:
             break
-
-        # check if line is in a valid input format
-        if line[0] != "W" or line[len(line)-1] != "R":
-            print("Data " + line + " is invalid (must end with R and begin with W")
+        
+        if not rlcs.check_invalid_data(line): # if there is invalid data
             continue
 
-        if len(line) != 34:
-            print("Warning: Format {} is wrong. Expected 34 characters, got {}".format(line, len(line)))
-            continue  # In the future, we may want to extract information from the message despite poor formatting
-
-        stripped_data = line[1:len(line)-1]
-        parsed_data = rlcs.parse_rlcs(stripped_data)
+        parsed_data = rlcs.parse_rlcs(line)
 
         if not args.solo:  # if connect to omnibus
             sender.send(CHANNEL, parsed_data)
