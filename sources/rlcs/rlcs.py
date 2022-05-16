@@ -1,5 +1,5 @@
 import time
-from rlcs_message_types import msg_index
+from rlcs_message_config import msg_index
 
 
 def fmt_line(parsed_data):
@@ -24,7 +24,8 @@ def parse_rlcs(line):
         res["data"][s] = int(line[4*i:4*i+4], base=16)  # 4 chars for each keyword
     return res
 
-def check_invalid_data(line): 
+
+def check_invalid_data(line):
     is_valid = True
     # check if line is in a valid input format
     if line[0] != "W" or line[len(line)-1] != "R":
@@ -40,6 +41,5 @@ def check_invalid_data(line):
         if line[i] not in "abcdef0123456789":
             is_valid = False
             print("Error: Expected hexadecimal numbers, got {} at index {}".format(line[i], i))
-
 
     return is_valid

@@ -9,7 +9,7 @@ import rlcs
 def reader(port):
     if port == "-":
         return input
-    s = serial.Serial(port, 115200) # listen on the RLCS port
+    s = serial.Serial(port, 115200)  # listen on the RLCS port
 
     def _reader():
         return s.readline().strip(b'\r\n').decode('utf-8')
@@ -35,8 +35,8 @@ def main():
         line = readline()
         if not line:
             break
-        
-        if not rlcs.check_invalid_data(line): # if there is invalid data
+
+        if not rlcs.check_invalid_data(line):  # if there is invalid data
             continue
 
         parsed_data = rlcs.parse_rlcs(line)
