@@ -234,4 +234,3 @@ class TestParsley:
 
     def test_leds_off(self):
         pass
-
