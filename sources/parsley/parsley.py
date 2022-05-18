@@ -2,14 +2,6 @@ import message_types as mt
 
 _func_map = {}
 
-## MISSING message types
-# RESET_CMD
-# DEBUG_RADIO_CMD
-# SENSOR_GYRO
-# SENSOR_MAG
-# RADI_VALUE
-# LEDS_ON
-# LEDS_OFF
 
 # decorator for parse functions to save a massive if chain
 def register(msg_types):
@@ -163,7 +155,6 @@ def parse_sensor_altitude(msg_data):
 @register("SENSOR_GYRO")
 @register("SENSOR_MAG")
 def parse_sensor_acc_gyro_mag(msg_data):
-    # NOTE why is msg_data[0] bit shifted by 8? msg_data[0] holds TSTAMP_MS_M so shouldn't it only be by 4?
     timestamp = msg_data[0] << 8 | msg_data[1]
     x = int.from_bytes(bytes(msg_data[2:4]), "big", signed=True)
     y = int.from_bytes(bytes(msg_data[4:6]), "big", signed=True)
@@ -179,16 +170,6 @@ def parse_sensor_analog(msg_data):
     value = msg_data[3] << 8 | msg_data[4]
 
     return {"time": timestamp, "sensor_id": sensor_id, "value": value}
-
-
-# NOTE this not present in message_types.h
-@register("SENSOR_TEMP")
-def parse_sensor_temp(msg_data):
-    timestamp = _parse_timestamp(msg_data[:3])
-    sensor = msg_data[3]
-    temperature = int.from_bytes(bytes(msg_data[4:7]), "big", signed=True) / 2**10
-
-    return {"time": timestamp, "sensor_id": sensor, "temperature": temperature}
 
 
 @register("GPS_TIMESTAMP")
@@ -243,6 +224,15 @@ def parse_gps_info(msg_data):
     return {"time": timestamp, "num_sats": numsat, "quality": quality}
 
 
+@register("RADI_VALUE")
+def parse_radi_value(msg_data):
+    timestamp = _parse_timestamp(msg_data[:3])
+    radi_board = msg_data[3]
+    radi = msg_data[4] << 8 | msg_data[5]
+
+    return {"time": timestamp, "radi_board": radi_board, "radi": radi}
+
+
 @register("FILL_LVL")
 def parse_fill_lvl(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
@@ -252,17 +242,8 @@ def parse_fill_lvl(msg_data):
     return {"time": timestamp, "level": fill_lvl, "direction": direction}
 
 
-@register("RADI_VALUE")
-def parse_radi_value(msg_data):
-    timestamp = _parse_timestamp(msg_data[:3])
-    radi_board = msg_data[3] # TODO what is radi_board
-    # TODO what is RADI_HIGH and RADI_LOW (what type)
-    raise NotImplementedError
-
-
 @register("LEDS_ON")
 def parse_leds_on(msg_data):
-    # TODO is it ok to just return {}?
     return {}
 
 
