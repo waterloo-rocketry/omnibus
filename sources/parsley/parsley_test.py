@@ -132,13 +132,6 @@ class TestParsley:
         res = parsley.parse_sensor_altitude(msg_data)
         assert res["altitude"] == -12345
 
-    def test_sensor_temp(self, timestamp):
-        msg_data = timestamp() + b'\x12'
-        msg_data += struct.pack(">I", int(12.5 * 2**10))[1:]
-        res = parsley.parse_sensor_temp(msg_data)
-        assert res["sensor_id"] == 0x12
-        assert res["temperature"] == 12.5
-
     def test_gps_timestamp(self, timestamp):
         msg_data = timestamp() + struct.pack(">bbbb", 12, 23, 34, 45)
         res = parsley.parse_gps_timestamp(msg_data)
@@ -204,3 +197,41 @@ class TestParsley:
         msg_sid, msg_data = parsley.parse_logger("12345678 555 3: 01 02 FF                87654321")
         assert msg_sid == 0x555
         assert msg_data == [1, 2, 0xFF]
+
+    def test_reset_cmd(self, timestamp):
+        msg_data = timestamp() + struct.pack(">b", 2)
+        res = parsley.parse_reset_cmd(msg_data)
+        assert res["board_id"] == 2
+
+    def test_debug_radio_cmd(self):
+        msg_data = b'RADIO'
+        res = parsley.parse_debug_radio_cmd(msg_data)
+        assert res["string"] == "RADIO"
+
+    def test_sensor_acc(self):
+        # TODO signed? unsigned?
+        msg_data = struct.pack(">Hhhh", 12345, 1, 2, 3)
+        res = parsley.parse_sensor_acc_gyro_mag(msg_data)
+        assert res["time"] == 12345
+        assert res["x"] == 1
+        assert res["y"] == 2
+        assert res["z"] == 3
+
+    def test_sensor_gyro(self, timestamp):
+        pass
+
+    def test_sensor_mag(self, timestamp):
+        pass
+
+    def test_radi_value(self, timestamp):
+        msg_data = timestamp() + struct.pack(">bH", 1, 500)
+        res = parsley.parse_radi_value(msg_data)
+        assert res["radi_board"] == 1
+        assert res["radi"] == 500
+
+    def test_leds_on(self):
+        pass
+
+    def test_leds_off(self):
+        pass
+
