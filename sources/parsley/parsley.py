@@ -57,7 +57,10 @@ def parse_arm_cmd(msg_data):
 
 @register("RESET_CMD")
 def parse_reset_cmd(msg_data):
-    raise NotImplementedError
+    timestamp = _parse_timestamp(msg_data[:3])
+    board_id = msg_data[3]
+
+    return {"time": timestamp, "board_id": board_id}
 
 
 @register("DEBUG_MSG")
@@ -79,7 +82,9 @@ def parse_debug_printf(msg_data):
 
 @register("DEBUG_RADIO_CMD")
 def parse_debug_radio_cmd(msg_data):
-    raise NotImplementedError
+    ascii_str = ''.join(chr(e) for e in msg_data if e > 0)
+
+    return {"string": ascii_str}
 
 
 @register("ALT_ARM_STATUS")
@@ -155,23 +160,16 @@ def parse_sensor_altitude(msg_data):
 
 
 @register("SENSOR_ACC")
-def parse_sensor_acc(msg_data):
+@register("SENSOR_GYRO")
+@register("SENSOR_MAG")
+def parse_sensor_acc_gyro_mag(msg_data):
+    # NOTE why is msg_data[0] bit shifted by 8? msg_data[0] holds TSTAMP_MS_M so shouldn't it only be by 4?
     timestamp = msg_data[0] << 8 | msg_data[1]
     x = int.from_bytes(bytes(msg_data[2:4]), "big", signed=True)
     y = int.from_bytes(bytes(msg_data[4:6]), "big", signed=True)
     z = int.from_bytes(bytes(msg_data[6:8]), "big", signed=True)
 
     return {"time": timestamp, "x": x, "y": y, "z": z}
-
-
-@register("SENSOR_GYRO")
-def parse_sensor_gyro(msg_data):
-    raise NotImplementedError
-
-
-@register("SENSOR_MAG")
-def parse_sensor_mag(msg_data):
-    raise NotImplementedError
 
 
 @register("SENSOR_ANALOG")
@@ -256,17 +254,21 @@ def parse_fill_lvl(msg_data):
 
 @register("RADI_VALUE")
 def parse_radi_value(msg_data):
+    timestamp = _parse_timestamp(msg_data[:3])
+    radi_board = msg_data[3] # TODO what is radi_board
+    # TODO what is RADI_HIGH and RADI_LOW (what type)
     raise NotImplementedError
 
 
 @register("LEDS_ON")
 def parse_leds_on(msg_data):
-    raise NotImplementedError
+    # TODO is it ok to just return {}?
+    return {}
 
 
 @register("LEDS_OFF")
 def parse_leds_off(msg_data):
-    raise NotImplementedError
+    return {}
 
 
 def parse(msg_sid, msg_data):
