@@ -40,7 +40,8 @@ def check_data_is_valid(line):
 
     if len(line) != 4*len(msg_index)+2:
         is_valid = False
-        print("Warning: Format {} is wrong. Expected {} characters, got {}".format(line, 4*len(msg_index)+2, len(line)))
+        print("Warning: Format {} is wrong. Expected {} characters, got {}".format(
+            line, 4*len(msg_index)+2, len(line)))
         # In the future, we may want to extract information from the message despite poor formatting
 
     for i in range(1, len(line)-1):
