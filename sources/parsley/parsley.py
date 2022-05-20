@@ -38,16 +38,6 @@ def parse_actuator_cmd(msg_data):
     return {"time": timestamp, "actuator": actuator, "req_state": actuator_state}
 
 
-@register("ACTUATOR_STATUS")
-def parse_actuator_status(msg_data):
-    timestamp = _parse_timestamp(msg_data[:3])
-    actuator = mt.actuator_id_str[msg_data[3]]
-    actuator_state = mt.actuator_states_str[msg_data[4]]
-    req_actuator_state = mt.actuator_states_str[msg_data[5]]
-
-    return {"time": timestamp, "actuator": actuator, "req_state": req_actuator_state, "cur_state": actuator_state}
-
-
 @register("ALT_ARM_CMD")
 def parse_arm_cmd(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
@@ -57,18 +47,12 @@ def parse_arm_cmd(msg_data):
     return {"time": timestamp, "altimeter": alt_number, "state": arm_state}
 
 
-@register("ALT_ARM_STATUS")
-def parse_arm_status(msg_data):
+@register("RESET_CMD")
+def parse_reset_cmd(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
-    arm_state = mt.arm_states_str[msg_data[3] >> 4]
-    alt_number = msg_data[3] & 0x0F
-    v_drogue = msg_data[4] << 8 | msg_data[5]
-    v_main = msg_data[6] << 8 | msg_data[7]
+    board_id = "ALL" if msg_data[3] == 0 else mt.board_id_str[msg_data[3]]
 
-    return {
-        "time": timestamp, "altimeter": alt_number, "state": arm_state,
-        "drogue_v": v_drogue, "main_v": v_main
-    }
+    return {"time": timestamp, "board_id": board_id}
 
 
 @register("DEBUG_MSG")
@@ -86,6 +70,37 @@ def parse_debug_printf(msg_data):
     ascii_str = ''.join(chr(e) for e in msg_data if e > 0)
 
     return {"string": ascii_str}
+
+
+@register("DEBUG_RADIO_CMD")
+def parse_debug_radio_cmd(msg_data):
+    ascii_str = ''.join(chr(e) for e in msg_data if e > 0)
+
+    return {"string": ascii_str}
+
+
+@register("ALT_ARM_STATUS")
+def parse_arm_status(msg_data):
+    timestamp = _parse_timestamp(msg_data[:3])
+    arm_state = mt.arm_states_str[msg_data[3] >> 4]
+    alt_number = msg_data[3] & 0x0F
+    v_drogue = msg_data[4] << 8 | msg_data[5]
+    v_main = msg_data[6] << 8 | msg_data[7]
+
+    return {
+        "time": timestamp, "altimeter": alt_number, "state": arm_state,
+        "drogue_v": v_drogue, "main_v": v_main
+    }
+
+
+@register("ACTUATOR_STATUS")
+def parse_actuator_status(msg_data):
+    timestamp = _parse_timestamp(msg_data[:3])
+    actuator = mt.actuator_id_str[msg_data[3]]
+    actuator_state = mt.actuator_states_str[msg_data[4]]
+    req_actuator_state = mt.actuator_states_str[msg_data[5]]
+
+    return {"time": timestamp, "actuator": actuator, "req_state": req_actuator_state, "cur_state": actuator_state}
 
 
 @register("GENERAL_BOARD_STATUS")
@@ -125,15 +140,6 @@ def parse_board_status(msg_data):
     return res
 
 
-@register("SENSOR_ANALOG")
-def parse_sensor_analog(msg_data):
-    timestamp = msg_data[0] << 8 | msg_data[1]
-    sensor_id = mt.sensor_id_str[msg_data[2]]
-    value = msg_data[3] << 8 | msg_data[4]
-
-    return {"time": timestamp, "sensor_id": sensor_id, "value": value}
-
-
 @register("SENSOR_ALTITUDE")
 def parse_sensor_altitude(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
@@ -155,13 +161,24 @@ def parse_sensor_temp(msg_data):
 
 
 @register("SENSOR_ACC")
-def parse_sensor_acc(msg_data):
+@register("SENSOR_GYRO")
+@register("SENSOR_MAG")
+def parse_sensor_acc_gyro_mag(msg_data):
     timestamp = msg_data[0] << 8 | msg_data[1]
     x = int.from_bytes(bytes(msg_data[2:4]), "big", signed=True)
     y = int.from_bytes(bytes(msg_data[4:6]), "big", signed=True)
     z = int.from_bytes(bytes(msg_data[6:8]), "big", signed=True)
 
     return {"time": timestamp, "x": x, "y": y, "z": z}
+
+
+@register("SENSOR_ANALOG")
+def parse_sensor_analog(msg_data):
+    timestamp = msg_data[0] << 8 | msg_data[1]
+    sensor_id = mt.sensor_id_str[msg_data[2]]
+    value = msg_data[3] << 8 | msg_data[4]
+
+    return {"time": timestamp, "sensor_id": sensor_id, "value": value}
 
 
 @register("GPS_TIMESTAMP")
@@ -216,6 +233,15 @@ def parse_gps_info(msg_data):
     return {"time": timestamp, "num_sats": numsat, "quality": quality}
 
 
+@register("RADI_VALUE")
+def parse_radi_value(msg_data):
+    timestamp = _parse_timestamp(msg_data[:3])
+    radi_board = msg_data[3]
+    radi = msg_data[4] << 8 | msg_data[5]
+
+    return {"time": timestamp, "radi_board": radi_board, "radi": radi}
+
+
 @register("FILL_LVL")
 def parse_fill_lvl(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
@@ -223,6 +249,16 @@ def parse_fill_lvl(msg_data):
     direction = mt.fill_direction_str[msg_data[4]]
 
     return {"time": timestamp, "level": fill_lvl, "direction": direction}
+
+
+@register("LEDS_ON")
+def parse_leds_on(msg_data):
+    return {}
+
+
+@register("LEDS_OFF")
+def parse_leds_off(msg_data):
+    return {}
 
 
 def parse(msg_sid, msg_data):
