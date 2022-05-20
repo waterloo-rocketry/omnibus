@@ -13,6 +13,12 @@ def fmt_line(parsed_data):
 
 
 def parse_rlcs(line):
+    '''parses data as well as checks for data validity 
+        returns none if data is invalid 
+    '''
+    if not check_data_is_valid(line):
+        return None
+
     line = line[1:len(line)-1]
     res = {}
     # timestamp and msg_type
@@ -25,16 +31,16 @@ def parse_rlcs(line):
     return res
 
 
-def check_invalid_data(line):
+def check_data_is_valid(line):
     is_valid = True
     # check if line is in a valid input format
     if line[0] != "W" or line[len(line)-1] != "R":
         is_valid = False
         print("Data " + line + " is invalid (must end with R and begin with W")
 
-    if len(line) != 34:
+    if len(line) != 4*len(msg_index)+2:
         is_valid = False
-        print("Warning: Format {} is wrong. Expected 34 characters, got {}".format(line, len(line)))
+        print("Warning: Format {} is wrong. Expected {} characters, got {}".format(line, 4*len(msg_index)+2, len(line)))
         # In the future, we may want to extract information from the message despite poor formatting
 
     for i in range(1, len(line)-1):

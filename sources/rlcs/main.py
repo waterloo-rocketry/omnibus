@@ -19,8 +19,6 @@ def reader(port):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('port', help='the serial port to read from, or - for stdin')
-    parser.add_argument('--format', default='usb',
-                        help='Options: logger, usb. Parse input in RocketCAN Logger or USB format')
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
@@ -33,13 +31,14 @@ def main():
 
     while True:
         line = readline()
+
         if not line:
             break
 
-        if not rlcs.check_invalid_data(line):  # if there is invalid data
-            continue
-
         parsed_data = rlcs.parse_rlcs(line)
+
+        if not parsed_data:
+            continue
 
         if not args.solo:  # if connect to omnibus
             sender.send(CHANNEL, parsed_data)

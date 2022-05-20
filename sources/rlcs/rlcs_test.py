@@ -10,8 +10,8 @@ from rlcs_message_config import msg_index
 class TestRLCS:
     def test_parse_rlcs(self):
         line = self.generate_line()
-        print(line)
         parsed_data = rlcs.parse_rlcs(line)
+        assert parsed_data
         assert parsed_data['msg_type'] == "rlcs"
 
         for i, s in enumerate(msg_index):
@@ -23,13 +23,14 @@ class TestRLCS:
         lines = ["W083e54e49c07998a12f6926bf1b0fc07dR",
                  "W0e54e49c07998a12f6926bf1b0fc07dR",
                  "W83e54e49c07998a12f6926bf1b0fc07dR",
-                 "W83e54e49r07998a12f6926bf1b0fc07dR"
+                 "W83e54e49r07998a12f6926bf1b0fc07dR",
+                 "as1-0dfa`slfakd~~fjal garbage data"
                  ]
 
-        answers = [False, False, True, False]
+        answers = [False, False, True, False, False]
 
         for i, line in enumerate(lines):
-            is_valid = rlcs.check_invalid_data(line)
+            is_valid = rlcs.check_data_is_valid(line)
             assert is_valid == answers[i]
 
     def generate_line(self):
