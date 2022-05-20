@@ -50,7 +50,7 @@ def parse_arm_cmd(msg_data):
 @register("RESET_CMD")
 def parse_reset_cmd(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
-    board_id = msg_data[3]
+    board_id = "ALL" if msg_data[3] == 0 else mt.board_id_str[msg_data[3]]
 
     return {"time": timestamp, "board_id": board_id}
 
@@ -149,6 +149,15 @@ def parse_sensor_altitude(msg_data):
         altitude -= 0x0100000000  # if it is negative subtract what we need to undo 2's complement
 
     return {"time": timestamp, "altitude": altitude}
+
+
+@register("SENSOR_TEMP")
+def parse_sensor_temp(msg_data):
+    timestamp = _parse_timestamp(msg_data[:3])
+    sensor = msg_data[3]
+    temperature = int.from_bytes(bytes(msg_data[4:7]), "big", signed=True) / 2**10
+
+    return {"time": timestamp, "sensor_id": sensor, "temperature": temperature}
 
 
 @register("SENSOR_ACC")
