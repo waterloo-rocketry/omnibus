@@ -1,4 +1,4 @@
-from .config import MSG_INDEX
+from rlcs.config import MSG_INDEX
 
 
 def fmt_line(parsed_data):

@@ -4,7 +4,7 @@ import pytest
 
 import random
 import rlcs
-from .config import MSG_INDEX
+from rlcs.config import MSG_INDEX
 
 
 class TestRLCS:
