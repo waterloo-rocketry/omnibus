@@ -2,9 +2,9 @@ import struct
 
 import pytest
 
-from random import random
+import random
 import rlcs
-from rlcs_message_config import msg_index
+from config import MSG_INDEX
 
 
 class TestRLCS:
@@ -14,7 +14,7 @@ class TestRLCS:
         assert parsed_data
         assert parsed_data['msg_type'] == "rlcs"
 
-        for i, s in enumerate(msg_index):
+        for i, s in enumerate(MSG_INDEX):
             assert parsed_data["data"][s] == int(line[4*i+1:4*i+5], base=16)
 
     def test_check_rlcs_format(self):
@@ -38,18 +38,5 @@ class TestRLCS:
             Dummy function to generate a random line of valid RLCS-format input data
             W[xxxx][xxxx]...[xxxx]R where xxxx = a hexadecimal number
         """
-
-        line = "W"
-
-        for _ in range(8):
-            hexnum = hex(int(random()*65536))[2:6]
-            h = hexnum.rjust(4, '0')
-            line += h
-
-        line = line + "R"
-        return line
-
-
-if __name__ == "__main__":
-    t = TestRLCS
-    t.test_parse_timestamp()
+        hexnums = ''.join(random.choices("ABCDEF0123456789", k=4*len(MSG_INDEX)))
+        return "W" + hexnums + "R"

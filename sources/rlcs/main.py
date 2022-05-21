@@ -42,8 +42,8 @@ def main():
 
         if not args.solo:  # if connect to omnibus
             sender.send(CHANNEL, parsed_data)
-        else:  # print debug code to console
-            print(rlcs.fmt_line(parsed_data))
+
+        print(rlcs.fmt_line(parsed_data))
 
 
 if __name__ == '__main__':

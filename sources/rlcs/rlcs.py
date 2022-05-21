@@ -1,12 +1,10 @@
-import time
-from rlcs_message_config import msg_index
+from config import MSG_INDEX
 
 
 def fmt_line(parsed_data):
     msg_type = parsed_data['msg_type']
-    time_stamp = parsed_data['timestamp']
     data = parsed_data["data"]
-    res = f"[ {msg_type} {time_stamp} ]"
+    res = f"[ {msg_type} ]"
     for k, v in data.items():
         res += f"   {k}: {v}"
     return res
@@ -23,30 +21,36 @@ def parse_rlcs(line):
     res = {}
     # timestamp and msg_type
     res["msg_type"] = "rlcs"
-    res["timestamp"] = time.time()
     res["data"] = {}
     # items
-    for i, s in enumerate(msg_index):
+    for i, s in enumerate(MSG_INDEX):
         res["data"][s] = int(line[4*i:4*i+4], base=16)  # 4 chars for each keyword
     return res
 
 
 def check_data_is_valid(line):
-    is_valid = True
-    # check if line is in a valid input format
-    if line[0] != "W" or line[len(line)-1] != "R":
-        is_valid = False
-        print("Data " + line + " is invalid (must end with R and begin with W")
+    '''
+    Checks whether or not line is valid RLCS data. 
+    If it is, returns True. If not, returns False.
+    A valid line looks like W[xxxx][xxxx]...[xxxx]R where xxxx = a hexadecimal number, 
+    with one hexadecimal number corresponding to each value in MSG_INDEX. 
+    The line must also begin with W and end with R. 
+    '''
 
-    if len(line) != 4*len(msg_index)+2:
-        is_valid = False
-        print("Warning: Format {} is wrong. Expected {} characters, got {}".format(
-            line, 4*len(msg_index)+2, len(line)))
+    if len(line) != 4*len(MSG_INDEX)+2:
+        print("Warning: Format of data {} is wrong. Expected {} characters, got {}".format(
+            line, 4*len(MSG_INDEX)+2, len(line)))
+        return False
         # In the future, we may want to extract information from the message despite poor formatting
 
-    for i in range(1, len(line)-1):
-        if line[i] not in "abcdef0123456789":
-            is_valid = False
-            print("Error: Expected hexadecimal numbers, got {} at index {}".format(line[i], i))
+    if line[0].lower() != "w" or line[len(line)-1].lower() != "r":
+        print("Warning: Data {} is invalid (must end with R and begin with W)".format(line))
+        return False
 
-    return is_valid
+    for c in line[1:len(line)-1]:
+        if c.lower() not in "abcdef0123456789":
+            print(
+                "Warning: Invalid hex data {}".format(line))
+            return False
+
+    return True
