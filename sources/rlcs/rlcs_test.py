@@ -3,7 +3,7 @@ import struct
 import pytest
 
 import random
-import rlcs
+import rlcs.rlcs as rlcs
 from rlcs.config import MSG_INDEX
 
 

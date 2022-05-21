@@ -3,7 +3,7 @@ import serial
 
 from omnibus import Sender
 
-import rlcs
+import rlcs.rlcs as rlcs
 
 
 def reader(port):
