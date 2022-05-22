@@ -19,12 +19,9 @@ def parse_rlcs(line):
 
     line = line[1:len(line)-1]
     res = {}
-    # timestamp and msg_type
-    res["msg_type"] = "rlcs"
-    res["data"] = {}
     # items
     for i, s in enumerate(MSG_INDEX):
-        res["data"][s] = int(line[4*i:4*i+4], base=16)  # 4 chars for each keyword
+        res[s] = int(line[4*i:4*i+4], base=16)  # 4 chars for each keyword
     return res
 
 
