@@ -2,9 +2,8 @@ from config_rlcs import MSG_INDEX
 
 
 def fmt_line(parsed_data):
-    data = parsed_data["data"]
     res = ""
-    for k, v in data.items():
+    for k, v in parsed_data.items():
         res += f"   {k}: {v}"
     return res
 

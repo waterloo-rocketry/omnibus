@@ -16,6 +16,11 @@ class TestRLCS:
         for i, s in enumerate(MSG_INDEX):
             assert parsed_data[s] == int(line[4*i+1:4*i+5], base=16)
 
+    def test_fmt_line(self):
+        line = self.generate_line()
+        parsed_data = rlcs.parse_rlcs(line)
+        assert rlcs.fmt_line(parsed_data)
+
     def test_check_rlcs_format(self):
         # first line is long, second line is short, third line is correct
         # fourth line contains an invalid character
