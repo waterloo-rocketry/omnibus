@@ -1,10 +1,9 @@
-from rlcs.config import MSG_INDEX
+from config_rlcs import MSG_INDEX
 
 
 def fmt_line(parsed_data):
-    msg_type = parsed_data['msg_type']
     data = parsed_data["data"]
-    res = f"[ {msg_type} ]"
+    res = ""
     for k, v in data.items():
         res += f"   {k}: {v}"
     return res

@@ -3,8 +3,8 @@ import struct
 import pytest
 
 import random
-import rlcs.rlcs as rlcs
-from rlcs.config import MSG_INDEX
+import rlcs
+from config_rlcs import MSG_INDEX
 
 
 class TestRLCS:
