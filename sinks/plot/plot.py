@@ -47,21 +47,6 @@ class Plotter:
         self.area = DockArea()
         self.win.setCentralWidget(self.area)
 
-        """Make a master widget"""
-        self.dm = Dock("Master Dock", size=(3, 3))
-        self.wm = pg.LayoutWidget()
-        self.saveBtn = QtWidgets.QPushButton('Save dock state')
-        self.restoreBtn = QtWidgets.QPushButton('Restore dock state')
-        self.restoreInitBtn = QtWidgets.QPushButton('Restore Initial state')
-        self.restoreBtn.setEnabled(False)
-        self.wm.addWidget(QtWidgets.QLabel("""Master Widget"""), row=0, col=0)
-        self.wm.addWidget(self.saveBtn, row=1, col=0)
-        self.wm.addWidget(self.restoreBtn, row=2, col=0)
-        self.wm.addWidget(self.restoreInitBtn, row=3, col=0)
-        self.dm.addWidget(self.wm)
-        self.state = None
-        self.initState = None
-
         def save():
             self.state = self.area.saveState()
             self.restoreBtn.setEnabled(True)
@@ -69,38 +54,66 @@ class Plotter:
             self.area.restoreState(self.state)
         def loadInit():
             self.area.restoreState(self.initState)
-    
-        self.saveBtn.clicked.connect(save)
-        self.restoreBtn.clicked.connect(load)
-        self.restoreInitBtn.clicked.connect(loadInit)
-
-        self.plots = []
-        self.anchor = [self.dm]
-        self.area.addDock(self.dm, 'left')
-        includedSeries = (s for s in series if s.name in INIT_SERIES_NAMES)
-        for i, s in enumerate(includedSeries, start=1):
-           # if s.name not in INIT_SERIES_NAMES:
-           #     i -= 1
-           #     continue
-           # print(i)
-           # print(self.anchor)
-            plot = Plot(s)
-            self.plots.append(plot)
-            # add the plot to a specific coordinate in the window
-            #if not(i):
-            #    self.area.addDock(plot.dock, 'left')
-            #    self.anchor.append(plot.dock)
-            if (i < ITEMS_PER_ROW): 
-                self.area.addDock(plot.dock, 'right', self.anchor[i-1])
-                self.anchor.append(plot.dock)
-                #plot.dock.resize(200,200)
-                #plot.dock.setStretch(10,10)
-                #self.area.addContainer("tab", plot.dock)
-            else:
-                self.area.addDock(plot.dock, 'bottom', self.anchor[i % ITEMS_PER_ROW])
-                self.anchor[i % ITEMS_PER_ROW] = plot.dock
         
-        self.initState = self.area.saveState()
+        """Make a master widget"""
+        def resetDisplay():
+            self.area = DockArea()
+            self.win.setCentralWidget(self.area)
+            
+            buildMasterDock()
+
+            self.plots = []
+            self.anchor = [self.dm]
+            self.area.addDock(self.dm, 'left')
+            includedSeries = (s for s in series if s.name in INIT_SERIES_NAMES)
+            for i, s in enumerate(includedSeries, start=1):
+               # if s.name not in INIT_SERIES_NAMES:
+               #     i -= 1
+               #     continue
+               # print(i)
+               # print(self.anchor)
+                plot = Plot(s)
+                self.plots.append(plot)
+                # add the plot to a specific coordinate in the window
+                #if not(i):
+                #    self.area.addDock(plot.dock, 'left')
+                #    self.anchor.append(plot.dock)
+                if (i < ITEMS_PER_ROW): 
+                    self.area.addDock(plot.dock, 'right', self.anchor[i-1])
+                    self.anchor.append(plot.dock)
+                    #plot.dock.resize(200,200)
+                    #plot.dock.setStretch(10,10)
+                    #self.area.addContainer("tab", plot.dock)
+                else:
+                    self.area.addDock(plot.dock, 'bottom', self.anchor[i % ITEMS_PER_ROW])
+                    self.anchor[i % ITEMS_PER_ROW] = plot.dock 
+
+        def buildMasterDock():
+            self.dm = Dock("Master Dock", size=(3, 3))
+            self.wm = pg.LayoutWidget()
+            self.saveBtn = QtWidgets.QPushButton('Save dock state')
+            self.restoreBtn = QtWidgets.QPushButton('Restore dock state')
+            self.restoreInitBtn = QtWidgets.QPushButton('Restore Initial state')
+            self.restoreBtn.setEnabled(False)
+            self.resetBtn = QtWidgets.QPushButton('Reset Display to Config.py')
+            self.wm.addWidget(QtWidgets.QLabel("""Master Widget"""), row=0, col=0)
+            self.wm.addWidget(self.saveBtn, row=1, col=0)
+            self.wm.addWidget(self.restoreBtn, row=2, col=0)
+            self.wm.addWidget(self.restoreInitBtn, row=3, col=0)
+            self.wm.addWidget(self.resetBtn, row=4, col=0)
+            self.dm.addWidget(self.wm)
+            self.state = None
+            self.initState = None
+            
+            self.saveBtn.clicked.connect(save)
+            self.restoreBtn.clicked.connect(load)
+            self.restoreInitBtn.clicked.connect(loadInit)
+            self.resetBtn.clicked.connect(resetDisplay)
+            self.initState = self.area.saveState()
+        
+ 
+        buildMasterDock()
+        resetDisplay()
         # add a viewbox with a textItem in it masquerading as a graph
         #self.textvb = self.win.addViewBox(
         #    col=columns - 1, row=len(series) % columns, enableMenu=False, enableMouse=False)
@@ -154,7 +167,7 @@ class Plot:
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
         
         self.widget = pg.PlotWidget(plotItem = self.plot)
-        self.dock = Dock("Dock - Plot "+self.series.name, size=(DOCK_SIZE_X,DOCK_SIZE_Y))
+        self.dock = Dock("Dock - Plot "+self.series.name, size=(DOCK_SIZE_X,DOCK_SIZE_Y), closable=True)
         self.dock.addWidget(self.widget)
     def update(self):
         # update the displayed data
