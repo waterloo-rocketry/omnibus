@@ -9,3 +9,17 @@ DOCK_SIZE_X = 200
 DOCK_SIZE_Y = 200
 ITEMS_PER_ROW = WINDOW_SIZE_X // DOCK_SIZE_X
 ITEMS_PER_COLUMN = WINDOW_SIZE_Y // DOCK_SIZE_Y
+
+""" Plot config below """
+# This assumes the names of series are correct!
+# The order is implicit - Left to Right and then Up to Down
+INIT_SERIES_NAMES = [
+    "Fake0",
+    "Fake1",
+    "Fake2",
+    "Fake3",
+    "Fake4",
+    "Fake5",
+    "Fake7"
+]
+
