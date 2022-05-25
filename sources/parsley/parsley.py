@@ -262,6 +262,8 @@ def parse_leds_off(msg_data):
 
 
 def parse(msg_sid, msg_data):
+    print(f"msg_sid: {msg_sid}\n")
+    print(f"msg_data: {msg_data}\n")
     # lol @ bitwise manips in python
     msg_type = mt.msg_type_str[msg_sid & 0x7e0]
     board_id = mt.board_id_str[msg_sid & 0x1f]
