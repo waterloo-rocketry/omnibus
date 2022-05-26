@@ -24,6 +24,17 @@ class DashboardItem:
         """
         raise NotImplementedError
 
+class PlotDashItem (DashboardItem):
+    def __init__(self, props):
+        self.serie = get_serie(props["serie_name"]) 
+        if self.serie is not None:
+            self.plot = Plot(self.serie)
+        self.widget = pg.PlotWidget(plotItem = self.plot)
+    def save(self):
+        return {"serie_name": self.serie.name}
+
+    def child(self):
+        return self.widget
 
 
 class Dashboard:
@@ -42,3 +53,10 @@ class Dashboard:
         data["layout"] = dockarea.saveState()
         for k, item in self.items.items():
             data["items"][k] = {"props": item.save(), "class": type(item)}
+
+
+    def get_serie(name):
+        for parser in Parser.parsers:
+            if parser.series.values().name == name:
+                return parser.series.values()
+        return None
