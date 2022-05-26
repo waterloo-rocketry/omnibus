@@ -45,6 +45,11 @@ class Parser:
             res += parser.series.values()
         return res
 
+    def get_serie(name):
+        for parser in Parser.parsers:
+            if parser.series.values().name == name:
+                return parser.series.values()
+        return None
 
 class DAQParser(Parser):
     """
