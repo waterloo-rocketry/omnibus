@@ -18,13 +18,13 @@ class Parser:
     Turns omnibus messages into series of their data
     """
 
-    parsers = []  # keep track of all initialized parsers
+    parsers = {}  # keep track of all initialized parsers
 
     def __init__(self, channel):
         self.channel = channel  # omnibus channel to parse messages from
         self.series = SeriesDefaultDict()  # series this parser is populating
 
-        Parser.parsers.append(self)
+        Parser.parsers[channel] = self
 
     def parse(self, payload):
         """
@@ -34,22 +34,20 @@ class Parser:
 
     @staticmethod
     def all_parse(channel, payload):
-        for parser in Parser.parsers:
+        for parser in Parser.parsers.values():
             if channel.startswith(parser.channel):
                 parser.parse(payload)
 
     @staticmethod
     def get_series():
         res = []
-        for parser in Parser.parsers:
+        for parser in Parser.parsers.values():
             res += parser.series.values()
         return res
 
-    def get_serie(name):
-        for parser in Parser.parsers:
-            if parser.series.values().name == name:
-                return parser.series.values()
-        return None
+    @staticmethod
+    def create_series(channel, name):
+        return Parser.parsers[channel].series[name] # SeriesDefaultDict takes care of the rest
 
 class DAQParser(Parser):
     """
