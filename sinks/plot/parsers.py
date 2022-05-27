@@ -39,14 +39,19 @@ class Parser:
                 parser.parse(payload)
 
     @staticmethod
-    def get_series():
+    def get_all_series():
         res = []
         for parser in Parser.parsers.values():
             res += parser.series.values()
         return res
 
     @staticmethod
-    def create_series(channel, name):
+    def get_series(channel, name):
+        """
+        Return the series specified by channel and name, creating it if it doesn't exist
+        """
+        if channe not in Parser.parsers:
+            return None
         return Parser.parsers[channel].series[name] # SeriesDefaultDict takes care of the rest
 
 class DAQParser(Parser):
