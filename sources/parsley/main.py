@@ -5,10 +5,10 @@ from omnibus import Sender
 import parsley
 
 
-def reader(port):
+def reader(port, baud):
     if port == "-":
         return input
-    s = serial.Serial(port, 9600)
+    s = serial.Serial(port, baud)
 
     def _reader():
         return s.readline().strip(b'\r\n').decode('utf-8')
@@ -18,13 +18,15 @@ def reader(port):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('port', help='the serial port to read from, or - for stdin')
+    parser.add_argument('baud', type=int, nargs='?', default=9600,
+                        help='the baud rate to use')
     parser.add_argument('--format', default='usb',
                         help='Options: logger, usb. Parse input in RocketCAN Logger or USB format')
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
 
-    readline = reader(args.port)
+    readline = reader(args.port, args.baud)
     parser = parsley.parse_logger if args.format == 'logger' else parsley.parse_usb_debug
     if not args.solo:
         sender = Sender()
