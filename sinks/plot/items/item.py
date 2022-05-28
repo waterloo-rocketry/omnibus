@@ -1,4 +1,5 @@
 import typing
+import Dashboard
 from pyqtgraph.Qt.Wtwidgets import QWidget
 
 class DashboardItem:
@@ -25,38 +26,18 @@ class DashboardItem:
         raise NotImplementedError
 
 class PlotDashItem (DashboardItem):
-    def __init__(self, props):
-        self.serie = get_serie(props["serie_name"]) 
-        if self.serie is not None:
-            self.plot = Plot(self.serie)
+    def __init__(self, props = None):
+        self.serie = None
+        if props is not None:
+            self.serie = get_serie(props[0], props[1]) 
+            self.plot = (self.serie)
+        else:
+            pass # add a prompt here to do a get_serie all and fill the get_serie! It's left as WIP for add button
+
         self.widget = pg.PlotWidget(plotItem = self.plot)
+    
     def save(self):
-        return {"serie_name": self.serie.name}
+        return [self.serie.channel, self.serie.name]
 
     def child(self):
         return self.widget
-
-
-class Dashboard:
-    def load(file):
-        data = pickle.deserialize(file)
-        for k, v in data["items"].items(): # { 0: {...}, 1: ..., ...}
-            if v["class"] == "plot":
-                item = Plot(v["props"])
-                dock = Dock(name=k)
-                dock.addWidget(item.child())
-                dockarea.addDock(dock)
-        dockarea.restoreState(data["layout"]) # pyqtgraph dock layout
-
-    def save(file):
-        data = {}
-        data["layout"] = dockarea.saveState()
-        for k, item in self.items.items():
-            data["items"][k] = {"props": item.save(), "class": type(item)}
-
-
-    def get_serie(name):
-        for parser in Parser.parsers:
-            if parser.series.values().name == name:
-                return parser.series.values()
-        return None

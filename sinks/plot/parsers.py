@@ -50,7 +50,7 @@ class Parser:
         """
         Return the series specified by channel and name, creating it if it doesn't exist
         """
-        if channe not in Parser.parsers:
+        if channel not in Parser.parsers:
             return None
         return Parser.parsers[channel].series[name] # SeriesDefaultDict takes care of the rest
 
