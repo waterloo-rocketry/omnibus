@@ -1,6 +1,8 @@
 import typing
 import ..parsers import Parser
+import Plot from Dashboard
 from pyqtgraph.Qt.Wtwidgets import QWidget
+
 
 class DashboardItem:
     """
@@ -30,7 +32,7 @@ class PlotDashItem (DashboardItem):
         self.serie = None
         if props is not None:
             self.serie = Parser.get_serie(props[0], props[1]) 
-            self.plot = (self.serie)
+            self.plot = Plot(self.serie)
         else:
             pass # add a prompt here to do a get_serie_all and fill the get_serie! It's left as WIP for add button
 
