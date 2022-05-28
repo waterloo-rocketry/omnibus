@@ -16,7 +16,8 @@ from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
-from parsers import Parser
+from ..parsers import Parser
+from item import *
 
 from omnibus.util import TickCounter
 
@@ -35,7 +36,12 @@ class Dashboard:
             self.items.append[p]
             dock = Dock(name=i)
             dock.addWidget(p.child())
-            self.area.addDock(dock)
+            if self.anchor = None:
+                self.area.addDock(dock, 'right')
+                self.anchor = dock
+            else:
+                self.area.addDock(dock, 'right', self.anchor)
+                self.anchor = dock
         restoreLayout(file)
     
     def save():
@@ -64,7 +70,7 @@ class Dashboard:
         listen = time.time()
         while time.time() < listen + 1:
             callback()
-        series = Parser.get_series()
+        #series = Parser.get_series()
 
         # window that lays out plots in a grid
         self.app = pg.mkQApp("Plotter UI")
@@ -74,7 +80,8 @@ class Dashboard:
         
         self.area = DockArea()
         self.win.setCentralWidget(self.area)
-        
+        self.anchor = None
+
         self.items = []
 
         #if path.exists("savefile.sav") #This automatically loads
