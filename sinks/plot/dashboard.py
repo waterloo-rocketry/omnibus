@@ -16,48 +16,61 @@ from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
-from ..parsers import Parser
-from item import *
-
+from parsers import Parser
+from plotdashitem import PlotDashItem
 from omnibus.util import TickCounter
-
 
 class Dashboard:
     """
     Displays a grid of plots in a window
     """
+    def restoreLayout(self):
+        self.area.restoreState(self.data["layout"])
+
+    def saveLayout(self):
+        self.data["layout"] = self.area.saveState()
     
-    def load():
+    def load(self):
         savefile = open("savefile.sav", 'rb') 
         self.data = pickle.load(savefile)
-        for i, item in data["items"]: # { 0: {...}, 1: ..., ...}
-        if item["class"] == "PlotDashItem":
-            p = PlotDashItem(item["props"])
-            self.items.append[p]
-            dock = Dock(name=i)
+        for i, item in enumerate(self.data["items"]): # { 0: {...}, 1: ..., ...}
+            if item["class"] == PlotDashItem:
+                p = PlotDashItem(item["props"])
+                self.items.append(p)
+                dock = Dock(name=str(i))
+                dock.addWidget(p.child())
+                if self.anchor == None:
+                    self.area.addDock(dock, 'right')
+                    self.anchor = dock
+                else:
+                    self.area.addDock(dock, 'right', self.anchor)
+                    self.anchor = dock
+        self.restoreLayout()
+   
+    def save(self):
+        savefile = open("savefile.sav", 'wb')
+        self.saveLayout()
+        self.data["items"] = []
+        for k, item in enumerate(self.items):
+            self.data["items"].append({"props": item.save(), "class": type(item)})
+        pickle.dump(self.data, savefile)
+        #for i in self.data["items"]:
+        #    print(i)
+        savefile.close()
+
+    def add(self, itemtype, props):
+        if itemtype == PlotDashItem:
+            p = PlotDashItem(props)
+            self.items.append(p)
+            dock = Dock(name=str(len(self.items)-1))
             dock.addWidget(p.child())
-            if self.anchor = None:
+            if self.anchor == None:
                 self.area.addDock(dock, 'right')
                 self.anchor = dock
             else:
                 self.area.addDock(dock, 'right', self.anchor)
                 self.anchor = dock
-        restoreLayout(file)
-    
-    def save():
-        savefile = open("savefile.sav", 'wb')
-        saveLayout()
-        for k, item in self.items:
-            self.data["items"][k] = {"props": item.save(), "class": type(item)}
-        pickle.dump(self.data, savefile)
-        savefile.close()
 
-    def restoreLayout ():
-        self.area.restoreState(data["layout"])
-
-    def saveLayout ():
-        self.data["layout"] = self.area.saveState()
-    
     def __init__(self, callback):
         self.callback = callback  # called every frame to get new data
         self.data = {
@@ -71,7 +84,7 @@ class Dashboard:
         while time.time() < listen + 1:
             callback()
         #series = Parser.get_series()
-
+        all_series = Parser.get_all_series()
         # window that lays out plots in a grid
         self.app = pg.mkQApp("Plotter UI")
         self.win = QtWidgets.QMainWindow()
@@ -81,14 +94,15 @@ class Dashboard:
         self.area = DockArea()
         self.win.setCentralWidget(self.area)
         self.anchor = None
-
         self.items = []
-
-        #if path.exists("savefile.sav") #This automatically loads
-        #   load()
-
+        sample_props = [["DAQ", "Fake0"], ["DAQ", "Fake1"]]
+        self.add(PlotDashItem, sample_props[0])
+        self.add(PlotDashItem, sample_props[1])
+        self.save()
+        #self.load()
+        
         """
-        This commit removed the auto-layout generation along with the initialization of the plots respectively; refer to SHA 34561840
+        Sample add function is provided, use self.load to restore save file
         """
 
         self.counter = TickCounter(1)
@@ -107,7 +121,6 @@ class Dashboard:
             #print(f"\rFPS: {fps: >4.2f}", end='')
 
         self.callback()
-
     def exec(self):
         timer = QtCore.QTimer()
         timer.timeout.connect(self.update)
@@ -117,32 +130,3 @@ class Dashboard:
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         self.win.show()
         pg.mkQApp().exec_()
-
-
-class Plot:
-    """
-    Manages displaying and updating a single plot.
-    """
-
-    def __init__(self, series):
-        self.series = series
-        # update when data is added to the series
-        self.series.register_update(self.update)
-
-        self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
-        self.plot.setMouseEnabled(x=False, y=False)
-        self.plot.hideButtons()
-        self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
-        
-    def update(self):
-        # update the displayed data
-        self.curve.setData(self.series.times, self.series.points)
-
-        # current value readout in the title
-        self.plot.setTitle(
-            f"{self.series.name} [{self.series.get_running_avg(): <4.4f}]")
-
-        # round the time to the nearest GRAPH_STEP
-        t = round(self.series.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
-        self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
-                            t + config.GRAPH_STEP, padding=0)

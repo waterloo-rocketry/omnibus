@@ -1,8 +1,5 @@
 import typing
-import ..parsers import Parser
-import Plot from Dashboard
-from pyqtgraph.Qt.Wtwidgets import QWidget
-
+from pyqtgraph.Qt import QtWidgets
 
 class DashboardItem:
     """
@@ -21,25 +18,8 @@ class DashboardItem:
         """
         raise NotImplementedError
 
-    def child(self) -> QWidget:
+    def child(self) -> QtWidgets:
         """
         Return Qt Widget that encompasses this DashboardItem
         """
         raise NotImplementedError
-
-class PlotDashItem (DashboardItem):
-    def __init__(self, props = None):
-        self.serie = None
-        if props is not None:
-            self.serie = Parser.get_serie(props[0], props[1]) 
-            self.plot = Plot(self.serie)
-        else:
-            pass # add a prompt here to do a get_serie_all and fill the get_serie! It's left as WIP for add button
-
-        self.widget = pg.PlotWidget(plotItem = self.plot)
-    
-    def save(self):
-        return [self.serie.channel, self.serie.name]
-
-    def child(self):
-        return self.widget
