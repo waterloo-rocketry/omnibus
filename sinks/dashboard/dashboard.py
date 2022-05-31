@@ -20,62 +20,54 @@ from parsers import Parser
 from plotdashitem import PlotDashItem
 from omnibus.util import TickCounter
 
+
 class Dashboard:
     """
     Displays a grid of plots in a window
     """
+
     def restoreLayout(self):
         self.area.restoreState(self.data["layout"])
 
     def saveLayout(self):
         self.data["layout"] = self.area.saveState()
-    
-    def load(self):
-        savefile = open("savefile.sav", 'rb') 
+
+    def load(self, file="savefile.sav"):
+        savefile = open(file, 'rb')
         self.data = pickle.load(savefile)
-        for i, item in enumerate(self.data["items"]): # { 0: {...}, 1: ..., ...}
-            if item["class"] == PlotDashItem:
-                p = PlotDashItem(item["props"])
-                self.items.append(p)
-                dock = Dock(name=str(i))
-                dock.addWidget(p.child())
-                if self.anchor == None:
-                    self.area.addDock(dock, 'right')
-                    self.anchor = dock
-                else:
-                    self.area.addDock(dock, 'right', self.anchor)
-                    self.anchor = dock
+        for i, item in enumerate(self.data["items"]):  # { 0: {...}, 1: ..., ...}
+            self.add(item["class"], item["props"])
         self.restoreLayout()
-   
-    def save(self):
-        savefile = open("savefile.sav", 'wb')
+
+    def save(self, file="savefile.sav"):
+        savefile = open(file, 'wb')
         self.saveLayout()
         self.data["items"] = []
         for k, item in enumerate(self.items):
-            self.data["items"].append({"props": item.save(), "class": type(item)})
+            self.data["items"].append({"props": item.get_props(), "class": type(item)})
         pickle.dump(self.data, savefile)
-        #for i in self.data["items"]:
-        #    print(i)
         savefile.close()
 
     def add(self, itemtype, props):
-        if itemtype == PlotDashItem:
-            p = PlotDashItem(props)
-            self.items.append(p)
-            dock = Dock(name=str(len(self.items)-1))
-            dock.addWidget(p.child())
-            if self.anchor == None:
-                self.area.addDock(dock, 'right')
-                self.anchor = dock
-            else:
-                self.area.addDock(dock, 'right', self.anchor)
-                self.anchor = dock
+        p = itemtype(props)  # Please pass in the itemtype of the object (no quotes!) in itemtype
+        # If it is a newly added plot from button, please set props to nothing and set props
+        # via prompt called at initialization of plotDashItem, since get_all_series need to be
+        # called at initialization of newly added plot (that is not loaded from file)
+        self.items.append(p)
+        dock = Dock(name=str(len(self.items)-1))
+        dock.addWidget(p.get_widget())
+        if self.anchor == None:
+            self.area.addDock(dock, 'right')
+            self.anchor = dock
+        else:
+            self.area.addDock(dock, 'right', self.anchor)
+            self.anchor = dock
 
     def __init__(self, callback):
         self.callback = callback  # called every frame to get new data
         self.data = {
-            "items" : [],
-            "layout" : None
+            "items": [],
+            "layout": None
         }
         # use 1 second of messages to determine which series are available
         # note: this is very temporary and will be replaced by dynamic plotter layouts soon
@@ -83,14 +75,12 @@ class Dashboard:
         listen = time.time()
         while time.time() < listen + 1:
             callback()
-        #series = Parser.get_series()
-        all_series = Parser.get_all_series()
         # window that lays out plots in a grid
-        self.app = pg.mkQApp("Plotter UI")
+        self.app = pg.mkQApp("Dashboard")
         self.win = QtWidgets.QMainWindow()
-        self.win.setWindowTitle("Omnibus Plotter")
+        self.win.setWindowTitle("Omnibus Dashboard")
         self.win.resize(1000, 600)
-        
+
         self.area = DockArea()
         self.win.setCentralWidget(self.area)
         self.anchor = None
@@ -99,11 +89,7 @@ class Dashboard:
         self.add(PlotDashItem, sample_props[0])
         self.add(PlotDashItem, sample_props[1])
         self.save()
-        #self.load()
-        
-        """
-        Sample add function is provided, use self.load to restore save file
-        """
+        # self.load() #use this function to restore from save file
 
         self.counter = TickCounter(1)
 
@@ -116,11 +102,14 @@ class Dashboard:
         # Filter to 5 frames per update on analytics
         if not(self.counter.tick_count() % 5):
             fps = self.counter.tick_rate()
-            #self.txitem.setText(
+            # self.txitem.setText(
             #    f"FPS: {fps: >4.2f}\nRunning Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
             #print(f"\rFPS: {fps: >4.2f}", end='')
-
+            """
+            To Do: TextDashItem
+            """
         self.callback()
+
     def exec(self):
         timer = QtCore.QTimer()
         timer.timeout.connect(self.update)

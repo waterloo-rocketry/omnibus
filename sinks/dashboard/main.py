@@ -12,4 +12,5 @@ def update():  # gets called every frame
         # update whatever series subscribed to this channel
         Parser.all_parse(msg.channel, msg.payload)
 
+
 Dashboard(update)

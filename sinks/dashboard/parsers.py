@@ -52,7 +52,8 @@ class Parser:
         """
         if channel not in Parser.parsers:
             return None
-        return Parser.parsers[channel].series[name] # SeriesDefaultDict takes care of the rest
+        return Parser.parsers[channel].series[name]  # SeriesDefaultDict takes care of the rest
+
 
 class DAQParser(Parser):
     """
