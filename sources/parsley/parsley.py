@@ -151,9 +151,9 @@ def parse_sensor_altitude(msg_data):
     return {"time": timestamp, "altitude": altitude}
 
 
-@register("SENSOR_ACC")
-@register("SENSOR_GYRO")
+
 @register("SENSOR_MAG")
+# the units are in micro tesla updated at 50hz
 def parse_sensor_acc_gyro_mag(msg_data):
     timestamp = msg_data[0] << 8 | msg_data[1]
     x = int.from_bytes(bytes(msg_data[2:4]), "big", signed=True)
@@ -163,6 +163,43 @@ def parse_sensor_acc_gyro_mag(msg_data):
     return {"time": timestamp, "x": x, "y": y, "z": z}
 
 
+# LSM303AGR, calibrated acc for +-8g
+# converting analog to 16bit signed representation.
+# divide by 2^16 to get to the -1 to 1 scale
+# mutiply by 8 to get to the -16 to 16 scale in g
+@register("SENSOR_ACC")
+def parse_sensor_acc_mag(msg_data):
+    timestamp = msg_data[0] << 8 | msg_data[1]
+    x = int.from_bytes(bytes(msg_data[2:4]), "big", signed=True) / (2**16) * 8
+    y = int.from_bytes(bytes(msg_data[4:6]), "big", signed=True) / (2**16) * 8
+    z = int.from_bytes(bytes(msg_data[6:8]), "big", signed=True) / (2**16) * 8
+
+    return {"time": timestamp, "x": x, "y": y, "z": z}
+
+# MPU 6050 sensor which is calibrated for +-16g
+# converting analog to 16bit signed representation.
+# divide by 2^16 to get to the -1 to 1 scale
+# mutiply by 16 to get to the -16 to 16 scale in g
+@register("SENSOR_ACC2")
+def parse_sensor_acc_mag(msg_data):
+    timestamp = msg_data[0] << 8 | msg_data[1]
+    x = int.from_bytes(bytes(msg_data[2:4]), "big", signed=True) / (2**16) * 16
+    y = int.from_bytes(bytes(msg_data[4:6]), "big", signed=True) / (2**16) * 16
+    z = int.from_bytes(bytes(msg_data[6:8]), "big", signed=True) / (2**16) * 16
+
+    return {"time": timestamp, "x": x, "y": y, "z": z}
+
+# converting analog to 16bit signed representation.
+# divide by 2^16 to get to the -1 to 1 scale
+# mutiply by 2000 to get to the -16 to 16 scale in degree/s
+@register("SENSOR_GYRO")
+def parse_sensor_acc_mag(msg_data):
+    timestamp = msg_data[0] << 8 | msg_data[1]
+    x = int.from_bytes(bytes(msg_data[2:4]), "big", signed=True) / (2**16) * 2000
+    y = int.from_bytes(bytes(msg_data[4:6]), "big", signed=True) / (2**16) * 2000
+    z = int.from_bytes(bytes(msg_data[6:8]), "big", signed=True) / (2**16) * 2000
+
+    return {"time": timestamp, "x": x, "y": y, "z": z}
 @register("SENSOR_ANALOG")
 def parse_sensor_analog(msg_data):
     timestamp = msg_data[0] << 8 | msg_data[1]
