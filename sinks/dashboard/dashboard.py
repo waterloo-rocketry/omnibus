@@ -12,6 +12,7 @@ from pyqtgraph.Qt.QtGui import QGridLayout, QMenuBar
 
 from parsers import Parser
 from plotdashitem import PlotDashItem
+from can_display import CanDisplayDashItem
 from omnibus.util import TickCounter
 
 # "Temorary Global Constant"
@@ -34,6 +35,19 @@ class Dashboard(QtWidgets.QWidget):
 
         # called every frame to get new data
         self.callback = callback
+
+        # To address bugs
+        print("Listening for series...")
+        listen = time.time()
+        while time.time() < listen + 1:
+            callback()
+
+        # Data used for saving and
+        # restoring
+        self.data = {
+            "items": [],
+            "layout": None
+        }
 
         # A list of all docks in the dock area
         # doubles as a list of all the items in
@@ -61,18 +75,14 @@ class Dashboard(QtWidgets.QWidget):
         # Create a sub menu which will be used
         # to add items to our dash board.
         # For all dash items we support, there will
-        # be a corresponding action to add that item 
+        # be a corresponding action to add that item
         add_item_menu = menubar.addMenu("Add Item")
-        
-        for dash_item_type in item_types:
-            def prompt_and_add():
-                new_dash_item = dash_item_type(None)
-                self.add(new_dash_item)
 
-            new_action = add_item_menu.addAction(dash_item_type.__name__)
+        for dock_item_type in item_types:
+            new_action = add_item_menu.addAction(dock_item_type.__name__)
             new_action.triggered.connect(prompt_and_add)
 
-        # Add an action to the menu bar to save the 
+        # Add an action to the menu bar to save the
         # layout of the dashboard.
         save_layout_action = menubar.addAction("Save")
         save_layout_action.triggered.connect(self.save)
@@ -102,14 +112,14 @@ class Dashboard(QtWidgets.QWidget):
             item = dock.widgets[0]
             item.unsubscribe_to_all()
 
-        # Second, remove the entire dock area, 
+        # Second, remove the entire dock area,
         # thereby deleting all of the docks
         # contained within
         self.layout.removeWidget(self.area)
         self.area.deleteLater()
         del self.area
 
-        # Now we recreate the dock area, 
+        # Now we recreate the dock area,
         # ahearing to the layout specified in
         # the save file
 
@@ -125,38 +135,37 @@ class Dashboard(QtWidgets.QWidget):
         # data variable to it
         if os.path.isfile(filename):
             with open(filename, 'rb') as savefile:
-                data = pickle.load(savefile)
-        else:
-            data = {
-                "items": [],
-                "layout": None
-            }
-        
-        # for every item specified by the save file, 
-        # add that item back to the dock
-        for i, item in enumerate(data["items"]):  # { 0: {...}, 1: ..., ...}
-            self.add(item["class"](item["props"]))
+                self.data = pickle.load(savefile)
+        for i, item in enumerate(self.data["items"]):  # { 0: {...}, 1: ..., ...}
+            self.add(item["class"], item["props"])
 
         # restore the layout
-        if data["layout"]:
-            self.area.restoreState(data["layout"])
+        if self.data["layout"]:
+            self.area.restoreState(self.data["layout"])
 
     def save(self):
         # store layout data to data["layout"]
-        data["layout"] = self.area.saveState()
+        self.data["layout"] = self.area.saveState()
 
         # store data on the specific dash items to
         # data["items"]
-        data["items"] = []
+        self.data["items"] = []
         for dock in self.docks:
             item = dock.widgets[0]
-            data["items"].append({"props": item.get_props(), "class": type(item)})
+            self.data["items"].append({"props": item.get_props(), "class": type(item)})
 
         # Save to the save file
         with open(filename, 'wb') as savefile:
-            pickle.dump(data, savefile)
+            pickle.dump(self.data, savefile)
 
-    def add(self, dashitem):
+    def add(self, itemtype, props=None):
+        # input specifications
+        # itemtype: a python class inherating from DashboardItem
+        # props: the props object used to construct the dash item
+        #        leave as none if you desire the properties be set
+        #        via user prompt
+        p = itemtype(props)
+
         # Create a new dock to be added to the dock area
         dock = Dock(name=str(len(self.docks)-1), closable=True)
 
@@ -167,16 +176,81 @@ class Dashboard(QtWidgets.QWidget):
         # Create a call back to execute when docks close to ensure cleaning up is done
         # right
         def custom_callback(dock_arg):
-            dashitem.unsubscribe_to_all()
-            self.docks = [dock for dock in self.docks if dock.widgets[0] != dashitem]
+            p.unsubscribe_to_all()
+            self.docks = [dock for dock in self.docks if dock.widgets[0] != p]
 
         dock.sigClosed.connect(custom_callback)
 
         # add widget to dock
-        dock.addWidget(dashitem)
+        dock.addWidget(p)
 
         # add dock to dock area
-        self.area.addDock(dock, 'right')
+        if len(self.docks):
+            self.area.addDock(dock, 'right', self.docks[-1])
+        else:
+            self.area.addDock(dock, 'right', self.anchor)
+            self.anchor = dock
+
+    def __init__(self, callback):
+        # Initilize Super Class
+        QtWidgets.QWidget.__init__(self)
+
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+
+        # Attach Menu
+
+        menubar = QMenuBar()
+        self.layout.addWidget(menubar, 0, 0)
+
+        # Add action
+        add_item_menu = menubar.addMenu("Add Item")
+        add_item_actions = []
+
+        for dock_item_type in item_types:
+            new_action = add_item_menu.addAction(dock_item_type.__name__)
+            new_action.triggered.connect(self.prompt_and_add(dock_item_type))
+            add_item_actions.append(new_action)
+
+        save_layout_action = menubar.addAction("Save")
+
+        def save_ignore_args(arg):
+            self.save()
+
+        save_layout_action.triggered.connect(save_ignore_args)
+
+        restore_layout_action = menubar.addAction("Reset")
+
+        def load_ignore_args(arg):
+            self.load()
+
+        restore_layout_action.triggered.connect(load_ignore_args)
+
+        self.callback = callback  # called every frame to get new data
+        self.data = {
+            "items": [],
+            "layout": None
+        }
+
+        #self.win = QtWidgets.QMainWindow()
+        self.setWindowTitle("Omnibus Dashboard")
+        self.resize(1000, 600)
+
+        # Dock Area
+        self.area = DockArea()
+        self.anchor = None
+        self.items = []
+        sample_props = [["DAQ", "Fake0"], ["DAQ", "Fake1"]]
+
+        # Container
+        self.layout.addWidget(self.area)
+
+        # Adding widgets
+        self.add(PlotDashItem, sample_props[0])
+        self.add(PlotDashItem, sample_props[1])
+        self.add(CanDisplayDashItem, ["CAN/Parsley", "CanMsgDisplay"])
+        self.canDisplayItemIndex = 2
+        self.save()
 
         # add dock to dock list
         self.docks.append(dock)
@@ -185,11 +259,14 @@ class Dashboard(QtWidgets.QWidget):
     def update(self):
         self.counter.tick()
 
+        self.items[self.canDisplayItemIndex].update()
+
         # Filter to 5 frames per update on analytics
         if not(self.counter.tick_count() % 5):
             fps = self.counter.tick_rate()
 
         self.callback()
+
 
 def dashboard_driver(callback):
     app = QtWidgets.QApplication(sys.argv)

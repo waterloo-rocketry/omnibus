@@ -1,7 +1,8 @@
 from omnibus import Receiver
 
 from parsers import Parser
-from dashboard import dashboard_driver
+from dashboard import Dashboard
+from can_display import CAN_MSGS
 
 receiver = Receiver("")  # subscribe to all channels
 
@@ -11,6 +12,8 @@ def update():  # gets called every frame
     while msg := receiver.recv_message(0):
         # update whatever series subscribed to this channel
         Parser.all_parse(msg.channel, msg.payload)
+        if msg.channel == "CAN/Parsley":
+            CAN_MSGS.put(msg.payload)
 
 
 dashboard_driver(update)
