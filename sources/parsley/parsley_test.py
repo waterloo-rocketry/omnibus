@@ -132,6 +132,13 @@ class TestParsley:
         res = parsley.parse_sensor_altitude(msg_data)
         assert res["altitude"] == -12345
 
+    def test_sensor_temp(self, timestamp):
+        msg_data = timestamp() + b'\x12'
+        msg_data += struct.pack(">I", int(12.5 * 2**10))[1:]
+        res = parsley.parse_sensor_temp(msg_data)
+        assert res["sensor_id"] == 0x12
+        assert res["temperature"] == 12.5
+
     def test_gps_timestamp(self, timestamp):
         msg_data = timestamp() + struct.pack(">bbbb", 12, 23, 34, 45)
         res = parsley.parse_gps_timestamp(msg_data)
@@ -199,9 +206,13 @@ class TestParsley:
         assert msg_data == [1, 2, 0xFF]
 
     def test_reset_cmd(self, timestamp):
-        msg_data = timestamp() + struct.pack(">b", 2)
+        msg_data = timestamp() + struct.pack(">b", 3)
         res = parsley.parse_reset_cmd(msg_data)
-        assert res["board_id"] == 2
+        assert res["board_id"] == "LOGGER"
+
+        msg_data = timestamp() + struct.pack(">b", 0)
+        res = parsley.parse_reset_cmd(msg_data)
+        assert res["board_id"] == "ALL"
 
     def test_debug_radio_cmd(self):
         msg_data = b'RADIO'
@@ -209,7 +220,6 @@ class TestParsley:
         assert res["string"] == "RADIO"
 
     def test_sensor_acc(self):
-        # TODO signed? unsigned?
         msg_data = struct.pack(">Hhhh", 12345, 1, 2, 3)
         res = parsley.parse_sensor_acc_gyro_mag(msg_data)
         assert res["time"] == 12345
@@ -217,10 +227,19 @@ class TestParsley:
         assert res["y"] == 2
         assert res["z"] == 3
 
+        msg_data = struct.pack(">Hhhh", 12345, -1, -2, -3)
+        res = parsley.parse_sensor_acc_gyro_mag(msg_data)
+        assert res["time"] == 12345
+        assert res["x"] == -1
+        assert res["y"] == -2
+        assert res["z"] == -3
+
     def test_sensor_gyro(self, timestamp):
+        # covered by test_sensor_acc
         pass
 
     def test_sensor_mag(self, timestamp):
+        # covered by test_sensor_acc
         pass
 
     def test_radi_value(self, timestamp):
@@ -230,7 +249,9 @@ class TestParsley:
         assert res["radi"] == 500
 
     def test_leds_on(self):
+        # LED_ON message has no message body
         pass
 
     def test_leds_off(self):
+        # LED_OFF message has no message body
         pass
