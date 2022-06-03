@@ -36,6 +36,7 @@ msg_type_hex = {
     "SENSOR_TEMP": 0x540,
     "SENSOR_ALTITUDE": 0x560,
     "SENSOR_ACC": 0x580,
+    "SENSOR_ACC2": 0x5A0,
     "SENSOR_GYRO": 0x5E0,
     "SENSOR_MAG": 0x640,
     "SENSOR_ANALOG": 0x6A0,
@@ -159,5 +160,7 @@ fill_direction_str = {v: k for k, v in fill_direction_hex.items()}
 actuator_id_hex = {
     "VENT_VALVE": 0,
     "INJECTOR_VALVE": 1,
+    "MAMA": 2,
+    "PICAM":3
 }
 actuator_id_str = {v: k for k, v in actuator_id_hex.items()}
