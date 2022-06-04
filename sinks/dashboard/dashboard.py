@@ -109,7 +109,6 @@ class Dashboard:
             To Do: TextDashItem
             """
 
-        self.load()
         self.callback()
 
     def exec(self):
