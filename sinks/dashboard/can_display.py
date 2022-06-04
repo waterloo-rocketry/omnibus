@@ -39,7 +39,7 @@ class CanDisplayDashItem (DashboardItem):
 
         self.rightGrid = QtWidgets.QVBoxLayout()
 
-        for index, value in enumerate(self.checkboxList):
+        for index, value in enumerate(list(BOARD_IDS.keys())):
             self.checkboxList[index] = QtWidgets.QCheckBox(value)
             self.labels.append(QtWidgets.QLabel())
             # TODO: improve alignment
@@ -87,7 +87,8 @@ class CanDisplayDashItem (DashboardItem):
         if not CAN_MSGS.empty():
             msg = CAN_MSGS.get()
             self.updateCanMsgTimes(msg)
-            self.textBrowser.append(str(msg))
+            if (self.checkboxList[BOARD_IDS[msg['board_id']]].checkState()):
+                self.textBrowser.append(str(msg))
         for index, value in enumerate(self.checkboxList):
             self.labels[index].setText(self.get_board_health_state(index)
                                        if value.checkState() else "N/A")
