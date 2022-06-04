@@ -161,6 +161,7 @@ def parse_sensor_temp(msg_data):
 
 
 @register("SENSOR_ACC")
+@register("SENSOR_ACC2")
 @register("SENSOR_GYRO")
 @register("SENSOR_MAG")
 def parse_sensor_acc_gyro_mag(msg_data):

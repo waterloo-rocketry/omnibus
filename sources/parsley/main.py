@@ -8,7 +8,7 @@ import parsley
 def reader(port):
     if port == "-":
         return input
-    s = serial.Serial(port, 9600)
+    s = serial.Serial(port, 115200)
 
     def _reader():
         return s.readline().strip(b'\r\n').decode('utf-8')
@@ -32,20 +32,24 @@ def main():
 
     while True:
         line = readline()
-        if not line:
-            break
+        #if not line:
+        #    break
 
         # treat repeated messages in the same way as USB debug
         if line.strip() == '.':
             print('.')
             continue
 
-        msg_sid, msg_data = parser(line)
-        parsed_data = parsley.parse(msg_sid, msg_data)
+        print(line)
+        try:
+            msg_sid, msg_data = parser(line)
+            parsed_data = parsley.parse(msg_sid, msg_data)
 
-        print(parsley.fmt_line(parsed_data))
-        if not args.solo:
-            sender.send(CHANNEL, parsed_data)
+            print(parsley.fmt_line(parsed_data))
+            if not args.solo:
+                sender.send(CHANNEL, parsed_data)
+        except:
+            pass
 
 
 if __name__ == '__main__':
