@@ -20,7 +20,7 @@ class DashboardItem:
         """
         raise NotImplementedError
 
-    def get_widgets(self) -> QtWidgets:
+    def get_widget(self) -> QtWidgets.QWidget:
         """
         Return Qt Widget that encompasses this DashboardItem
         """

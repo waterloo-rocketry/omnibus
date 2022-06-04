@@ -30,3 +30,5 @@ cscope*
 .coverage
 coverage.xml
 htmlcov
+
+#*.sav

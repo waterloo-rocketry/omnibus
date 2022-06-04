@@ -33,20 +33,25 @@ class Dashboard:
         self.data["layout"] = self.area.saveState()
 
     def load(self, file="savefile.sav"):
-        savefile = open(file, 'rb')
-        self.data = pickle.load(savefile)
+        self.area = DockArea() #Clears all docks by throwing away the entire dockarea
+        self.win.setCentralWidget(self.area)
+        self.anchor = None 
+        self.items = []
+
+        with open(file, 'rb') as savefile:
+            self.data = pickle.load(savefile)
+        
         for i, item in enumerate(self.data["items"]):  # { 0: {...}, 1: ..., ...}
             self.add(item["class"], item["props"])
         self.restoreLayout()
 
     def save(self, file="savefile.sav"):
-        savefile = open(file, 'wb')
         self.saveLayout()
         self.data["items"] = []
         for k, item in enumerate(self.items):
             self.data["items"].append({"props": item.get_props(), "class": type(item)})
-        pickle.dump(self.data, savefile)
-        savefile.close()
+        with open(file, 'wb') as savefile:
+            pickle.dump(self.data, savefile)
 
     def add(self, itemtype, props):
         p = itemtype(props)  # Please pass in the itemtype of the object (no quotes!) in itemtype
@@ -69,12 +74,7 @@ class Dashboard:
             "items": [],
             "layout": None
         }
-        # use 1 second of messages to determine which series are available
-        # note: this is very temporary and will be replaced by dynamic plotter layouts soon
-        print("Listening for series...")
-        listen = time.time()
-        while time.time() < listen + 1:
-            callback()
+        
         # window that lays out plots in a grid
         self.app = pg.mkQApp("Dashboard")
         self.win = QtWidgets.QMainWindow()
@@ -89,7 +89,7 @@ class Dashboard:
         self.add(PlotDashItem, sample_props[0])
         self.add(PlotDashItem, sample_props[1])
         self.save()
-        # self.load() #use this function to restore from save file
+        #self.load() #use this function to restore from save file
 
         self.counter = TickCounter(1)
 
@@ -108,13 +108,15 @@ class Dashboard:
             """
             To Do: TextDashItem
             """
+
+        self.load()
         self.callback()
 
     def exec(self):
         timer = QtCore.QTimer()
         timer.timeout.connect(self.update)
         timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
-
+        
         # make ctrl+c close the window
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         self.win.show()

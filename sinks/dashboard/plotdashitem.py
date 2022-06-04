@@ -13,11 +13,11 @@ import config
 
 class PlotDashItem (DashboardItem):
     def __init__(self, props=None):
-        self.serie = None
+        self.series = None
         self.props = props
         if props is not None:
-            self.serie = Parser.get_series(props[0], props[1])
-            self.plot = Plot(self.serie)
+            self.series = Parser.get_series(props[0], props[1])
+            self.plot = Plot(self.series)
         else:
             pass  # add a prompt here to do a get_serie_all and fill the get_serie! It's left as WIP for add button
 
