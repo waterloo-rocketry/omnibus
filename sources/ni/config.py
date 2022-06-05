@@ -19,20 +19,20 @@ def setup():
        """
        Sensor Configs, will change from test to test
        """
-       # Port 7
-       Sensor("(PT-1) - Supply Cylinder Pressure", "ai28", 10, Connection.SINGLE,
+       # Port 11
+       Sensor("(PT-1) - Supply Cylinder Pressure", "ai7", 10, Connection.SINGLE,
               LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-       # Port 8
-       Sensor("(PT-2) - Fill Line Pressure", "ai21", 10, Connection.SINGLE,
+       # Port 12
+       Sensor("(PT-2) - Fill Line Pressure", "ai14", 10, Connection.SINGLE,
               LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
        # Port 1
        Sensor("Rocket Mass", "ai16", 0.2, Connection.DIFFERENTIAL,
-              # Very estimated calibration 200 kG / (2.0 mV/V * 10V)
-              LinearCalibration(200 / (10 * 2 / 1000), 0, "kg"))
+              # Very estimated calibration 200 kG / (2.0 mV/V * 12V)
+              LinearCalibration(200 / (12 * 2 / 1000), 0, "kg"))
        # Port 2 - if used
        Sensor("Big Omega S-Type - Ox Tanks", "ai17", 0.2, Connection.DIFFERENTIAL,
-              # Factory calibration: 1000 kG / (2.9991 mV/V * 10 V)
-              LinearCalibration(1000 / (2.9991 / 1000 * 10), -10.1, "kg"))
+              # Factory calibration: 1000 kG / (2.9991 mV/V * 12 V)
+              LinearCalibration(1000 / (2.9991 / 1000 * 12), -10.1, "kg"))
 
        """
        Everything below here is just for documentation purposes
