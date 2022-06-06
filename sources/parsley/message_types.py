@@ -127,7 +127,7 @@ board_stat_hex = {
     "E_ILLEGAL_CAN_MSG": 16,          # x                x                   x                   x
     "E_SEGFAULT": 17,                 # x                x                   x                   x
     "E_UNHANDLED_INTERRUPT": 18,      # x                x                   x                   x
-    "E_CODING_FUCKUP": 19             # x                x                   x                   x
+    "E_CODING_FUCKUP": 19,             # x                x                   x                   x
 
     "E_BATT_OVER_CURRENT": 20         # mA_high          mA_low              x                   x
 }
