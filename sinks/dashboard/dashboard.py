@@ -21,7 +21,6 @@ from pyqtgraph.graphicsItems.TextItem import TextItem
 from parsers import Parser
 from plotdashitem import PlotDashItem
 from omnibus.util import TickCounter
-import sip
 
 # "Temorary Global Constant"
 
@@ -42,20 +41,19 @@ class Dashboard(QtWidgets.QWidget):
         self.data["layout"] = self.area.saveState()
 
     def load(self, file="savefile.sav"):
+        for item in self.items:
+            item.unsubscribe_to_all()
+
         # Clears all docks by throwing away the entire dockarea
         self.layout.removeWidget(self.area)
         self.area.deleteLater()
         del self.area
 
-        # Delete all plot widgets
-        for item in self.items:
-            print(item)
-            sip.delete(item.get_widget())
-
         self.area = DockArea()
         self.layout.addWidget(self.area)
 
-        self.anchor = None 
+        self.anchor = None
+
         self.items = []
 
         with open(file, 'rb') as savefile:
@@ -84,6 +82,7 @@ class Dashboard(QtWidgets.QWidget):
         # Bit of a sussy baka, but this is the only way we can really get control over
         # how the thing closes
         def custom_callback(dock_arg):
+            self.items = [item for item in self.items if item != dock_arg]
             if self.anchor == dock_arg:
                 self.anchor = None
 
