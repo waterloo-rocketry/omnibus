@@ -25,3 +25,9 @@ class DashboardItem:
         Return Qt Widget that encompasses this DashboardItem
         """
         raise NotImplementedError
+
+    def subscribe_to_series(self, channel, name)
+
+    def on_data_update(self, series):
+        """
+        """

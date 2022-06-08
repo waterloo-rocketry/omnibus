@@ -19,7 +19,7 @@ class PlotDashItem (DashboardItem):
             self.series = Parser.get_series(props[0], props[1])
             self.plot = Plot(self.series)
         else:
-            pass  # add a prompt here to do a get_serie_all and fill the get_serie! It's left as WIP for add button
+            pass  # add a prompt here to do a get_series_all and fill the get_series! It's left as WIP for add button
 
         self.widget = pg.PlotWidget(plotItem=self.plot.plot)
 
@@ -57,3 +57,7 @@ class Plot:
         t = round(self.series.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
         self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
                             t + config.GRAPH_STEP, padding=0)
+
+    def __del__(self):
+        print(self.series.name)
+        self.series.register_update(None)
