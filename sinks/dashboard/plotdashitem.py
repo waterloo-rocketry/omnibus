@@ -1,5 +1,6 @@
 from parsers import Parser
 from pyqtgraph.Qt import QtWidgets
+from pyqtgraph.Qt.QtGui import QGridLayout
 
 import pyqtgraph as pg
 from pyqtgraph.console import ConsoleWidget
@@ -16,41 +17,35 @@ class PlotDashItem (DashboardItem):
         # Call this in **every** dash item constructor
         super().__init__()
 
-        self.series = None
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+
         self.props = props
-        if props is not None:
-            self.series = Parser.get_series(props[0], props[1])
-            self.subscribe_to_series(
-                    Parser.get_series(props[0], props[1])
-                )
-            self.plot = Plot(self.series)
+
+        #############################################################################
+        # Ensure that props is not none
+        if props == None:
+            channel = self.prompt_user("Channel", "The channel you wish to listen to", "items", Parser.parsers.keys())
+            all_series = [series.name for series in Parser.get_all_series(channel)]
+            series = self.prompt_user("Series", "The series you wish to plot", "items", all_series)
+            props = [channel, series]
         else:
-            pass  # add a prompt here to do a get_series_all and fill the get_series! It's left as WIP for add button
+            pass
+        #############################################################################
 
-        self.widget = pg.PlotWidget(plotItem=self.plot.plot)
+        self.series = Parser.get_series(props[0], props[1])
+        self.subscribe_to_series(self.series)
 
-    def on_data_update(self, series):
-        self.plot.update(series)
-
-    def get_props(self):
-        return self.props
-
-    def get_widget(self):
-        return self.widget
-
-
-class Plot:
-    """
-    Manages displaying and updating a single plot.
-    """
-
-    def __init__(self, series):
-        self.plot = pg.PlotItem(title=series.name, left="Data", bottom="Seconds")
+        self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
-        self.curve = self.plot.plot(series.times, series.points, pen='y')
+        self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
 
-    def update(self, series):
+        self.widget = pg.PlotWidget(plotItem=self.plot)
+
+        self.layout.addWidget(self.widget, 0, 0)
+
+    def on_data_update(self, series):
         # update the displayed data
         self.curve.setData(series.times, series.points)
 
@@ -62,3 +57,7 @@ class Plot:
         t = round(series.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
         self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
                             t + config.GRAPH_STEP, padding=0)
+
+    def get_props(self):
+        return self.props
+        

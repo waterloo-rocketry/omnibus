@@ -60,13 +60,14 @@ class Dashboard(QtWidgets.QWidget):
             self.data = pickle.load(savefile)
         
         for i, item in enumerate(self.data["items"]):  # { 0: {...}, 1: ..., ...}
+            print(item["props"])
             self.add(item["class"], item["props"])
         self.restoreLayout()
 
     def save(self, file="savefile.sav"):
         self.saveLayout()
         self.data["items"] = []
-        for k, item in enumerate(self.items):
+        for item in self.items:
             self.data["items"].append({"props": item.get_props(), "class": type(item)})
         with open(file, 'wb') as savefile:
             pickle.dump(self.data, savefile)
@@ -82,13 +83,14 @@ class Dashboard(QtWidgets.QWidget):
         # Bit of a sussy baka, but this is the only way we can really get control over
         # how the thing closes
         def custom_callback(dock_arg):
-            self.items = [item for item in self.items if item != dock_arg]
+            p.unsubscribe_to_all()
+            self.items = [item for item in self.items if item != p]
             if self.anchor == dock_arg:
                 self.anchor = None
 
         dock.sigClosed.connect(custom_callback)
 
-        dock.addWidget(p.get_widget())
+        dock.addWidget(p)
         if self.anchor == None:
             self.area.addDock(dock, 'right')
             self.anchor = dock
@@ -171,7 +173,7 @@ class Dashboard(QtWidgets.QWidget):
     def prompt_and_add(self, itemtype):
         # The parameter is some kind of boolean
         def return_func(param):
-            self.add(itemtype, ["DAQ", "Fake2"])
+            self.add(itemtype, None)
 
         return return_func
 

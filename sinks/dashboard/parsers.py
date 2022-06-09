@@ -39,10 +39,11 @@ class Parser:
                 parser.parse(payload)
 
     @staticmethod
-    def get_all_series():
+    def get_all_series(channel=""):
         res = []
-        for parser in Parser.parsers.values():
-            res += parser.series.values()
+        for chan, parser in Parser.parsers.items():
+            if chan.startswith(channel):
+                res += parser.series.values()
         return res
 
     @staticmethod
