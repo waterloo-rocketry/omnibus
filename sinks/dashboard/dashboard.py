@@ -34,14 +34,14 @@ class Dashboard:
         self.data["layout"] = self.area.saveState()
 
     def load(self, file="savefile.sav"):
-        self.area = DockArea() #Clears all docks by throwing away the entire dockarea
+        self.area = DockArea()  # Clears all docks by throwing away the entire dockarea
         self.win.setCentralWidget(self.area)
-        self.anchor = None 
+        self.anchor = None
         self.items = []
 
         with open(file, 'rb') as savefile:
             self.data = pickle.load(savefile)
-        
+
         for i, item in enumerate(self.data["items"]):  # { 0: {...}, 1: ..., ...}
             self.add(item["class"], item["props"])
         self.restoreLayout()
@@ -75,7 +75,7 @@ class Dashboard:
             "items": [],
             "layout": None
         }
-        
+
         # window that lays out plots in a grid
         self.app = pg.mkQApp("Dashboard")
         self.win = QtWidgets.QMainWindow()
@@ -92,7 +92,7 @@ class Dashboard:
         listen = time.time()
         while time.time() < listen + 1:
             callback()
-            
+
         series = Parser.get_all_series()
 
         for elem in series:
@@ -101,7 +101,7 @@ class Dashboard:
         self.add(CanDisplayDashItem, None)
         self.canDisplayItemIndex = len(series)
         self.save()
-        #self.load() #use this function to restore from save file
+        # self.load() #use this function to restore from save file
 
         self.counter = TickCounter(1)
 
@@ -129,7 +129,6 @@ class Dashboard:
         timer = QtCore.QTimer()
         timer.timeout.connect(self.update)
         timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
-        
         # make ctrl+c close the window
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         self.win.show()

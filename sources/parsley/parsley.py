@@ -1,4 +1,4 @@
-import message_types as mt
+import sources.parsley.message_types as mt
 
 _func_map = {}
 
