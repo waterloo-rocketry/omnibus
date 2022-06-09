@@ -1,6 +1,5 @@
 import typing
 from pyqtgraph.Qt import QtWidgets
-import sip
 
 
 class DashboardItem(QtWidgets.QWidget):
