@@ -17,27 +17,35 @@ class PlotDashItem (DashboardItem):
         # Call this in **every** dash item constructor
         super().__init__()
 
+        # Specify the layout
         self.layout = QGridLayout()
         self.setLayout(self.layout)
 
+        # store the properties
         self.props = props
 
+        # if no properties are passed in
+        # prompt the user for them
         if self.props == None:
             channel = self.prompt_user("Channel", "The channel you wish to listen to", "items", Parser.parsers.keys())
             all_series = [series.name for series in Parser.get_all_series(channel)]
             series = self.prompt_user("Series", "The series you wish to plot", "items", all_series)
             self.props = [channel, series]
 
+        # subscribe to series dictated by properties
         self.series = Parser.get_series(self.props[0], self.props[1])
         self.subscribe_to_series(self.series)
 
+        # create the plot
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
 
+        # create the plot widget
         self.widget = pg.PlotWidget(plotItem=self.plot)
 
+        # add it to the layout
         self.layout.addWidget(self.widget, 0, 0)
 
     def on_data_update(self, series):
@@ -54,6 +62,5 @@ class PlotDashItem (DashboardItem):
                             t + config.GRAPH_STEP, padding=0)
 
     def get_props(self):
-        print(self.props)
         return self.props
         

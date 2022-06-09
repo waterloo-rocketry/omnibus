@@ -24,16 +24,13 @@ class DashboardItem(QtWidgets.QWidget):
         """
         raise NotImplementedError
 
-    # def get_widget(self) -> QtWidgets.QWidget:
-    #     """
-    #     Return Qt Widget that encompasses this DashboardItem
-    #     """
-    #     raise NotImplementedError
-
     def prompt_user(self, property_name, description, prompt_type, items=None):
+        """
+        Opens a pop up asking user for input
+        """
         ok = False
         selection = None
-        
+
         if prompt_type == "items":
             if (items == None):
                 raise RuntimeError
@@ -68,5 +65,10 @@ class DashboardItem(QtWidgets.QWidget):
         self.subscribed_series.append(series)
 
     def unsubscribe_to_all(self):
+        """
+        A helper function, designed to unsubscribe 
+        this dash item from all series its subscribed 
+        to
+        """
         for series in self.subscribed_series:
             series.remove_observer(self)

@@ -34,24 +34,19 @@ class Dashboard(QtWidgets.QWidget):
 
         # called every frame to get new data
         self.callback = callback
-
-        # To address bugs
-        print("Listening for series...")
-        listen = time.time()
-        while time.time() < listen + 1:
-            callback()
         
-        # Data used for saving and 
-        # restoring
+        # A variable used for dumping and 
+        # storing layout data with pickle
         self.data = {
             "items": [],
             "layout": None
         }
 
-        # A list of all items in the dashboard
+        # A list of all docks in the dock area
+        # doubles as a list of all the items in
+        # the dashboare by making use of
+        # item = dock.widgets[0]
         self.docks = []
-        # Experimental
-        self.saved_items = []
 
         # Create the QT GUI which will be the dashboard
         # To do, find a way to move all of this to
@@ -75,10 +70,13 @@ class Dashboard(QtWidgets.QWidget):
         # For all dash items we support, there will
         # be a corresponding action to add that item 
         add_item_menu = menubar.addMenu("Add Item")
+
+        def prompt_and_add():
+            self.add(dock_item_type)
         
         for dock_item_type in item_types:
             new_action = add_item_menu.addAction(dock_item_type.__name__)
-            new_action.triggered.connect(self.prompt_and_add(dock_item_type))
+            new_action.triggered.connect(prompt_and_add)
 
         # Add an action to the menu bar to save the 
         # layout of the dashboard.
@@ -99,66 +97,99 @@ class Dashboard(QtWidgets.QWidget):
 
         self.counter = TickCounter(1)
 
-    def restoreLayout(self):
-        if self.data["layout"]:
-            self.area.restoreState(self.data["layout"])
-
-    def saveLayout(self):
-        self.data["layout"] = self.area.saveState()
-
     def load(self):
+        # First, we need to clear all the
+        # docks currently on the screen.
+
+        # First, make sure that the dash
+        # items within the docks are not
+        # registered with any series
         for dock in self.docks:
             item = dock.widgets[0]
             item.unsubscribe_to_all()
 
-        # Clears all docks by throwing away the entire dockarea
+        # Second, remove the entire dock area, 
+        # thereby deleting all of the docks
+        # contained within
         self.layout.removeWidget(self.area)
         self.area.deleteLater()
         del self.area
 
+        # Now we recreate the dock area, 
+        # ahearing to the layout specified in
+        # the save file
+
+        # Create a new dock area
         self.area = DockArea()
         self.layout.addWidget(self.area)
 
+        # re-populate our dash area using
+        # the save file
         self.docks = []
 
+        # if the save file exists, set our
+        # data variable to it
         if os.path.isfile(filename):
             with open(filename, 'rb') as savefile:
                 self.data = pickle.load(savefile)
         
+        # for every item specified by the save file, 
+        # add that item back to the dock
         for i, item in enumerate(self.data["items"]):  # { 0: {...}, 1: ..., ...}
             self.add(item["class"], item["props"])
-        self.restoreLayout()
+
+        # restore the layout
+        if self.data["layout"]:
+            self.area.restoreState(self.data["layout"])
 
     def save(self):
-        self.saveLayout()
+        # store layout data to data["layout"]
+        self.data["layout"] = self.area.saveState()
+
+        # store data on the specific dash items to
+        # data["items"]
         self.data["items"] = []
         for dock in self.docks:
             item = dock.widgets[0]
             self.data["items"].append({"props": item.get_props(), "class": type(item)})
+
+        # Save to the save file
         with open(filename, 'wb') as savefile:
             pickle.dump(self.data, savefile)
 
-    def add(self, itemtype, props):
-        p = itemtype(props)  # Please pass in the itemtype of the object (no quotes!) in itemtype
-        # If it is a newly added plot from button, please set props to nothing and set props
-        # via prompt called at initialization of plotDashItem, since get_all_series need to be
-        # called at initialization of newly added plot (that is not loaded from file)
+    def add(self, itemtype, props=None):
+        # input specifications
+        # itemtype: a python class inherating from DashboardItem
+        # props: the props object used to construct the dash item
+        #        leave as none if you desire the properties be set
+        #        via user prompt
+        p = itemtype(props)
+
+        # Create a new dock to be added to the dock area
         dock = Dock(name=str(len(self.docks)-1), closable=True)
 
         # Bit of a sussy baka, but this is the only way we can really get control over
-        # how the thing closes
+        # how the thing closes. In future, I might make a class method that returns
+        # this. Right now, not a priority.
+
+        # Create a call back to execute when docks close to ensure cleaning up is done
+        # right
         def custom_callback(dock_arg):
             p.unsubscribe_to_all()
             self.docks = [dock for dock in self.docks if dock.widgets[0] != p]
 
         dock.sigClosed.connect(custom_callback)
 
+        # add widget to dock
         dock.addWidget(p)
+
+        # add dock to dock area
         if len(self.docks):
             self.area.addDock(dock, 'right', self.docks[-1])
         else:
             self.area.addDock(dock, 'right')
 
+        # add dock to dock list
         self.docks.append(dock)
 
     # called every frame
@@ -170,14 +201,6 @@ class Dashboard(QtWidgets.QWidget):
             fps = self.counter.tick_rate()
 
         self.callback()
-
-    def prompt_and_add(self, itemtype):
-        # The parameter is some kind of boolean
-        def return_func(param):
-            self.add(itemtype, None)
-
-        return return_func
-
 
 def dashboard_driver(callback):
     app = QtWidgets.QApplication(sys.argv)

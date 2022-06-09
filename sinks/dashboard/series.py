@@ -8,9 +8,6 @@ class Series:
     Stores and downsamples the datapoints of a single series
     """
 
-    # A list containing all Dashboard items listening
-    # to this series
-
     def __init__(self, name):
         self.observers = []
         self.name = name
@@ -26,6 +23,12 @@ class Series:
         self.callback = None
 
     def add_observer(self, dashboard_item):
+        """
+        An observer is a dashboard item that cares
+        about data updates. Adding an observer
+        means adding an item to be notified
+        when the data is updated
+        """
         self.observers.append(dashboard_item)
 
     def remove_observer(self, dashboard_item):
