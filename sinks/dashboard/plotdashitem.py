@@ -22,18 +22,13 @@ class PlotDashItem (DashboardItem):
 
         self.props = props
 
-        #############################################################################
-        # Ensure that props is not none
-        if props == None:
+        if self.props == None:
             channel = self.prompt_user("Channel", "The channel you wish to listen to", "items", Parser.parsers.keys())
             all_series = [series.name for series in Parser.get_all_series(channel)]
             series = self.prompt_user("Series", "The series you wish to plot", "items", all_series)
-            props = [channel, series]
-        else:
-            pass
-        #############################################################################
+            self.props = [channel, series]
 
-        self.series = Parser.get_series(props[0], props[1])
+        self.series = Parser.get_series(self.props[0], self.props[1])
         self.subscribe_to_series(self.series)
 
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
@@ -59,5 +54,6 @@ class PlotDashItem (DashboardItem):
                             t + config.GRAPH_STEP, padding=0)
 
     def get_props(self):
+        print(self.props)
         return self.props
         
