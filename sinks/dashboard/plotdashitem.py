@@ -29,6 +29,7 @@ class PlotDashItem (DashboardItem):
         if self.props == None:
             channel = self.prompt_user("Channel", "The channel you wish to listen to", "items", Parser.parsers.keys())
             all_series = [series.name for series in Parser.get_all_series(channel)]
+            all_series.sort()
             series = self.prompt_user("Series", "The series you wish to plot", "items", all_series)
             self.props = [channel, series]
 
