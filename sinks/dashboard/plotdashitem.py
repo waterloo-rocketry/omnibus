@@ -31,10 +31,10 @@ class PlotDashItem (DashboardItem):
             for channel in Parser.parsers.keys():
                 all_series = [series.name for series in Parser.get_all_series(channel)]
                 for series in all_series:
-                    items.append(f"{channel}/{series}")
+                    items.append(f"{channel}|{series}")
 
             channel_and_series = self.prompt_user("Data Series", "The series you wish to plot", "items", items)
-            self.props = channel_and_series.split("/")
+            self.props = channel_and_series.split("|")
 
         # subscribe to series dictated by properties
         self.series = Parser.get_series(self.props[0], self.props[1])
