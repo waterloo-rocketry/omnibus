@@ -64,11 +64,12 @@ class Dashboard(QtWidgets.QWidget):
         # be a corresponding action to add that item 
         add_item_menu = menubar.addMenu("Add Item")
         
-        for dock_item_type in item_types:
+        for dash_item_type in item_types:
             def prompt_and_add():
-                self.add(dock_item_type)
+                new_dash_item = dash_item_type(None)
+                self.add(new_dash_item)
 
-            new_action = add_item_menu.addAction(dock_item_type.__name__)
+            new_action = add_item_menu.addAction(dash_item_type.__name__)
             new_action.triggered.connect(prompt_and_add)
 
         # Add an action to the menu bar to save the 
@@ -134,7 +135,7 @@ class Dashboard(QtWidgets.QWidget):
         # for every item specified by the save file, 
         # add that item back to the dock
         for i, item in enumerate(data["items"]):  # { 0: {...}, 1: ..., ...}
-            self.add(item["class"], item["props"])
+            self.add(item["class"](item["props"]))
 
         # restore the layout
         if data["layout"]:
@@ -155,14 +156,7 @@ class Dashboard(QtWidgets.QWidget):
         with open(filename, 'wb') as savefile:
             pickle.dump(data, savefile)
 
-    def add(self, itemtype, props=None):
-        # input specifications
-        # itemtype: a python class inherating from DashboardItem
-        # props: the props object used to construct the dash item
-        #        leave as none if you desire the properties be set
-        #        via user prompt
-        p = itemtype(props)
-
+    def add(self, dashitem):
         # Create a new dock to be added to the dock area
         dock = Dock(name=str(len(self.docks)-1), closable=True)
 
@@ -173,13 +167,13 @@ class Dashboard(QtWidgets.QWidget):
         # Create a call back to execute when docks close to ensure cleaning up is done
         # right
         def custom_callback(dock_arg):
-            p.unsubscribe_to_all()
-            self.docks = [dock for dock in self.docks if dock.widgets[0] != p]
+            dashitem.unsubscribe_to_all()
+            self.docks = [dock for dock in self.docks if dock.widgets[0] != dashitem]
 
         dock.sigClosed.connect(custom_callback)
 
         # add widget to dock
-        dock.addWidget(p)
+        dock.addWidget(dashitem)
 
         # add dock to dock area
         self.area.addDock(dock, 'right')
