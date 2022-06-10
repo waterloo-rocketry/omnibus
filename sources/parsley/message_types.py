@@ -74,10 +74,17 @@ board_id_hex = {
     "FILL_SPARE": 0x010,
     "ARMING": 0x11,
     "ARMING_SPARE": 0X12,
-    "TEMP_SENSE": 0x15,
-    "TEMP_SENSE_SPARE": 0x16,
+    "PAPA": 0x13,
+    "PAPA_SPARE": 0x14,
+    "ROCKET_PI": 0x15,
+    "ROCKET_PI_2": 0x16,
+    "ROCKET_PI_2_SPARE": 0x18,
     "SENSOR_2": 0x19,
-    "SENSOR_3": 0x1B
+    "SENSOR_2_SPARE": 0x1A,
+    "SENSOR_3": 0x1B,
+    "SENSOR_4": 0x1C,
+    "LOGGER_2": 0x1D,
+    "RLCS": 0x1E
 }
 board_id_str = {v: k for k, v in board_id_hex.items()}
 

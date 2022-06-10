@@ -1,4 +1,5 @@
 import numpy as np
+import queue as q
 
 import config
 
@@ -32,7 +33,7 @@ class Series:
         self.observers.append(dashboard_item)
 
     def remove_observer(self, dashboard_item):
-        # certainly not the fastest code 
+        # certainly not the fastest code
         self.observers = [observer for observer in self.observers if observer != dashboard_item]
 
     def add(self, time, point):
@@ -65,3 +66,38 @@ class Series:
 
     def get_running_avg(self):
         return self.sum / self.avgSize
+
+
+class CanMsgSeries(Series):
+
+    def __init__(self, name):
+        self.observers = []
+        self.name = name    # board_id
+        self.payloadQ = q.Queue()
+
+        self.callback = None
+
+    def add_observer(self, dashboard_item):
+        """
+        An observer is a dashboard item that cares
+        about data updates. Adding an observer
+        means adding an item to be notified
+        when the data is updated
+        """
+        self.observers.append(dashboard_item)
+
+    def remove_observer(self, dashboard_item):
+        # certainly not the fastest code
+        self.observers = [observer for observer in self.observers if observer != dashboard_item]
+
+    def add(self, payload):
+        """
+        Add a new payload to this series.
+        """
+        self.payloadQ.put(payload)
+
+        for observer in self.observers:
+            observer.on_data_update(self)
+
+    def get_msg(self):
+        return self.payloadQ.get()

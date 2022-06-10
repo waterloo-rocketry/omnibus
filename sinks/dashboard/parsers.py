@@ -1,6 +1,9 @@
 from collections import defaultdict
 
-from series import Series
+from series import Series, CanMsgSeries
+
+BOARD_NAME_LIST = ["INJECTOR", "LOGGER", "RADIO", "SENSOR", "VENT", "GPS", "ARMING",
+                   "PAPA", "ROCKET_PI", "ROCKET_PI_2", "SENSOR_2", "SENSOR_3"]
 
 
 class SeriesDefaultDict(defaultdict):
@@ -226,6 +229,7 @@ class ActuatorStateParser(ParsleyParser):
 
 ActuatorStateParser()
 
+
 class GPSInfoParser(ParsleyParser):
     def __init__(self):
         super().__init__("GPS_INFO")
@@ -237,7 +241,9 @@ class GPSInfoParser(ParsleyParser):
         self.series["GPS Satellites"].add(time, numsat)
         self.series["GPS Quality"].add(time, qual)
 
+
 GPSInfoParser()
+
 
 class GPSAltParser(ParsleyParser):
     def __init__(self):
@@ -248,6 +254,7 @@ class GPSAltParser(ParsleyParser):
         alt = payload["data"]["altitude"]
         dalt = payload["data"]["daltitude"]
         self.series["GPS Altitude"].add(time, alt + dalt / 100)
+
 
 GPSAltParser()
 
@@ -263,6 +270,7 @@ class GPSLatitudeParser(ParsleyParser):
         dmins = payload["data"]["dmins"]
         self.series["GPS Latitude"].add(time, degs + mins / 60 + dmins / 600000)
 
+
 GPSLatitudeParser()
 
 
@@ -276,6 +284,7 @@ class GPSLongitudeParser(ParsleyParser):
         mins = payload["data"]["mins"]
         dmins = payload["data"]["dmins"]
         self.series["GPS Longitude"].add(time, degs + mins / 60 + dmins / 600000)
+
 
 GPSLongitudeParser()
 
@@ -312,4 +321,27 @@ class ArmStatusParser(ParsleyParser):
         self.series["Arm Drogue Voltage"].add(time, drogue)
         self.series["Arm Main Voltage"].add(time, main)
 
+
 ArmStatusParser()
+
+
+class CanDisplayParser(Parser):
+    canSeries = {board_id: CanMsgSeries(
+        board_id) for board_id in BOARD_NAME_LIST}
+
+    def __init__(self):
+        super().__init__("CAN/Parsley")
+
+    @staticmethod
+    def parse(payload):
+        if payload["board_id"] in BOARD_NAME_LIST:
+            CanDisplayParser.canSeries[payload["board_id"]].add(payload)
+
+    @staticmethod
+    def get_canSeries(board_id):
+        if board_id in BOARD_NAME_LIST:
+            return CanDisplayParser.canSeries[board_id]
+        return None
+
+
+CanDisplayParser()

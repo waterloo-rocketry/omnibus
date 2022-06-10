@@ -1,135 +1,214 @@
-import signal
-import time
 import pickle
+import os
+import time
+import sys
 
-import os.path
-from os import path
-
-import numpy as np
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
-from pyqtgraph.console import ConsoleWidget
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from pyqtgraph.Qt import QtWidgets
-
-from pyqtgraph.graphicsItems.LabelItem import LabelItem
-from pyqtgraph.graphicsItems.TextItem import TextItem
+from pyqtgraph.Qt.QtGui import QGridLayout, QMenuBar
 
 from parsers import Parser
 from plotdashitem import PlotDashItem
 from can_display import CanDisplayDashItem
 from omnibus.util import TickCounter
 
+# "Temorary Global Constant"
 
-class Dashboard:
+item_types = [
+    PlotDashItem,
+    CanDisplayDashItem,
+]
+
+filename = "savefile.sav"
+
+
+class Dashboard(QtWidgets.QWidget):
     """
     Displays a grid of plots in a window
     """
 
-    def restoreLayout(self):
-        self.area.restoreState(self.data["layout"])
-
-    def saveLayout(self):
-        self.data["layout"] = self.area.saveState()
-
-    def load(self, file="savefile.sav"):
-        self.area = DockArea()  # Clears all docks by throwing away the entire dockarea
-        self.win.setCentralWidget(self.area)
-        self.anchor = None
-        self.items = []
-
-        with open(file, 'rb') as savefile:
-            self.data = pickle.load(savefile)
-
-        for i, item in enumerate(self.data["items"]):  # { 0: {...}, 1: ..., ...}
-            self.add(item["class"], item["props"])
-        self.restoreLayout()
-
-    def save(self, file="savefile.sav"):
-        self.saveLayout()
-        self.data["items"] = []
-        for k, item in enumerate(self.items):
-            self.data["items"].append({"props": item.get_props(), "class": type(item)})
-        with open(file, 'wb') as savefile:
-            pickle.dump(self.data, savefile)
-
-    def add(self, itemtype, props):
-        p = itemtype(props)  # Please pass in the itemtype of the object (no quotes!) in itemtype
-        # If it is a newly added plot from button, please set props to nothing and set props
-        # via prompt called at initialization of plotDashItem, since get_all_series need to be
-        # called at initialization of newly added plot (that is not loaded from file)
-        self.items.append(p)
-        dock = Dock(name=str(len(self.items)-1))
-        dock.addWidget(p.get_widget())
-        if self.anchor == None:
-            self.area.addDock(dock, 'right')
-            self.anchor = dock
-        else:
-            self.area.addDock(dock, 'right', self.anchor)
-            self.anchor = dock
-
     def __init__(self, callback):
-        self.callback = callback  # called every frame to get new data
-        self.data = {
-            "items": [],
-            "layout": None
-        }
+        # Initilize Super Class
+        QtWidgets.QWidget.__init__(self)
 
-        # window that lays out plots in a grid
-        self.app = pg.mkQApp("Dashboard")
-        self.win = QtWidgets.QMainWindow()
-        self.win.setWindowTitle("Omnibus Dashboard")
-        self.win.resize(1000, 600)
+        # called every frame to get new data
+        self.callback = callback
 
+        # A list of all docks in the dock area
+        # doubles as a list of all the items in
+        # the dashboare by making use of
+        # item = dock.widgets[0]
+        self.docks = []
+
+        # Create the QT GUI which will be the dashboard
+        # To do, find a way to move all of this to
+        # another file
+        ###############################################
+        self.setWindowTitle("Omnibus Dashboard")
+        self.resize(1000, 600)
+
+        # Create GridLayout, will be
+        # Adding components to this as
+        # time goes on
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+
+        # Add a menu bar to the layout
+        menubar = QMenuBar()
+        self.layout.addWidget(menubar, 0, 0)
+
+        # Create a sub menu which will be used
+        # to add items to our dash board.
+        # For all dash items we support, there will
+        # be a corresponding action to add that item
+        add_item_menu = menubar.addMenu("Add Item")
+
+        for dock_item_type in item_types:
+            def prompt_and_add():
+                self.add(dock_item_type)
+
+            new_action = add_item_menu.addAction(dock_item_type.__name__)
+            new_action.triggered.connect(prompt_and_add)
+
+        # Add an action to the menu bar to save the
+        # layout of the dashboard.
+        save_layout_action = menubar.addAction("Save")
+        save_layout_action.triggered.connect(self.save)
+
+        # Add an action to the menu bar to load the
+        # layout of the dashboard.
+        restore_layout_action = menubar.addAction("Reset")
+        restore_layout_action.triggered.connect(self.load)
+
+        # Create the Dock Area which will house all of the items
         self.area = DockArea()
-        self.win.setCentralWidget(self.area)
-        self.anchor = None
-        self.items = []
-        sample_props = [["DAQ", "Fake0"], ["DAQ", "Fake1"]]
+        self.layout.addWidget(self.area)
 
-        print("Listening for series...")
-        listen = time.time()
-        while time.time() < listen + 1:
-            callback()
-
-        series = Parser.get_all_series()
-
-        for elem in series:
-            self.add(PlotDashItem, ["DAQ", elem.name])
-
-        self.add(CanDisplayDashItem, None)
-        self.canDisplayItemIndex = len(series)
-        self.save()
-        # self.load() #use this function to restore from save file
+        # Restore last save state
+        self.load()
 
         self.counter = TickCounter(1)
 
-        self.exec()
+    def load(self):
+        # First, we need to clear all the
+        # docks currently on the screen.
+
+        # First, make sure that the dash
+        # items within the docks are not
+        # registered with any series
+        for dock in self.docks:
+            item = dock.widgets[0]
+            item.unsubscribe_to_all()
+
+        # Second, remove the entire dock area,
+        # thereby deleting all of the docks
+        # contained within
+        self.layout.removeWidget(self.area)
+        self.area.deleteLater()
+        del self.area
+
+        # Now we recreate the dock area,
+        # ahearing to the layout specified in
+        # the save file
+
+        # Create a new dock area
+        self.area = DockArea()
+        self.layout.addWidget(self.area)
+
+        # re-populate our dash area using
+        # the save file
+        self.docks = []
+
+        # if the save file exists, set our
+        # data variable to it
+        if os.path.isfile(filename):
+            with open(filename, 'rb') as savefile:
+                data = pickle.load(savefile)
+        else:
+            data = {
+                "items": [],
+                "layout": None
+            }
+
+        # for every item specified by the save file,
+        # add that item back to the dock
+        for i, item in enumerate(data["items"]):  # { 0: {...}, 1: ..., ...}
+            self.add(item["class"], item["props"])
+
+        # restore the layout
+        if data["layout"]:
+            self.area.restoreState(data["layout"])
+
+    def save(self):
+        # store layout data to data["layout"]
+        data["layout"] = self.area.saveState()
+
+        # store data on the specific dash items to
+        # data["items"]
+        data["items"] = []
+        for dock in self.docks:
+            item = dock.widgets[0]
+            data["items"].append({"props": item.get_props(), "class": type(item)})
+
+        # Save to the save file
+        with open(filename, 'wb') as savefile:
+            pickle.dump(data, savefile)
+
+    def add(self, itemtype, props=None):
+        # input specifications
+        # itemtype: a python class inherating from DashboardItem
+        # props: the props object used to construct the dash item
+        #        leave as none if you desire the properties be set
+        #        via user prompt
+        p = itemtype(props)
+
+        # Create a new dock to be added to the dock area
+        dock = Dock(name=str(len(self.docks)-1), closable=True)
+
+        # Bit of a sussy baka, but this is the only way we can really get control over
+        # how the thing closes. In future, I might make a class method that returns
+        # this. Right now, not a priority.
+
+        # Create a call back to execute when docks close to ensure cleaning up is done
+        # right
+        def custom_callback(dock_arg):
+            p.unsubscribe_to_all()
+            self.docks = [dock for dock in self.docks if dock.widgets[0] != p]
+
+        dock.sigClosed.connect(custom_callback)
+
+        # add widget to dock
+        dock.addWidget(p)
+
+        # add dock to dock area
+        self.area.addDock(dock, 'right')
+
+        # add dock to dock list
+        self.docks.append(dock)
 
     # called every frame
     def update(self):
         self.counter.tick()
 
-        self.items[self.canDisplayItemIndex].update()
+        # self.docks[0].widgets[0].update()
 
         # Filter to 5 frames per update on analytics
         if not(self.counter.tick_count() % 5):
             fps = self.counter.tick_rate()
-            # self.txitem.setText(
-            #    f"FPS: {fps: >4.2f}\nRunning Avg Duration: {config.RUNNING_AVG_DURATION} seconds")
-            #print(f"\rFPS: {fps: >4.2f}", end='')
-            """
-            To Do: TextDashItem
-            """
 
         self.callback()
 
-    def exec(self):
-        timer = QtCore.QTimer()
-        timer.timeout.connect(self.update)
-        timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
-        # make ctrl+c close the window
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
-        self.win.show()
-        pg.mkQApp().exec_()
+
+def dashboard_driver(callback):
+    app = QtWidgets.QApplication(sys.argv)
+    dash = Dashboard(callback)
+
+    timer = QtCore.QTimer()
+    timer.timeout.connect(dash.update)
+    timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
+
+    dash.show()
+    sys.exit(app.exec_())
