@@ -62,8 +62,15 @@ class PlotDashItem (DashboardItem):
 
         # round the time to the nearest GRAPH_STEP
         t = round(series.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
-        self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
-                            t + config.GRAPH_STEP, padding=0)
+        min_time = t - config.GRAPH_DURATION + config.GRAPH_STEP
+        max_time = t + config.GRAPH_STEP
+
+        self.plot.setXRange(min_time, max_time, padding=0)
+
+        max_data = max([series.points[i] for i in range(series.size) if (series.times[i] >= min_time and series.times[i] <= max_time)])
+        min_data = min([series.points[i] for i in range(series.size) if (series.times[i] >= min_time and series.times[i] <= max_time)])
+
+        self.plot.setYRange(min_data, max_data, padding=0)
 
     def get_props(self):
         return self.props
