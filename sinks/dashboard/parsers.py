@@ -22,9 +22,14 @@ class Parser:
 
     def __init__(self, channel):
         self.channel = channel  # omnibus channel to parse messages from
-        self.series = SeriesDefaultDict()  # series this parser is populating
 
-        Parser.parsers[channel] = self
+        if channel in Parser.parsers:
+            self.series = Parser.parsers[channel][0].series
+        else:
+            self.series = SeriesDefaultDict()
+        parsers = Parser.parsers.get(channel, [])
+        parsers.append(self)
+        Parser.parsers[channel] = parsers
 
     def parse(self, payload):
         """
@@ -34,16 +39,17 @@ class Parser:
 
     @staticmethod
     def all_parse(channel, payload):
-        for parser in Parser.parsers.values():
-            if channel.startswith(parser.channel):
-                parser.parse(payload)
+        for ch, parsers in Parser.parsers.items():
+            if channel.startswith(ch):
+                for parser in parsers:
+                    parser.parse(payload)
 
     @staticmethod
     def get_all_series(channel=""):
         res = []
-        for chan, parser in Parser.parsers.items():
+        for chan, parsers in Parser.parsers.items():
             if chan.startswith(channel):
-                res += parser.series.values()
+                res += parsers[0].series.values()
         return res
 
     @staticmethod
@@ -53,7 +59,7 @@ class Parser:
         """
         if channel not in Parser.parsers:
             return None
-        return Parser.parsers[channel].series[name]  # SeriesDefaultDict takes care of the rest
+        return Parser.parsers[channel][0].series[name]  # SeriesDefaultDict takes care of the rest
 
 
 class DAQParser(Parser):
@@ -153,6 +159,34 @@ class AccelParser(ParsleyParser):
 AccelParser()
 
 
+class GyroParser(ParsleyParser):
+    def __init__(self):
+        super().__init__("SENSOR_GYRO")
+
+    def parse_can(self, payload):
+        t = payload["data"]["time"]
+
+        for axis in "xyz":
+            self.series[f"Gyro ({axis})"].add(t, payload["data"][axis])
+
+
+GyroParser()
+
+
+class MagParser(ParsleyParser):
+    def __init__(self):
+        super().__init__("SENSOR_MAG")
+
+    def parse_can(self, payload):
+        t = payload["data"]["time"]
+
+        for axis in "xyz":
+            self.series[f"Magnetometer ({axis})"].add(t, payload["data"][axis])
+
+
+MagParser()
+
+
 class AnalogSensorParser(ParsleyParser):
     def __init__(self):
         super().__init__("SENSOR_ANALOG")
@@ -166,3 +200,91 @@ class AnalogSensorParser(ParsleyParser):
 
 
 AnalogSensorParser()
+
+
+# 0: request open, current open
+# 1: request open, current close
+# 2: request close, current open
+# 3: request close, current close
+class ActuatorStateParser(ParsleyParser):
+    def __init__(self):
+        super().__init__("ACTUATOR_STATUS")
+
+    def parse_can(self, payload):
+        time = payload["data"]["time"]
+        act = payload["data"]["actuator"]
+        req = payload["data"]["req_state"]
+        cur = payload["data"]["cur_state"]
+
+        v = 0
+        if req == "ACTUATOR_CLOSED":
+            v |= 2
+        if cur == "ACTUATOR_CLOSED":
+            v |= 1
+        self.series[f"Actuator State ({act})"].add(time, v)
+
+
+ActuatorStateParser()
+
+class GPSInfoParser(ParsleyParser):
+    def __init__(self):
+        super().__init__("GPS_INFO")
+
+    def parse_can(self, payload):
+        time = payload["data"]["time"]
+        numsat = payload["data"]["num_sats"]
+        qual = payload["data"]["quality"]
+        self.series["GPS Satellites"].add(time, numsat)
+        self.series["GPS Quality"].add(time, qual)
+
+GPSInfoParser()
+
+class GPSAltParser(ParsleyParser):
+    def __init__(self):
+        super().__init__("GPS_ALTITUDE")
+
+    def parse_can(self, payload):
+        time = payload["data"]["time"]
+        alt = payload["data"]["altitude"]
+        dalt = payload["data"]["daltitude"]
+        self.series["GPS Altitude"].add(time, alt + dalt / 100)
+
+GPSAltParser()
+
+
+class GPSLatitudeParser(ParsleyParser):
+    def __init__(self):
+        super().__init__("GPS_LATITUDE")
+
+    def parse_can(self, payload):
+        time = payload["data"]["time"]
+        degs = payload["data"]["degs"]
+        mins = payload["data"]["mins"]
+        dmins = payload["data"]["dmins"]
+        self.series["GPS Latitude"].add(time, degs + mins / 60 + dmins / 600000)
+
+GPSLatitudeParser()
+
+
+class GPSLongitudeParser(ParsleyParser):
+    def __init__(self):
+        super().__init__("GPS_LONGITUDE")
+
+    def parse_can(self, payload):
+        time = payload["data"]["time"]
+        degs = payload["data"]["degs"]
+        mins = payload["data"]["mins"]
+        dmins = payload["data"]["dmins"]
+        self.series["GPS Longitude"].add(time, degs + mins / 60 + dmins / 600000)
+
+GPSLongitudeParser()
+
+
+class SensorAltParser(ParsleyParser):
+    def __init__(self):
+        super().__init__("SENSOR_ALTITUDE")
+
+    def parse_can(self, payload):
+        time = payload["data"]["time"]
+        alt = payload["data"]["altitude"]
+        self.series["Sensor Altitude"].add(time, alt)

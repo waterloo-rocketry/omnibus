@@ -27,6 +27,7 @@ class PlotDashItem (DashboardItem):
         # if no properties are passed in
         # prompt the user for them
         if self.props == None:
+<<<<<<< HEAD
             items = []
             for channel in Parser.parsers.keys():
                 all_series = [series.name for series in Parser.get_all_series(channel)]
@@ -35,6 +36,13 @@ class PlotDashItem (DashboardItem):
 
             channel_and_series = self.prompt_user("Data Series", "The series you wish to plot", "items", items)
             self.props = channel_and_series.split("/")
+=======
+            channel = self.prompt_user("Channel", "The channel you wish to listen to", "items", Parser.parsers.keys())
+            all_series = [series.name for series in Parser.get_all_series(channel)]
+            all_series.sort()
+            series = self.prompt_user("Series", "The series you wish to plot", "items", all_series)
+            self.props = [channel, series]
+>>>>>>> more-parsers
 
         # subscribe to series dictated by properties
         self.series = Parser.get_series(self.props[0], self.props[1])
