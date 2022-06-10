@@ -34,13 +34,6 @@ class Dashboard(QtWidgets.QWidget):
 
         # called every frame to get new data
         self.callback = callback
-        
-        # A variable used for dumping and 
-        # storing layout data with pickle
-        self.data = {
-            "items": [],
-            "layout": None
-        }
 
         # A list of all docks in the dock area
         # doubles as a list of all the items in
@@ -70,11 +63,11 @@ class Dashboard(QtWidgets.QWidget):
         # For all dash items we support, there will
         # be a corresponding action to add that item 
         add_item_menu = menubar.addMenu("Add Item")
-
-        def prompt_and_add():
-            self.add(dock_item_type)
         
         for dock_item_type in item_types:
+            def prompt_and_add():
+                self.add(dock_item_type)
+
             new_action = add_item_menu.addAction(dock_item_type.__name__)
             new_action.triggered.connect(prompt_and_add)
 
@@ -131,31 +124,36 @@ class Dashboard(QtWidgets.QWidget):
         # data variable to it
         if os.path.isfile(filename):
             with open(filename, 'rb') as savefile:
-                self.data = pickle.load(savefile)
+                data = pickle.load(savefile)
+        else:
+            data = {
+                "items": [],
+                "layout": None
+            }
         
         # for every item specified by the save file, 
         # add that item back to the dock
-        for i, item in enumerate(self.data["items"]):  # { 0: {...}, 1: ..., ...}
+        for i, item in enumerate(data["items"]):  # { 0: {...}, 1: ..., ...}
             self.add(item["class"], item["props"])
 
         # restore the layout
-        if self.data["layout"]:
-            self.area.restoreState(self.data["layout"])
+        if data["layout"]:
+            self.area.restoreState(data["layout"])
 
     def save(self):
         # store layout data to data["layout"]
-        self.data["layout"] = self.area.saveState()
+        data["layout"] = self.area.saveState()
 
         # store data on the specific dash items to
         # data["items"]
-        self.data["items"] = []
+        data["items"] = []
         for dock in self.docks:
             item = dock.widgets[0]
-            self.data["items"].append({"props": item.get_props(), "class": type(item)})
+            data["items"].append({"props": item.get_props(), "class": type(item)})
 
         # Save to the save file
         with open(filename, 'wb') as savefile:
-            pickle.dump(self.data, savefile)
+            pickle.dump(data, savefile)
 
     def add(self, itemtype, props=None):
         # input specifications
@@ -184,10 +182,7 @@ class Dashboard(QtWidgets.QWidget):
         dock.addWidget(p)
 
         # add dock to dock area
-        if len(self.docks):
-            self.area.addDock(dock, 'right', self.docks[-1])
-        else:
-            self.area.addDock(dock, 'right')
+        self.area.addDock(dock, 'right')
 
         # add dock to dock list
         self.docks.append(dock)
