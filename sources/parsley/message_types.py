@@ -74,7 +74,8 @@ board_id_hex = {
     "ARMING": 0x11,
     "ARMING_SPARE": 0X12,
     "TEMP_SENSE": 0x15,
-    "TEMP_SENSE_SPARE": 0x16
+    "TEMP_SENSE_SPARE": 0x16,
+    "SENSOR_2": 0x19
 }
 board_id_str = {v: k for k, v in board_id_hex.items()}
 
@@ -146,7 +147,10 @@ sensor_id_hex = {
     "SENSOR_BUS_CURR": 10,
     "SENSOR_VELOCITY": 11,
     "SENSOR_MAG_1": 12,
-    "SENSOR_MAG_2": 13
+    "SENSOR_MAG_2": 13,
+    "SENSOR_ROCKET_BATT": 14,
+    "SENSOR_PRESSURE_PNEUMATICS": 15,
+    "SENSOR_VENT_TEMP": 16
 }
 sensor_id_str = {v: k for k, v in sensor_id_hex.items()}
 
