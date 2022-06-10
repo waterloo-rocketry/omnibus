@@ -1,7 +1,7 @@
 from omnibus import Receiver
 
 from parsers import Parser
-from plot import Plotter
+from dashboard import dashboard_driver
 
 receiver = Receiver("")  # subscribe to all channels
 
@@ -13,4 +13,4 @@ def update():  # gets called every frame
         Parser.all_parse(msg.channel, msg.payload)
 
 
-Plotter(update)
+dashboard_driver(update)

@@ -9,6 +9,7 @@ class Series:
     """
 
     def __init__(self, name):
+        self.observers = []
         self.name = name
 
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
@@ -21,9 +22,18 @@ class Series:
 
         self.callback = None
 
-    def register_update(self, callback):
-        # called every time data is added
-        self.callback = callback
+    def add_observer(self, dashboard_item):
+        """
+        An observer is a dashboard item that cares
+        about data updates. Adding an observer
+        means adding an item to be notified
+        when the data is updated
+        """
+        self.observers.append(dashboard_item)
+
+    def remove_observer(self, dashboard_item):
+        # certainly not the fastest code 
+        self.observers = [observer for observer in self.observers if observer != dashboard_item]
 
     def add(self, time, point):
         """
@@ -50,8 +60,8 @@ class Series:
         self.points[:-1] = self.points[1:]
         self.points[-1] = point
 
-        if self.callback:
-            self.callback()
+        for observer in self.observers:
+            observer.on_data_update(self)
 
     def get_running_avg(self):
         return self.sum / self.avgSize
