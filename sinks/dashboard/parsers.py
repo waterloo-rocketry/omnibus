@@ -288,3 +288,28 @@ class SensorAltParser(ParsleyParser):
         time = payload["data"]["time"]
         alt = payload["data"]["altitude"]
         self.series["Sensor Altitude"].add(time, alt)
+
+
+class ArmStatusParser(ParsleyParser):
+    def __init__(self):
+        super().__init__("ALT_ARM_STATUS")
+
+    def parse_can(self, payload):
+        time = payload["data"]["time"]
+        state = payload["data"]["state"]
+        alt = payload["data"]["altimeter"]
+        drogue = payload["data"]["drogue_v"]
+        main = payload["data"]["main_v"]
+
+        arm_value = -1
+        if state == "ARM":
+            arm_value = 1
+        elif state == "DISARMED":
+            arm_value = 0
+
+        self.series["Arm State"].add(time, arm_value)
+        self.series["Arm Altimeter"].add(time, alt)
+        self.series["Arm Drogue Voltage"].add(time, drogue)
+        self.series["Arm Main Voltage"].add(time, main)
+
+ArmStatusParser()
