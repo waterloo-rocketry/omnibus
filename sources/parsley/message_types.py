@@ -159,5 +159,8 @@ fill_direction_str = {v: k for k, v in fill_direction_hex.items()}
 actuator_id_hex = {
     "VENT_VALVE": 0,
     "INJECTOR_VALVE": 1,
+    "MAMA": 2,
+    "PICAM": 3,
+    "CANBUS": 4
 }
 actuator_id_str = {v: k for k, v in actuator_id_hex.items()}
