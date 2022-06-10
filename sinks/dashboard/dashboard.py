@@ -8,7 +8,7 @@ import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt.QtGui import QGridLayout, QMenuBar
+from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
 
 from parsers import Parser
 from plotdashitem import PlotDashItem
@@ -51,12 +51,12 @@ class Dashboard(QtWidgets.QWidget):
         # Create GridLayout, will be
         # Adding components to this as
         # time goes on
-        self.layout = QGridLayout()
+        self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
         # Add a menu bar to the layout
-        menubar = QMenuBar()
-        self.layout.addWidget(menubar, 0, 0)
+        menubar = QMenuBar(self)
+        #self.layout.addWidget(menubar, 0, 0)
 
         # Create a sub menu which will be used
         # to add items to our dash board.
@@ -81,6 +81,8 @@ class Dashboard(QtWidgets.QWidget):
         # layout of the dashboard.
         restore_layout_action = menubar.addAction("Reset")
         restore_layout_action.triggered.connect(self.load)
+
+        self.layout.setMenuBar(menubar)
 
         # Create the Dock Area which will house all of the items
         self.area = DockArea()
