@@ -9,7 +9,7 @@ class Series:
     Stores and downsamples the datapoints of a single series
     """
 
-    def __init__(self, name):
+    def __init__(self, name, time_rollover=False):
         self.observers = []
         self.name = name
 
@@ -21,6 +21,8 @@ class Series:
         # "size" of running average
         self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
         self.desc = None
+        self.time_rollover = time_rollover
+        self.time_offset = 0
 
         self.callback = None
 
@@ -43,6 +45,11 @@ class Series:
         """
         if desc is not None:
             self.desc = desc
+
+        time += self.time_offset
+        if self.time_rollover:
+            if time < self.times[-1]:  # if we've wrapped around
+                self.time_offset += self.times[-1]  # increase the amount we need to add
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last < 1 / config.GRAPH_RESOLUTION:

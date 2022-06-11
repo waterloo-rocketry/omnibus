@@ -11,8 +11,12 @@ class SeriesDefaultDict(defaultdict):
     Let us call `self.series["xyz"].add(...)` whether or not "xyz" is an existing series.
     """
 
+    def __init__(self, *kargs, **kwargs):
+        self.kargs = kargs
+        self.kwargs = kwargs
+
     def __missing__(self, key):
-        self[key] = Series(key)
+        self[key] = Series(key, *self.kargs, **self.kwargs)
         return self[key]
 
 
@@ -23,13 +27,13 @@ class Parser:
 
     parsers = {}  # keep track of all initialized parsers
 
-    def __init__(self, channel):
+    def __init__(self, channel, *series_kargs, **series_kwargs):
         self.channel = channel  # omnibus channel to parse messages from
 
         if channel in Parser.parsers:
             self.series = Parser.parsers[channel][0].series
         else:
-            self.series = SeriesDefaultDict()
+            self.series = SeriesDefaultDict(*series_kargs, **series_kwargs)
         parsers = Parser.parsers.get(channel, [])
         parsers.append(self)
         Parser.parsers[channel] = parsers
@@ -94,11 +98,9 @@ class ParsleyParser(Parser):
     """
 
     def __init__(self, msg_type):
-        super().__init__("CAN/Parsley")
+        super().__init__("CAN/Parsley", time_rollover=True)
         self.msg_type = msg_type
         # the timestamp of CAN messages wraps around decently frequently, account for it by storing
-        self.last_time = 0  # the last recievied time (to detect wrap arounds)
-        self.time_offset = 0  # and what to add to each timestamp we recieve
 
     def parse(self, payload):
         if payload["msg_type"] != self.msg_type:
@@ -107,11 +109,6 @@ class ParsleyParser(Parser):
         if "time" in payload["data"]:
             # time is in milliseconds but we want seconds
             payload["data"]["time"] /= 1000
-
-            if payload["data"]["time"] < self.last_time:  # if we've wrapped around
-                self.time_offset += self.last_time  # increase the amount we need to add
-            self.last_time = payload["data"]["time"]
-            payload["data"]["time"] += self.time_offset
 
         self.parse_can(payload)
 
@@ -198,8 +195,9 @@ class AnalogSensorParser(ParsleyParser):
         s = payload["data"]["sensor_id"]
         t = payload["data"]["time"]
         v = payload["data"]["value"]
+        b = payload["board_id"]
 
-        self.series[f"CAN Sensor {s}"].add(t, v)
+        self.series[f"CAN Sensor {b} {s}"].add(t, v)
 
 
 AnalogSensorParser()
