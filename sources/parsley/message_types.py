@@ -75,7 +75,10 @@ board_id_hex = {
     "ARMING_SPARE": 0X12,
     "TEMP_SENSE": 0x15,
     "TEMP_SENSE_SPARE": 0x16,
-    "SENSOR_2": 0x19
+    "SENSOR_2": 0x19,
+    "SENSOR_2_SPARE" : 0X1A,
+    "SENSOR_3": 0x1B,
+    "SENSOR_4": 0x1C
 }
 board_id_str = {v: k for k, v in board_id_hex.items()}
 
