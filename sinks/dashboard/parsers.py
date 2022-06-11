@@ -311,7 +311,7 @@ class ArmStatusParser(ParsleyParser):
         main = payload["data"]["main_v"]
 
         arm_value = -1
-        if state == "ARM":
+        if state == "ARMED":
             arm_value = 1
         elif state == "DISARMED":
             arm_value = 0
