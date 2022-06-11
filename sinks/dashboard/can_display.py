@@ -1,3 +1,5 @@
+import collections as col
+
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 from dashboarditem import DashboardItem
@@ -5,6 +7,11 @@ from sources.parsley.parsley import fmt_line
 import sources.parsley.message_types as mt
 from parsers import CanDisplayParser, BOARD_NAME_LIST
 
+# --------------CONSTANTS---------------
+HEALTHY_STATE_COLOR = "green"
+UNHEALTHY_STATE_COLOR = "red"
+MAX_MSG_QUEUE_SIZE = 50
+HEALTHY_STATE_TIMEOUT = 10000  # 10s
 
 # TODO: set better color schemes (AKA determine which colors are better for viewing)
 BOARD_DATA = {"INJECTOR": {"id": 0x01, "index": 0, "color": QtGui.QColor('cyan')},
@@ -19,9 +26,8 @@ BOARD_DATA = {"INJECTOR": {"id": 0x01, "index": 0, "color": QtGui.QColor('cyan')
               "ROCKET_PI_2": {"id": 0x16, "index": 9, "color": QtGui.QColor('deeppink')},
               "SENSOR_2": {"id": 0x19, "index": 10, "color": QtGui.QColor('orange')},
               "SENSOR_3": {"id": 0x1B, "index": 11, "color": QtGui.QColor('darkorange')}}
-
-HEALTHY_STATE_COLOR = "green"
-UNHEALTHY_STATE_COLOR = "red"
+CAN_HEALTH_STATES = ["DEAD"] * len(BOARD_DATA)
+CAN_HEALTH_STATES_COLORS = [UNHEALTHY_STATE_COLOR] * len(BOARD_DATA)
 
 
 class CanDisplayDashItem (DashboardItem):
@@ -32,16 +38,6 @@ class CanDisplayDashItem (DashboardItem):
     def __init__(self, props=None):
         super().__init__()
         self.props = props
-
-        self.BOARDS_TO_CHECK = [False] * len(BOARD_DATA)
-        self.CAN_HEALTH_STATES = ["DEAD"] * len(BOARD_DATA)
-        self.CAN_HEALTH_STATES_COLORS = [UNHEALTHY_STATE_COLOR] * len(BOARD_DATA)
-        # last time reported from CAN node
-        self.currCanNodeTime = 0
-        self.canNodeTimeoutChecker = 0
-        self.HEALTHY_STATE_TIMEOUT = 10000  # 10s
-        self.currCanMsgTimes = [0] * len(BOARD_DATA)
-        self.healthyCounter = 0
 
         self.layout = QtWidgets.QGridLayout()
         self.layout.setContentsMargins(5, 5, 5, 5)
@@ -78,11 +74,9 @@ class CanDisplayDashItem (DashboardItem):
         return self.groupbox
 
     def update_board_health_state(self):
-        # TODO: Doesn't handle msg timeouts right now, so if we lose a board
-        # there won't be an indication from health
         for node_name, node in self.canNodes.items():
-            self.CAN_HEALTH_STATES[BOARD_DATA[node.board_id]["index"]] = node.board_status
-            self.CAN_HEALTH_STATES_COLORS[BOARD_DATA[node.board_id]["index"]] = node.status_color
+            CAN_HEALTH_STATES[BOARD_DATA[node.board_id]["index"]] = node.board_status
+            CAN_HEALTH_STATES_COLORS[BOARD_DATA[node.board_id]["index"]] = node.status_color
 
     def add_node_widget(self, widget_name):
         self.canNodes[BOARD_DATA[widget_name]["index"]].enable_widget()
@@ -99,13 +93,11 @@ class CanDisplayDashItem (DashboardItem):
         self.browsersNextRow = len(self.textBrowsers)
 
     def update(self):
-        # self.updateCanMsgTimes()
-        # self.updateHealthChecks()
         self.update_board_health_state()
         for index, value in enumerate(self.pushButtonList):
             self.labels[index].setStyleSheet(
-                f"color : {self.CAN_HEALTH_STATES_COLORS[index]};")
-            self.labels[index].setText(self.CAN_HEALTH_STATES[index])
+                f"color : {CAN_HEALTH_STATES_COLORS[index]};")
+            self.labels[index].setText(CAN_HEALTH_STATES[index])
 
             node_name = BOARD_NAME_LIST[index]
             if value.isChecked() and node_name not in self.textBrowsers.keys():
@@ -128,9 +120,13 @@ class CanNodeWidgetDashItem(DashboardItem):
             self.board_id = "DUMMY"
         else:
             self.board_id = self.props
+        self.board_index = BOARD_DATA[self.board_id]['index']
+        self.oldCanMsgTime = 0
+        self.currCanMsgTime = 0
+        self.msgHistoryQ = col.deque(maxlen=MAX_MSG_QUEUE_SIZE)
 
         # Start in dead status until we receive a message from this board
-        self.board_status = "E_BOARD_FEARED_DEAD"
+        self.board_status = "DEAD"
         self.status_color = UNHEALTHY_STATE_COLOR
 
         self.textBrowser = None
@@ -145,7 +141,6 @@ class CanNodeWidgetDashItem(DashboardItem):
         self.textBrowser.clear()
         self.textBrowser.deleteLater()
         self.textBrowser = None
-        # pass
 
     def get_props(self):
         return self.props
@@ -153,37 +148,40 @@ class CanNodeWidgetDashItem(DashboardItem):
     def get_widget(self):
         return self.textBrowser
 
-    # def updateHealthChecks(self):
-    #     for index, value in enumerate(self.CAN_HEALTH_STATES):
-    #         # Check our last health check for this index was over 10s ago, now in DEAD state
-    #         if self.currCanMsgTimes[index] < abs(self.currCanNodeTime - self.HEALTHY_STATE_TIMEOUT):
-    #             self.CAN_HEALTH_STATES[index] = "DEAD"
-    #             self.CAN_HEALTH_STATES_COLORS[index] = UNHEALTHY_STATE_COLOR
-    #         else:
-    #             self.CAN_HEALTH_STATES[index] = "RECEIVED_MSG_NO_STATUS"
-    #             self.CAN_HEALTH_STATES_COLORS[index] = HEALTHY_STATE_COLOR
+    def updateHealthChecks(self):
+        # Check our last health check for this index was over 10s ago, now in DEAD state
+        if self.currCanMsgTime < abs(self.oldCanMsgTime - HEALTHY_STATE_TIMEOUT):
+            CAN_HEALTH_STATES[self.board_index] = "DEAD_FROM_TIMEOUT"
+            CAN_HEALTH_STATES_COLORS[self.board_index] = UNHEALTHY_STATE_COLOR
+        else:
+            self.oldCanMsgTime = self.currCanMsgTime
 
-    # def updateCanMsgTimes(self, msg):
-    #     try:
-    #         boardIndex = BOARD_DATA[msg['board_id']]['index']
-    #     except KeyError:
-    #         # board ID we don't have implemented
-    #         pass
+    def updateCanMsgTimes(self, msg):
+        self.currCanMsgTime = msg["data"]["time"]
 
-    #     self.currCanMsgTimes[boardIndex] = msg["data"]["time"]
-
-    #     # Update radio board's times too because if we received a message, it passed a health check
-    #     self.currCanMsgTimes[BOARD_DATA['RADIO']['index']] = msg["data"]["time"]
-
+    # Note: this function definitely doesn't have the most efficient solutions but prevents memory issues
     def on_data_update(self, series):
-        msg = series.get_msg()
-        if msg["msg_type"] == "GENERAL_BOARD_STATUS":
-            self.board_status = msg["data"]["status"]
+        # get the newest msg
+        newest_msg = series.get_msg()
+        # update some internal trackers
+        self.updateCanMsgTimes(newest_msg)
+        self.updateHealthChecks()
+        # check if our queue is already full, if so take off oldest msg
+        if len(self.msgHistoryQ) == MAX_MSG_QUEUE_SIZE:
+            self.msgHistoryQ.popleft()  # don't care about old message
+        # put newest msg in queue
+        self.msgHistoryQ.append(get_formatted_msg(newest_msg) + "\n")
+        # update status
+        if newest_msg["msg_type"] == "GENERAL_BOARD_STATUS":
+            self.board_status = newest_msg["data"]["status"]
             self.status_color = get_status_color(self.board_status)
 
+        # update textBrowser
         if self.textBrowser is not None:
-            self.textBrowser.setTextColor(BOARD_DATA[msg['board_id']]['color'])
-            self.textBrowser.append(str(get_formatted_msg(msg)))
+            # clear old text before pushing updated history
+            self.textBrowser.clear()
+            self.textBrowser.setTextColor(BOARD_DATA[self.board_id]['color'])
+            self.textBrowser.append("".join(str(ele) for ele in self.msgHistoryQ))
 
             # if scroll bar within 10 pixels of bottom, auto scroll to bottom
             scrollIsAtEnd = self.textBrowser.verticalScrollBar().maximum(
