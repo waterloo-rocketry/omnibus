@@ -51,6 +51,7 @@ class CanDisplayDashItem (DashboardItem):
         self.canNodes = {}
 
         self.rightGrid = QtWidgets.QVBoxLayout()
+        self.leftGrid = QtWidgets.QVBoxLayout()
 
         for index, value in enumerate(list(BOARD_DATA.keys())):
             self.canNodes[index] = CanNodeWidgetDashItem(value)
@@ -61,6 +62,8 @@ class CanDisplayDashItem (DashboardItem):
             self.rightGrid.addWidget(self.pushButtonList[index], index, QtCore.Qt.AlignCenter)
             self.rightGrid.addWidget(self.labels[index], index, QtCore.Qt.AlignCenter)
         self.layout.addLayout(self.rightGrid, 0, 1)
+        self.layout.addLayout(self.leftGrid, 0, 0)
+
         self.setLayout(self.layout)
 
         self.timer = QtCore.QTimer()
@@ -82,12 +85,11 @@ class CanDisplayDashItem (DashboardItem):
         self.canNodes[BOARD_DATA[widget_name]["index"]].enable_widget()
         self.textBrowsers[widget_name] = {}
         self.textBrowsers[widget_name]["widget"] = self.canNodes[BOARD_DATA[widget_name]["index"]]
-        self.layout.addWidget(
-            self.textBrowsers[widget_name]["widget"].get_widget(), self.browsersNextRow, 0)
+        self.leftGrid.addWidget(self.textBrowsers[widget_name]["widget"].get_widget())
         self.browsersNextRow += 1
 
     def delete_node_widget(self, widget_name):
-        self.layout.removeWidget(self.textBrowsers[widget_name]["widget"].get_widget())
+        self.leftGrid.removeWidget(self.textBrowsers[widget_name]["widget"].get_widget())
         self.textBrowsers[widget_name]["widget"].disable_widget()
         del self.textBrowsers[widget_name]
         self.browsersNextRow = len(self.textBrowsers)

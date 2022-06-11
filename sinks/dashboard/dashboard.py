@@ -66,12 +66,14 @@ class Dashboard(QtWidgets.QWidget):
         # be a corresponding action to add that item
         add_item_menu = menubar.addMenu("Add Item")
 
-        for dock_item_type in item_types:
-            def prompt_and_add():
-                self.add(dock_item_type)
+        def prompt_and_add(i):
+            def ret_func():
+                self.add(item_types[i])
+            return ret_func
 
-            new_action = add_item_menu.addAction(dock_item_type.__name__)
-            new_action.triggered.connect(prompt_and_add)
+        for i in range(len(item_types)):
+            new_action = add_item_menu.addAction(item_types[i].__name__)
+            new_action.triggered.connect(prompt_and_add(i))
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
