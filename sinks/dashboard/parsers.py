@@ -197,6 +197,10 @@ class AnalogSensorParser(ParsleyParser):
         v = payload["data"]["value"]
         b = payload["board_id"]
 
+        if s in ["SENSOR_PRESSURE_OX", "SENSOR_PRESSURE_PNEUMATICS"]:
+            if v >= 2**15:
+                v -= 2**16
+
         self.series[f"CAN Sensor {b} {s}"].add(t, v)
 
 
