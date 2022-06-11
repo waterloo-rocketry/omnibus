@@ -74,6 +74,10 @@ class PlotDashItem (DashboardItem):
         min_data = min([series.points[i] for i in range(series.size) if (
             series.times[i] >= min_time and series.times[i] <= max_time)])
 
+        pad = (max_data - min_data) * 0.1
+        max_data += pad
+        min_data -= pad
+
         self.plot.setYRange(min_data, max_data, padding=0)
 
     def get_props(self):
