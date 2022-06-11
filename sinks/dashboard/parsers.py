@@ -205,10 +205,8 @@ class AnalogSensorParser(ParsleyParser):
 AnalogSensorParser()
 
 
-# 0: request open, current open
-# 1: request open, current close
-# 2: request close, current open
-# 3: request close, current close
+# requested current
+# 0 open, 1 close, 2 unknown
 class ActuatorStateParser(ParsleyParser):
     def __init__(self):
         super().__init__("ACTUATOR_STATUS")
@@ -220,10 +218,20 @@ class ActuatorStateParser(ParsleyParser):
         cur = payload["data"]["cur_state"]
 
         v = 0
-        if req == "ACTUATOR_CLOSED":
-            v |= 2
+        if req == "ACTUATOR_OPEN":
+            v += 0
+        elif req == "ACTUATOR_CLOSED":
+            v = 10
+        else:
+            v += 20
+
+        if cur == "ACTUATOR_OPEN":
+            v += 0
         if cur == "ACTUATOR_CLOSED":
-            v |= 1
+            v += 1
+        else:
+            v += 2
+
         self.series[f"Actuator State ({act})"].add(time, v)
 
 
