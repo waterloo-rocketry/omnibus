@@ -30,6 +30,7 @@ class PlotDashItem (DashboardItem):
             items = []
             for channel in Parser.parsers.keys():
                 all_series = [series.name for series in Parser.get_all_series(channel)]
+                all_series.sort()
                 for series in all_series:
                     items.append(f"{channel}|{series}")
 
