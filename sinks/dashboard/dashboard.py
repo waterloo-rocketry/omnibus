@@ -147,6 +147,10 @@ class Dashboard(QtWidgets.QWidget):
             self.area.restoreState(data["layout"])
 
     def save(self):
+        data = {
+            "items": [],
+            "layout": None
+        }
         # store layout data to data["layout"]
         data["layout"] = self.area.saveState()
 
