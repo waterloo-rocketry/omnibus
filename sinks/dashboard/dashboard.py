@@ -140,7 +140,7 @@ class Dashboard(QtWidgets.QWidget):
         # for every item specified by the save file,
         # add that item back to the dock
         for i, item in enumerate(data["items"]):  # { 0: {...}, 1: ..., ...}
-            self.add(item["class"], item["props"])
+            self.add(item["class"](item["props"]))
 
         # restore the layout
         if data["layout"]:
@@ -161,14 +161,7 @@ class Dashboard(QtWidgets.QWidget):
         with open(filename, 'wb') as savefile:
             pickle.dump(data, savefile)
 
-    def add(self, itemtype, props=None):
-        # input specifications
-        # itemtype: a python class inherating from DashboardItem
-        # props: the props object used to construct the dash item
-        #        leave as none if you desire the properties be set
-        #        via user prompt
-        p = itemtype(props)
-
+    def add(self, dashitem):
         # Create a new dock to be added to the dock area
         dock = Dock(name=str(len(self.docks)-1), closable=True)
 
@@ -179,13 +172,13 @@ class Dashboard(QtWidgets.QWidget):
         # Create a call back to execute when docks close to ensure cleaning up is done
         # right
         def custom_callback(dock_arg):
-            p.unsubscribe_to_all()
-            self.docks = [dock for dock in self.docks if dock.widgets[0] != p]
+            dashitem.unsubscribe_to_all()
+            self.docks = [dock for dock in self.docks if dock.widgets[0] != dashitem]
 
         dock.sigClosed.connect(custom_callback)
 
         # add widget to dock
-        dock.addWidget(p)
+        dock.addWidget(dashitem)
 
         # add dock to dock area
         self.area.addDock(dock, 'right')
@@ -196,8 +189,6 @@ class Dashboard(QtWidgets.QWidget):
     # called every frame
     def update(self):
         self.counter.tick()
-
-        # self.docks[0].widgets[0].update()
 
         # Filter to 5 frames per update on analytics
         if not(self.counter.tick_count() % 5):

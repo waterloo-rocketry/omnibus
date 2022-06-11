@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from series import Series, CanMsgSeries
 
-BOARD_NAME_LIST = ["INJECTOR", "LOGGER", "RADIO", "SENSOR", "VENT", "GPS", "ARMING",
+BOARD_NAME_LIST = ["DUMMY", "INJECTOR", "LOGGER", "RADIO", "SENSOR", "VENT", "GPS", "ARMING",
                    "PAPA", "ROCKET_PI", "ROCKET_PI_2", "SENSOR_2", "SENSOR_3"]
 
 

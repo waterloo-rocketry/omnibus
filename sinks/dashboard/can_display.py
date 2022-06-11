@@ -14,18 +14,19 @@ MAX_MSG_QUEUE_SIZE = 50
 HEALTHY_STATE_TIMEOUT = 10000  # 10s
 
 # TODO: set better color schemes (AKA determine which colors are better for viewing)
-BOARD_DATA = {"INJECTOR": {"id": 0x01, "index": 0, "color": QtGui.QColor('cyan')},
-              "LOGGER": {"id": 0x03, "index": 1, "color": QtGui.QColor('darkCyan')},
-              "RADIO": {"id": 0x05, "index": 2, "color": QtGui.QColor('blue')},
-              "SENSOR": {"id": 0x07, "index": 3, "color": QtGui.QColor('darkblue')},
-              "VENT": {"id": 0x0B, "index": 4, "color": QtGui.QColor('magenta')},
-              "GPS": {"id": 0x0D, "index": 5, "color": QtGui.QColor('darkMagenta')},
-              "ARMING": {"id": 0x11, "index": 6, "color": QtGui.QColor('green')},
-              "PAPA": {"id": 0x13, "index": 7, "color": QtGui.QColor('darkGreen')},
-              "ROCKET_PI": {"id": 0x15, "index": 8, "color": QtGui.QColor('pink')},
-              "ROCKET_PI_2": {"id": 0x16, "index": 9, "color": QtGui.QColor('deeppink')},
-              "SENSOR_2": {"id": 0x19, "index": 10, "color": QtGui.QColor('orange')},
-              "SENSOR_3": {"id": 0x1B, "index": 11, "color": QtGui.QColor('darkorange')}}
+BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": QtGui.QColor('purple')},
+              "INJECTOR": {"id": 0x01, "index": 1, "color": QtGui.QColor('cyan')},
+              "LOGGER": {"id": 0x03, "index": 2, "color": QtGui.QColor('darkCyan')},
+              "RADIO": {"id": 0x05, "index": 3, "color": QtGui.QColor('blue')},
+              "SENSOR": {"id": 0x07, "index": 4, "color": QtGui.QColor('darkblue')},
+              "VENT": {"id": 0x0B, "index": 5, "color": QtGui.QColor('magenta')},
+              "GPS": {"id": 0x0D, "index": 6, "color": QtGui.QColor('darkMagenta')},
+              "ARMING": {"id": 0x11, "index": 7, "color": QtGui.QColor('green')},
+              "PAPA": {"id": 0x13, "index": 8, "color": QtGui.QColor('darkGreen')},
+              "ROCKET_PI": {"id": 0x15, "index": 9, "color": QtGui.QColor('pink')},
+              "ROCKET_PI_2": {"id": 0x16, "index": 10, "color": QtGui.QColor('deeppink')},
+              "SENSOR_2": {"id": 0x19, "index": 11, "color": QtGui.QColor('orange')},
+              "SENSOR_3": {"id": 0x1B, "index": 12, "color": QtGui.QColor('darkorange')}}
 CAN_HEALTH_STATES = ["DEAD"] * len(BOARD_DATA)
 CAN_HEALTH_STATES_COLORS = [UNHEALTHY_STATE_COLOR] * len(BOARD_DATA)
 
@@ -72,9 +73,6 @@ class CanDisplayDashItem (DashboardItem):
 
     def get_props(self):
         return self.props
-
-    def get_widget(self):
-        return self.groupbox
 
     def update_board_health_state(self):
         for node_name, node in self.canNodes.items():
