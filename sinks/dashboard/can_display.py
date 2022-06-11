@@ -13,20 +13,19 @@ UNHEALTHY_STATE_COLOR = "red"
 MAX_MSG_QUEUE_SIZE = 50
 HEALTHY_STATE_TIMEOUT = 10000  # 10s
 
-# TODO: set better color schemes (AKA determine which colors are better for viewing)
-BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": QtGui.QColor('purple')},
-              "INJECTOR": {"id": 0x01, "index": 1, "color": QtGui.QColor('cyan')},
-              "LOGGER": {"id": 0x03, "index": 2, "color": QtGui.QColor('darkCyan')},
-              "RADIO": {"id": 0x05, "index": 3, "color": QtGui.QColor('blue')},
-              "SENSOR": {"id": 0x07, "index": 4, "color": QtGui.QColor('darkblue')},
-              "VENT": {"id": 0x0B, "index": 5, "color": QtGui.QColor('magenta')},
-              "GPS": {"id": 0x0D, "index": 6, "color": QtGui.QColor('darkMagenta')},
-              "ARMING": {"id": 0x11, "index": 7, "color": QtGui.QColor('green')},
-              "PAPA": {"id": 0x13, "index": 8, "color": QtGui.QColor('darkGreen')},
-              "ROCKET_PI": {"id": 0x15, "index": 9, "color": QtGui.QColor('pink')},
-              "ROCKET_PI_2": {"id": 0x16, "index": 10, "color": QtGui.QColor('deeppink')},
-              "SENSOR_2": {"id": 0x19, "index": 11, "color": QtGui.QColor('orange')},
-              "SENSOR_3": {"id": 0x1B, "index": 12, "color": QtGui.QColor('darkorange')}}
+BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black'},
+              "INJECTOR": {"id": 0x01, "index": 1, "color": 'chocolate'},
+              "LOGGER": {"id": 0x03, "index": 2, "color": 'darkCyan'},
+              "RADIO": {"id": 0x05, "index": 3, "color": 'blue'},
+              "SENSOR": {"id": 0x07, "index": 4, "color": 'darkblue'},
+              "VENT": {"id": 0x0B, "index": 5, "color": 'slategray'},
+              "GPS": {"id": 0x0D, "index": 6, "color": 'darkMagenta'},
+              "ARMING": {"id": 0x11, "index": 7, "color": 'darkGreen'},
+              "PAPA": {"id": 0x13, "index": 8, "color": 'olive'},
+              "ROCKET_PI": {"id": 0x15, "index": 9, "color": 'purple'},
+              "ROCKET_PI_2": {"id": 0x16, "index": 10, "color": 'deeppink'},
+              "SENSOR_2": {"id": 0x19, "index": 11, "color": 'steelblue'},
+              "SENSOR_3": {"id": 0x1B, "index": 12, "color": 'darkorange'}}
 CAN_HEALTH_STATES = ["DEAD"] * len(BOARD_DATA)
 CAN_HEALTH_STATES_COLORS = [UNHEALTHY_STATE_COLOR] * len(BOARD_DATA)
 
@@ -54,10 +53,14 @@ class CanDisplayDashItem (DashboardItem):
         self.rightGrid = QtWidgets.QVBoxLayout()
         self.leftGrid = QtWidgets.QVBoxLayout()
 
+        # create all buttons, labels and can nodes for each board id defined
+        # add the above to the local layout (right for buttons/labels, left for terminals)
         for index, value in enumerate(list(BOARD_DATA.keys())):
             self.canNodes[index] = CanNodeWidgetDashItem(value)
             self.pushButtonList[index] = QtWidgets.QPushButton(value)
             self.pushButtonList[index].setCheckable(True)
+            self.pushButtonList[index].setStyleSheet(
+                f"color : {BOARD_DATA[value]['color']};")
             self.labels.append(QtWidgets.QLabel())
             # TODO: improve alignment
             self.rightGrid.addWidget(self.pushButtonList[index], index, QtCore.Qt.AlignCenter)
@@ -67,6 +70,7 @@ class CanDisplayDashItem (DashboardItem):
 
         self.setLayout(self.layout)
 
+        # timer for updating the button/label states
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update)
         self.timer.start(100)
@@ -75,24 +79,37 @@ class CanDisplayDashItem (DashboardItem):
         return self.props
 
     def update_board_health_state(self):
+        """
+        Updates the health status and color of each node
+        """
         for node_name, node in self.canNodes.items():
             CAN_HEALTH_STATES[BOARD_DATA[node.board_id]["index"]] = node.board_status
             CAN_HEALTH_STATES_COLORS[BOARD_DATA[node.board_id]["index"]] = node.status_color
 
-    def add_node_widget(self, widget_name):
-        self.canNodes[BOARD_DATA[widget_name]["index"]].enable_widget()
-        self.textBrowsers[widget_name] = {}
-        self.textBrowsers[widget_name]["widget"] = self.canNodes[BOARD_DATA[widget_name]["index"]]
-        self.leftGrid.addWidget(self.textBrowsers[widget_name]["widget"].get_widget())
+    def add_node_widget(self, board_id):
+        """
+        Adds a CAN node to the set of text windows
+        """
+        self.canNodes[BOARD_DATA[board_id]["index"]].enable_widget()
+        self.textBrowsers[board_id] = {}
+        self.textBrowsers[board_id]["widget"] = self.canNodes[BOARD_DATA[board_id]["index"]]
+        self.leftGrid.addWidget(self.textBrowsers[board_id]["widget"].get_widget())
         self.browsersNextRow += 1
 
-    def delete_node_widget(self, widget_name):
-        self.leftGrid.removeWidget(self.textBrowsers[widget_name]["widget"].get_widget())
-        self.textBrowsers[widget_name]["widget"].disable_widget()
-        del self.textBrowsers[widget_name]
+    def delete_node_widget(self, board_id):
+        """
+        Removes a CAN node to the set of text windows
+        """
+        self.leftGrid.removeWidget(self.textBrowsers[board_id]["widget"].get_widget())
+        self.textBrowsers[board_id]["widget"].disable_widget()
+        del self.textBrowsers[board_id]
         self.browsersNextRow = len(self.textBrowsers)
 
     def update(self):
+        """
+        Updates running every 100ms for board health status, label states, and button states.
+        Additionally, where the CAN node text windows get called to be created/deleted
+        """
         self.update_board_health_state()
         for index, value in enumerate(self.pushButtonList):
             self.labels[index].setStyleSheet(
@@ -135,9 +152,15 @@ class CanNodeWidgetDashItem(DashboardItem):
         self.subscribe_to_series(self.series)
 
     def enable_widget(self):
+        """
+        Create text window to display can messages for CAN node
+        """
         self.textBrowser = QtWidgets.QTextBrowser()
 
     def disable_widget(self):
+        """
+        Deletes CAN node's text window
+        """
         self.textBrowser.clear()
         self.textBrowser.deleteLater()
         self.textBrowser = None
@@ -148,13 +171,17 @@ class CanNodeWidgetDashItem(DashboardItem):
     def get_widget(self):
         return self.textBrowser
 
-    def updateHealthChecks(self):
-        # Check our last health check for this index was over 10s ago, now in DEAD state
-        if self.currCanMsgTime < abs(self.oldCanMsgTime - HEALTHY_STATE_TIMEOUT):
-            CAN_HEALTH_STATES[self.board_index] = "DEAD_FROM_TIMEOUT"
-            CAN_HEALTH_STATES_COLORS[self.board_index] = UNHEALTHY_STATE_COLOR
-        else:
-            self.oldCanMsgTime = self.currCanMsgTime
+    # TODO: fix implementation of updating health based on last received message time frame
+    # def updateHealthChecks(self):
+    #     """
+
+    #     """
+    #     # Check our last health check for this index was over 10s ago, now in DEAD state
+    #     if self.currCanMsgTime < abs(self.oldCanMsgTime - HEALTHY_STATE_TIMEOUT):
+    #         CAN_HEALTH_STATES[self.board_index] = "DEAD_FROM_TIMEOUT"
+    #         CAN_HEALTH_STATES_COLORS[self.board_index] = UNHEALTHY_STATE_COLOR
+    #     else:
+    #         self.oldCanMsgTime = self.currCanMsgTime
 
     def updateCanMsgTimes(self, msg):
         self.currCanMsgTime = msg["data"]["time"]
@@ -165,7 +192,7 @@ class CanNodeWidgetDashItem(DashboardItem):
         newest_msg = series.get_msg()
         # update some internal trackers
         self.updateCanMsgTimes(newest_msg)
-        self.updateHealthChecks()
+        # self.updateHealthChecks()
         # check if our queue is already full, if so take off oldest msg
         if len(self.msgHistoryQ) == MAX_MSG_QUEUE_SIZE:
             self.msgHistoryQ.popleft()  # don't care about old message
@@ -180,7 +207,7 @@ class CanNodeWidgetDashItem(DashboardItem):
         if self.textBrowser is not None:
             # clear old text before pushing updated history
             self.textBrowser.clear()
-            self.textBrowser.setTextColor(BOARD_DATA[self.board_id]['color'])
+            self.textBrowser.setTextColor(QtGui.QColor(BOARD_DATA[self.board_id]['color']))
             self.textBrowser.append("".join(str(ele) for ele in self.msgHistoryQ))
 
             # if scroll bar within 10 pixels of bottom, auto scroll to bottom
