@@ -18,29 +18,30 @@ def reader(port):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('port', help='the serial port to read from, or - for stdin')
-    parser.add_argument('--format', default='usb',
-                        help='Options: logger, usb. Parse input in RocketCAN Logger or USB format')
+    parser.add_argument('--format', default='telemetry',
+                        help='Options: telemetry, logger, usb. Parse input in RocketCAN Logger or USB format')
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
 
     readline = reader(args.port)
-    parser = parsley.parse_logger if args.format == 'logger' else parsley.parse_usb_debug
+    parser = parsley.parse_live_telemetry
+    if args.format == "usb":
+        parser = parsley.parse_usb_debug
+    elif args.format == "logger":
+        parser = parsley.parse_logger
     if not args.solo:
         sender = Sender()
         CHANNEL = "CAN/Parsley"
 
     while True:
         line = readline()
-        #if not line:
-        #    break
 
         # treat repeated messages in the same way as USB debug
         if line.strip() == '.':
             print('.')
             continue
 
-        print(line)
         try:
             msg_sid, msg_data = parser(line)
             parsed_data = parsley.parse(msg_sid, msg_data)
