@@ -60,7 +60,7 @@ class PlotDashItem (DashboardItem):
 
         # current value readout in the title
         self.plot.setTitle(
-            f"{series.name} [{series.get_running_avg(): <4.4f}]")
+            f"{series.name} {series.desc and (series.desc + ' ') or ''}[{series.get_running_avg(): <4.4f}]")
 
         # round the time to the nearest GRAPH_STEP
         t = round(series.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP

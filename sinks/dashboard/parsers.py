@@ -232,7 +232,7 @@ class ActuatorStateParser(ParsleyParser):
         else:
             v += 2
 
-        self.series[f"Actuator State ({act})"].add(time, v)
+        self.series[f"Actuator State ({act})"].add(time, v, "(0 OPEN 1 CLOSED 2 UNKNOWN, req * 10 + cur)")
 
 
 ActuatorStateParser()
@@ -325,9 +325,9 @@ class ArmStatusParser(ParsleyParser):
         else:
             arm_value = 2
 
-        self.series[f"Arm State ({num})"].add(time, arm_value)
-        self.series[f"Arm Drogue Voltage ({num})"].add(time, drogue)
-        self.series[f"Arm Main Voltage ({num})"].add(time, main)
+        self.series[f"Arm State {num}"].add(time, arm_value, "(0 DISARMED 1 ARMED 2 UNKNOWN)")
+        self.series[f"Arm Drogue Voltage ({num})"].add(time, drogue, "(mV)")
+        self.series[f"Arm Main Voltage ({num})"].add(time, main, "(mV)")
 
 
 ArmStatusParser()
