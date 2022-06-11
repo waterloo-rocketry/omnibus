@@ -314,20 +314,20 @@ class ArmStatusParser(ParsleyParser):
     def parse_can(self, payload):
         time = payload["data"]["time"]
         state = payload["data"]["state"]
-        alt = payload["data"]["altimeter"]
+        num = payload["data"]["altimeter"]
         drogue = payload["data"]["drogue_v"]
         main = payload["data"]["main_v"]
 
-        arm_value = -1
         if state == "ARMED":
             arm_value = 1
         elif state == "DISARMED":
             arm_value = 0
+        else:
+            arm_value = 2
 
-        self.series["Arm State"].add(time, arm_value)
-        self.series["Arm Altimeter"].add(time, alt)
-        self.series["Arm Drogue Voltage"].add(time, drogue)
-        self.series["Arm Main Voltage"].add(time, main)
+        self.series[f"Arm State ({num})"].add(time, arm_value)
+        self.series[f"Arm Drogue Voltage ({num})"].add(time, drogue)
+        self.series[f"Arm Main Voltage ({num})"].add(time, main)
 
 
 ArmStatusParser()
