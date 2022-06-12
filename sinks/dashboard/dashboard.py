@@ -160,6 +160,7 @@ class Dashboard(QtWidgets.QWidget):
         # to its index within docks
         for i in range(len(self.docks)):
             self.docks[i]._name = str(i)
+            self.docks[i].label.setText(str(i))
 
         # store layout data to data["layout"]
         data["layout"] = self.area.saveState()
