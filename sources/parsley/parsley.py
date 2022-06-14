@@ -137,6 +137,9 @@ def parse_board_status(msg_data):
         res["req_state"] = expected_state
         res["cur_state"] = cur_state
 
+    elif board_stat == "E_LOGGING":
+        res["err"] = msg_data[4]
+
     return res
 
 
@@ -263,8 +266,6 @@ def parse_leds_off(msg_data):
 
 
 def parse(msg_sid, msg_data):
-    print(f"msg_sid: {msg_sid}\n")
-    print(f"msg_data: {msg_data}\n")
     # lol @ bitwise manips in python
     msg_type = mt.msg_type_str[msg_sid & 0x7e0]
     board_id = mt.board_id_str[msg_sid & 0x1f]
@@ -278,6 +279,28 @@ def parse(msg_sid, msg_data):
 
     return res
 
+
+def parse_live_telemetry(line):
+    line = line.lstrip(' \0')
+    if len(line) == 0 or line[0] != '$':
+        return None
+    line = line[1:]
+
+    msg_sid, msg_data = line.split(":")
+    msg_data, msg_checksum = msg_data.split(";")
+    msg_sid = int(msg_sid, 16)
+    msg_data = [int(byte, 16) for byte in msg_data.split(",")]
+    sum1 = 0
+    sum2 = 0
+    for c in line[:-1]:
+        if c.lower() in "0123456789abcdef":
+            sum1 = (sum1 + int(c, 16)) % 15
+            sum2 = (sum1 + sum2) % 15
+    if int(msg_checksum, 16) != sum1 ^ sum2:
+        print(f"Bad checksum, expected {sum1 ^ sum2} but got {msg_checksum}")
+        return None
+
+    return msg_sid, msg_data
 
 def parse_usb_debug(line):
     line = line.lstrip(' \0')

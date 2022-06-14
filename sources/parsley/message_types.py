@@ -83,6 +83,8 @@ board_id_hex = {
     "SENSOR_2_SPARE": 0x1A,
     "SENSOR_3": 0x1B,
     "SENSOR_4": 0x1C,
+    "TEMP_SENSE": 0x15,
+    "TEMP_SENSE_SPARE": 0x16,
     "LOGGER_2": 0x1D,
     "RLCS": 0x1E
 }
@@ -176,5 +178,6 @@ actuator_id_hex = {
     "INJECTOR_VALVE": 1,
     "MAMA": 2,
     "PICAM": 3,
+    "CANBUS": 4,
 }
 actuator_id_str = {v: k for k, v in actuator_id_hex.items()}

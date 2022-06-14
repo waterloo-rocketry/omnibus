@@ -30,6 +30,7 @@ class PlotDashItem (DashboardItem):
             items = []
             for channel in Parser.parsers.keys():
                 all_series = [series.name for series in Parser.get_all_series(channel)]
+                all_series.sort()
                 for series in all_series:
                     items.append(f"{channel}|{series}")
 
@@ -59,7 +60,7 @@ class PlotDashItem (DashboardItem):
 
         # current value readout in the title
         self.plot.setTitle(
-            f"{series.name} [{series.get_running_avg(): <4.4f}]")
+            f"[{series.get_running_avg(): <4.4f}] [{series.points[-1]}] {series.name} {series.desc and (series.desc + ' ') or ''}")
 
         # round the time to the nearest GRAPH_STEP
         t = round(series.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
@@ -72,6 +73,10 @@ class PlotDashItem (DashboardItem):
             series.times[i] >= min_time and series.times[i] <= max_time)])
         min_data = min([series.points[i] for i in range(series.size) if (
             series.times[i] >= min_time and series.times[i] <= max_time)])
+
+        pad = (max_data - min_data) * 0.1
+        max_data += pad
+        min_data -= pad
 
         self.plot.setYRange(min_data, max_data, padding=0)
 

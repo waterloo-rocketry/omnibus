@@ -1,5 +1,4 @@
 import numpy as np
-import queue as q
 
 import config
 
@@ -9,7 +8,7 @@ class Series:
     Stores and downsamples the datapoints of a single series
     """
 
-    def __init__(self, name):
+    def __init__(self, name, time_rollover=False):
         self.observers = []
         self.name = name
 
@@ -20,6 +19,9 @@ class Series:
         self.sum = 0  # sum of series
         # "size" of running average
         self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
+        self.desc = None
+        self.time_rollover = time_rollover
+        self.time_offset = 0
 
         self.callback = None
 
@@ -36,10 +38,17 @@ class Series:
         # certainly not the fastest code
         self.observers = [observer for observer in self.observers if observer != dashboard_item]
 
-    def add(self, time, point):
+    def add(self, time, point, desc=None):
         """
         Add a datapoint to this series.
         """
+        if desc is not None:
+            self.desc = desc
+
+        time += self.time_offset
+        if self.time_rollover:
+            if time < self.times[-1]:  # if we've wrapped around
+                self.time_offset += self.times[-1]  # increase the amount we need to add
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last < 1 / config.GRAPH_RESOLUTION:
@@ -73,7 +82,7 @@ class CanMsgSeries(Series):
     def __init__(self, name):
         self.observers = []
         self.name = name    # board_id
-        self.payloadQ = q.Queue()
+        self.payloadQ = []
 
         self.callback = None
 
@@ -94,10 +103,13 @@ class CanMsgSeries(Series):
         """
         Add a new payload to this series.
         """
-        self.payloadQ.put(payload)
+        self.payloadQ.append(payload)
+
+        if len(self.payloadQ) > 50:
+            self.payloadQ.pop(0)
 
         for observer in self.observers:
             observer.on_data_update(self)
 
     def get_msg(self):
-        return self.payloadQ.get()
+        return self.payloadQ[-1]

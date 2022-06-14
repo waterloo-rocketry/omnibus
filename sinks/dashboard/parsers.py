@@ -11,8 +11,12 @@ class SeriesDefaultDict(defaultdict):
     Let us call `self.series["xyz"].add(...)` whether or not "xyz" is an existing series.
     """
 
+    def __init__(self, *kargs, **kwargs):
+        self.kargs = kargs
+        self.kwargs = kwargs
+
     def __missing__(self, key):
-        self[key] = Series(key)
+        self[key] = Series(key, *self.kargs, **self.kwargs)
         return self[key]
 
 
@@ -23,13 +27,13 @@ class Parser:
 
     parsers = {}  # keep track of all initialized parsers
 
-    def __init__(self, channel):
+    def __init__(self, channel, *series_kargs, **series_kwargs):
         self.channel = channel  # omnibus channel to parse messages from
 
         if channel in Parser.parsers:
             self.series = Parser.parsers[channel][0].series
         else:
-            self.series = SeriesDefaultDict()
+            self.series = SeriesDefaultDict(*series_kargs, **series_kwargs)
         parsers = Parser.parsers.get(channel, [])
         parsers.append(self)
         Parser.parsers[channel] = parsers
@@ -94,11 +98,9 @@ class ParsleyParser(Parser):
     """
 
     def __init__(self, msg_type):
-        super().__init__("CAN/Parsley")
+        super().__init__("CAN/Parsley", time_rollover=True)
         self.msg_type = msg_type
         # the timestamp of CAN messages wraps around decently frequently, account for it by storing
-        self.last_time = 0  # the last recievied time (to detect wrap arounds)
-        self.time_offset = 0  # and what to add to each timestamp we recieve
 
     def parse(self, payload):
         if payload["msg_type"] != self.msg_type:
@@ -107,11 +109,6 @@ class ParsleyParser(Parser):
         if "time" in payload["data"]:
             # time is in milliseconds but we want seconds
             payload["data"]["time"] /= 1000
-
-            if payload["data"]["time"] < self.last_time:  # if we've wrapped around
-                self.time_offset += self.last_time  # increase the amount we need to add
-            self.last_time = payload["data"]["time"]
-            payload["data"]["time"] += self.time_offset
 
         self.parse_can(payload)
 
@@ -142,7 +139,7 @@ class TemperatureParser(ParsleyParser):
         t = payload["data"]["time"]
         v = payload["data"]["temperature"]
 
-        self.series[f"Temperature {s}"].add(t, v)
+        self.series[f"Temperature {s}"].add(t, v, "(C)")
 
 
 TemperatureParser()
@@ -198,17 +195,18 @@ class AnalogSensorParser(ParsleyParser):
         s = payload["data"]["sensor_id"]
         t = payload["data"]["time"]
         v = payload["data"]["value"]
+        b = payload["board_id"]
 
-        self.series[f"CAN Sensor {s}"].add(t, v)
+        if s.startswith("SENSOR_PRESSURE") or s == "SENSOR_VENT_TEMP":
+            if v >= 2**15:
+                v -= 2**16
+
+        self.series[f"CAN Sensor {b} {s}"].add(t, v)
 
 
 AnalogSensorParser()
 
 
-# 0: request open, current open
-# 1: request open, current close
-# 2: request close, current open
-# 3: request close, current close
 class ActuatorStateParser(ParsleyParser):
     def __init__(self):
         super().__init__("ACTUATOR_STATUS")
@@ -220,11 +218,21 @@ class ActuatorStateParser(ParsleyParser):
         cur = payload["data"]["cur_state"]
 
         v = 0
-        if req == "ACTUATOR_CLOSED":
-            v |= 2
+        if req == "ACTUATOR_OPEN":
+            v += 0
+        elif req == "ACTUATOR_CLOSED":
+            v += 30
+        else:
+            v += 60
+
+        if cur == "ACTUATOR_OPEN":
+            v += 0
         if cur == "ACTUATOR_CLOSED":
-            v |= 1
-        self.series[f"Actuator State ({act})"].add(time, v)
+            v += 3
+        else:
+            v += 6
+
+        self.series[f"Actuator State ({act})"].add(time, v, "(0 OPEN 3 CLOSED 6 UNKNOWN, req * 10 + cur)")
 
 
 ActuatorStateParser()
@@ -306,20 +314,20 @@ class ArmStatusParser(ParsleyParser):
     def parse_can(self, payload):
         time = payload["data"]["time"]
         state = payload["data"]["state"]
-        alt = payload["data"]["altimeter"]
+        num = payload["data"]["altimeter"]
         drogue = payload["data"]["drogue_v"]
         main = payload["data"]["main_v"]
 
-        arm_value = -1
-        if state == "ARM":
+        if state == "ARMED":
             arm_value = 1
         elif state == "DISARMED":
             arm_value = 0
+        else:
+            arm_value = 2
 
-        self.series["Arm State"].add(time, arm_value)
-        self.series["Arm Altimeter"].add(time, alt)
-        self.series["Arm Drogue Voltage"].add(time, drogue)
-        self.series["Arm Main Voltage"].add(time, main)
+        self.series[f"Arm State {num}"].add(time, arm_value, "(0 DISARMED 1 ARMED 2 UNKNOWN)")
+        self.series[f"Arm Drogue Voltage ({num})"].add(time, drogue, "(mV)")
+        self.series[f"Arm Main Voltage ({num})"].add(time, main, "(mV)")
 
 
 ArmStatusParser()
