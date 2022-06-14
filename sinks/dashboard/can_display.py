@@ -13,19 +13,40 @@ UNHEALTHY_STATE_COLOR = "red"
 MAX_MSG_QUEUE_SIZE = 50
 HEALTHY_STATE_TIMEOUT = 10000  # 10s
 
-BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black'},
-              "INJECTOR": {"id": 0x01, "index": 1, "color": 'chocolate'},
-              "LOGGER": {"id": 0x03, "index": 2, "color": 'darkCyan'},
-              "RADIO": {"id": 0x05, "index": 3, "color": 'blue'},
-              "SENSOR": {"id": 0x07, "index": 4, "color": 'darkblue'},
-              "VENT": {"id": 0x0B, "index": 5, "color": 'slategray'},
-              "GPS": {"id": 0x0D, "index": 6, "color": 'darkMagenta'},
-              "ARMING": {"id": 0x11, "index": 7, "color": 'darkGreen'},
-              "PAPA": {"id": 0x13, "index": 8, "color": 'olive'},
-              "ROCKET_PI": {"id": 0x15, "index": 9, "color": 'purple'},
-              "ROCKET_PI_2": {"id": 0x16, "index": 10, "color": 'deeppink'},
-              "SENSOR_2": {"id": 0x19, "index": 11, "color": 'steelblue'},
-              "SENSOR_3": {"id": 0x1B, "index": 12, "color": 'darkorange'}}
+BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black', "msg_types": ["GENERAL_CMD", "ACTUATOR_CMD", "ALT_ARM_CMD", "GENERAL_BOARD_STATUS"]},
+              "INJECTOR": {"id": 0x01, "index": 1, "color": 'chocolate', "msg_types": ["ACTUATOR_STATUS", "GENERAL_BOARD_STATUS"]},
+              "LOGGER": {"id": 0x03, "index": 2, "color": 'darkCyan', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "RADIO": {"id": 0x05, "index": 3, "color": 'blue', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "SENSOR": {"id": 0x07, "index": 4, "color": 'darkblue', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "VENT": {"id": 0x0B, "index": 5, "color": 'slategray', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "GPS": {"id": 0x0D, "index": 6, "color": 'darkMagenta', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "ARMING": {"id": 0x11, "index": 7, "color": 'darkGreen', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "PAPA": {"id": 0x13, "index": 8, "color": 'olive', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "ROCKET_PI": {"id": 0x15, "index": 9, "color": 'purple', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "ROCKET_PI_2": {"id": 0x16, "index": 10, "color": 'deeppink', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "SENSOR_2": {"id": 0x19, "index": 11, "color": 'steelblue', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "SENSOR_3": {"id": 0x1B, "index": 12, "color": 'darkorange', "msg_types": ["GENERAL_BOARD_STATUS"]}}
+CAN_MSG_TYPES = ["GENERAL_CMD",
+                 "ACTUATOR_CMD",
+                 "ALT_ARM_CMD",
+                 "DEBUG_MSG",
+                 "DEBUG_PRINTF",
+                 "ALT_ARM_STATUS",
+                 "ACTUATOR_STATUS",
+                 "GENERAL_BOARD_STATUS",
+                 "RECOVERY_STATUS",
+                 "SENSOR_TEMP",
+                 "SENSOR_ALTITUDE",
+                 "SENSOR_ACC",
+                 "SENSOR_ACC2",
+                 "SENSOR_GYRO",
+                 "SENSOR_MAG",
+                 "SENSOR_ANALOG",
+                 "GPS_TIMESTAMP",
+                 "GPS_LATITUDE",
+                 "GPS_LONGITUDE",
+                 "GPS_ALTITUDE",
+                 "GPS_INFO"]
 CAN_HEALTH_STATES = ["DEAD"] * len(BOARD_DATA)
 CAN_HEALTH_STATES_COLORS = [UNHEALTHY_STATE_COLOR] * len(BOARD_DATA)
 
@@ -171,6 +192,16 @@ class CanNodeWidgetDashItem(DashboardItem):
     def get_widget(self):
         return self.textBrowser
 
+    def get_status_color(self, status):
+        if status in ["E_NOMINAL", "RECEIVED_MSG_NO_STATUS"]:
+            return HEALTHY_STATE_COLOR
+        else:
+            return UNHEALTHY_STATE_COLOR
+
+    def get_formatted_msg(self, msg):
+        formatted_msg = fmt_line(msg)
+        return formatted_msg
+
     # TODO: fix implementation of updating health based on last received message time frame
     # def updateHealthChecks(self):
     #     """
@@ -197,11 +228,11 @@ class CanNodeWidgetDashItem(DashboardItem):
         if len(self.msgHistoryQ) == MAX_MSG_QUEUE_SIZE:
             self.msgHistoryQ.popleft()  # don't care about old message
         # put newest msg in queue
-        self.msgHistoryQ.append(get_formatted_msg(newest_msg) + "\n")
+        self.msgHistoryQ.append(self.get_formatted_msg(newest_msg) + "\n")
         # update status
         if newest_msg["msg_type"] == "GENERAL_BOARD_STATUS":
             self.board_status = newest_msg["data"]["status"]
-            self.status_color = get_status_color(self.board_status)
+            self.status_color = self.get_status_color(self.board_status)
 
         # update textBrowser
         if self.textBrowser is not None:
@@ -218,14 +249,29 @@ class CanNodeWidgetDashItem(DashboardItem):
                     self.textBrowser.verticalScrollBar().maximum())  # Scrolls to the bottom
 
 
-# -----------------Helpers----------------
-def get_status_color(status):
-    if status in ["E_NOMINAL", "RECEIVED_MSG_NO_STATUS"]:
-        return HEALTHY_STATE_COLOR
-    else:
-        return UNHEALTHY_STATE_COLOR
+class CanMsgTableDashItem(DashboardItem):
+    """
+    Display table for CAN messages.
+    """
 
+    def __init__(self, props=None):
+        super().__init__()
+        self.props = props
 
-def get_formatted_msg(msg):
-    formatted_msg = fmt_line(msg)
-    return formatted_msg
+        self.tableWidget = QtWidgets.QTableWidget()
+        self.tableWidget.setRowCount(len(BOARD_DATA))
+        self.tableWidget.setColumnCount(len(CAN_MSG_TYPES))
+
+        self.tableWidget.setVerticalHeaderLabels(BOARD_DATA.keys())
+        self.tableWidget.setHorizontalHeaderLabels(CAN_MSG_TYPES)
+
+        for row, board in enumerate(list(BOARD_DATA.keys())):
+            for column, msg_type in enumerate(CAN_MSG_TYPES):
+                if any(msg_type in value for value in BOARD_DATA[f'{board}']['msg_types']):
+                    # do something to get board value
+                    self.tableWidget.setItem(
+                        row, column, QtWidgets.QTableWidgetItem("Value goes here..."))
+
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(self.tableWidget)
+        self.setLayout(self.layout)
