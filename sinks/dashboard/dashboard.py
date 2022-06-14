@@ -14,6 +14,7 @@ from parsers import Parser
 from plotdashitem import PlotDashItem
 from can_display import CanDisplayDashItem, CanMsgTableDashItem
 from omnibus.util import TickCounter
+from utils import prompt_user
 
 # "Temorary Global Constant"
 
@@ -22,8 +23,6 @@ item_types = [
     CanDisplayDashItem,
     CanMsgTableDashItem,
 ]
-
-filename = "savefile.sav"
 
 
 class Dashboard(QtWidgets.QWidget):
@@ -37,6 +36,10 @@ class Dashboard(QtWidgets.QWidget):
 
         # called every frame to get new data
         self.callback = callback
+
+        # The file from which the dashboard is loaded
+        self.filename = "savefile.sav"
+        self.filename_cache = [self.filename]
 
         # A list of all docks in the dock area
         # doubles as a list of all the items in
@@ -83,8 +86,12 @@ class Dashboard(QtWidgets.QWidget):
 
         # Add an action to the menu bar to load the
         # layout of the dashboard.
-        restore_layout_action = menubar.addAction("Reset")
+        restore_layout_action = menubar.addAction("Load")
         restore_layout_action.triggered.connect(self.load)
+
+        # Add an action to the menu bar to open a file
+        open_file_action = menubar.addAction("Open")
+        open_file_action.triggered.connect(self.switch)
 
         self.layout.setMenuBar(menubar)
 
@@ -129,8 +136,8 @@ class Dashboard(QtWidgets.QWidget):
 
         # if the save file exists, set our
         # data variable to it
-        if os.path.isfile(filename):
-            with open(filename, 'rb') as savefile:
+        if os.path.isfile(self.filename):
+            with open(self.filename, 'rb') as savefile:
                 data = pickle.load(savefile)
         else:
             data = {
@@ -174,7 +181,7 @@ class Dashboard(QtWidgets.QWidget):
             data["items"].append({"props": item.get_props(), "class": type(item)})
 
         # Save to the save file
-        with open(filename, 'wb') as savefile:
+        with open(self.filename, 'wb') as savefile:
             pickle.dump(data, savefile)
 
     def add(self, dashitem):
@@ -201,6 +208,31 @@ class Dashboard(QtWidgets.QWidget):
 
         # add dock to dock list
         self.docks.append(dock)
+
+    def switch(self):
+        self.save()
+        filename = prompt_user(
+                self,
+                "New File Name",
+                "Enter the name of the file which you wish to load",
+                "items",
+                self.filename_cache,
+                True
+            )
+
+        if filename == None:
+            return
+
+
+        # If the filename entered is not valid
+        # this exhibits the behaviour of creating
+        # a new one
+
+        if filename not in self.filename_cache:
+            self.filename_cache.append(filename)
+
+        self.filename = filename
+        self.load()
 
     # called every frame
     def update(self):

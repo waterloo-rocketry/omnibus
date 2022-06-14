@@ -10,6 +10,7 @@ from pyqtgraph.graphicsItems.TextItem import TextItem
 
 from dashboarditem import DashboardItem
 import config
+from utils import prompt_user
 
 
 class PlotDashItem (DashboardItem):
@@ -34,8 +35,13 @@ class PlotDashItem (DashboardItem):
                 for series in all_series:
                     items.append(f"{channel}|{series}")
 
-            channel_and_series = self.prompt_user(
-                "Data Series", "The series you wish to plot", "items", items)
+            channel_and_series = prompt_user(
+                self,
+                "Data Series",
+                "The series you wish to plot",
+                "items",
+                items
+                )
             self.props = channel_and_series.split("|")
 
         # subscribe to series dictated by properties

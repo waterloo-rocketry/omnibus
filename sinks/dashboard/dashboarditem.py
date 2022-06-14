@@ -1,5 +1,6 @@
 import typing
 from pyqtgraph.Qt import QtWidgets
+from utils import prompt_user
 
 
 class DashboardItem(QtWidgets.QWidget):
@@ -22,30 +23,6 @@ class DashboardItem(QtWidgets.QWidget):
         Return whatever data we need to recreate ourselves. This data gets passed to the constructor when reinitializing.
         """
         raise NotImplementedError
-
-    def prompt_user(self, property_name, description, prompt_type, items=None):
-        """
-        Opens a pop up asking user for input
-        """
-        ok = False
-        selection = None
-
-        if prompt_type == "items":
-            if (items == None):
-                raise RuntimeError
-
-            selection, ok = QtWidgets.QInputDialog.getItem(self, property_name, description, items, 0, False)    
-            
-        elif prompt_type == "text":
-            selection, ok = QInputDialog.getText(self, property_name, description)
-
-        elif prompt_type == "number":
-            selection, ok = QInputDialog.getDouble(self, property_name, description)
-
-        if not ok:
-            raise RuntimeError
-
-        return selection
 
     def on_data_update(self, series):
         """
