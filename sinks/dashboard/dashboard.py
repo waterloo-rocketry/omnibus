@@ -12,7 +12,7 @@ from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
 
 from parsers import Parser
 from plotdashitem import PlotDashItem
-from can_display import CanDisplayDashItem
+from can_display import CanDisplayDashItem, CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
 
@@ -21,6 +21,7 @@ from utils import prompt_user
 item_types = [
     PlotDashItem,
     CanDisplayDashItem,
+    CanMsgTableDashItem,
 ]
 
 
@@ -160,7 +161,7 @@ class Dashboard(QtWidgets.QWidget):
         }
         # The way that self.area.saveState() works
         # is by assigning properties to each dock
-        # base on its name. This means we need to 
+        # base on its name. This means we need to
         # set the names in such a way that when
         # the docks are re-added, the names align
         # therefore, we set the name of each dock

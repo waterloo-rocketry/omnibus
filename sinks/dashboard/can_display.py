@@ -13,19 +13,40 @@ UNHEALTHY_STATE_COLOR = "red"
 MAX_MSG_QUEUE_SIZE = 50
 HEALTHY_STATE_TIMEOUT = 10000  # 10s
 
-BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black'},
-              "INJECTOR": {"id": 0x01, "index": 1, "color": 'chocolate'},
-              "LOGGER": {"id": 0x03, "index": 2, "color": 'darkCyan'},
-              "RADIO": {"id": 0x05, "index": 3, "color": 'blue'},
-              "SENSOR": {"id": 0x07, "index": 4, "color": 'darkblue'},
-              "VENT": {"id": 0x0B, "index": 5, "color": 'slategray'},
-              "GPS": {"id": 0x0D, "index": 6, "color": 'darkMagenta'},
-              "ARMING": {"id": 0x11, "index": 7, "color": 'darkGreen'},
-              "PAPA": {"id": 0x13, "index": 8, "color": 'olive'},
-              "ROCKET_PI": {"id": 0x15, "index": 9, "color": 'purple'},
-              "ROCKET_PI_2": {"id": 0x16, "index": 10, "color": 'deeppink'},
-              "SENSOR_2": {"id": 0x19, "index": 11, "color": 'steelblue'},
-              "SENSOR_3": {"id": 0x1B, "index": 12, "color": 'darkorange'}}
+BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black', "msg_types": ["GENERAL_BOARD_STATUS", "GENERAL_CMD", "ACTUATOR_CMD", "ALT_ARM_CMD"]},
+              "INJECTOR": {"id": 0x01, "index": 1, "color": 'chocolate', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
+              "LOGGER": {"id": 0x03, "index": 2, "color": 'darkCyan', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "RADIO": {"id": 0x05, "index": 3, "color": 'blue', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "SENSOR": {"id": 0x07, "index": 4, "color": 'darkblue', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "VENT": {"id": 0x0B, "index": 5, "color": 'slategray', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
+              "GPS": {"id": 0x0D, "index": 6, "color": 'darkMagenta', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "ARMING": {"id": 0x11, "index": 7, "color": 'darkGreen', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "PAPA": {"id": 0x13, "index": 8, "color": 'olive', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "ROCKET_PI": {"id": 0x15, "index": 9, "color": 'purple', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
+              "ROCKET_PI_2": {"id": 0x16, "index": 10, "color": 'deeppink', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
+              "SENSOR_2": {"id": 0x19, "index": 11, "color": 'steelblue', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "SENSOR_3": {"id": 0x1B, "index": 12, "color": 'darkorange', "msg_types": ["GENERAL_BOARD_STATUS"]}}
+CAN_MSG_TYPES = ["GENERAL_CMD",
+                 "ACTUATOR_CMD",
+                 "ALT_ARM_CMD",
+                 "DEBUG_MSG",
+                 "DEBUG_PRINTF",
+                 "ALT_ARM_STATUS",
+                 "ACTUATOR_STATUS",
+                 "GENERAL_BOARD_STATUS",
+                 "RECOVERY_STATUS",
+                 "SENSOR_TEMP",
+                 "SENSOR_ALTITUDE",
+                 "SENSOR_ACC",
+                 "SENSOR_ACC2",
+                 "SENSOR_GYRO",
+                 "SENSOR_MAG",
+                 "SENSOR_ANALOG",
+                 "GPS_TIMESTAMP",
+                 "GPS_LATITUDE",
+                 "GPS_LONGITUDE",
+                 "GPS_ALTITUDE",
+                 "GPS_INFO"]
 CAN_HEALTH_STATES = ["DEAD"] * len(BOARD_DATA)
 CAN_HEALTH_STATES_COLORS = [UNHEALTHY_STATE_COLOR] * len(BOARD_DATA)
 
@@ -83,26 +104,26 @@ class CanDisplayDashItem (DashboardItem):
         Updates the health status and color of each node
         """
         for node_name, node in self.canNodes.items():
-            CAN_HEALTH_STATES[BOARD_DATA[node.board_id]["index"]] = node.board_status
-            CAN_HEALTH_STATES_COLORS[BOARD_DATA[node.board_id]["index"]] = node.status_color
+            CAN_HEALTH_STATES[BOARD_DATA[node.boardId]["index"]] = node.boardStatus
+            CAN_HEALTH_STATES_COLORS[BOARD_DATA[node.boardId]["index"]] = node.statusColor
 
-    def add_node_widget(self, board_id):
+    def add_node_widget(self, boardId):
         """
         Adds a CAN node to the set of text windows
         """
-        self.canNodes[BOARD_DATA[board_id]["index"]].enable_widget()
-        self.textBrowsers[board_id] = {}
-        self.textBrowsers[board_id]["widget"] = self.canNodes[BOARD_DATA[board_id]["index"]]
-        self.leftGrid.addWidget(self.textBrowsers[board_id]["widget"].get_widget())
+        self.canNodes[BOARD_DATA[boardId]["index"]].enable_terminal()
+        self.textBrowsers[boardId] = {}
+        self.textBrowsers[boardId]["widget"] = self.canNodes[BOARD_DATA[boardId]["index"]]
+        self.leftGrid.addWidget(self.textBrowsers[boardId]["widget"].get_widget())
         self.browsersNextRow += 1
 
-    def delete_node_widget(self, board_id):
+    def delete_node_widget(self, boardId):
         """
         Removes a CAN node to the set of text windows
         """
-        self.leftGrid.removeWidget(self.textBrowsers[board_id]["widget"].get_widget())
-        self.textBrowsers[board_id]["widget"].disable_widget()
-        del self.textBrowsers[board_id]
+        self.leftGrid.removeWidget(self.textBrowsers[boardId]["widget"].get_widget())
+        self.textBrowsers[boardId]["widget"].disable_terminal()
+        del self.textBrowsers[boardId]
         self.browsersNextRow = len(self.textBrowsers)
 
     def update(self):
@@ -128,36 +149,39 @@ class CanNodeWidgetDashItem(DashboardItem):
     Display for CAN messages.
     """
 
-    def __init__(self, props=None):
+    def __init__(self, props=None, tableParent=None):
         super().__init__()
         self.props = props
 
         if self.props is None:
-            # request board_id?
-            self.board_id = "DUMMY"
+            # request boardId?
+            self.boardId = "DUMMY"
         else:
-            self.board_id = self.props
-        self.board_index = BOARD_DATA[self.board_id]['index']
+            self.boardId = self.props
+
+        self.tableParent = tableParent
+
+        self.boardIndex = BOARD_DATA[self.boardId]['index']
         self.oldCanMsgTime = 0
         self.currCanMsgTime = 0
         self.msgHistoryQ = col.deque(maxlen=MAX_MSG_QUEUE_SIZE)
 
         # Start in dead status until we receive a message from this board
-        self.board_status = "DEAD"
-        self.status_color = UNHEALTHY_STATE_COLOR
+        self.boardStatus = "DEAD"
+        self.statusColor = UNHEALTHY_STATE_COLOR
 
         self.textBrowser = None
 
-        self.series = CanDisplayParser.get_canSeries(self.board_id)
+        self.series = CanDisplayParser.get_canSeries(self.boardId)
         self.subscribe_to_series(self.series)
 
-    def enable_widget(self):
+    def enable_terminal(self):
         """
         Create text window to display can messages for CAN node
         """
         self.textBrowser = QtWidgets.QTextBrowser()
 
-    def disable_widget(self):
+    def disable_terminal(self):
         """
         Deletes CAN node's text window
         """
@@ -171,6 +195,16 @@ class CanNodeWidgetDashItem(DashboardItem):
     def get_widget(self):
         return self.textBrowser
 
+    def get_status_color(self, status):
+        if status in ["E_NOMINAL", "RECEIVED_MSG_NO_STATUS"]:
+            return HEALTHY_STATE_COLOR
+        else:
+            return UNHEALTHY_STATE_COLOR
+
+    def get_formatted_msg(self, msg):
+        formatted_msg = fmt_line(msg)
+        return formatted_msg
+
     # TODO: fix implementation of updating health based on last received message time frame
     # def updateHealthChecks(self):
     #     """
@@ -178,8 +212,8 @@ class CanNodeWidgetDashItem(DashboardItem):
     #     """
     #     # Check our last health check for this index was over 10s ago, now in DEAD state
     #     if self.currCanMsgTime < abs(self.oldCanMsgTime - HEALTHY_STATE_TIMEOUT):
-    #         CAN_HEALTH_STATES[self.board_index] = "DEAD_FROM_TIMEOUT"
-    #         CAN_HEALTH_STATES_COLORS[self.board_index] = UNHEALTHY_STATE_COLOR
+    #         CAN_HEALTH_STATES[self.boardIndex] = "DEAD_FROM_TIMEOUT"
+    #         CAN_HEALTH_STATES_COLORS[self.boardIndex] = UNHEALTHY_STATE_COLOR
     #     else:
     #         self.oldCanMsgTime = self.currCanMsgTime
 
@@ -189,25 +223,25 @@ class CanNodeWidgetDashItem(DashboardItem):
     # Note: this function definitely doesn't have the most efficient solutions but prevents memory issues
     def on_data_update(self, series):
         # get the newest msg
-        newest_msg = series.get_msg()
+        newestMsg = series.get_msg()
         # update some internal trackers
-        self.updateCanMsgTimes(newest_msg)
+        self.updateCanMsgTimes(newestMsg)
         # self.updateHealthChecks()
         # check if our queue is already full, if so take off oldest msg
         if len(self.msgHistoryQ) == MAX_MSG_QUEUE_SIZE:
             self.msgHistoryQ.popleft()  # don't care about old message
         # put newest msg in queue
-        self.msgHistoryQ.append(get_formatted_msg(newest_msg) + "\n")
+        self.msgHistoryQ.append(self.get_formatted_msg(newestMsg) + "\n")
         # update status
-        if newest_msg["msg_type"] == "GENERAL_BOARD_STATUS":
-            self.board_status = newest_msg["data"]["status"]
-            self.status_color = get_status_color(self.board_status)
+        if newestMsg["msg_type"] == "GENERAL_BOARD_STATUS":
+            self.boardStatus = newestMsg["data"]["status"]
+            self.statusColor = self.get_status_color(self.boardStatus)
 
-        # update textBrowser
+        # update textBrowser if we are displaying in terminal
         if self.textBrowser is not None:
             # clear old text before pushing updated history
             self.textBrowser.clear()
-            self.textBrowser.setTextColor(QtGui.QColor(BOARD_DATA[self.board_id]['color']))
+            self.textBrowser.setTextColor(QtGui.QColor(BOARD_DATA[self.boardId]['color']))
             self.textBrowser.append("".join(str(ele) for ele in self.msgHistoryQ))
 
             # if scroll bar within 10 pixels of bottom, auto scroll to bottom
@@ -216,16 +250,40 @@ class CanNodeWidgetDashItem(DashboardItem):
             if scrollIsAtEnd:
                 self.textBrowser.verticalScrollBar().setValue(
                     self.textBrowser.verticalScrollBar().maximum())  # Scrolls to the bottom
+        if self.tableParent is not None:
+            self.tableParent.tableWidget.setItem(
+                self.boardIndex, CAN_MSG_TYPES.index(newestMsg['msg_type']), QtWidgets.QTableWidgetItem(str(newestMsg['data'])))
 
 
-# -----------------Helpers----------------
-def get_status_color(status):
-    if status in ["E_NOMINAL", "RECEIVED_MSG_NO_STATUS"]:
-        return HEALTHY_STATE_COLOR
-    else:
-        return UNHEALTHY_STATE_COLOR
+class CanMsgTableDashItem(DashboardItem):
+    """
+    Display table for CAN messages.
+    """
 
+    def __init__(self, props=None):
+        super().__init__()
+        self.props = props
 
-def get_formatted_msg(msg):
-    formatted_msg = fmt_line(msg)
-    return formatted_msg
+        self.canNodes = {}
+
+        self.tableWidget = QtWidgets.QTableWidget()
+        self.tableWidget.setRowCount(len(BOARD_DATA))
+        self.tableWidget.setColumnCount(len(CAN_MSG_TYPES))
+
+        self.tableWidget.setVerticalHeaderLabels(BOARD_DATA.keys())
+        self.tableWidget.setHorizontalHeaderLabels(CAN_MSG_TYPES)
+
+        for row, board in enumerate(list(BOARD_DATA.keys())):
+            self.canNodes[row] = CanNodeWidgetDashItem(board, self)
+            for column, msg_type in enumerate(CAN_MSG_TYPES):
+                if any(msg_type in value for value in BOARD_DATA[f'{board}']['msg_types']):
+                    # TODO: do something to get board value
+                    self.tableWidget.setItem(
+                        row, column, QtWidgets.QTableWidgetItem("Value goes here..."))
+
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(self.tableWidget)
+        self.setLayout(self.layout)
+
+    def get_props(self):
+        return self.props
