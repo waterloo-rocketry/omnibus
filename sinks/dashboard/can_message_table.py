@@ -48,57 +48,43 @@ BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black', "msg_types": [
 #    the object display with messages
 
 
-class DisplayObject(QtWidgets.QWidget):
+class DisplayCANTable(QtWidgets.QWidget):
 	"""
 	A widget that displays an object, in our case a 
     CAN Message. Makes use of a QTable
 	"""
-	def __init__(self, object=None):
+	def __init__(self):
 		# Super Class Init
 		super().__init__()
 		self.layout = QtWidgets.QVBoxLayout()
 		self.setLayout(self.layout)
 
 		self.tableWidget = QtWidgets.QTableWidget()
-		self.set_object(object)
+		# 8 bytes, 3 used by time stamp leaves 6 total fields
+		# + 1 title field
+		self.tableWidget.setRowCount(7) 
+		self.tableWidget.setColumnCount(2 * len(CAN_MSG_TYPES))
 
-	def set_object(self, object):
-		self.tableWidget.deleteLater()
-		del self.tableWidget
-
-		self.tableWidget = QtWidgets.QTableWidget()
-
-		if not isinstance(object, dict):
-			object = None
-		elif object == None:
-			self.tableWidget.setRowCount(1)
-			self.tableWidget.setColumnCount(1)
-			self.tableWidget.setItem(0, 0, QtWidgets.QTableWidgetItem("None"))
-		else:
-			self.tableWidget.setRowCount(len(object))
-			self.tableWidget.setColumnCount(1)
-
-			self.tableWidget.setVerticalHeaderLabels(object.keys())
-
-			for i, value in enumerate(object.values()):
-				self.tableWidget.setItem(i, 0, QtWidgets.QTableWidgetItem(str(value)))
+		for i in range(len(CAN_MSG_TYPES)):
+			self.tableWidget.setSpan(0, 2*i, 1, 2)
+			self.tableWidget.setItem(0, 2*i, QtWidgets.QTableWidgetItem(CAN_MSG_TYPES[i]))
 
 		self.layout.addWidget(self.tableWidget)
 
-class GridLayoutWidget(QtWidgets.QWidget):
-	"""
-	Just a adaptor on QGridLayout
-	"""
-	def __init__(self):
-		super().__init__()
-		self.layout = QtWidgets.QGridLayout()
-		self.setLayout(self.layout)
 
-	def add_widget(self, widget, row, col):
-		self.layout.addWidget(widget, row, col)
+	def update_with_message(self, msg):
+		msg_type = msg["msg_type"]
+		msg_data = msg["data"]
 
-	def remove_widget(self, widget):
-		self.layout.removeWidget(widget)
+		index = -1
+
+		for i in range(len(CAN_MSG_TYPES)):
+			if CAN_MSG_TYPES[i] == msg_type:
+				index = i
+
+		for i, (k, v) in enumerate(msg_data.items()):
+			self.tableWidget.setItem(i+1, 2*index, QtWidgets.QTableWidgetItem(str(k)))
+			self.tableWidget.setItem(i+1, 2*index + 1, QtWidgets.QTableWidgetItem(str(v)))
 
 
 class ExpandingWidget(QtWidgets.QWidget):
@@ -106,7 +92,7 @@ class ExpandingWidget(QtWidgets.QWidget):
 	A widget whose sole function is to contain a
 	grid layout and expand and collapse on click
 	"""
-	def __init__(self, name):
+	def __init__(self, name, widget):
 		super().__init__()
 		self.layout = QtWidgets.QVBoxLayout()
 		self.setLayout(self.layout)
@@ -116,7 +102,7 @@ class ExpandingWidget(QtWidgets.QWidget):
 		menubar = QtGui.QMenuBar(self)
 		self.layout.setMenuBar(menubar)
 
-		self.content = GridLayoutWidget()
+		self.content = widget
 		self.is_expanded = False
 
 		self.expand_contract_action = menubar.addAction(f"> {self.name}")
@@ -125,10 +111,13 @@ class ExpandingWidget(QtWidgets.QWidget):
 	def toggle(self):
 		if self.is_expanded:
 			self.layout.removeWidget(self.content)
+			self.content.setParent(None)
 			self.expand_contract_action.setText(f"> {self.name}")
+			self.is_expanded = False
 		else:
 			self.layout.addWidget(self.content)
 			self.expand_contract_action.setText(f"V {self.name}")
+			self.is_expanded = True
 
 
 class CanMsgTableDashItem(DashboardItem):
@@ -158,16 +147,11 @@ class CanMsgTableDashItem(DashboardItem):
         # key is a message type and the value is the
         # specific DisplayObject
 
-        for board in BOARD_DATA:
-        	self.message_dict[board] = {}
-        	table = ExpandingWidget(board)
-
-        	for i, message_type in enumerate(CAN_MSG_TYPES):
-        		display_object = DisplayObject()
-        		table.content.add_widget(display_object, 0, i)
-        		self.message_dict[board][message_type] = display_object
-
-        	self.layout.addWidget(table)
+        board = list(BOARD_DATA.keys())[0]
+        table = DisplayCANTable()
+        self.message_dict[board] = table
+        exp_widget = ExpandingWidget(board, table)
+        self.layout.addWidget(exp_widget)
 
         # Subscribe to all relavent series
         for series in CanDisplayParser.get_all_series():
@@ -178,6 +162,5 @@ class CanMsgTableDashItem(DashboardItem):
 
     def on_data_update(self, canSeries):
     	message = canSeries.get_msg()
-    	tpe = message["msg_type"]
-    	message.pop("msg_type", None)
-    	self.message_dict[canSeries.name][tpe].set_object(message)
+    	if canSeries.name in self.message_dict:
+    		self.message_dict[canSeries.name].update_with_message(message)
