@@ -56,7 +56,6 @@ class DisplayObject(QtWidgets.QWidget):
 	def __init__(self, object=None):
 		# Super Class Init
 		super().__init__()
-		print("ran")
 		self.layout = QtWidgets.QVBoxLayout()
 		self.setLayout(self.layout)
 
@@ -114,7 +113,7 @@ class ExpandingWidget(QtWidgets.QWidget):
 
 		self.name = name
 
-		menubar = QMenuBar(self)
+		menubar = QtGui.QMenuBar(self)
 		self.layout.setMenuBar(menubar)
 
 		self.content = GridLayoutWidget()
@@ -163,15 +162,22 @@ class CanMsgTableDashItem(DashboardItem):
         	self.message_dict[board] = {}
         	table = ExpandingWidget(board)
 
-        	for message_type in CAN_MSG_TYPES:
+        	for i, message_type in enumerate(CAN_MSG_TYPES):
         		display_object = DisplayObject()
-        		table.content.add_widget(display_object)
+        		table.content.add_widget(display_object, 0, i)
         		self.message_dict[board][message_type] = display_object
 
+        	self.layout.addWidget(table)
 
+        # Subscribe to all relavent series
+        for series in CanDisplayParser.get_all_series():
+        	self.subscribe_to_series(series)
 
     def get_props(self):
         return self.props
 
-    def on_data_update(self, series):
-    	
+    def on_data_update(self, canSeries):
+    	message = canSeries.get_msg()
+    	tpe = message["msg_type"]
+    	message.pop("msg_type", None)
+    	self.message_dict[canSeries.name][tpe].set_object(message)
