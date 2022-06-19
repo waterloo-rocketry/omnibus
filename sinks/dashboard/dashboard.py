@@ -62,7 +62,6 @@ class Dashboard(QtWidgets.QWidget):
 
         # Add a menu bar to the layout
         menubar = QMenuBar(self)
-        #self.layout.addWidget(menubar, 0, 0)
 
         # Create a sub menu which will be used
         # to add items to our dash board.
