@@ -1,6 +1,43 @@
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import sys
 from dashboarditem import DashboardItem
+from parsers import CanDisplayParser
+
+CAN_MSG_TYPES = ["GENERAL_CMD",
+                 "ACTUATOR_CMD",
+                 "ALT_ARM_CMD",
+                 "DEBUG_MSG",
+                 "DEBUG_PRINTF",
+                 "ALT_ARM_STATUS",
+                 "ACTUATOR_STATUS",
+                 "GENERAL_BOARD_STATUS",
+                 "RECOVERY_STATUS",
+                 "SENSOR_TEMP",
+                 "SENSOR_ALTITUDE",
+                 "SENSOR_ACC",
+                 "SENSOR_ACC2",
+                 "SENSOR_GYRO",
+                 "SENSOR_MAG",
+                 "SENSOR_ANALOG",
+                 "GPS_TIMESTAMP",
+                 "GPS_LATITUDE",
+                 "GPS_LONGITUDE",
+                 "GPS_ALTITUDE",
+                 "GPS_INFO"]
+
+BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black', "msg_types": ["GENERAL_BOARD_STATUS", "GENERAL_CMD", "ACTUATOR_CMD", "ALT_ARM_CMD"]},
+              "INJECTOR": {"id": 0x01, "index": 1, "color": 'chocolate', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
+              "LOGGER": {"id": 0x03, "index": 2, "color": 'darkCyan', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "RADIO": {"id": 0x05, "index": 3, "color": 'blue', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "SENSOR": {"id": 0x07, "index": 4, "color": 'darkblue', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "VENT": {"id": 0x0B, "index": 5, "color": 'slategray', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
+              "GPS": {"id": 0x0D, "index": 6, "color": 'darkMagenta', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "ARMING": {"id": 0x11, "index": 7, "color": 'darkGreen', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "PAPA": {"id": 0x13, "index": 8, "color": 'olive', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "ROCKET_PI": {"id": 0x15, "index": 9, "color": 'purple', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
+              "ROCKET_PI_2": {"id": 0x16, "index": 10, "color": 'deeppink', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
+              "SENSOR_2": {"id": 0x19, "index": 11, "color": 'steelblue', "msg_types": ["GENERAL_BOARD_STATUS"]},
+              "SENSOR_3": {"id": 0x1B, "index": 12, "color": 'darkorange', "msg_types": ["GENERAL_BOARD_STATUS"]}}
 
 # So, we need a few things
 # 1) a widget that displays an object, in our case a 
@@ -75,22 +112,24 @@ class ExpandingWidget(QtWidgets.QWidget):
 		self.layout = QtWidgets.QVBoxLayout()
 		self.setLayout(self.layout)
 
+		self.name = name
+
 		menubar = QMenuBar(self)
 		self.layout.setMenuBar(menubar)
 
 		self.content = GridLayoutWidget()
 		self.is_expanded = False
 
-		self.expand_contract_action = menubar.addAction("Expand")
+		self.expand_contract_action = menubar.addAction(f"> {self.name}")
 		self.expand_contract_action.triggered.connect(self.toggle)
 
 	def toggle(self):
 		if self.is_expanded:
 			self.layout.removeWidget(self.content)
-			self.expand_contract_action.setText("Expand")
+			self.expand_contract_action.setText(f"> {self.name}")
 		else:
 			self.layout.addWidget(self.content)
-			self.expand_contract_action.setText("Contract")
+			self.expand_contract_action.setText(f"V {self.name}")
 
 
 class CanMsgTableDashItem(DashboardItem):
@@ -102,7 +141,37 @@ class CanMsgTableDashItem(DashboardItem):
         super().__init__()
         self.props = props
 
-        
+        # 1) Establish a structure of one expanding 
+        #    widget per board
+        # 2) For each of those widgets, add a Display
+        #    object for each message type
+        # 3) set the update function up in such a
+        #    way that when a message is recieved, it
+        #    is rendered in the right object
+
+        self.layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.message_dict = {}
+        # Each key is  board ID
+        # Each value is another dictionary
+        # within the second dictionary, each 
+        # key is a message type and the value is the
+        # specific DisplayObject
+
+        for board in BOARD_DATA:
+        	self.message_dict[board] = {}
+        	table = ExpandingWidget(board)
+
+        	for message_type in CAN_MSG_TYPES:
+        		display_object = DisplayObject()
+        		table.content.add_widget(display_object)
+        		self.message_dict[board][message_type] = display_object
+
+
 
     def get_props(self):
         return self.props
+
+    def on_data_update(self, series):
+    	
