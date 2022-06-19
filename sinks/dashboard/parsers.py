@@ -334,8 +334,7 @@ ArmStatusParser()
 
 
 class CanDisplayParser(Parser):
-    canSeries = {board_id: CanMsgSeries(
-        board_id) for board_id in BOARD_NAME_LIST}
+    canSeries = {board_id: CanMsgSeries(board_id) for board_id in BOARD_NAME_LIST}
 
     def __init__(self):
         super().__init__("CAN/Parsley")
@@ -350,6 +349,10 @@ class CanDisplayParser(Parser):
         if board_id in BOARD_NAME_LIST:
             return CanDisplayParser.canSeries[board_id]
         return None
+
+    @staticmethod
+    def get_all_series():
+        return CanDisplayParser.canSeries.values()
 
 
 CanDisplayParser()
