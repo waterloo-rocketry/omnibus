@@ -119,6 +119,18 @@ class ExpandingWidget(QtWidgets.QWidget):
 			self.expand_contract_action.setText(f"V {self.name}")
 			self.is_expanded = True
 
+class LayoutWidget(QtWidgets.QWidget):
+	"""
+	A widget whose sole job is to hold
+	a layout. The hacky stuff QT makes 
+	me do smh.
+	"""
+	def __init__(self, layout):
+		super().__init__()
+		self.layout = layout
+		self.layout.setContentsMargins(0,0,0,0)
+		self.setLayout(self.layout)
+
 
 class CanMsgTableDashItem(DashboardItem):
     """
@@ -140,6 +152,20 @@ class CanMsgTableDashItem(DashboardItem):
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
 
+        self.scrolling_part = QtWidgets.QScrollArea()
+        self.layout_widget = LayoutWidget(QtWidgets.QVBoxLayout())
+        self.layout_widget.resize(1000,1000)
+
+        lab = QtWidgets.QLabel()
+        img = QtGui.QImage("test.jpg")
+        lab.setPixmap(QtGui.QPixmap.fromImage(img))
+        #self.layout_widget.layout.addWidget(lab)
+        self.scrolling_part.setWidget(self.layout_widget)
+
+        self.layout.addWidget(self.scrolling_part)
+
+        print(self.layout.sizeHint())
+
         self.message_dict = {}
         # Each key is  board ID
         # Each value is another dictionary
@@ -147,11 +173,11 @@ class CanMsgTableDashItem(DashboardItem):
         # key is a message type and the value is the
         # specific DisplayObject
 
-        board = list(BOARD_DATA.keys())[0]
-        table = DisplayCANTable()
-        self.message_dict[board] = table
-        exp_widget = ExpandingWidget(board, table)
-        self.layout.addWidget(exp_widget)
+        for board in BOARD_DATA:
+	        table = DisplayCANTable()
+	        self.message_dict[board] = table
+	        exp_widget = ExpandingWidget(board, table)
+	        self.layout_widget.layout.addWidget(exp_widget)
 
         # Subscribe to all relavent series
         for series in CanDisplayParser.get_all_series():
