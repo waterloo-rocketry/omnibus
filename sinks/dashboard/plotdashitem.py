@@ -62,29 +62,28 @@ class PlotDashItem (DashboardItem):
 
     def on_data_update(self, series):
         # update the displayed data
-        self.curve.setData(series.times, series.points)
 
-        # current value readout in the title
-        self.plot.setTitle(
-            f"[{series.get_running_avg(): <4.4f}] [{series.points[-1]}] {series.name} {series.desc and (series.desc + ' ') or ''}")
-
-        # round the time to the nearest GRAPH_STEP
+        # find the time range
         t = round(series.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
         min_time = t - config.GRAPH_DURATION + config.GRAPH_STEP
         max_time = t + config.GRAPH_STEP
 
-        self.plot.setXRange(min_time, max_time, padding=0)
+        #filter the times
 
-        max_data = max([series.points[i] for i in range(series.size) if (
-            series.times[i] >= min_time and series.times[i] <= max_time)])
-        min_data = min([series.points[i] for i in range(series.size) if (
-            series.times[i] >= min_time and series.times[i] <= max_time)])
+        times = [series.times[i] for i in range(series.size) if (
+            series.times[i] >= min_time and series.times[i] <= max_time)]
 
-        pad = (max_data - min_data) * 0.1
-        max_data += pad
-        min_data -= pad
+        points = [series.times[i] for i in range(series.size) if (
+            series.times[i] >= min_time and series.times[i] <= max_time)]
 
-        self.plot.setYRange(min_data, max_data, padding=0)
+        self.curve.setData(times, points)
+
+        # current value readout in the title
+        self.plot.setTitle(
+            f"[{sum(points)/len(points): <4.4f}] [{series.points[-1]}] {series.name} {series.desc and (series.desc + ' ') or ''}")
+
+        # round the time to the nearest GRAPH_STEP
+        
 
     def get_props(self):
         return self.props
