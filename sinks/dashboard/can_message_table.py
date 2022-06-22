@@ -60,10 +60,17 @@ class DisplayCANTable(QtWidgets.QWidget):
 		self.setLayout(self.layout)
 
 		self.tableWidget = QtWidgets.QTableWidget()
+
 		# 8 bytes, 3 used by time stamp leaves 6 total fields
 		# + 1 title field
 		self.tableWidget.setRowCount(7) 
 		self.tableWidget.setColumnCount(2 * len(CAN_MSG_TYPES))
+
+		height = self.tableWidget.horizontalHeader().height() + 25
+		for i in range(self.tableWidget.rowCount()):
+			height += self.tableWidget.rowHeight(i)
+
+		self.tableWidget.setMinimumHeight(height)
 
 		for i in range(len(CAN_MSG_TYPES)):
 			self.tableWidget.setSpan(0, 2*i, 1, 2)
@@ -108,6 +115,8 @@ class ExpandingWidget(QtWidgets.QWidget):
 		self.expand_contract_action = menubar.addAction(f"> {self.name}")
 		self.expand_contract_action.triggered.connect(self.toggle)
 
+		#self.toggle()
+
 	def toggle(self):
 		if self.is_expanded:
 			self.layout.removeWidget(self.content)
@@ -128,7 +137,6 @@ class LayoutWidget(QtWidgets.QWidget):
 	def __init__(self, layout):
 		super().__init__()
 		self.layout = layout
-		self.layout.setContentsMargins(0,0,0,0)
 		self.setLayout(self.layout)
 
 
@@ -149,22 +157,16 @@ class CanMsgTableDashItem(DashboardItem):
         #    way that when a message is recieved, it
         #    is rendered in the right object
 
-        self.layout = QtWidgets.QVBoxLayout()
+        self.layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(self.layout)
 
-        self.scrolling_part = QtWidgets.QScrollArea()
         self.layout_widget = LayoutWidget(QtWidgets.QVBoxLayout())
-        self.layout_widget.resize(1000,1000)
+        #self.layout_widget.resize(self.size().width(),1000)
 
-        lab = QtWidgets.QLabel()
-        img = QtGui.QImage("test.jpg")
-        lab.setPixmap(QtGui.QPixmap.fromImage(img))
+        #lab = QtWidgets.QLabel()
+        #img = QtGui.QImage("test.jpg")
+        #lab.setPixmap(QtGui.QPixmap.fromImage(img))
         #self.layout_widget.layout.addWidget(lab)
-        self.scrolling_part.setWidget(self.layout_widget)
-
-        self.layout.addWidget(self.scrolling_part)
-
-        print(self.layout.sizeHint())
 
         self.message_dict = {}
         # Each key is  board ID
@@ -182,6 +184,13 @@ class CanMsgTableDashItem(DashboardItem):
         # Subscribe to all relavent series
         for series in CanDisplayParser.get_all_series():
         	self.subscribe_to_series(series)
+
+        self.scrolling_part = QtWidgets.QScrollArea(self)
+        self.scrolling_part.setWidgetResizable(True)
+        self.scrolling_part.setWidget(self.layout_widget)
+
+        self.layout.addWidget(self.scrolling_part)
+        print(self.layout_widget.size())
 
     def get_props(self):
         return self.props
