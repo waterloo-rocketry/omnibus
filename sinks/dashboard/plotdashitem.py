@@ -82,8 +82,5 @@ class PlotDashItem (DashboardItem):
         self.plot.setTitle(
             f"[{sum(points)/len(points): <4.4f}] [{series.points[-1]}] {series.name} {series.desc and (series.desc + ' ') or ''}")
 
-        # round the time to the nearest GRAPH_STEP
-        
-
     def get_props(self):
         return self.props
