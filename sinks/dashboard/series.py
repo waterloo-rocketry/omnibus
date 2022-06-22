@@ -1,5 +1,4 @@
 import numpy as np
-import queue as q
 
 import config
 
@@ -83,7 +82,7 @@ class CanMsgSeries(Series):
     def __init__(self, name):
         self.observers = []
         self.name = name    # board_id
-        self.payloadQ = q.Queue()
+        self.payloadQ = []
 
         self.callback = None
 
@@ -104,10 +103,13 @@ class CanMsgSeries(Series):
         """
         Add a new payload to this series.
         """
-        self.payloadQ.put(payload)
+        self.payloadQ.append(payload)
+
+        if len(self.payloadQ) > 50:
+            self.payloadQ.pop(0)
 
         for observer in self.observers:
             observer.on_data_update(self)
 
     def get_msg(self):
-        return self.payloadQ.get()
+        return self.payloadQ[-1]

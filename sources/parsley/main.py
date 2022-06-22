@@ -49,8 +49,8 @@ def main():
             print(parsley.fmt_line(parsed_data))
             if not args.solo:
                 sender.send(CHANNEL, parsed_data)
-        except:
-            pass
+        except Exception as e:
+            print(line)
 
 
 if __name__ == '__main__':

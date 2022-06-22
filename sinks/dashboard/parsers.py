@@ -139,7 +139,7 @@ class TemperatureParser(ParsleyParser):
         t = payload["data"]["time"]
         v = payload["data"]["temperature"]
 
-        self.series[f"Temperature {s}"].add(t, v)
+        self.series[f"Temperature {s}"].add(t, v, "(C)")
 
 
 TemperatureParser()
@@ -197,7 +197,7 @@ class AnalogSensorParser(ParsleyParser):
         v = payload["data"]["value"]
         b = payload["board_id"]
 
-        if s in ["SENSOR_PRESSURE_OX", "SENSOR_PRESSURE_PNEUMATICS"]:
+        if s.startswith("SENSOR_PRESSURE") or s == "SENSOR_VENT_TEMP":
             if v >= 2**15:
                 v -= 2**16
 
@@ -221,7 +221,7 @@ class ActuatorStateParser(ParsleyParser):
         if req == "ACTUATOR_OPEN":
             v += 0
         elif req == "ACTUATOR_CLOSED":
-            v = 30
+            v += 30
         else:
             v += 60
 

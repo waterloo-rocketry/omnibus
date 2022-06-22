@@ -12,7 +12,7 @@ from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
 
 from parsers import Parser
 from plotdashitem import PlotDashItem
-from can_display import CanDisplayDashItem
+from can_display import CanDisplayDashItem, CanMsgTableDashItem
 from omnibus.util import TickCounter
 
 # "Temorary Global Constant"
@@ -20,6 +20,7 @@ from omnibus.util import TickCounter
 item_types = [
     PlotDashItem,
     CanDisplayDashItem,
+    CanMsgTableDashItem,
 ]
 
 filename = "savefile.sav"
@@ -151,6 +152,17 @@ class Dashboard(QtWidgets.QWidget):
             "items": [],
             "layout": None
         }
+        # The way that self.area.saveState() works
+        # is by assigning properties to each dock
+        # base on its name. This means we need to
+        # set the names in such a way that when
+        # the docks are re-added, the names align
+        # therefore, we set the name of each dock
+        # to its index within docks
+        for i in range(len(self.docks)):
+            self.docks[i]._name = str(i)
+            self.docks[i].label.setText(str(i))
+
         # store layout data to data["layout"]
         data["layout"] = self.area.saveState()
 
@@ -167,7 +179,7 @@ class Dashboard(QtWidgets.QWidget):
 
     def add(self, dashitem):
         # Create a new dock to be added to the dock area
-        dock = Dock(name=str(len(self.docks)-1), closable=True)
+        dock = Dock(f"{len(self.docks)}", closable=True)
 
         # Bit of a sussy baka, but this is the only way we can really get control over
         # how the thing closes. In future, I might make a class method that returns
