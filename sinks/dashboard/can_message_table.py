@@ -40,7 +40,7 @@ BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black', "msg_types": [
               "SENSOR_3": {"id": 0x1B, "index": 12, "color": 'darkorange', "msg_types": ["GENERAL_BOARD_STATUS"]}}
 
 # So, we need a few things
-# 1) a widget that displays an object, in our case a 
+# 1) a widget that displays an object, in our case a
 #    CAN Message. Will be a QTable
 # 2) An expandable and collapsable widget which
 #    will allow us to filter the table as we wish
@@ -49,95 +49,104 @@ BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black', "msg_types": [
 
 
 class DisplayCANTable(QtWidgets.QWidget):
-	"""
-	A widget that displays an object, in our case a 
+    """
+    A widget that displays an object, in our case a
     CAN Message. Makes use of a QTable
-	"""
-	def __init__(self):
-		# Super Class Init
-		super().__init__()
-		self.layout = QtWidgets.QVBoxLayout()
-		self.setLayout(self.layout)
+    """
 
-		self.tableWidget = QtWidgets.QTableWidget()
+    def __init__(self):
+        # Super Class Init
+        super().__init__()
+        self.layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.layout)
 
-		# 8 bytes, 3 used by time stamp leaves 6 total fields
-		# + 1 title field
-		self.tableWidget.setRowCount(7) 
-		self.tableWidget.setColumnCount(2 * len(CAN_MSG_TYPES))
+        self.tableWidget = QtWidgets.QTableWidget()
+        self.msgTypes = []
+        self.msgInd = 0
 
-		height = self.tableWidget.horizontalHeader().height() + 25
-		for i in range(self.tableWidget.rowCount()):
-			height += self.tableWidget.rowHeight(i)
+        # 8 bytes, 3 used by time stamp leaves 6 total fields
+        # + 1 title field
+        self.tableWidget.setRowCount(7)
+        self.tableWidget.setColumnCount(2 * len(CAN_MSG_TYPES))
 
-		self.tableWidget.setMinimumHeight(height)
+        height = self.tableWidget.horizontalHeader().height() + 25
+        for i in range(self.tableWidget.rowCount()):
+            height += self.tableWidget.rowHeight(i)
 
-		for i in range(len(CAN_MSG_TYPES)):
-			self.tableWidget.setSpan(0, 2*i, 1, 2)
-			self.tableWidget.setItem(0, 2*i, QtWidgets.QTableWidgetItem(CAN_MSG_TYPES[i]))
+        self.tableWidget.setMinimumHeight(height)
 
-		self.layout.addWidget(self.tableWidget)
+        for i in range(len(CAN_MSG_TYPES)):
+            self.tableWidget.setSpan(0, 2*i, 1, 2)
 
+        self.layout.addWidget(self.tableWidget)
 
-	def update_with_message(self, msg):
-		msg_type = msg["msg_type"]
-		msg_data = msg["data"]
+    def update_with_message(self, msg):
+        msg_type = msg["msg_type"]
+        msg_data = msg["data"]
 
-		index = -1
+        if msg_type not in self.msgTypes:
+            self.msgTypes.append(msg_type)
+            self.tableWidget.setItem(0, 2*self.msgInd, QtWidgets.QTableWidgetItem(msg_type))
+            self.msgInd += 1
 
-		for i in range(len(CAN_MSG_TYPES)):
-			if CAN_MSG_TYPES[i] == msg_type:
-				index = i
+        index = -1
 
-		for i, (k, v) in enumerate(msg_data.items()):
-			self.tableWidget.setItem(i+1, 2*index, QtWidgets.QTableWidgetItem(str(k)))
-			self.tableWidget.setItem(i+1, 2*index + 1, QtWidgets.QTableWidgetItem(str(v)))
+        for i in range(len(self.msgTypes)):
+            if msg_type in self.msgTypes:
+                index = i
+
+        for i, (k, v) in enumerate(msg_data.items()):
+            self.tableWidget.setItem(i+1, 2*index, QtWidgets.QTableWidgetItem(str(k)))
+            self.tableWidget.setItem(i+1, 2*index + 1, QtWidgets.QTableWidgetItem(str(v)))
 
 
 class ExpandingWidget(QtWidgets.QWidget):
-	"""
-	A widget whose sole function is to contain a
-	grid layout and expand and collapse on click
-	"""
-	def __init__(self, name, widget):
-		super().__init__()
-		self.layout = QtWidgets.QVBoxLayout()
-		self.setLayout(self.layout)
+    """
+    A widget whose sole function is to contain a
+    grid layout and expand and collapse on click
+    """
 
-		self.name = name
+    def __init__(self, name, widget):
+        super().__init__()
+        self.layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.layout)
 
-		menubar = QtGui.QMenuBar(self)
-		self.layout.setMenuBar(menubar)
+        self.name = name
 
-		self.content = widget
-		self.is_expanded = False
+        menubar = QtGui.QMenuBar(self)
+        self.layout.setMenuBar(menubar)
 
-		self.expand_contract_action = menubar.addAction(f"> {self.name}")
-		self.expand_contract_action.triggered.connect(self.toggle)
+        self.content = widget
+        self.is_expanded = False
 
-		#self.toggle()
+        self.expand_contract_action = menubar.addAction(f"> {self.name}")
+        self.expand_contract_action.triggered.connect(self.toggle)
 
-	def toggle(self):
-		if self.is_expanded:
-			self.layout.removeWidget(self.content)
-			self.content.setParent(None)
-			self.expand_contract_action.setText(f"> {self.name}")
-			self.is_expanded = False
-		else:
-			self.layout.addWidget(self.content)
-			self.expand_contract_action.setText(f"V {self.name}")
-			self.is_expanded = True
+        # self.toggle()
+
+    def toggle(self):
+        if self.is_expanded:
+            self.layout.removeWidget(self.content)
+            self.content.setParent(None)
+            self.expand_contract_action.setText(f"> {self.name}")
+            self.is_expanded = False
+        else:
+            self.layout.addWidget(self.content)
+            self.expand_contract_action.setText(f"V {self.name}")
+            self.is_expanded = True
+
 
 class LayoutWidget(QtWidgets.QWidget):
-	"""
-	A widget whose sole job is to hold
-	a layout. The hacky stuff QT makes 
-	me do smh.
-	"""
-	def __init__(self, layout):
-		super().__init__()
-		self.layout = layout
-		self.setLayout(self.layout)
+    """
+    A widget whose sole job is to hold
+    a layout. The hacky stuff QT makes 
+    me do smh.
+    """
+
+    def __init__(self, layout):
+        super().__init__()
+        self.layout = layout
+        self.setLayout(self.layout)
 
 
 class CanMsgTableDashItem(DashboardItem):
@@ -149,7 +158,7 @@ class CanMsgTableDashItem(DashboardItem):
         super().__init__()
         self.props = props
 
-        # 1) Establish a structure of one expanding 
+        # 1) Establish a structure of one expanding
         #    widget per board
         # 2) For each of those widgets, add a Display
         #    object for each message type
@@ -161,29 +170,29 @@ class CanMsgTableDashItem(DashboardItem):
         self.setLayout(self.layout)
 
         self.layout_widget = LayoutWidget(QtWidgets.QVBoxLayout())
-        #self.layout_widget.resize(self.size().width(),1000)
+        # self.layout_widget.resize(self.size().width(),1000)
 
         #lab = QtWidgets.QLabel()
         #img = QtGui.QImage("test.jpg")
-        #lab.setPixmap(QtGui.QPixmap.fromImage(img))
-        #self.layout_widget.layout.addWidget(lab)
+        # lab.setPixmap(QtGui.QPixmap.fromImage(img))
+        # self.layout_widget.layout.addWidget(lab)
 
         self.message_dict = {}
         # Each key is  board ID
         # Each value is another dictionary
-        # within the second dictionary, each 
+        # within the second dictionary, each
         # key is a message type and the value is the
         # specific DisplayObject
 
         for board in BOARD_DATA:
-	        table = DisplayCANTable()
-	        self.message_dict[board] = table
-	        exp_widget = ExpandingWidget(board, table)
-	        self.layout_widget.layout.addWidget(exp_widget)
+            table = DisplayCANTable()
+            self.message_dict[board] = table
+            exp_widget = ExpandingWidget(board, table)
+            self.layout_widget.layout.addWidget(exp_widget)
 
         # Subscribe to all relavent series
         for series in CanDisplayParser.get_all_series():
-        	self.subscribe_to_series(series)
+            self.subscribe_to_series(series)
 
         self.scrolling_part = QtWidgets.QScrollArea(self)
         self.scrolling_part.setWidgetResizable(True)
@@ -196,6 +205,6 @@ class CanMsgTableDashItem(DashboardItem):
         return self.props
 
     def on_data_update(self, canSeries):
-    	message = canSeries.get_msg()
-    	if canSeries.name in self.message_dict:
-    		self.message_dict[canSeries.name].update_with_message(message)
+        message = canSeries.get_msg()
+        if canSeries.name in self.message_dict:
+            self.message_dict[canSeries.name].update_with_message(message)
