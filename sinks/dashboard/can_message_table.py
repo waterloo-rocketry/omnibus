@@ -83,16 +83,18 @@ class DisplayCANTable(QtWidgets.QWidget):
     def update_with_message(self, msg):
         msg_type = msg["msg_type"]
         msg_data = msg["data"]
+        # current hacky fix to ensure that SENSOR_ANALOG data isn't overwritten since different sensor Ids are sent at different times
+        combo_type = f"{msg_type}_{msg_data['sensor_id']}" if msg_type == "SENSOR_ANALOG" else msg_type
 
-        if msg_type not in self.msgTypes:
-            self.msgTypes.append(msg_type)
-            self.tableWidget.setItem(0, 2*self.msgInd, QtWidgets.QTableWidgetItem(msg_type))
+        if combo_type not in self.msgTypes:
+            self.msgTypes.append(combo_type)
+            self.tableWidget.setItem(0, 2*self.msgInd, QtWidgets.QTableWidgetItem(combo_type))
             self.msgInd += 1
 
         index = -1
 
         for i in range(len(self.msgTypes)):
-            if msg_type in self.msgTypes:
+            if combo_type == self.msgTypes[i]:
                 index = i
 
         for i, (k, v) in enumerate(msg_data.items()):
