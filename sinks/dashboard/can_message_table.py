@@ -88,7 +88,17 @@ class DisplayCANTable(QtWidgets.QWidget):
 
         if combo_type not in self.msgTypes:
             self.msgTypes.append(combo_type)
-            self.tableWidget.setItem(0, 2*self.msgInd, QtWidgets.QTableWidgetItem(combo_type))
+            item = QtWidgets.QTableWidgetItem(combo_type)
+            # taking advantage of this 
+            # https://www.riverbankcomputing.com/static/Docs/PyQt4/qt.html#AlignmentFlag-enum
+            # because I had issues importing Qt.AlignHCenter
+            item.setTextAlignment(4)
+
+            font = QtGui.QFont()
+            font.setBold(True)
+
+            item.setFont(font)
+            self.tableWidget.setItem(0, 2*self.msgInd, item)
             self.msgInd += 1
 
         index = -1
@@ -98,8 +108,13 @@ class DisplayCANTable(QtWidgets.QWidget):
                 index = i
 
         for i, (k, v) in enumerate(msg_data.items()):
-            self.tableWidget.setItem(i+1, 2*index, QtWidgets.QTableWidgetItem(str(k)))
-            self.tableWidget.setItem(i+1, 2*index + 1, QtWidgets.QTableWidgetItem(str(v)))
+            key_item = QtWidgets.QTableWidgetItem(str(k))
+            key_item.setTextAlignment(4)
+            self.tableWidget.setItem(i+1, 2*index, key_item)
+
+            value_item = QtWidgets.QTableWidgetItem(str(v))
+            value_item.setTextAlignment(4)
+            self.tableWidget.setItem(i+1, 2*index + 1, value_item)
 
 
 class ExpandingWidget(QtWidgets.QWidget):
@@ -201,7 +216,6 @@ class CanMsgTableDashItem(DashboardItem):
         self.scrolling_part.setWidget(self.layout_widget)
 
         self.layout.addWidget(self.scrolling_part)
-        print(self.layout_widget.size())
 
     def get_props(self):
         return self.props
