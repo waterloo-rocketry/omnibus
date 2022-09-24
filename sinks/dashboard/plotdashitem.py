@@ -73,7 +73,7 @@ class PlotDashItem (DashboardItem):
         times = [series.times[i] for i in range(series.size) if (
             series.times[i] >= min_time and series.times[i] <= max_time)]
 
-        points = [series.times[i] for i in range(series.size) if (
+        points = [series.points[i] for i in range(series.size) if (
             series.times[i] >= min_time and series.times[i] <= max_time)]
 
         self.curve.setData(times, points)
