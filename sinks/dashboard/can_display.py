@@ -2,7 +2,7 @@ import collections as col
 
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
-from items.dashboard_item.dashboard_item import DashboardItem
+from items.dashboard_item import DashboardItem
 from sources.parsley.parsley import fmt_line
 import sources.parsley.message_types as mt
 from parsers import CanDisplayParser, BOARD_NAME_LIST

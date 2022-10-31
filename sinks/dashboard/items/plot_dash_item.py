@@ -8,7 +8,7 @@ from pyqtgraph.console import ConsoleWidget
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
-from sinks.dashboard.items.dashboard_item.dashboard_item import DashboardItem
+from sinks.dashboard.items.dashboard_item import DashboardItem
 import config
 from utils import prompt_user
 

@@ -1,7 +1,5 @@
-import sys
-
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
-from sinks.dashboard.items.dashboard_item.dashboard_item import DashboardItem
+from sinks.dashboard.items.dashboard_item import DashboardItem
 from parsers import CanDisplayParser
 
 CAN_MSG_TYPES = ["GENERAL_CMD",
