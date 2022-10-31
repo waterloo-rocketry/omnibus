@@ -1,13 +1,7 @@
 import sys
-import os
-
-# Import from parent directory
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
 
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
-from dashboarditem import DashboardItem
+from sinks.dashboard.items.dashboard_item.dashboard_item import DashboardItem
 from parsers import CanDisplayParser
 
 CAN_MSG_TYPES = ["GENERAL_CMD",

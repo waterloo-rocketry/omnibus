@@ -1,11 +1,3 @@
-import sys
-import os
-
-# Import from parent directory
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-
 from parsers import Parser
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtGui import QGridLayout
@@ -16,7 +8,7 @@ from pyqtgraph.console import ConsoleWidget
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
-from dashboarditem import DashboardItem
+from sinks.dashboard.items.dashboard_item.dashboard_item import DashboardItem
 import config
 from utils import prompt_user
 
