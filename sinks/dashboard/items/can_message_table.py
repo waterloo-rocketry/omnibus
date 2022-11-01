@@ -223,3 +223,6 @@ class CanMsgTableDashItem(DashboardItem):
         message = canSeries.get_msg()
         if canSeries.name in self.message_dict:
             self.message_dict[canSeries.name].update_with_message(message)
+
+    def get_name():
+        return "CAN Message Table"

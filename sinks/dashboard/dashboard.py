@@ -72,11 +72,11 @@ class Dashboard(QtWidgets.QWidget):
 
         def prompt_and_add(i):
             def ret_func():
-                self.add(item_types[i](None))
+                self.add(item_types[i])
             return ret_func
 
         for i in range(len(item_types)):
-            new_action = add_item_menu.addAction(item_types[i].__name__)
+            new_action = add_item_menu.addAction(item_types[i].get_name())
             new_action.triggered.connect(prompt_and_add(i))
 
         # Add an action to the menu bar to save the
