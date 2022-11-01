@@ -11,9 +11,9 @@ from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
 
 from parsers import Parser
-from plotdashitem import PlotDashItem
+from items.plot_dash_item import PlotDashItem
 from can_display import CanDisplayDashItem
-from can_message_table import CanMsgTableDashItem
+from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
 
