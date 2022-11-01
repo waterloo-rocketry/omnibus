@@ -291,5 +291,3 @@ class CanMsgTableDashItem(DashboardItem):
     def get_props(self):
         return self.props
 
-    def get_name():
-        return "CAN Display"

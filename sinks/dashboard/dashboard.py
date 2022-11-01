@@ -72,7 +72,7 @@ class Dashboard(QtWidgets.QWidget):
 
         def prompt_and_add(i):
             def ret_func():
-                self.add(item_types[i])
+                self.add(item_types[i](None))
             return ret_func
 
         for i in range(len(item_types)):
