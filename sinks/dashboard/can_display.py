@@ -143,6 +143,9 @@ class CanDisplayDashItem (DashboardItem):
             elif not value.isChecked() and node_name in self.textBrowsers.keys():
                 self.delete_node_widget(node_name)
 
+    def get_name():
+        return "CAN Display"
+
 
 class CanNodeWidgetDashItem(DashboardItem):
     """
@@ -288,5 +291,3 @@ class CanMsgTableDashItem(DashboardItem):
     def get_props(self):
         return self.props
 
-    def get_name():
-        return "CAN Display"
