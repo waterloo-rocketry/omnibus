@@ -12,7 +12,6 @@ from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
 
 from parsers import Parser
 from items.plot_dash_item import PlotDashItem
-from can_display import CanDisplayDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
@@ -21,7 +20,6 @@ from utils import prompt_user
 
 item_types = [
     PlotDashItem,
-    CanDisplayDashItem,
     CanMsgTableDashItem,
 ]
 
