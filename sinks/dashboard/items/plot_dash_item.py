@@ -83,7 +83,7 @@ class PlotDashItem (DashboardItem):
             f"[{sum(points)/len(points): <4.4f}] [{series.points[-1]}] {series.name} {series.desc and (series.desc + ' ') or ''}")
 
     def get_props(self):
-        return self.props\
+        return self.props
 
     def get_name():
         return "Plot"
