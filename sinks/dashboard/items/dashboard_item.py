@@ -16,7 +16,11 @@ class DashboardItem(QtWidgets.QWidget):
         super().__init__()
         self.subscribed_series = []
 
-
+    def get_name():
+        '''
+        Return a nicer name for the Dash Item instead of the class name
+        '''
+        raise NotImplementedError
 
     def get_props(self) -> typing.Any:
         """
