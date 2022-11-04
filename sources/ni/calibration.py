@@ -9,7 +9,7 @@ class Connection(Enum):
     Represents how a sensor is wired into the NI box.
     """
     SINGLE = nidaqmx.constants.TerminalConfiguration.RSE  # ground referenced single ended
-    DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.BAL_DIFF
+    DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.DIFF
 
 
 class Calibration:
@@ -62,7 +62,7 @@ class ThermistorCalibration(Calibration):
 
     def calibrate(self, value):
         # thermistor magic pulled from the LabVIEW
-        R_therm = self.resistance * (self.voltage / value - 1)
+        R_therm = (value * self.resistance) / (self.voltage - value)
         if R_therm <= 0:
             return 0
         return self.B / math.log(R_therm / self.r_inf) - 273.15
