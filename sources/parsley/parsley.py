@@ -342,9 +342,13 @@ def parse_usb_debug(line):
         return None
     line = line[1:]
 
-    msg_sid, msg_data = line.split(":")
-    msg_sid = int(msg_sid, 16)
-    msg_data = [int(byte, 16) for byte in msg_data.split(",")]
+    if ":" in line:
+        msg_sid, msg_data = line.split(":")
+        msg_sid = int(msg_sid, 16)
+        msg_data = [int(byte, 16) for byte in msg_data.split(",")]
+    else:
+        msg_sid = int(line, 16)
+        msg_data = []
 
     return msg_sid, msg_data
 
