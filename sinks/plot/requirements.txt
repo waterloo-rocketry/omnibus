@@ -1,3 +1,0 @@
-numpy
-PySide6
-pyqtgraph
