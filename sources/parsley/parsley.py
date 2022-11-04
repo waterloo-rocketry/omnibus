@@ -1,4 +1,4 @@
-import message_types as mt
+import sources.parsley.message_types as mt
 
 _func_map = {}
 
@@ -137,6 +137,9 @@ def parse_board_status(msg_data):
         res["req_state"] = expected_state
         res["cur_state"] = cur_state
 
+    elif board_stat == "E_LOGGING":
+        res["err"] = msg_data[4]
+
     return res
 
 
@@ -206,6 +209,7 @@ def parse_sensor_acc_mag(msg_data):
     z = int.from_bytes(bytes(msg_data[6:8]), "big", signed=True) / (2**16) * 2000
 
     return {"time": timestamp, "x": x, "y": y, "z": z}
+
 @register("SENSOR_ANALOG")
 def parse_sensor_analog(msg_data):
     timestamp = msg_data[0] << 8 | msg_data[1]
@@ -310,6 +314,28 @@ def parse(msg_sid, msg_data):
     return res
 
 
+def parse_live_telemetry(line):
+    line = line.lstrip(' \0')
+    if len(line) == 0 or line[0] != '$':
+        return None
+    line = line[1:]
+
+    msg_sid, msg_data = line.split(":")
+    msg_data, msg_checksum = msg_data.split(";")
+    msg_sid = int(msg_sid, 16)
+    msg_data = [int(byte, 16) for byte in msg_data.split(",")]
+    sum1 = 0
+    sum2 = 0
+    for c in line[:-1]:
+        if c.lower() in "0123456789abcdef":
+            sum1 = (sum1 + int(c, 16)) % 15
+            sum2 = (sum1 + sum2) % 15
+    if int(msg_checksum, 16) != sum1 ^ sum2:
+        print(f"Bad checksum, expected {sum1 ^ sum2} but got {msg_checksum}")
+        return None
+
+    return msg_sid, msg_data
+
 def parse_usb_debug(line):
     line = line.lstrip(' \0')
     if len(line) == 0 or line[0] != '$':
@@ -325,10 +351,10 @@ def parse_usb_debug(line):
 
 def parse_logger(line):
     # see cansw_logger/can_syslog.c for format
-    _, msg_sid, _, *msg_data = line.split()
+    msg_sid, msg_data = line[:3], line[3:]
     msg_sid = int(msg_sid, 16)
     # last 'byte' is the recv_timestamp
-    msg_data = [int(byte, 16) for byte in msg_data[:-1]]
+    msg_data = [int(msg_data[i:i+2], 16) for i in range(0, len(msg_data), 2)]
     return msg_sid, msg_data
 
 
