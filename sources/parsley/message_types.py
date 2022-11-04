@@ -36,6 +36,7 @@ msg_type_hex = {
     "SENSOR_TEMP": 0x540,
     "SENSOR_ALTITUDE": 0x560,
     "SENSOR_ACC": 0x580,
+    "SENSOR_ACC2": 0x5A0,
     "SENSOR_GYRO": 0x5E0,
     "SENSOR_MAG": 0x640,
     "SENSOR_ANALOG": 0x6A0,
@@ -73,8 +74,19 @@ board_id_hex = {
     "FILL_SPARE": 0x010,
     "ARMING": 0x11,
     "ARMING_SPARE": 0X12,
+    "PAPA": 0x13,
+    "PAPA_SPARE": 0x14,
+    "ROCKET_PI": 0x15,
+    "ROCKET_PI_2": 0x16,
+    "ROCKET_PI_2_SPARE": 0x18,
+    "SENSOR_2": 0x19,
+    "SENSOR_2_SPARE": 0x1A,
+    "SENSOR_3": 0x1B,
+    "SENSOR_4": 0x1C,
     "TEMP_SENSE": 0x15,
-    "TEMP_SENSE_SPARE": 0x16
+    "TEMP_SENSE_SPARE": 0x16,
+    "LOGGER_2": 0x1D,
+    "RLCS": 0x1E
 }
 board_id_str = {v: k for k, v in board_id_hex.items()}
 
@@ -128,7 +140,7 @@ board_stat_hex = {
     "E_SEGFAULT": 17,                 # x                x                   x                   x
     "E_UNHANDLED_INTERRUPT": 18,      # x                x                   x                   x
     "E_CODING_FUCKUP": 19,            # x                x                   x                   x
-
+    
     "E_BATT_OVER_CURRENT": 20         # mA_high          mA_low              x                   x
 }
 board_stat_str = {v: k for k, v in board_stat_hex.items()}
@@ -148,7 +160,10 @@ sensor_id_hex = {
     "SENSOR_BUS_CURR": 10,
     "SENSOR_VELOCITY": 11,
     "SENSOR_MAG_1": 12,
-    "SENSOR_MAG_2": 13
+    "SENSOR_MAG_2": 13,
+    "SENSOR_ROCKET_BATT": 14,
+    "SENSOR_PRESSURE_PNEUMATICS": 15,
+    "SENSOR_VENT_TEMP": 16
 }
 sensor_id_str = {v: k for k, v in sensor_id_hex.items()}
 
@@ -161,5 +176,8 @@ fill_direction_str = {v: k for k, v in fill_direction_hex.items()}
 actuator_id_hex = {
     "VENT_VALVE": 0,
     "INJECTOR_VALVE": 1,
+    "MAMA": 2,
+    "PICAM": 3,
+    "CANBUS": 4,
 }
 actuator_id_str = {v: k for k, v in actuator_id_hex.items()}
