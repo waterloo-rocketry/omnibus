@@ -153,7 +153,6 @@ def parse_sensor_altitude(msg_data):
 
     return {"time": timestamp, "altitude": altitude}
 
-
 @register("SENSOR_TEMP")
 def parse_sensor_temp(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
@@ -161,7 +160,6 @@ def parse_sensor_temp(msg_data):
     temperature = int.from_bytes(bytes(msg_data[4:7]), "big", signed=True) / 2**10
 
     return {"time": timestamp, "sensor_id": sensor, "temperature": temperature}
-
 
 @register("SENSOR_MAG")
 # the units are in micro tesla updated at 50hz
@@ -215,7 +213,6 @@ def parse_sensor_acc_mag(msg_data):
     z = int.from_bytes(bytes(msg_data[6:8]), "big", signed=True) / (2**16) * 2000
 
     return {"time": timestamp, "x": x, "y": y, "z": z}
-
 
 @register("SENSOR_ANALOG")
 def parse_sensor_analog(msg_data):
