@@ -2,14 +2,37 @@ import numpy as np
 
 import config
 
+class Subject:
+    """
+    Abstract class acting as the Subject of Observation from observers.
+    """
+    def __init__ (self):
+        self.observers = []
+        
+    def add_observer(self, observer):
+        """
+        An observer is a dashboard item that cares
+        about data updates. Adding an observer
+        means adding an item to be notified
+        when the data is updated
+        """
+        self.observers.append(observer)
 
-class Series:
+    def remove_observer(self, obs_to_remove):
+        # certainly not the fastest code
+        self.observers.remove(obs_to_remove)
+
+    def notify_observers(self):
+        for observer in self.observers:
+            observer.on_data_update(self)
+
+class Series(Subject):
     """
     Stores and downsamples the datapoints of a single series
     """
 
     def __init__(self, name, time_rollover=False):
-        self.observers = []
+        super().__init__()
         self.name = name
 
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
@@ -25,18 +48,6 @@ class Series:
 
         self.callback = None
 
-    def add_observer(self, dashboard_item):
-        """
-        An observer is a dashboard item that cares
-        about data updates. Adding an observer
-        means adding an item to be notified
-        when the data is updated
-        """
-        self.observers.append(dashboard_item)
-
-    def remove_observer(self, dashboard_item):
-        # certainly not the fastest code
-        self.observers = [observer for observer in self.observers if observer != dashboard_item]
 
     def add(self, time, point, desc=None):
         """
@@ -69,35 +80,23 @@ class Series:
         self.times[-1] = time
         self.points[:-1] = self.points[1:]
         self.points[-1] = point
-
-        for observer in self.observers:
-            observer.on_data_update(self)
+        
+        self.notify_observers()
 
     def get_running_avg(self):
         return self.sum / self.avgSize
 
 
-class CanMsgSeries(Series):
+class CanMsgSeries(Subject):
 
     def __init__(self, name):
-        self.observers = []
+        
+        super().__init__()
         self.name = name    # board_id
         self.payloadQ = []
 
         self.callback = None
 
-    def add_observer(self, dashboard_item):
-        """
-        An observer is a dashboard item that cares
-        about data updates. Adding an observer
-        means adding an item to be notified
-        when the data is updated
-        """
-        self.observers.append(dashboard_item)
-
-    def remove_observer(self, dashboard_item):
-        # certainly not the fastest code
-        self.observers = [observer for observer in self.observers if observer != dashboard_item]
 
     def add(self, payload):
         """
@@ -107,9 +106,8 @@ class CanMsgSeries(Series):
 
         if len(self.payloadQ) > 50:
             self.payloadQ.pop(0)
-
-        for observer in self.observers:
-            observer.on_data_update(self)
+        
+        self.notify_observers()
 
     def get_msg(self):
         return self.payloadQ[-1]
