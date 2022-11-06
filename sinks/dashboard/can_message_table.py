@@ -3,30 +3,34 @@ import sys
 from dashboarditem import DashboardItem
 from parsers import CanDisplayParser
 
-CAN_MSG_TYPES = ["GENERAL_CMD",
-                 "ACTUATOR_CMD",
-                 "ALT_ARM_CMD",
-                 "DEBUG_MSG",
-                 "DEBUG_PRINTF",
-                 "ALT_ARM_STATUS",
-                 "ACTUATOR_STATUS",
-                 "GENERAL_BOARD_STATUS",
-                 "RECOVERY_STATUS",
-                 "SENSOR_TEMP",
-                 "SENSOR_ALTITUDE",
-                 "SENSOR_ACC",
-                 "SENSOR_ACC2",
-                 "SENSOR_GYRO",
-                 "SENSOR_MAG",
-                 "SENSOR_ANALOG",
-                 "GPS_TIMESTAMP",
-                 "GPS_LATITUDE",
-                 "GPS_LONGITUDE",
-                 "GPS_ALTITUDE",
-                 "GPS_INFO"]
 
+
+MTYPES = ["SENSOR_ANALOG"]
+CAN_MSG_TYPES = ["GENERAL_CMD",
+                    "ACTUATOR_CMD",
+                    "ALT_ARM_CMD",
+                    "DEBUG_MSG",
+                     "DEBUG_PRINTF",
+                    "ALT_ARM_STATUS",
+                    "ACTUATOR_STATUS",
+                    "GENERAL_BOARD_STATUS",
+                     "RECOVERY_STATUS",
+                   "SENSOR_TEMP",
+                    "SENSOR_ALTITUDE",
+                    "SENSOR_ACC",
+                   "SENSOR_ACC2",
+                    "SENSOR_GYRO",
+                    "SENSOR_MAG",
+                    "SENSOR_ANALOG",
+                    "GPS_TIMESTAMP",
+                    "GPS_LATITUDE",
+                    "GPS_LONGITUDE",
+                    "GPS_ALTITUDE",
+                    "GPS_INFO"]
+
+    
 BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black', "msg_types": ["GENERAL_BOARD_STATUS", "GENERAL_CMD", "ACTUATOR_CMD", "ALT_ARM_CMD"]},
-              "INJECTOR": {"id": 0x01, "index": 1, "color": 'chocolate', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
+               "INJECTOR": {"id": 0x01, "index": 1, "color": 'chocolate', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
               "LOGGER": {"id": 0x03, "index": 2, "color": 'darkCyan', "msg_types": ["GENERAL_BOARD_STATUS"]},
               "RADIO": {"id": 0x05, "index": 3, "color": 'blue', "msg_types": ["GENERAL_BOARD_STATUS"]},
               "SENSOR": {"id": 0x07, "index": 4, "color": 'darkblue', "msg_types": ["GENERAL_BOARD_STATUS"]},
@@ -47,11 +51,10 @@ BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black', "msg_types": [
 # 3) A large container, which we will use to update
 #    the object display with messages
 
-
 class DisplayCANTable(QtWidgets.QWidget):
     """
     A widget that displays an object, in our case a
-    CAN Message. Makes use of a QTable
+    CAN Mesage. Makes use of a QTable
     """
 
     def __init__(self):
@@ -67,7 +70,9 @@ class DisplayCANTable(QtWidgets.QWidget):
         # 8 bytes, 3 used by time stamp leaves 6 total fields
         # + 1 title field
         self.tableWidget.setRowCount(7)
-        self.tableWidget.setColumnCount(2 * len(CAN_MSG_TYPES))
+        
+        #HERE
+        #self.tableWidget.setColumnCount(2 * len(CAN_MSG_TYPES))
 
         height = self.tableWidget.horizontalHeader().height() + 25
         for i in range(self.tableWidget.rowCount()):
@@ -75,8 +80,9 @@ class DisplayCANTable(QtWidgets.QWidget):
 
         self.tableWidget.setMinimumHeight(height)
 
-        for i in range(len(CAN_MSG_TYPES)):
-            self.tableWidget.setSpan(0, 2*i, 1, 2)
+        #HERE
+        #for i in range(len(CAN_MSG_TYPES)):
+        #    self.tableWidget.setSpan(0, 2*i, 1, 2)
 
         self.layout.addWidget(self.tableWidget)
 
@@ -94,6 +100,11 @@ class DisplayCANTable(QtWidgets.QWidget):
             # because I had issues importing Qt.AlignHCenter
             item.setTextAlignment(4)
 
+            #resize column
+            self.tableWidget.setColumnCount(2 * len(self.msgTypes))
+            for i in range(len(self.msgTypes)):
+                self.tableWidget.setSpan(0, 2*i, 1, 2)
+            
             font = QtGui.QFont()
             font.setBold(True)
 
@@ -116,6 +127,7 @@ class DisplayCANTable(QtWidgets.QWidget):
             value_item.setTextAlignment(4)
             self.tableWidget.setItem(i+1, 2*index + 1, value_item)
 
+        
 
 class ExpandingWidget(QtWidgets.QWidget):
     """
@@ -201,11 +213,11 @@ class CanMsgTableDashItem(DashboardItem):
         # key is a message type and the value is the
         # specific DisplayObject
 
-        for board in BOARD_DATA:
-            table = DisplayCANTable()
-            self.message_dict[board] = table
-            exp_widget = ExpandingWidget(board, table)
-            self.layout_widget.layout.addWidget(exp_widget)
+        #for board in BOARD_DATA:
+        #    table = DisplayCANTable()
+        #    self.message_dict[board] = table
+        #    exp_widget = ExpandingWidget(board, table)
+        #    self.layout_widget.layout.addWidget(exp_widget)
 
         # Subscribe to all relavent series
         for series in CanDisplayParser.get_all_series():
@@ -223,4 +235,10 @@ class CanMsgTableDashItem(DashboardItem):
     def on_data_update(self, canSeries):
         message = canSeries.get_msg()
         if canSeries.name in self.message_dict:
+            self.message_dict[canSeries.name].update_with_message(message)
+        else:
+            table = DisplayCANTable()
+            self.message_dict[canSeries.name] = table
+            exp_widget = ExpandingWidget(canSeries.name, table)
+            self.layout_widget.layout.addWidget(exp_widget)
             self.message_dict[canSeries.name].update_with_message(message)
