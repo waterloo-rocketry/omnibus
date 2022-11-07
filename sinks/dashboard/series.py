@@ -2,12 +2,15 @@ import numpy as np
 
 import config
 
-class Subject:
+class Publisher:
     """
     Abstract class acting as the Subject of Observation from observers.
     """
-    def __init__ (self):
+    def __init__ (self, name, time_rollover = False):
+        self.name = name
+        self.callback = None
         self.observers = []
+        self.time_rollover = time_rollover
 
     def add_observer(self, observer):
         """
@@ -26,45 +29,31 @@ class Subject:
         for observer in self.observers:
             observer.on_data_update(self)
 
-class Series(Subject):
+    def add(self, payload):
+        self.payload = payload
+        self.notify_observers()
+
+
+class Series(Publisher):
     """
     Stores and downsamples the datapoints of a single series
     """
 
     def __init__(self, name, time_rollover=False):
-        super().__init__()
-        self.name = name
-        self.callback = None
+        super().__init__(name, time_rollover)
 
-    def add(self, time, point, desc=None):
-        """
-        Add a datapoint to this series.
-        """
-        if desc is not None:
-            self.desc = desc
-        
-        self.time = time
-        self.point = point
-        self.notify_observers()
-
-
-
-class CanMsgSeries(Subject):
+class CanMsgSeries(Publisher):
 
     def __init__(self, name):
         
-        super().__init__()
-        self.name = name    # board_id
+        super().__init__(name)
         self.payloadQ = []
-
-        self.callback = None
-
 
     def add(self, payload):
         """
         Add a new payload to this series.
         """
-        self.payloadQ.append(payload)
+        self.payloadQ.append(payload[0])
 
         if len(self.payloadQ) > 50:
             self.payloadQ.pop(0)

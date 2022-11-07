@@ -15,7 +15,7 @@ from utils import prompt_user
 import numpy as np
 
 class PlotDashItem (DashboardItem, Subscriber):
-    def __init__(self, props=None, time_rollover = False):
+    def __init__(self, props=None):
         # Call this in **every** dash item constructor
         DashboardItem.__init__(self)
         Subscriber.__init__(self)
@@ -27,8 +27,6 @@ class PlotDashItem (DashboardItem, Subscriber):
         self.sum = 0  # sum of series
         # "size" of running average
         self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
-        self.desc = None
-        self.time_rollover = time_rollover
         self.time_offset = 0
 
         # Specify the layout
@@ -75,11 +73,17 @@ class PlotDashItem (DashboardItem, Subscriber):
 
     def on_data_update(self, series):
         # Migration of Series logic on add
-       
-        time = series.time
-        point = series.point
+        payload = series.payload
+
+        time = payload[0]
+        point = payload[1]
+        desc = ""
+
+        if (len(payload) > 2):
+            desc = payload[2]
+
         time += self.time_offset
-        if self.time_rollover:
+        if series.time_rollover:
             if time < self.times[-1]:  # if we've wrapped around
                 self.time_offset += self.times[-1]  # increase the amount we need to add
 
@@ -121,9 +125,13 @@ class PlotDashItem (DashboardItem, Subscriber):
         self.curve.setData(times, points)
 
         # current value readout in the title
-        self.plot.setTitle(
-            f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name} {self.desc and (self.desc + ' ') or ''}")
-    
+        if (desc == ""):
+            self.plot.setTitle(
+            f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name} {desc and (desc + ' ') or ''}")
+        else:
+            self.plot.setTitle(
+            f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name}")
+
     def get_running_avg(self):
         return self.sum / self.avgSize
 

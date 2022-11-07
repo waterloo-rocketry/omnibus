@@ -86,7 +86,7 @@ class DAQParser(Parser):
         time = payload["timestamp"] - self.start
 
         for sensor, data in payload["data"].items():
-            self.series[sensor].add(time, sum(data)/len(data))
+            self.series[sensor].add([time, sum(data)/len(data)])
 
 
 DAQParser()
@@ -124,7 +124,7 @@ class FillSensingParser(ParsleyParser):
         t = payload["data"]["time"]
         v = payload["data"]["level"]
 
-        self.series["Fill Level"].add(t, v)
+        self.series["Fill Level"].add([t, v])
 
 
 FillSensingParser()
@@ -139,7 +139,7 @@ class TemperatureParser(ParsleyParser):
         t = payload["data"]["time"]
         v = payload["data"]["temperature"]
 
-        self.series[f"Temperature {s}"].add(t, v, "(C)")
+        self.series[f"Temperature {s}"].add([t, v, "(C)"])
 
 
 TemperatureParser()
@@ -153,7 +153,7 @@ class AccelParser(ParsleyParser):
         t = payload["data"]["time"]
 
         for axis in "xyz":
-            self.series[f"Acceleration ({axis})"].add(t, payload["data"][axis])
+            self.series[f"Acceleration ({axis})"].add([t, payload["data"][axis]])
 
 
 AccelParser()
@@ -167,7 +167,7 @@ class GyroParser(ParsleyParser):
         t = payload["data"]["time"]
 
         for axis in "xyz":
-            self.series[f"Gyro ({axis})"].add(t, payload["data"][axis])
+            self.series[f"Gyro ({axis})"].add([t, payload["data"][axis]])
 
 
 GyroParser()
@@ -181,7 +181,7 @@ class MagParser(ParsleyParser):
         t = payload["data"]["time"]
 
         for axis in "xyz":
-            self.series[f"Magnetometer ({axis})"].add(t, payload["data"][axis])
+            self.series[f"Magnetometer ({axis})"].add([t, payload["data"][axis]])
 
 
 MagParser()
@@ -201,7 +201,7 @@ class AnalogSensorParser(ParsleyParser):
             if v >= 2**15:
                 v -= 2**16
 
-        self.series[f"CAN Sensor {b} {s}"].add(t, v)
+        self.series[f"CAN Sensor {b} {s}"].add([t, v])
 
 
 AnalogSensorParser()
@@ -232,7 +232,7 @@ class ActuatorStateParser(ParsleyParser):
         else:
             v += 6
 
-        self.series[f"Actuator State ({act})"].add(time, v, "(0 OPEN 3 CLOSED 6 UNKNOWN, req * 10 + cur)")
+        self.series[f"Actuator State ({act})"].add([time, v, "(0 OPEN 3 CLOSED 6 UNKNOWN, req * 10 + cur)"])
 
 
 ActuatorStateParser()
@@ -246,8 +246,8 @@ class GPSInfoParser(ParsleyParser):
         time = payload["data"]["time"]
         numsat = payload["data"]["num_sats"]
         qual = payload["data"]["quality"]
-        self.series["GPS Satellites"].add(time, numsat)
-        self.series["GPS Quality"].add(time, qual)
+        self.series["GPS Satellites"].add([time, numsat])
+        self.series["GPS Quality"].add([time, qual])
 
 
 GPSInfoParser()
@@ -261,7 +261,7 @@ class GPSAltParser(ParsleyParser):
         time = payload["data"]["time"]
         alt = payload["data"]["altitude"]
         dalt = payload["data"]["daltitude"]
-        self.series["GPS Altitude"].add(time, alt + dalt / 100)
+        self.series["GPS Altitude"].add([time, alt + dalt / 100])
 
 
 GPSAltParser()
@@ -276,7 +276,7 @@ class GPSLatitudeParser(ParsleyParser):
         degs = payload["data"]["degs"]
         mins = payload["data"]["mins"]
         dmins = payload["data"]["dmins"]
-        self.series["GPS Latitude"].add(time, degs + mins / 60 + dmins / 600000)
+        self.series["GPS Latitude"].add([time, degs + mins / 60 + dmins / 600000])
 
 
 GPSLatitudeParser()
@@ -291,7 +291,7 @@ class GPSLongitudeParser(ParsleyParser):
         degs = payload["data"]["degs"]
         mins = payload["data"]["mins"]
         dmins = payload["data"]["dmins"]
-        self.series["GPS Longitude"].add(time, degs + mins / 60 + dmins / 600000)
+        self.series["GPS Longitude"].add([time, degs + mins / 60 + dmins / 600000])
 
 
 GPSLongitudeParser()
@@ -304,7 +304,7 @@ class SensorAltParser(ParsleyParser):
     def parse_can(self, payload):
         time = payload["data"]["time"]
         alt = payload["data"]["altitude"]
-        self.series["Sensor Altitude"].add(time, alt)
+        self.series["Sensor Altitude"].add([time, alt])
 
 
 class ArmStatusParser(ParsleyParser):
@@ -325,9 +325,9 @@ class ArmStatusParser(ParsleyParser):
         else:
             arm_value = 2
 
-        self.series[f"Arm State {num}"].add(time, arm_value, "(0 DISARMED 1 ARMED 2 UNKNOWN)")
-        self.series[f"Arm Drogue Voltage ({num})"].add(time, drogue, "(mV)")
-        self.series[f"Arm Main Voltage ({num})"].add(time, main, "(mV)")
+        self.series[f"Arm State {num}"].add([time, arm_value, "(0 DISARMED 1 ARMED 2 UNKNOWN)"])
+        self.series[f"Arm Drogue Voltage ({num})"].add([time, drogue, "(mV)"])
+        self.series[f"Arm Main Voltage ({num})"].add([time, main, "(mV)"])
 
 
 ArmStatusParser()
@@ -342,7 +342,7 @@ class CanDisplayParser(Parser):
     @staticmethod
     def parse(payload):
         if payload["board_id"] in BOARD_NAME_LIST:
-            CanDisplayParser.canSeries[payload["board_id"]].add(payload)
+            CanDisplayParser.canSeries[payload["board_id"]].add([payload])
 
     @staticmethod
     def get_canSeries(board_id):

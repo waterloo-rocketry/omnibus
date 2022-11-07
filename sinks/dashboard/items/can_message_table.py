@@ -1,5 +1,5 @@
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
-from sinks.dashboard.items.dashboard_item import DashboardItem
+from sinks.dashboard.items.dashboard_item import DashboardItem, Subscriber
 from parsers import CanDisplayParser
 
 CAN_MSG_TYPES = ["GENERAL_CMD",
@@ -165,13 +165,14 @@ class LayoutWidget(QtWidgets.QWidget):
         self.setLayout(self.layout)
 
 
-class CanMsgTableDashItem(DashboardItem):
+class CanMsgTableDashItem(DashboardItem, Subscriber):
     """
     Display table for CAN messages.
     """
 
     def __init__(self, props=None):
-        super().__init__()
+        DashboardItem.__init__(self)
+        Subscriber.__init__(self)
         self.props = props
 
         # 1) Establish a structure of one expanding
@@ -208,7 +209,7 @@ class CanMsgTableDashItem(DashboardItem):
 
         # Subscribe to all relavent series
         for series in CanDisplayParser.get_all_series():
-            self.subscribe_to_series(series)
+            self.subscribe_to(series)
 
         self.scrolling_part = QtWidgets.QScrollArea(self)
         self.scrolling_part.setWidgetResizable(True)
