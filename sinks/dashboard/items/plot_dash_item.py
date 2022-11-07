@@ -8,15 +8,17 @@ from pyqtgraph.console import ConsoleWidget
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
-from sinks.dashboard.items.dashboard_item import DashboardItem
+from sinks.dashboard.items.dashboard_item import Subscriber, DashboardItem
 import config
 from utils import prompt_user
 
 
-class PlotDashItem (DashboardItem):
+class PlotDashItem (DashboardItem, Subscriber):
     def __init__(self, props=None):
         # Call this in **every** dash item constructor
-        super().__init__()
+        DashboardItem.__init__(self)
+        Subscriber.__init__(self)
+        # Not sure why default super won't work, will look later
 
         # Specify the layout
         self.layout = QGridLayout()
@@ -41,12 +43,12 @@ class PlotDashItem (DashboardItem):
                 "The series you wish to plot",
                 "items",
                 items
-                )
+            )
             self.props = channel_and_series.split("|")
 
         # subscribe to series dictated by properties
         self.series = Parser.get_series(self.props[0], self.props[1])
-        self.subscribe_to_series(self.series)
+        self.subscribe_to(self.series)
 
         # create the plot
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
@@ -68,7 +70,7 @@ class PlotDashItem (DashboardItem):
         min_time = t - config.GRAPH_DURATION + config.GRAPH_STEP
         max_time = t + config.GRAPH_STEP
 
-        #filter the times
+        # filter the times
 
         times = [series.times[i] for i in range(series.size) if (
             series.times[i] >= min_time and series.times[i] <= max_time)]
