@@ -19,7 +19,6 @@ class PlotDashItem (DashboardItem, Subscriber):
         # Call this in **every** dash item constructor
         DashboardItem.__init__(self)
         Subscriber.__init__(self)
-       
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
         self.last = 0
         self.times = np.zeros(self.size)
@@ -28,6 +27,7 @@ class PlotDashItem (DashboardItem, Subscriber):
         # "size" of running average
         self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
         self.time_offset = 0
+        # Not sure why default super won't work, will look later
 
         # Specify the layout
         self.layout = QGridLayout()
@@ -49,6 +49,7 @@ class PlotDashItem (DashboardItem, Subscriber):
                 items
             )
             #self.props = channel_and_series.split("|")
+<<<<<<< HEAD
 
         # subscribe to series dictated by properties
         #self.series = Parser.get_series(self.props[0], self.props[1])
@@ -59,6 +60,12 @@ class PlotDashItem (DashboardItem, Subscriber):
         # subscribe to series dictated by properties
         #self.series = temp_series_dict[self.props]
         #self.subscribe_to_series(self.series)
+=======
+
+        # subscribe to series dictated by properties
+        #self.series = Parser.get_series(self.props[0], self.props[1])
+        #self.subscribe_to(self.series)
+>>>>>>> 6c2bb3a (observer class)
 
         # create the plot
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
