@@ -33,17 +33,3 @@ class Publisher:
         self.payload = payload
         self.notify_observers()
 
-
-class Series(Publisher):
-    """
-    Stores and downsamples the datapoints of a single series
-    """
-
-    def __init__(self, name, time_rollover=False):
-        super().__init__(name, time_rollover)
-
-class CanMsgSeries(Publisher):
-
-    def __init__(self, name):
-        
-        super().__init__(name)

@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from series import Series, CanMsgSeries
+from series import Publisher
 
 BOARD_NAME_LIST = ["DUMMY", "INJECTOR", "LOGGER", "RADIO", "SENSOR", "VENT", "GPS", "ARMING",
                    "PAPA", "ROCKET_PI", "ROCKET_PI_2", "SENSOR_2", "SENSOR_3"]
@@ -16,7 +16,7 @@ class SeriesDefaultDict(defaultdict):
         self.kwargs = kwargs
 
     def __missing__(self, key):
-        self[key] = Series(key, *self.kargs, **self.kwargs)
+        self[key] = Publisher(key, *self.kargs, **self.kwargs)
         return self[key]
 
 
@@ -334,7 +334,7 @@ ArmStatusParser()
 
 
 class CanDisplayParser(Parser):
-    canSeries = {board_id: CanMsgSeries(board_id) for board_id in BOARD_NAME_LIST}
+    canSeries = {board_id: Publisher(board_id) for board_id in BOARD_NAME_LIST}
 
     def __init__(self):
         super().__init__("CAN/Parsley")
