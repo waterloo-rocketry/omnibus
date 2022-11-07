@@ -175,6 +175,8 @@ class CanMsgTableDashItem(DashboardItem, Subscriber):
         Subscriber.__init__(self)
         self.props = props
 
+        self.payloadQ = []
+
         # 1) Establish a structure of one expanding
         #    widget per board
         # 2) For each of those widgets, add a Display
@@ -220,8 +222,16 @@ class CanMsgTableDashItem(DashboardItem, Subscriber):
     def get_props(self):
         return self.props
 
+    def get_msg(self):
+        return self.payloadQ[-1]
+
     def on_data_update(self, canSeries):
-        message = canSeries.get_msg()
+        self.payloadQ.append(canSeries.payload)
+
+        if (len(self.payloadQ) > 50):
+            self.payloadQ.pop(0)
+
+        message = self.get_msg()
         if canSeries.name in self.message_dict:
             self.message_dict[canSeries.name].update_with_message(message)
 

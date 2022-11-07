@@ -47,18 +47,3 @@ class CanMsgSeries(Publisher):
     def __init__(self, name):
         
         super().__init__(name)
-        self.payloadQ = []
-
-    def add(self, payload):
-        """
-        Add a new payload to this series.
-        """
-        self.payloadQ.append(payload[0])
-
-        if len(self.payloadQ) > 50:
-            self.payloadQ.pop(0)
-        
-        self.notify_observers()
-
-    def get_msg(self):
-        return self.payloadQ[-1]
