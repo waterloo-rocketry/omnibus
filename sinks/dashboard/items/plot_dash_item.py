@@ -12,13 +12,24 @@ from sinks.dashboard.items.dashboard_item import Subscriber, DashboardItem
 import config
 from utils import prompt_user
 
+import numpy as np
 
 class PlotDashItem (DashboardItem, Subscriber):
-    def __init__(self, props=None):
+    def __init__(self, props=None, time_rollover = False):
         # Call this in **every** dash item constructor
         DashboardItem.__init__(self)
         Subscriber.__init__(self)
-        # Not sure why default super won't work, will look later
+       
+        self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
+        self.last = 0
+        self.times = np.zeros(self.size)
+        self.points = np.zeros(self.size)
+        self.sum = 0  # sum of series
+        # "size" of running average
+        self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
+        self.desc = None
+        self.time_rollover = time_rollover
+        self.time_offset = 0
 
         # Specify the layout
         self.layout = QGridLayout()
@@ -54,7 +65,7 @@ class PlotDashItem (DashboardItem, Subscriber):
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
-        self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
+        self.curve = self.plot.plot(self.times, self.points, pen='y')
 
         # create the plot widget
         self.widget = pg.PlotWidget(plotItem=self.plot)
@@ -63,26 +74,58 @@ class PlotDashItem (DashboardItem, Subscriber):
         self.layout.addWidget(self.widget, 0, 0)
 
     def on_data_update(self, series):
+        # Migration of Series logic on add
+       
+        time = series.time
+        point = series.point
+        time += self.time_offset
+        if self.time_rollover:
+            if time < self.times[-1]:  # if we've wrapped around
+                self.time_offset += self.times[-1]  # increase the amount we need to add
+
+        # time should be passed as seconds, GRAPH_RESOLUTION is points per second
+        if time - self.last < 1 / config.GRAPH_RESOLUTION:
+            return
+
+        if self.last == 0:  # is this the first point we're plotting?
+            self.times.fill(time)  # prevent a rogue datapoint at (0, 0)
+            self.points.fill(point)
+            self.sum = self.avgSize * point
+
+        self.last += 1 / config.GRAPH_RESOLUTION
+
+        self.sum -= self.points[self.size - self.avgSize]
+        self.sum += point
+
+        # add the new datapoint to the end of each array, shuffle everything else back
+        self.times[:-1] = self.times[1:]
+        self.times[-1] = time
+        self.points[:-1] = self.points[1:]
+        self.points[-1] = point
+
         # update the displayed data
 
         # find the time range
-        t = round(series.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
+        t = round(self.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
         min_time = t - config.GRAPH_DURATION + config.GRAPH_STEP
         max_time = t + config.GRAPH_STEP
 
         # filter the times
 
-        times = [series.times[i] for i in range(series.size) if (
-            series.times[i] >= min_time and series.times[i] <= max_time)]
+        times = [self.times[i] for i in range(self.size) if (
+            self.times[i] >= min_time and self.times[i] <= max_time)]
 
-        points = [series.points[i] for i in range(series.size) if (
-            series.times[i] >= min_time and series.times[i] <= max_time)]
+        points = [self.points[i] for i in range(self.size) if (
+            self.times[i] >= min_time and self.times[i] <= max_time)]
 
         self.curve.setData(times, points)
 
         # current value readout in the title
         self.plot.setTitle(
-            f"[{sum(points)/len(points): <4.4f}] [{series.points[-1]}] {series.name} {series.desc and (series.desc + ' ') or ''}")
+            f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name} {self.desc and (self.desc + ' ') or ''}")
+    
+    def get_running_avg(self):
+        return self.sum / self.avgSize
 
     def get_props(self):
         return self.props
