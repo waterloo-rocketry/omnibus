@@ -3,8 +3,6 @@ import sys
 from dashboarditem import DashboardItem
 from parsers import CanDisplayParser
 
-
-MTYPES = ["SENSOR_ANALOG"]
 # So, we need a few things
 # 1) a widget that displays an object, in our case a
 #    CAN Message. Will be a QTable
