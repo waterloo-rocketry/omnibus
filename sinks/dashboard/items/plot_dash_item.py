@@ -125,7 +125,7 @@ class PlotDashItem (DashboardItem, Subscriber):
         self.curve.setData(times, points)
 
         # current value readout in the title
-        if (desc == ""):
+        if (desc is not ""):
             self.plot.setTitle(
             f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name} {desc and (desc + ' ') or ''}")
         else:
