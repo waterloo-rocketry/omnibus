@@ -36,7 +36,8 @@ def register(msg_channels):
 
 
 @register("DAQ")
-def daq_parser(msg_data, start=start):
+def daq_parser(msg_data):
+    global start
     if start is None:
         start = msg_data["timestamp"]
 
@@ -108,29 +109,6 @@ class Parser:
         if channel not in Parser.parsers:
             return None
         return Parser.parsers[channel][0].series[name]  # SeriesDefaultDict takes care of the rest
-
-'''
-class DAQParser(Parser):
-    """
-    Parses DAQ messages, returning the average for each sensor in each message
-    """
-
-    def __init__(self):
-        super().__init__("DAQ")
-        # The unix timestamp of the first message received (so the x axis is reasonable)
-        self.start = None
-
-    def parse(self, payload):
-        if self.start is None:
-            self.start = payload["timestamp"]
-
-        time = payload["timestamp"] - self.start
-
-        for sensor, data in payload["data"].items():
-            self.series[sensor].add(time, sum(data)/len(data))
-
-
-DAQParser()'''
 
 class CanDisplayParser(Parser):
     canSeries = {board_id: CanMsgSeries(board_id) for board_id in BOARD_NAME_LIST}
