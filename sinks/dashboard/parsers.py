@@ -32,12 +32,14 @@ def register(msg_channels):
         return fn
     return wrapper
 
-@register("DAQ")
-def daq_parser(self, msg_data):
-    if self.start is None:
-        self.start = msg_data["timestamp"]
+start = None
 
-    timestamp = msg_data["timestamp"] - self.start
+@register("DAQ")
+def daq_parser(msg_data):
+    if start is None:
+        start = msg_data["timestamp"]
+
+    timestamp = msg_data["timestamp"] - start
 
     for sensor, data in msg_data["data"].items():
         temp_series_dict[sensor].add(timestamp, sum(data)/len(data))
@@ -53,23 +55,10 @@ def parse(msg_channel, msg_payload):
 
 ####################################### OLD CODE #############################################
 
-'''from collections import defaultdict
+BOARD_NAME_LIST = ["DUMMY", "INJECTOR", "LOGGER", "RADIO", "SENSOR", "VENT", "GPS", "ARMING",
+                   "PAPA", "ROCKET_PI", "ROCKET_PI_2", "SENSOR_2", "SENSOR_3"]
 
-from series import Series
-
-class SeriesDefaultDict(defaultdict):
-    """
-    Let us call `self.series["xyz"].add(...)` whether or not "xyz" is an existing series.
-    """
-
-    def __init__(self, *kargs, **kwargs):
-        self.kargs = kargs
-        self.kwargs = kwargs
-
-    def __missing__(self, key):
-        self[key] = Series(key, *self.kargs, **self.kwargs)
-        return self[key]
-
+from series import CanMsgSeries
 
 class Parser:
     """
@@ -119,7 +108,7 @@ class Parser:
             return None
         return Parser.parsers[channel][0].series[name]  # SeriesDefaultDict takes care of the rest
 
-
+'''
 class DAQParser(Parser):
     """
     Parses DAQ messages, returning the average for each sensor in each message
@@ -141,3 +130,27 @@ class DAQParser(Parser):
 
 
 DAQParser()'''
+
+class CanDisplayParser(Parser):
+    canSeries = {board_id: CanMsgSeries(board_id) for board_id in BOARD_NAME_LIST}
+
+    def __init__(self):
+        super().__init__("CAN/Parsley")
+
+    @staticmethod
+    def parse(payload):
+        if payload["board_id"] in BOARD_NAME_LIST:
+            CanDisplayParser.canSeries[payload["board_id"]].add(payload)
+
+    @staticmethod
+    def get_canSeries(board_id):
+        if board_id in BOARD_NAME_LIST:
+            return CanDisplayParser.canSeries[board_id]
+        return None
+
+    @staticmethod
+    def get_all_series():
+        return CanDisplayParser.canSeries.values()
+
+
+CanDisplayParser()
