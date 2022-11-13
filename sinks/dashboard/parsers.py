@@ -35,7 +35,8 @@ def register(msg_channels):
 
 
 @register("DAQ")
-def daq_parser(msg_data, start=start):
+def daq_parser(msg_data):
+    global start
     if start is None:
         start = msg_data["timestamp"]
 
@@ -126,6 +127,7 @@ class Parser:
             return None
         return Parser.parsers[channel][0].series[name]  # SeriesDefaultDict takes care of the rest
 
+<<<<<<< HEAD
 '''
 class DAQParser(Parser):
     """
@@ -395,6 +397,8 @@ class CanDisplayParser(Parser):
     canSeries = {board_id: Publisher(board_id) for board_id in BOARD_NAME_LIST}
 DAQParser()'''
 
+=======
+>>>>>>> dd4d909 (Fixed timestamp issue)
 class CanDisplayParser(Parser):
     canSeries = {board_id: CanMsgSeries(board_id) for board_id in BOARD_NAME_LIST}
 >>>>>>> 22ddb5a (Added CanDisplayParser class for testing)
