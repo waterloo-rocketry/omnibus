@@ -18,6 +18,8 @@ temp_series_dict = SeriesDefaultDict()
 
 _func_map = {}
 
+start = None
+
 # decorator for parse functions to save a massive if chain
 def register(msg_channels):
     if isinstance(msg_channels, str):
@@ -32,10 +34,9 @@ def register(msg_channels):
         return fn
     return wrapper
 
-start = None
 
 @register("DAQ")
-def daq_parser(msg_data):
+def daq_parser(msg_data, start=start):
     if start is None:
         start = msg_data["timestamp"]
 
@@ -46,8 +47,8 @@ def daq_parser(msg_data):
 
 def parse(msg_channel, msg_payload):
     for func in _func_map:
-        if func.startswith(msg_channel):
-            func(msg_payload)
+        if msg_channel.startswith(func):
+            _func_map[func](msg_payload)
 
 
 

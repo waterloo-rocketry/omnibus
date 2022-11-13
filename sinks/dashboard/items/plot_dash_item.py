@@ -28,16 +28,15 @@ class PlotDashItem (DashboardItem):
         # if no properties are passed in
         # prompt the user for them
         if self.props == None:
-            items = [f"{channel}" for channel, series in temp_series_dict.items()]
+            items = [sensor for sensor, series in temp_series_dict.items()]
 
-            selected_series = prompt_user(
+            self.props = prompt_user(
                 self,
                 "Data Series",
                 "The series you wish to plot",
                 "items",
                 items
                 )
-            self.props = selected_series
 
         # subscribe to series dictated by properties
         self.series = temp_series_dict[self.props]
