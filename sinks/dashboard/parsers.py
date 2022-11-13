@@ -31,12 +31,14 @@ def register(msg_channels):
         return fn
     return wrapper
 
-@register("DAQ")
-def daq_parser(self, msg_data):
-    if self.start is None:
-        self.start = msg_data["timestamp"]
+start = None
 
-    timestamp = msg_data["timestamp"] - self.start
+@register("DAQ")
+def daq_parser(msg_data):
+    if start is None:
+        start = msg_data["timestamp"]
+
+    timestamp = msg_data["timestamp"] - start
 
     for sensor, data in msg_data["data"].items():
         temp_series_dict[sensor].add(timestamp, sum(data)/len(data))
@@ -68,7 +70,12 @@ class SeriesDefaultDict(defaultdict):
     def __missing__(self, key):
         self[key] = Publisher(key, *self.kargs, **self.kwargs)
         return self[key]
+=======
+BOARD_NAME_LIST = ["DUMMY", "INJECTOR", "LOGGER", "RADIO", "SENSOR", "VENT", "GPS", "ARMING",
+                   "PAPA", "ROCKET_PI", "ROCKET_PI_2", "SENSOR_2", "SENSOR_3"]
+>>>>>>> 22ddb5a (Added CanDisplayParser class for testing)
 
+from series import CanMsgSeries
 
 class Parser:
     """
@@ -118,7 +125,7 @@ class Parser:
             return None
         return Parser.parsers[channel][0].series[name]  # SeriesDefaultDict takes care of the rest
 
-
+'''
 class DAQParser(Parser):
     """
     Parses DAQ messages, returning the average for each sensor in each message
@@ -139,7 +146,6 @@ class DAQParser(Parser):
             self.series[sensor].add([time, sum(data)/len(data)])
 
 
-<<<<<<< HEAD
 DAQParser()
 
 
@@ -386,6 +392,11 @@ ArmStatusParser()
 
 class CanDisplayParser(Parser):
     canSeries = {board_id: Publisher(board_id) for board_id in BOARD_NAME_LIST}
+DAQParser()'''
+
+class CanDisplayParser(Parser):
+    canSeries = {board_id: CanMsgSeries(board_id) for board_id in BOARD_NAME_LIST}
+>>>>>>> 22ddb5a (Added CanDisplayParser class for testing)
 
     def __init__(self):
         super().__init__("CAN/Parsley")
@@ -393,7 +404,11 @@ class CanDisplayParser(Parser):
     @staticmethod
     def parse(payload):
         if payload["board_id"] in BOARD_NAME_LIST:
+<<<<<<< HEAD
             CanDisplayParser.canSeries[payload["board_id"]].add([payload])
+=======
+            CanDisplayParser.canSeries[payload["board_id"]].add(payload)
+>>>>>>> 22ddb5a (Added CanDisplayParser class for testing)
 
     @staticmethod
     def get_canSeries(board_id):
@@ -406,4 +421,8 @@ class CanDisplayParser(Parser):
         return CanDisplayParser.canSeries.values()
 
 
+<<<<<<< HEAD
 CanDisplayParser()
+=======
+CanDisplayParser()
+>>>>>>> 22ddb5a (Added CanDisplayParser class for testing)
