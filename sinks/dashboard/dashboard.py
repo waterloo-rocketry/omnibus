@@ -10,13 +10,12 @@ from pyqtgraph.dockarea.DockArea import DockArea
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
 
-#import parsers
 from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
 
-# "Temorary Global Constant"
+# "Temporary Global Constant"
 
 item_types = [
     PlotDashItem,
