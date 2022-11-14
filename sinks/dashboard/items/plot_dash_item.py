@@ -39,7 +39,7 @@ class PlotDashItem (DashboardItem, Subscriber):
         # if no properties are passed in
         # prompt the user for them
         if self.props == None:
-            items = [sensor for sensor, series in temp_series_dict.items()]
+            items = list(temp_series_dict.keys())
 
             self.props = prompt_user(
                 self,

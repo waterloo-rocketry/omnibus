@@ -49,8 +49,7 @@ class DashboardItem(QtWidgets.QWidget):
         '''
         Return a nicer name for the Dash Item instead of the class name
         '''
-        #raise NotImplementedError
-        return "Kavin was here"
+        raise NotImplementedError
 
     def get_props(self) -> typing.Any:
         """

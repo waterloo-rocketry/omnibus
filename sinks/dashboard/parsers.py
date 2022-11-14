@@ -16,9 +16,6 @@ from series import Publisher
 #temp_series_dict = SeriesDefaultDict()
 
 _func_map = {}
-
-start = None
-
 # decorator for parse functions to save a massive if chain
 def register(msg_channels):
     if isinstance(msg_channels, str):
@@ -36,22 +33,16 @@ def register(msg_channels):
 
 @register("DAQ")
 def daq_parser(msg_data):
-    global start
-    if start is None:
-        start = msg_data["timestamp"]
-
-    timestamp = msg_data["timestamp"] - start
+    timestamp = msg_data["timestamp"]
 
     for sensor, data in msg_data["data"].items():
         temp_series_dict[sensor].add(timestamp, sum(data)/len(data))
+
 
 def parse(msg_channel, msg_payload):
     for func in _func_map:
         if msg_channel.startswith(func):
             _func_map[func](msg_payload)
-
-
-
 
 
 ####################################### OLD CODE #############################################
