@@ -232,7 +232,8 @@ class ActuatorStateParser(ParsleyParser):
         else:
             v += 6
 
-        self.series[f"Actuator State ({act})"].add(time, v, "(0 OPEN 3 CLOSED 6 UNKNOWN, req * 10 + cur)")
+        self.series[f"Actuator State ({act})"].add(
+            time, v, "(0 OPEN 3 CLOSED 6 UNKNOWN, req * 10 + cur)")
 
 
 ActuatorStateParser()

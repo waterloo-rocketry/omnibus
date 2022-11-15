@@ -41,7 +41,7 @@ class PlotDashItem (DashboardItem):
                 "The series you wish to plot",
                 "items",
                 items
-                )
+            )
             self.props = channel_and_series.split("|")
 
         # subscribe to series dictated by properties
@@ -68,7 +68,7 @@ class PlotDashItem (DashboardItem):
         min_time = t - config.GRAPH_DURATION + config.GRAPH_STEP
         max_time = t + config.GRAPH_STEP
 
-        #filter the times
+        # filter the times
 
         times = [series.times[i] for i in range(series.size) if (
             series.times[i] >= min_time and series.times[i] <= max_time)]

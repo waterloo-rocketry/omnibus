@@ -88,7 +88,7 @@ class DisplayCANTable(QtWidgets.QWidget):
         if combo_type not in self.msgTypes:
             self.msgTypes.append(combo_type)
             item = QtWidgets.QTableWidgetItem(combo_type)
-            # taking advantage of this 
+            # taking advantage of this
             # https://www.riverbankcomputing.com/static/Docs/PyQt4/qt.html#AlignmentFlag-enum
             # because I had issues importing Qt.AlignHCenter
             item.setTextAlignment(4)
