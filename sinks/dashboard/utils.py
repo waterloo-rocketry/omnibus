@@ -15,10 +15,10 @@ def prompt_user(widget, property_name, description, prompt_type, items=None, can
         selection, ok = QtWidgets.QInputDialog.getItem(widget, property_name, description, items, 0, can_add_items)    
         
     elif prompt_type == "text":
-        selection, ok = QInputDialog.getText(widget, property_name, description)
+        selection, ok = QtWidgets.QInputDialog.getText(widget, property_name, description)
 
     elif prompt_type == "number":
-        selection, ok = QInputDialog.getDouble(widget, property_name, description)
+        selection, ok = QtWidgets.QInputDialog.getDouble(widget, property_name, description, decimals=1)
 
     if not ok:
         return None

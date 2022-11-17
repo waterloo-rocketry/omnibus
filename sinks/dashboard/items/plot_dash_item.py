@@ -40,19 +40,37 @@ class PlotDashItem (DashboardItem):
                 "Data Series",
                 "The series you wish to plot",
                 "items",
-                items
-                )
+                items,
+            )
+            if not channel_and_series:
+                raise Exception
+            
+            threshold_input = prompt_user(
+                self,
+                "Threshold Value",
+                "Set an upper limit",
+                "number"
+            )
+            if threshold_input == None:
+                raise Exception
+
             self.props = channel_and_series.split("|")
+            self.props.append(threshold_input)
 
         # subscribe to series dictated by properties
         self.series = Parser.get_series(self.props[0], self.props[1])
         self.subscribe_to_series(self.series)
 
+        # set the limit for triggering red tint area
+        self.limit = self.props[2]
+
         # create the plot
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
+        # create data curve and warning line
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
+        self.warning_line = self.plot.plot([], [], fillLevel=self.limit*10, brush=(255,0,0,50),pen='r')
 
         # create the plot widget
         self.widget = pg.PlotWidget(plotItem=self.plot)
@@ -68,19 +86,27 @@ class PlotDashItem (DashboardItem):
         min_time = t - config.GRAPH_DURATION + config.GRAPH_STEP
         max_time = t + config.GRAPH_STEP
 
-        #filter the times
-
+        # filter the times, points
         times = [series.times[i] for i in range(series.size) if (
             series.times[i] >= min_time and series.times[i] <= max_time)]
-
         points = [series.points[i] for i in range(series.size) if (
             series.times[i] >= min_time and series.times[i] <= max_time)]
+        
+        min_point = min(points)
+        max_point = max(points)
+        
+        #set the displayed range of Y axis
+        self.plot.setYRange(min_point,max_point,padding=0.1)
 
-        self.curve.setData(times, points)
+        # plot the warning line
+        self.warning_line.setData(times,[self.limit] * len(points))
+            
+        # plot the data curve
+        self.curve.setData(times,points)
 
         # current value readout in the title
         self.plot.setTitle(
-            f"[{sum(points)/len(points): <4.4f}] [{series.points[-1]}] {series.name} {series.desc and (series.desc + ' ') or ''}")
+            f"[{sum(points)/len(points): <4.4f}] [{points[-1]}] {series.name} {series.desc and (series.desc + ' ') or ''}")
 
     def get_props(self):
         return self.props
