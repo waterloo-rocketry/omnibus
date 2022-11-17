@@ -95,7 +95,7 @@ class PlotDashItem (DashboardItem):
         min_point = min(points)
         max_point = max(points)
         
-        #set the displayed range of Y axis
+        # set the displayed range of Y axis
         self.plot.setYRange(min_point,max_point,padding=0.1)
 
         # plot the warning line
