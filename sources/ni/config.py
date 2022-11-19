@@ -27,7 +27,7 @@ def setup():
               LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
        # Port 1
        Sensor("Rocket Mass", "ai16", 0.2, Connection.DIFFERENTIAL,
-              # Very estimated calibration 200 kG / (2.0 mV/V * 12V)
+              # Calibrated Nov 18, 2022
               LinearCalibration(9211, -1.88, "lbs"))
        # Port 2 - if used
        Sensor("Big Omega S-Type - Ox Tanks", "ai17", 0.2, Connection.DIFFERENTIAL,
