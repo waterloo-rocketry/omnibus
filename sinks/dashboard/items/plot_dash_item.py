@@ -83,9 +83,9 @@ class PlotDashItem (DashboardItem, Subscriber):
             desc = payload[2]
 
         time += self.time_offset
-        if series.time_rollover:
-            if time < self.times[-1]:  # if we've wrapped around
-                self.time_offset += self.times[-1]  # increase the amount we need to add
+        # if series.time_rollover:
+        if time < self.times[-1]:  # if we've wrapped around
+            self.time_offset += self.times[-1]  # increase the amount we need to add
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last < 1 / config.GRAPH_RESOLUTION:
