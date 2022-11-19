@@ -2,14 +2,18 @@ import pickle
 import os
 import time
 import sys
-
-from pyqtgraph.Qt import QtCore
+import PySide6.QtCore as QtCore
+import PyQt6.QtWidgets as QtWidgets
 import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
-from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
-
+from PyQt6.QtWidgets import (
+    QApplication,
+    QVBoxLayout,
+    QMenuBar,
+    QWidget,
+    QDockWidget
+)
 from parsers import Parser
 from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
@@ -67,6 +71,8 @@ class Dashboard(QtWidgets.QWidget):
         # For all dash items we support, there will
         # be a corresponding action to add that item
         add_item_menu = menubar.addMenu("Add Item")
+
+
 
         def prompt_and_add(i):
             def ret_func():
@@ -255,4 +261,4 @@ def dashboard_driver(callback):
     timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
     dash.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
