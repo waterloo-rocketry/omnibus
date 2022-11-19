@@ -9,6 +9,10 @@ class Publisher:
     def __init__ (self):
         self.series = {}
 
+    def get_all_series(self):
+
+    def add_serie (self, serie):
+        self.series[serie] = []
     def subscribe(self, serie, observer):
         """
         An observer is a dashboard item that cares
@@ -27,4 +31,3 @@ class Publisher:
     def update(self, serie, payload):
         for observer in self.series[serie]:
             observer.on_data_update(payload)
-
