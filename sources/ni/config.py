@@ -13,42 +13,49 @@ def setup():
            LinearCalibration(3, 0, "V"))
     Sensor("+5V", "ai22", 10, Connection.SINGLE,
            LinearCalibration(3, 0, "V"))
-    Sensor("Big Omega S-Type - Ox Tanks", "ai18", 0.2, Connection.DIFFERENTIAL,
-           # Factory calibration: 1000 kG / (2.9991 mV/V * 10 V)
-           LinearCalibration(1000 / (2.9991 / 1000 * 10), -10.1, "kg"))
-    Sensor("Honeywell S-Type - Fuel Tank Mass", "ai17", 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(5116, -0.94, "kg"))  # calibrated 13/3/2022
 
-    Sensor("PNew (PT-5) - Ox Injector", "ai5", 2, Connection.SINGLE,
+    Sensor("Omega S-Type - Ox Tank Mass", "ai17", 0.2, Connection.DIFFERENTIAL,
+            LinearCalibration(3025.7, -1.37, "kg")) # calibrated 13/3/2022
+    #Sensor("Big Omega S-Type - Ox Tanks", "ai18", 0.2, Connection.DIFFERENTIAL,
+    #       # Factory calibration: 1000 kG / (2.9991 mV/V * 10 V)
+    #       LinearCalibration(1000 / (2.9991 / 1000 * 10), -10.1, "kg"))
+    #Sensor("Honeywell S-Type - Fuel Tank Mass", "ai17", 0.2, Connection.DIFFERENTIAL,
+    #       LinearCalibration(5116, -0.94, "kg"))  # calibrated 13/3/2022
+    Sensor("Thrust", "ai16", 0.2, Connection.DIFFERENTIAL, LinearCalibration(
+            # Factory Calibration: 2000 lbs / (3.002 mV/V * 12 V)
+            2000 / (3.002 / 1000 * 12), -11, "lbs"))
+            #65445, -20.9, "lbs"))  # Roughly calibrated 17/7/2021
+
+    Sensor("PT-1 Ox Fill", "ai15", 2, Connection.SINGLE,
            # Factory calibration mapping 4-20mA to 0-3000psi
-           LinearCalibration(1/98.1*3000/0.016, -0.004*3000/0.016, "psi"))
+           LinearCalibration(1/98.1*3000/0.016, -0.004*3000/0.016 +10, "psi"))
+    Sensor("PT-2 Ox Tank", "ai7", 2, Connection.SINGLE,
+           # Factory calibration mapping 4-20mA to 0-3000psi
+           LinearCalibration(1/98.1*3000/0.016, -0.004*3000/0.016 +10, "psi"))
+    Sensor("PT-3 CC", "ai14", 2, Connection.SINGLE,
+           # Factory calibration mapping 4-20mA to 0-3000psi
+           LinearCalibration(1/98.1*3000/0.016, -0.004*3000/0.016 +10, "psi"))
+    #Sensor("SP1 (PT-1) - Ox Fill", "ai16", 0.2, Connection.DIFFERENTIAL,
+    #       LinearCalibration(167706, -91.5, "psi"))  # Calibrated 25/3/2022
     # Sensor("P5 (PT-2) - Ox Tank", "ai19", 10, Connection.SINGLE,
     #        LinearCalibration(600, -54.9, "psi")) # calibrated 25/3/2022
-    Sensor("PNew3 (PT-3) - Fuel Tank", "ai7", 10, Connection.SINGLE,
-           LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-    Sensor("PNew2 - Fuel Injector", "ai6", 10, Connection.SINGLE,
-           LinearCalibration(1/98.3*3000/0.016, -0.004*3000/0.016, "psi"))
-    Sensor("PNew4 - Ox Tanks", "ai2", 10, Connection.SINGLE,
-           LinearCalibration(1/98.3*3000/0.016, -0.004*3000/0.016, "psi"))
-    Sensor("SP1 (PT-1) - Ox Fill", "ai16", 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(167706, -91.5, "psi"))  # Calibrated 25/3/2022
+    #Sensor("Old cylindrical pneumatic transducer", "ai19", 10, Connection.SINGLE, LinearCalibration(
+    #    35.3, -34.2, "psi"))  # Calibrated 13/7/2021
+    Sensor("PT-4 Pneumatics", "ai19", 10, Connection.SINGLE,
+            # Factory calibration mapping 1-5V to 0 - 145 psi
+            LinearCalibration(145 / 4, - 145/4, "psi"))
 
-    # Directly plugging in K-type thermocouples. 41uV / C and a cold junction temperature guessed at 23 C.
-    Sensor("T1 - Ox Tank Temp A", "ai0", 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(1 / (41 / 1000 / 1000), 0.0009 / (41 / 1000 / 1000), "C"))
-    Sensor("T2 - Ox Tank Temp B", "ai1", 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(1 / (41 / 1000 / 1000), 0.0009 / (41 / 1000 / 1000), "C"))
-    Sensor("T3 - Fuel Tank Temp A", "ai3", 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(1 / (41 / 1000 / 1000), 0.0009 / (41 / 1000 / 1000), "C"))
-    Sensor("T4 - Fuel Tank Temp B", "ai4", 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(1 / (41 / 1000 / 1000), 0.0009 / (41 / 1000 / 1000), "C"))
+    # Directly K-type thermocouples with amplification of 18.1. 41uV / C
+    Sensor("T1", "ai0", 2, Connection.SINGLE,
+        LinearCalibration(1/(41*18.1/1000000), 0, "C"))
+    Sensor("T2", "ai8", 2, Connection.SINGLE,
+        LinearCalibration(1/(41*18.1/1000000), 0, "C"))
+    Sensor("T3", "ai1", 2, Connection.SINGLE,
+        LinearCalibration(1/(41*18.1/1000000), 0, "C"))
+    Sensor("T4", "ai9", 2, Connection.SINGLE,
+        LinearCalibration(1/(41*18.1/1000000), 0, "C"))
 
-    # Sensor("Big Omega S-Type", "ai17", 0.2, Connection.DIFFERENTIAL,
-    #        # Factory calibration: 1000 kG / (2.9991 mV/V * 10 V)
-    #        LinearCalibration(1000 / (2.9991 / 1000 * 10), -10.1, "kg"))
-    # Sensor("Thrust", "ai2", 0.2, Connection.DIFFERENTIAL, LinearCalibration(
-    #    65445, -20.9, "lbs"))  # Roughly calibrated 17/7/2021
-    Sensor("Pneumatic Pressure", "ai19", 10, Connection.SINGLE, LinearCalibration(
-        35.3, -34.2, "psi"))  # Calibrated 13/7/2021
-    # Sensor("T8 - Tank Heating", "ai23", 10, Connection.SINGLE,
-    #       ThermistorCalibration(10000, 3434, 0.099524))  # Calibration pulled from LabVIEW
+    Sensor("Tank Heating", "ai29", 10, Connection.SINGLE,
+           ThermistorCalibration(5, 10200, 3434, 0.099524))  # Calibration pulled from LabVIEW
+    Sensor("Vent Thermistor", "ai21", 10, Connection.SINGLE,
+           ThermistorCalibration(5, 10200, 3434, 0.099524))  # Calibration pulled from LabVIEW
