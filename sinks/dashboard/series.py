@@ -1,29 +1,27 @@
-import numpy as np
-
-import config
-
 class Publisher:
     """
     Abstract class acting as the Subject of Observation from observers.
     """
     def __init__ (self):
-        self.series = {}
+        self.serieses = {}
 
-    def subscribe(self, serie, observer):
+    def subscribe(self, series, observer):
         """
         An observer is a dashboard item that cares
         about data updates. Adding an observer
         means adding an item to be notified
         when the data is updated
         """
-        if serie not in self.series:
-            self.series[serie] = []
-        self.series[serie].append(observer)
+        if series not in self.serieses:
+            self.serieses[series] = []
+        self.serieses[series].append(observer)
 
     def unsubscribe_from_all(self, observer):
-        for serie in self.series:
-            serie.remove(observer)
+        for series in self.serieses:
+            series.remove(observer)
 
-    def update(self, serie, payload):
-        for observer in self.series[serie]:
+    def update(self, series, payload):
+        if series not in self.serieses:
+            self.serieses[series] = [] 
+        for observer in self.serieses[series]:
             observer.on_data_update(payload)
