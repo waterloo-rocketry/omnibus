@@ -44,15 +44,16 @@ class PlotDashItem (DashboardItem):
             )
             if not channel_and_series:
                 raise Exception
-            
+
             threshold_input = prompt_user(
                 self,
                 "Threshold Value",
                 "Set an upper limit",
                 "number"
             )
+            # if no threshold value, then does not draw the line
             if threshold_input == None:
-                raise Exception
+                threshold_input = 0
 
             self.props = channel_and_series.split("|")
             self.props.append(threshold_input)
@@ -70,7 +71,8 @@ class PlotDashItem (DashboardItem):
         self.plot.hideButtons()
         # create data curve and warning line
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
-        self.warning_line = self.plot.plot([], [], fillLevel=self.limit*10, brush=(255,0,0,50),pen='r')
+        self.warning_line = self.plot.plot(
+            [], [], fillLevel=self.limit*10, brush=(255, 0, 0, 50), pen='r')
 
         # create the plot widget
         self.widget = pg.PlotWidget(plotItem=self.plot)
@@ -91,18 +93,18 @@ class PlotDashItem (DashboardItem):
             series.times[i] >= min_time and series.times[i] <= max_time)]
         points = [series.points[i] for i in range(series.size) if (
             series.times[i] >= min_time and series.times[i] <= max_time)]
-        
+
         min_point = min(points)
         max_point = max(points)
-        
-        # set the displayed range of Y axis
-        self.plot.setYRange(min_point,max_point,padding=0.1)
 
-        # plot the warning line
-        self.warning_line.setData(times,[self.limit] * len(points))
-            
+        # set the displayed range of Y axis
+        self.plot.setYRange(min_point, max_point, padding=0.1)
+
+        # plot the warning line, using two points (start and end)
+        self.warning_line.setData([times[0],times[-1]], [self.limit] * 2)
+
         # plot the data curve
-        self.curve.setData(times,points)
+        self.curve.setData(times, points)
 
         # current value readout in the title
         self.plot.setTitle(
