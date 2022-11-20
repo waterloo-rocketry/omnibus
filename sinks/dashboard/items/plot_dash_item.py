@@ -1,4 +1,4 @@
-from parsers import Parser
+from parsers import temp_series_dict
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtGui import QGridLayout
 
@@ -39,25 +39,25 @@ class PlotDashItem (DashboardItem, Subscriber):
         # if no properties are passed in
         # prompt the user for them
         if self.props == None:
-            items = []
-            for channel in Parser.parsers.keys():
-                all_series = [series.name for series in Parser.get_all_series(channel)]
-                all_series.sort()
-                for series in all_series:
-                    items.append(f"{channel}|{series}")
+            items = [f"{channel}" for channel, series in temp_series_dict.items()]
 
-            channel_and_series = prompt_user(
+            selected_series = prompt_user(
                 self,
                 "Data Series",
                 "The series you wish to plot",
                 "items",
                 items
             )
-            self.props = channel_and_series.split("|")
+            #self.props = channel_and_series.split("|")
 
         # subscribe to series dictated by properties
-        self.series = Parser.get_series(self.props[0], self.props[1])
-        self.subscribe_to(self.series)
+        #self.series = Parser.get_series(self.props[0], self.props[1])
+        #self.subscribe_to(self.series)
+            self.props = selected_series
+
+        # subscribe to series dictated by properties
+        #self.series = temp_series_dict[self.props]
+        #self.subscribe_to_series(self.series)
 
         # create the plot
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")

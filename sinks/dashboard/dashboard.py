@@ -10,7 +10,7 @@ from pyqtgraph.dockarea.DockArea import DockArea
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
 
-from parsers import Parser
+#import parsers
 from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
