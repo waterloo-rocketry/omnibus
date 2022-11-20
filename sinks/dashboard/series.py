@@ -4,6 +4,7 @@ class Publisher:
     """
     def __init__ (self):
         self.serieses = {}
+        self.canserieses = {}
 
     def subscribe(self, series, observer):
         """
@@ -12,16 +13,16 @@ class Publisher:
         means adding an item to be notified
         when the data is updated
         """
-        if series not in self.serieses:
+        if series not in self.serieses or self.canserieses:
             self.serieses[series] = []
         self.serieses[series].append(observer)
 
     def unsubscribe_from_all(self, observer):
-        for series in self.serieses:
+        for series in self.serieses or self.canserieses:
             series.remove(observer)
 
     def update(self, series, payload):
         if series not in self.serieses:
-            self.serieses[series] = [] 
-        for observer in self.serieses[series]:
+            self.serieses[series] = []
+        for observer in self.serieses[series] or self.canserieses[series]:
             observer.on_data_update(payload)

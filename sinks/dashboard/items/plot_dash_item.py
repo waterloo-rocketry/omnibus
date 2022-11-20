@@ -1,4 +1,4 @@
-from parsers import temp_series_dict
+from parsers import publisher
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtGui import QGridLayout
 
@@ -8,17 +8,17 @@ from pyqtgraph.console import ConsoleWidget
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
-from sinks.dashboard.items.dashboard_item import Subscriber, DashboardItem
+from sinks.dashboard.items.dashboard_item import DashboardItem
 import config
 from utils import prompt_user
 
-import numpy as np
 
-class PlotDashItem (DashboardItem, Subscriber):
+class PlotDashItem (DashboardItem):
     def __init__(self, props=None):
-        # Call this in **every** dash item constructor
+# Call this in **every** dash item constructor
         DashboardItem.__init__(self)
         Subscriber.__init__(self)
+       
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
         self.last = 0
         self.times = np.zeros(self.size)
@@ -27,7 +27,6 @@ class PlotDashItem (DashboardItem, Subscriber):
         # "size" of running average
         self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
         self.time_offset = 0
-        # Not sure why default super won't work, will look later
 
         # Specify the layout
         self.layout = QGridLayout()
@@ -39,7 +38,7 @@ class PlotDashItem (DashboardItem, Subscriber):
         # if no properties are passed in
         # prompt the user for them
         if self.props == None:
-            items = list(temp_series_dict.keys())
+            items = list(publisher.serieses.keys())
 
             self.props = prompt_user(
                 self,
@@ -47,25 +46,11 @@ class PlotDashItem (DashboardItem, Subscriber):
                 "The series you wish to plot",
                 "items",
                 items
-            )
-            #self.props = channel_and_series.split("|")
-<<<<<<< HEAD
-
-        # subscribe to series dictated by properties
-        #self.series = Parser.get_series(self.props[0], self.props[1])
-        #self.subscribe_to(self.series)
-            self.props = selected_series
                 )
 
         # subscribe to series dictated by properties
-        #self.series = temp_series_dict[self.props]
-        #self.subscribe_to_series(self.series)
-=======
-
-        # subscribe to series dictated by properties
-        #self.series = Parser.get_series(self.props[0], self.props[1])
-        #self.subscribe_to(self.series)
->>>>>>> 6c2bb3a (observer class)
+        self.series = publisher.serieses_dict[self.props]
+        self.subscribe_to(self.series)
 
         # create the plot
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
@@ -91,9 +76,9 @@ class PlotDashItem (DashboardItem, Subscriber):
             desc = payload[2]
 
         time += self.time_offset
-        # if series.time_rollover:
-        if time < self.times[-1]:  # if we've wrapped around
-            self.time_offset += self.times[-1]  # increase the amount we need to add
+        if series.time_rollover:
+            if time < self.times[-1]:  # if we've wrapped around
+                self.time_offset += self.times[-1]  # increase the amount we need to add
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last < 1 / config.GRAPH_RESOLUTION:
@@ -139,9 +124,6 @@ class PlotDashItem (DashboardItem, Subscriber):
         else:
             self.plot.setTitle(
             f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name}")
-
-    def get_running_avg(self):
-        return self.sum / self.avgSize
 
     def get_props(self):
         return self.props

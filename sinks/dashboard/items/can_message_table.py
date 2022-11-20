@@ -1,6 +1,6 @@
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from sinks.dashboard.items.dashboard_item import DashboardItem, Subscriber
-from parsers import CanDisplayParser
+from parsers import publisher
 
 CAN_MSG_TYPES = ["GENERAL_CMD",
                  "ACTUATOR_CMD",
@@ -210,7 +210,7 @@ class CanMsgTableDashItem(DashboardItem, Subscriber):
             self.layout_widget.layout.addWidget(exp_widget)
 
         # Subscribe to all relavent series
-        for series in CanDisplayParser.get_all_series():
+        for series in publisher:
             self.subscribe_to(series)
 
         self.scrolling_part = QtWidgets.QScrollArea(self)
