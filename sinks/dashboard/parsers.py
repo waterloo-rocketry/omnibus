@@ -24,9 +24,8 @@ def register(msg_channels):
 
     def wrapper(fn):
         for msg_channel in msg_channels:
-            for func in _func_map:
-                if func.startswith(msg_channel):
-                    raise KeyError(f"Duplicate parsers for message type {msg_channel}")
+            if msg_channel in _func_map:
+                raise KeyError(f"Duplicate parsers for message type {msg_channel}")
             _func_map[msg_channel] = fn
         return fn
     return wrapper
@@ -35,15 +34,20 @@ def register(msg_channels):
 @register("DAQ")
 def daq_parser(msg_data):
     timestamp = msg_data["timestamp"]
+    parsed_messages = []
 
     for sensor, data in msg_data["data"].items():
-        temp_series_dict[sensor].add(timestamp, sum(data)/len(data))
+        parsed_messages.append((sensor, timestamp, sum(data)/len(data)))
+    
+    return parsed_messages
 
 
 def parse(msg_channel, msg_payload):
     for func in _func_map:
         if msg_channel.startswith(func):
-            _func_map[func](msg_payload)
+            series_message_pair_list = _func_map[func](msg_payload)
+            for series_name, timestamp, parsed_message in series_message_pair_list:
+                temp_series_dict[series_name].add(timestamp, parsed_message)
 
 
 ####################################### OLD CODE #############################################

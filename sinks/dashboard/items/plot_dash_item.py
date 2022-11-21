@@ -36,7 +36,7 @@ class PlotDashItem (DashboardItem):
                 "The series you wish to plot",
                 "items",
                 items
-                )
+            )
 
         # subscribe to series dictated by properties
         self.series = temp_series_dict[self.props]
