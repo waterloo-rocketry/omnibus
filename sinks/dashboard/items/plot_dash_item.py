@@ -1,4 +1,4 @@
-from parsers import publisher
+from series import publisher
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtGui import QGridLayout
 
@@ -8,12 +8,14 @@ from pyqtgraph.console import ConsoleWidget
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
-from sinks.dashboard.items.dashboard_item import DashboardItem
+import numpy as np
+
+from sinks.dashboard.items.dashboard_item import DashboardItem, Subscriber
 import config
 from utils import prompt_user
 
 
-class PlotDashItem (DashboardItem):
+class PlotDashItem (DashboardItem, Subscriber):
     def __init__(self, props=None):
 # Call this in **every** dash item constructor
         DashboardItem.__init__(self)
@@ -49,11 +51,10 @@ class PlotDashItem (DashboardItem):
                 )
 
         # subscribe to series dictated by properties
-        self.series = publisher.serieses_dict[self.props]
-        self.subscribe_to(self.series)
+        self.subscribe_to(self.props)
 
         # create the plot
-        self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
+        self.plot = pg.PlotItem(title=self.props, left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
         self.curve = self.plot.plot(self.times, self.points, pen='y')
@@ -64,9 +65,8 @@ class PlotDashItem (DashboardItem):
         # add it to the layout
         self.layout.addWidget(self.widget, 0, 0)
 
-    def on_data_update(self, series):
+    def on_data_update(self, payload):
         # Migration of Series logic on add
-        payload = series.payload
 
         time = payload[0]
         point = payload[1]
@@ -76,9 +76,6 @@ class PlotDashItem (DashboardItem):
             desc = payload[2]
 
         time += self.time_offset
-        if series.time_rollover:
-            if time < self.times[-1]:  # if we've wrapped around
-                self.time_offset += self.times[-1]  # increase the amount we need to add
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last < 1 / config.GRAPH_RESOLUTION:
@@ -118,12 +115,12 @@ class PlotDashItem (DashboardItem):
         self.curve.setData(times, points)
 
         # current value readout in the title
-        if (desc is not ""):
-            self.plot.setTitle(
-            f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name} {desc and (desc + ' ') or ''}")
-        else:
-            self.plot.setTitle(
-            f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name}")
+        #if (desc is not ""):
+        #    self.plot.setTitle(
+        #    f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name} {desc and (desc + ' ') or ''}")
+        #else:
+        self.plot.setTitle(
+            f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {self.props}")
 
     def get_props(self):
         return self.props

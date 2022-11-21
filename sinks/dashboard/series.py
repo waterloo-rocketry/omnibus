@@ -13,16 +13,18 @@ class Publisher:
         means adding an item to be notified
         when the data is updated
         """
-        if series not in self.serieses or self.canserieses:
+        if series not in self.serieses:
             self.serieses[series] = []
         self.serieses[series].append(observer)
 
     def unsubscribe_from_all(self, observer):
-        for series in self.serieses or self.canserieses:
+        for series in self.serieses:
             series.remove(observer)
 
     def update(self, series, payload):
         if series not in self.serieses:
             self.serieses[series] = []
-        for observer in self.serieses[series] or self.canserieses[series]:
+        for observer in self.serieses[series]:
             observer.on_data_update(payload)
+
+publisher = Publisher()

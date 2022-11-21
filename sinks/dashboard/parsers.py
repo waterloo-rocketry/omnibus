@@ -1,7 +1,6 @@
-from series import Publisher
+from series import publisher
 
 _func_map = {}
-publisher = Publisher()
 # decorator for parse functions to save a massive if chain
 def register(msg_channels):
     if isinstance(msg_channels, str):

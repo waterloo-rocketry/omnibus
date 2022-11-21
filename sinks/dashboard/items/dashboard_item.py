@@ -1,6 +1,7 @@
 import typing
 from pyqtgraph.Qt import QtWidgets
 from utils import prompt_user
+from series import publisher
 
 
 class Subscriber():
@@ -12,7 +13,7 @@ class Subscriber():
         Ensures that whenever a series' data is updated,
         the on_data_update method is called
         """
-        subject.add_observer(self)
+        publisher.subscribe(subject, self)
         self.subscribed_subjects.append(subject)
 
     def unsubscribe_to_all(self):
@@ -21,8 +22,7 @@ class Subscriber():
         this dash item from all series its subscribed 
         to
         """
-        for subject in self.subscribed_subjects:
-            subject.remove_observer(self)
+        publisher.unsubscribe_from_all(self)
 
     def on_data_update(self, series):
         """
