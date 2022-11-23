@@ -7,6 +7,12 @@ class Publisher:
         self.serieses = {}
         self.canserieses = {}
 
+    def get_CAN_series(self):
+        return self.canserieses.keys()
+
+    def get_DAQ_series(self):
+        return self.serieses.keys()
+
     def subscribe(self, series, observer):
         """
         An observer is a dashboard item that cares

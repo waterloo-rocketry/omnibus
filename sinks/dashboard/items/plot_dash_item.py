@@ -41,7 +41,7 @@ class PlotDashItem (DashboardItem, Subscriber):
         # if no properties are passed in
         # prompt the user for them
         if self.props == None:
-            items = list(publisher.serieses.keys())
+            items = list(publisher.get_DAQ_series())
 
             self.props = prompt_user(
                 self,
@@ -117,7 +117,7 @@ class PlotDashItem (DashboardItem, Subscriber):
 
         # current value readout in the title
         self.plot.setTitle(
-            f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {self.props} {desc}")
+                f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props} {desc}")
 
     def get_props(self):
         return self.props
