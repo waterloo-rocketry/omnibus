@@ -1,4 +1,4 @@
-from series import publisher
+from publisher import publisher
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtGui import QGridLayout
 
@@ -116,10 +116,6 @@ class PlotDashItem (DashboardItem, Subscriber):
         self.curve.setData(times, points)
 
         # current value readout in the title
-        # if (desc is not ""):
-        #    self.plot.setTitle(
-        #    f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name} {desc and (desc + ' ') or ''}")
-        # else:
         self.plot.setTitle(
             f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {self.props} {desc}")
 

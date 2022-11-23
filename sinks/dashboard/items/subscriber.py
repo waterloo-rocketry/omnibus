@@ -1,4 +1,4 @@
-from series import publisher
+from publisher import publisher
 
 
 class Subscriber():
