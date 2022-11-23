@@ -10,17 +10,18 @@ from pyqtgraph.graphicsItems.TextItem import TextItem
 
 import numpy as np
 
-from sinks.dashboard.items.dashboard_item import DashboardItem, Subscriber
+from sinks.dashboard.items.dashboard_item import DashboardItem
+from sinks.dashboard.items.subscriber import Subscriber
 import config
 from utils import prompt_user
 
 
 class PlotDashItem (DashboardItem, Subscriber):
     def __init__(self, props=None):
-# Call this in **every** dash item constructor
+        # Call this in **every** dash item constructor
         DashboardItem.__init__(self)
         Subscriber.__init__(self)
-       
+
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
         self.last = 0
         self.times = np.zeros(self.size)
@@ -48,7 +49,7 @@ class PlotDashItem (DashboardItem, Subscriber):
                 "The series you wish to plot",
                 "items",
                 items
-                )
+            )
 
         # subscribe to series dictated by properties
         self.subscribe_to(self.props)
@@ -115,12 +116,12 @@ class PlotDashItem (DashboardItem, Subscriber):
         self.curve.setData(times, points)
 
         # current value readout in the title
-        #if (desc is not ""):
+        # if (desc is not ""):
         #    self.plot.setTitle(
         #    f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {series.name} {desc and (desc + ' ') or ''}")
-        #else:
+        # else:
         self.plot.setTitle(
-            f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {self.props}")
+            f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]}] {self.props} {desc}")
 
     def get_props(self):
         return self.props

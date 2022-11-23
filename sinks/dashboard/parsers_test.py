@@ -26,7 +26,7 @@ class TestDAQParser:
             # [1, 2, 6] to make sure its not just returning the middle element
             "data": {"SENSOR 1": [1, 2, 6], "SENSOR 2": [4, 5, 6]}
         }
-        parsers.parse("DAQ",payload)
+        parsers.parse("DAQ", payload)
         # values should be averagd
         #assert parser.series.get("SENSOR 1").data == [(0, 3)]
         #assert parser.series.get("SENSOR 2").data == [(0, 5)]

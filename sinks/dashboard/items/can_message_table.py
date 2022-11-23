@@ -1,5 +1,6 @@
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
-from sinks.dashboard.items.dashboard_item import DashboardItem, Subscriber
+from sinks.dashboard.items.dashboard_item import DashboardItem
+from sinks.dashboard.items.subscriber import Subscriber
 from parsers import publisher
 
 CAN_MSG_TYPES = ["GENERAL_CMD",
@@ -88,7 +89,7 @@ class DisplayCANTable(QtWidgets.QWidget):
         if combo_type not in self.msgTypes:
             self.msgTypes.append(combo_type)
             item = QtWidgets.QTableWidgetItem(combo_type)
-            # taking advantage of this 
+            # taking advantage of this
             # https://www.riverbankcomputing.com/static/Docs/PyQt4/qt.html#AlignmentFlag-enum
             # because I had issues importing Qt.AlignHCenter
             item.setTextAlignment(4)
@@ -210,7 +211,7 @@ class CanMsgTableDashItem(DashboardItem, Subscriber):
             self.layout_widget.layout.addWidget(exp_widget)
 
         # Subscribe to all relavent series
-        for series in publisher:
+        for series in publisher.canserieses:
             self.subscribe_to(series)
 
         self.scrolling_part = QtWidgets.QScrollArea(self)

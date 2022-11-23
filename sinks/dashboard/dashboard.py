@@ -212,17 +212,16 @@ class Dashboard(QtWidgets.QWidget):
     def switch(self):
         self.save()
         filename = prompt_user(
-                self,
-                "New File Name",
-                "Enter the name of the file which you wish to load",
-                "items",
-                self.filename_cache,
-                True
-            )
+            self,
+            "New File Name",
+            "Enter the name of the file which you wish to load",
+            "items",
+            self.filename_cache,
+            True
+        )
 
         if filename == None:
             return
-
 
         # If the filename entered is not valid
         # this exhibits the behaviour of creating

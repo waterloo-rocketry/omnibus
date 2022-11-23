@@ -2,7 +2,8 @@ class Publisher:
     """
     Abstract class acting as the Subject of Observation from observers.
     """
-    def __init__ (self):
+
+    def __init__(self):
         self.serieses = {}
         self.canserieses = {}
 
@@ -19,12 +20,14 @@ class Publisher:
 
     def unsubscribe_from_all(self, observer):
         for series in self.serieses:
-            series.remove(observer)
+            if observer in self.serieses[series]:
+                self.serieses[series].remove(observer)
 
     def update(self, series, payload):
         if series not in self.serieses:
             self.serieses[series] = []
         for observer in self.serieses[series]:
             observer.on_data_update(payload)
+
 
 publisher = Publisher()
