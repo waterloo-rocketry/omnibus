@@ -15,7 +15,7 @@ from parsers import CanDisplayParser
 class DisplayCANTable(QtWidgets.QWidget):
     """
     A widget that displays an object, in our case a
-    CAN Mesage. Makes use of a QTable
+    CAN message. Makes use of a QTable.
     """
 
     def __init__(self):
@@ -186,7 +186,6 @@ class CanMsgTableDashItem(DashboardItem):
         else:
             table = DisplayCANTable()
             self.message_dict[canSeries.name] = table
-            print(canSeries.name)
             exp_widget = ExpandingWidget(canSeries.name, table)
             self.layout_widget.layout.addWidget(exp_widget)
             self.message_dict[canSeries.name].update_with_message(message)
