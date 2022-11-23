@@ -1,6 +1,5 @@
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
-import sys
-from dashboarditem import DashboardItem
+from sinks.dashboard.items.dashboard_item import DashboardItem
 from parsers import CanDisplayParser
 
 # So, we need a few things
@@ -189,3 +188,6 @@ class CanMsgTableDashItem(DashboardItem):
             exp_widget = ExpandingWidget(canSeries.name, table)
             self.layout_widget.layout.addWidget(exp_widget)
             self.message_dict[canSeries.name].update_with_message(message)
+
+    def get_name():
+        return "CAN Message Table"

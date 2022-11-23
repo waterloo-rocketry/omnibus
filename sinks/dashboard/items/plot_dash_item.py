@@ -8,7 +8,7 @@ from pyqtgraph.console import ConsoleWidget
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 
-from dashboarditem import DashboardItem
+from sinks.dashboard.items.dashboard_item import DashboardItem
 import config
 from utils import prompt_user
 
@@ -84,3 +84,6 @@ class PlotDashItem (DashboardItem):
 
     def get_props(self):
         return self.props
+
+    def get_name():
+        return "Plot"

@@ -11,9 +11,8 @@ from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
 
 from parsers import Parser
-from plotdashitem import PlotDashItem
-from can_display import CanDisplayDashItem
-from can_message_table import CanMsgTableDashItem
+from items.plot_dash_item import PlotDashItem
+from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
 
@@ -21,7 +20,6 @@ from utils import prompt_user
 
 item_types = [
     PlotDashItem,
-    CanDisplayDashItem,
     CanMsgTableDashItem,
 ]
 
@@ -76,21 +74,24 @@ class Dashboard(QtWidgets.QWidget):
             return ret_func
 
         for i in range(len(item_types)):
-            new_action = add_item_menu.addAction(item_types[i].__name__)
+            new_action = add_item_menu.addAction(item_types[i].get_name())
             new_action.triggered.connect(prompt_and_add(i))
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
-        save_layout_action = menubar.addAction("Save")
+        add_save_menu = menubar.addMenu("Save")
+        save_layout_action = add_save_menu.addAction("Save Current Config")
         save_layout_action.triggered.connect(self.save)
 
         # Add an action to the menu bar to load the
         # layout of the dashboard.
-        restore_layout_action = menubar.addAction("Load")
+        add_restore_menu = menubar.addMenu("Load")
+        restore_layout_action = add_restore_menu.addAction("Load from File")
         restore_layout_action.triggered.connect(self.load)
 
         # Add an action to the menu bar to open a file
-        open_file_action = menubar.addAction("Open")
+        add_open_menu = menubar.addMenu("Open")
+        open_file_action = add_open_menu.addAction("Open File")
         open_file_action.triggered.connect(self.switch)
 
         self.layout.setMenuBar(menubar)
