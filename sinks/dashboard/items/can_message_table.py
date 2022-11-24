@@ -227,14 +227,15 @@ class CanMsgTableDashItem(DashboardItem, Subscriber):
         return self.payloadQ[-1]
 
     def on_data_update(self, canSeries):
-        self.payloadQ.append(canSeries.payload)
+        canSeries = canSeries[1]
+        self.payloadQ.append(canSeries)
 
         if (len(self.payloadQ) > 50):
             self.payloadQ.pop(0)
 
         message = self.get_msg()
-        if canSeries.name in self.message_dict:
-            self.message_dict[canSeries.name].update_with_message(message)
+        if canSeries["board_id"] in self.message_dict:
+            self.message_dict[canSeries["board_id"]].update_with_message(message)
 
     def get_name():
         return "CAN Message Table"

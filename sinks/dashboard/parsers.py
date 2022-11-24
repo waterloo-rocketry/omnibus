@@ -33,19 +33,12 @@ CAN/Parsley parser needs revamp and will not be included in the scope of the ser
 Therefore, it will be left commented out and not functional as of series_revamp PR as of Nov 2022.
 """
 
-# BOARD_NAME_LIST = ["DUMMY", "INJECTOR", "LOGGER", "RADIO", "SENSOR", "VENT", "GPS", "ARMING",
-#                    "PAPA", "ROCKET_PI", "ROCKET_PI_2", "SENSOR_2", "SENSOR_3"]
-# 
-# @register("CAN")
-# def can_parser(payload):
-#     print(payload)
-#     timestamp = msg_data["timestamp"]
-#     parsed_messages = []
-# 
-#     for board, data in msg_data["data"].items():
-#         parsed_messages.append((board + "|CAN", timestamp, sum(data) / len(data)))
-# 
-#     return parsed_messages
+BOARD_NAME_LIST = ["DUMMY", "INJECTOR", "LOGGER", "RADIO", "SENSOR", "VENT", "GPS", "ARMING",
+                   "PAPA", "ROCKET_PI", "ROCKET_PI_2", "SENSOR_2", "SENSOR_3"]
+
+@register("CAN")
+def can_parser(payload):
+    return [("CAN", payload["data"]["time"], payload)]
 
 def parse(msg_channel, msg_payload):
     for func in _func_map:
