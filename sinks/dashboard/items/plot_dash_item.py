@@ -14,7 +14,7 @@ from utils import prompt_user
 
 
 class PlotDashItem (DashboardItem):
-    def __init__(self, props=None):
+    def __init__(self, props):
         # Call this in **every** dash item constructor
         super().__init__()
 
@@ -22,48 +22,12 @@ class PlotDashItem (DashboardItem):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
 
-        # store the properties
-        self.props = props
-
-        # if no properties are passed in
-        # prompt the user for them
-        if self.props == None:
-            items = []
-            for channel in Parser.parsers.keys():
-                all_series = [series.name for series in Parser.get_all_series(channel)]
-                all_series.sort()
-                for series in all_series:
-                    items.append(f"{channel}|{series}")
-
-            channel_and_series = prompt_user(
-                self,
-                "Data Series",
-                "The series you wish to plot",
-                "items",
-                items,
-            )
-            if not channel_and_series:
-                raise Exception
-
-            threshold_input = prompt_user(
-                self,
-                "Threshold Value",
-                "Set an upper limit",
-                "number"
-            )
-            # if no threshold value, then does not draw the line
-            if threshold_input == None:
-                threshold_input = 0
-
-            self.props = channel_and_series.split("|")
-            self.props.append(threshold_input)
-
         # subscribe to series dictated by properties
-        self.series = Parser.get_series(self.props[0], self.props[1])
+        self.series = Parser.get_series(props[0], props[1])
         self.subscribe_to_series(self.series)
 
         # set the limit for triggering red tint area
-        self.limit = self.props[2]
+        self.limit = props[2]
 
         # create the plot
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
@@ -79,6 +43,39 @@ class PlotDashItem (DashboardItem):
 
         # add it to the layout
         self.layout.addWidget(self.widget, 0, 0)
+
+    def prompt_for_properties(self):
+        items = []
+        for channel in Parser.parsers.keys():
+            all_series = [series.name for series in Parser.get_all_series(channel)]
+            all_series.sort()
+            for series in all_series:
+                items.append(f"{channel}|{series}")
+
+        channel_and_series = prompt_user(
+            self,
+            "Data Series",
+            "The series you wish to plot",
+            "items",
+            items,
+        )
+        if not channel_and_series:
+            return None
+
+        threshold_input = prompt_user(
+            self,
+            "Threshold Value",
+            "Set an upper limit",
+            "number"
+        )
+        # if no threshold value, then does not draw the line
+        if threshold_input == None:
+            threshold_input = 0
+
+        props = channel_and_series.split("|")
+        props.append(threshold_input)
+
+        return props
 
     def on_data_update(self, series):
         # update the displayed data
@@ -101,7 +98,7 @@ class PlotDashItem (DashboardItem):
         self.plot.setYRange(min_point, max_point, padding=0.1)
 
         # plot the warning line, using two points (start and end)
-        self.warning_line.setData([times[0],times[-1]], [self.limit] * 2)
+        self.warning_line.setData([times[0], times[-1]], [self.limit] * 2)
 
         # plot the data curve
         self.curve.setData(times, points)

@@ -52,3 +52,9 @@ class DashboardItem(QtWidgets.QWidget):
         """
         for series in self.subscribed_series:
             series.remove_observer(self)
+
+    def prompt_for_properties(self):
+        """
+        An abstract function for prompting user input
+        """
+        pass
