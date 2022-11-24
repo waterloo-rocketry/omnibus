@@ -211,7 +211,7 @@ class CanMsgTableDashItem(DashboardItem, Subscriber):
             self.layout_widget.layout.addWidget(exp_widget)
 
         # Subscribe to all relavent series
-        for series in publisher.canserieses:
+        for series in publisher.get_all_series("CAN"):
             self.subscribe_to(series)
 
         self.scrolling_part = QtWidgets.QScrollArea(self)

@@ -5,13 +5,13 @@ class Publisher:
 
     def __init__(self):
         self.serieses = {}
-        self.canserieses = {}
 
-    def get_CAN_series(self):
-        return self.canserieses.keys()
-
-    def get_DAQ_series(self):
-        return self.serieses.keys()
+    def get_all_series(self, _type=""):
+        return_series = []
+        for key in list(self.serieses.keys()):
+            if key.endswith(_type):
+                return_series.append(key)
+        return return_series
 
     def subscribe(self, series, observer):
         """

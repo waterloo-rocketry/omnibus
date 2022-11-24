@@ -41,7 +41,7 @@ class PlotDashItem (DashboardItem, Subscriber):
         # if no properties are passed in
         # prompt the user for them
         if self.props == None:
-            items = list(publisher.get_DAQ_series())
+            items = publisher.get_all_series()
 
             self.props = prompt_user(
                 self,
@@ -68,7 +68,6 @@ class PlotDashItem (DashboardItem, Subscriber):
 
     def on_data_update(self, payload):
         # Migration of Series logic on add
-
         time = payload[0]
         point = payload[1]
         desc = ""

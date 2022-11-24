@@ -21,7 +21,7 @@ class Subscriber():
         """
         publisher.unsubscribe_from_all(self)
 
-    def on_data_update(self, series):
+    def on_data_update(self, datapoint):
         """
         Whenever data is updated in a series that we are subscribed
         to, this method is called. The series that was updated is supplied
