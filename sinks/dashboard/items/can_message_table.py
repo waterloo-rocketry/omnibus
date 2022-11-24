@@ -227,7 +227,9 @@ class CanMsgTableDashItem(DashboardItem, Subscriber):
         return self.payloadQ[-1]
 
     def on_data_update(self, canSeries):
+        # adding this line because canSeries is currently in the form of [timestamp, payload], and we want only the payload
         canSeries = canSeries[1]
+
         self.payloadQ.append(canSeries)
 
         if (len(self.payloadQ) > 50):

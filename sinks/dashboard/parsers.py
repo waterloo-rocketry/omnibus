@@ -27,18 +27,11 @@ def daq_parser(msg_data):
 
     return parsed_messages
 
-################### CAN Stuff, WIP ######################
-"""
-CAN/Parsley parser needs revamp and will not be included in the scope of the series_revamp PR for the time being.
-Therefore, it will be left commented out and not functional as of series_revamp PR as of Nov 2022.
-"""
-
-BOARD_NAME_LIST = ["DUMMY", "INJECTOR", "LOGGER", "RADIO", "SENSOR", "VENT", "GPS", "ARMING",
-                   "PAPA", "ROCKET_PI", "ROCKET_PI_2", "SENSOR_2", "SENSOR_3"]
-
 @register("CAN")
 def can_parser(payload):
     return [("CAN", payload["data"]["time"], payload)]
+    # Hacky fix so that the parse function behaves the same way
+    # Since the "parsing" of the payload itself happens directly at the front end
 
 def parse(msg_channel, msg_payload):
     for func in _func_map:
