@@ -23,7 +23,7 @@ def daq_parser(msg_data):
     parsed_messages = []
 
     for sensor, data in msg_data["data"].items():
-        parsed_messages.append((sensor + "|DAQ" , timestamp, sum(data)/len(data)))
+        parsed_messages.append(("DAQ|" + sensor , timestamp, sum(data)/len(data)))
 
     return parsed_messages
 
@@ -36,6 +36,6 @@ def can_parser(payload):
 def parse(msg_channel, msg_payload):
     for func in _func_map:
         if msg_channel.startswith(func):
-            series_message_pair_list = _func_map[func](msg_payload)
-            for series_name, timestamp, parsed_message in series_message_pair_list:
-                publisher.update(series_name, [timestamp, parsed_message])
+            stream_message_pair_list = _func_map[func](msg_payload)
+            for stream_name, timestamp, parsed_message in stream_message_pair_list:
+                publisher.update(stream_name, [timestamp, parsed_message])

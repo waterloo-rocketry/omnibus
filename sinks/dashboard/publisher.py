@@ -4,35 +4,35 @@ class Publisher:
     """
 
     def __init__(self):
-        self.serieses = {}
+        self.streams = {}
 
-    def get_all_series(self, _type=""):
-        return_series = []
-        for key in list(self.serieses.keys()):
-            if key.endswith(_type):
-                return_series.append(key)
-        return return_series
+    def get_all_stream(self, _type=""):
+        return_stream = []
+        for key in list(self.streams.keys()):
+            if key.startswith(_type):
+                return_stream.append(key)
+        return return_stream
 
-    def subscribe(self, series, observer):
+    def subscribe(self, stream, observer):
         """
         An observer is a dashboard item that cares
         about data updates. Adding an observer
         means adding an item to be notified
         when the data is updated
         """
-        if series not in self.serieses:
-            self.serieses[series] = []
-        self.serieses[series].append(observer)
+        if stream not in self.streams:
+            self.streams[stream] = []
+        self.streams[stream].append(observer)
 
     def unsubscribe_from_all(self, observer):
-        for series in self.serieses:
-            if observer in self.serieses[series]:
-                self.serieses[series].remove(observer)
+        for stream in self.streams:
+            if observer in self.streams[stream]:
+                self.streams[stream].remove(observer)
 
-    def update(self, series, payload):
-        if series not in self.serieses:
-            self.serieses[series] = []
-        for observer in self.serieses[series]:
+    def update(self, stream, payload):
+        if stream not in self.streams:
+            self.streams[stream] = []
+        for observer in self.streams[stream]:
             observer.on_data_update(payload)
 
 

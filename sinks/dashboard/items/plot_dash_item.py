@@ -11,22 +11,20 @@ from pyqtgraph.graphicsItems.TextItem import TextItem
 import numpy as np
 
 from sinks.dashboard.items.dashboard_item import DashboardItem
-from sinks.dashboard.items.subscriber import Subscriber
 import config
 from utils import prompt_user
 
 
-class PlotDashItem (DashboardItem, Subscriber):
+class PlotDashItem (DashboardItem):
     def __init__(self, props=None):
         # Call this in **every** dash item constructor
-        DashboardItem.__init__(self)
-        Subscriber.__init__(self)
+        super().__init__()
 
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
         self.last = 0
         self.times = np.zeros(self.size)
         self.points = np.zeros(self.size)
-        self.sum = 0  # sum of series
+        self.sum = 0  # sum of stream
         # "size" of running average
         self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
         self.time_offset = 0
@@ -41,18 +39,18 @@ class PlotDashItem (DashboardItem, Subscriber):
         # if no properties are passed in
         # prompt the user for them
         if self.props == None:
-            items = publisher.get_all_series()
+            items = publisher.get_all_stream()
 
             self.props = prompt_user(
                 self,
                 "Data Series",
-                "The series you wish to plot",
+                "The stream you wish to plot",
                 "items",
                 items
             )
 
-        # subscribe to series dictated by properties
-        self.subscribe_to(self.props)
+        # subscribe to stream dictated by properties
+        publisher.subscribe(self.props, self)
 
         # create the plot
         self.plot = pg.PlotItem(title=self.props, left="Data", bottom="Seconds")

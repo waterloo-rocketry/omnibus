@@ -25,9 +25,6 @@ build/
 dist/
 *.egg-info/
 
-cscope*
-runtest/*
-
 .coverage
 coverage.xml
 htmlcov

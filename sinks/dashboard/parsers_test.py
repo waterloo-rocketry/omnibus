@@ -28,8 +28,8 @@ class TestDAQParser:
         }
         parsers.parse("DAQ", payload)
         # values should be averagd
-        #assert parser.series.get("SENSOR 1").data == [(0, 3)]
-        #assert parser.series.get("SENSOR 2").data == [(0, 5)]
+        assert parser.series.get("SENSOR 1").data == [(0, 3)]
+        assert parser.series.get("SENSOR 2").data == [(0, 5)]
 
     def test_multiple(self, parser):
         payload = {
