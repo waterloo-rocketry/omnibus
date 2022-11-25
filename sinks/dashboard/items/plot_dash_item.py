@@ -99,6 +99,9 @@ class PlotDashItem (DashboardItem):
 
         # plot the warning line, using two points (start and end)
         self.warning_line.setData([times[0], times[-1]], [self.limit] * 2)
+        # set the red tint
+        if self.limit:
+            self.warning_line.setFillLevel(max_point*2)
 
         # plot the data curve
         self.curve.setData(times, points)
