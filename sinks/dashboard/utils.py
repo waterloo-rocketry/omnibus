@@ -1,29 +1,29 @@
 from pyqtgraph.Qt import QtWidgets
 
 
-def prompt_user(widget, property_name, description, prompt_type, items=None, can_add_items=False):
+def prompt_user(widget, property_name, description, prompt_type, items=None, can_add_items=False, okText="OK", cancelText="Cancel"):
     """
-    Opens a pop up asking user for input. Returns None if input selection
-    is not valid or user cancels
+    Opens a pop up asking user for input.
+    Returns None if input selection is not valid or user cancels
     """
-    ok = False
-    selection = None
 
+    # set up a dialog template
+    dialog_template = QtWidgets.QInputDialog()
+    dialog_template.setInputMode(QtWidgets.QInputDialog.InputMode.DoubleInput if prompt_type == "number"
+                                 else QtWidgets.QInputDialog.InputMode.TextInput)
+    dialog_template.setWindowTitle(property_name)
+    dialog_template.setLabelText(description)
+    dialog_template.setOkButtonText(okText)
+    dialog_template.setCancelButtonText(cancelText)
+    dialog_template.setDoubleMaximum(1000)
+    dialog_template.setDoubleDecimals(2)
     if prompt_type == "items":
-        if (items == None):
-            return None
+        dialog_template.setComboBoxItems(items)
+        dialog_template.setComboBoxEditable(can_add_items)
 
-        selection, ok = QtWidgets.QInputDialog.getItem(
-            widget, property_name, description, items, 0, can_add_items)
-
-    elif prompt_type == "text":
-        selection, ok = QtWidgets.QInputDialog.getText(widget, property_name, description)
-
-    elif prompt_type == "number":
-        selection, ok = QtWidgets.QInputDialog.getDouble(
-            widget, property_name, description, decimals=2)
-
-    if not ok:
-        return None
-
-    return selection
+    # retrieving user input
+    if dialog_template.exec_() == QtWidgets.QDialog.Accepted:
+        if prompt_type == "text" or prompt_type == "items":
+            return dialog_template.textValue()
+        elif prompt_type == "number":
+            return dialog_template.doubleValue()

@@ -29,14 +29,17 @@ class PlotDashItem (DashboardItem):
         # set the limit for triggering red tint area
         self.limit = props[2]
 
+        # save props as a field
+        self.props = props
+        
         # create the plot
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
         # create data curve and warning line
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
-        self.warning_line = self.plot.plot(
-            [], [], fillLevel=self.limit*10, brush=(255, 0, 0, 50), pen='r')
+        if self.limit != None:
+            self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
 
         # create the plot widget
         self.widget = pg.PlotWidget(plotItem=self.plot)
@@ -62,15 +65,14 @@ class PlotDashItem (DashboardItem):
         if not channel_and_series:
             return None
 
+        # threshold_input == None if not set
         threshold_input = prompt_user(
             self,
             "Threshold Value",
             "Set an upper limit",
-            "number"
+            "number",
+            cancelText="No Threshold"
         )
-        # if no threshold value, then does not draw the line
-        if threshold_input == None:
-            threshold_input = 0
 
         props = channel_and_series.split("|")
         props.append(threshold_input)
@@ -97,10 +99,10 @@ class PlotDashItem (DashboardItem):
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
 
-        # plot the warning line, using two points (start and end)
-        self.warning_line.setData([times[0], times[-1]], [self.limit] * 2)
-        # set the red tint
-        if self.limit:
+        if self.limit != None:
+            # plot the warning line, using two points (start and end)
+            self.warning_line.setData([times[0], times[-1]], [self.limit] * 2)
+            # set the red tint
             self.warning_line.setFillLevel(max_point*2)
 
         # plot the data curve
