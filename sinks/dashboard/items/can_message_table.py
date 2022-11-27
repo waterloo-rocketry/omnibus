@@ -1,5 +1,5 @@
-import PySide6.QtCore as QtCore
-import  PyQt6.QtGui as  QtGui
+import pyqtgraph.QtCore as QtCore
+import pyqtgraph.Qt.QtGui as QtGui
 from pyqtgraph.Qt import QtWidgets
 from sinks.dashboard.items.dashboard_item import DashboardItem
 from parsers import CanDisplayParser
