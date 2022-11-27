@@ -31,14 +31,14 @@ class PlotDashItem (DashboardItem):
 
         # save props as a field
         self.props = props
-        
+
         # create the plot
         self.plot = pg.PlotItem(title=self.series.name, left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
         # create data curve and warning line
         self.curve = self.plot.plot(self.series.times, self.series.points, pen='y')
-        if self.limit != None:
+        if self.limit is not None:
             self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
 
         # create the plot widget
@@ -99,7 +99,7 @@ class PlotDashItem (DashboardItem):
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
 
-        if self.limit != None:
+        if self.limit is not None:
             # plot the warning line, using two points (start and end)
             self.warning_line.setData([times[0], times[-1]], [self.limit] * 2)
             # set the red tint
