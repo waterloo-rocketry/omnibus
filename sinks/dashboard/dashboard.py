@@ -3,12 +3,12 @@ import os
 import time
 import sys
 
-import PySide6.QtCore as QtCore
-import PyQt6.QtWidgets as QtWidgets
+import pyqtgraph.Qt.QtCore as QtCore
+import pyqtgraph.Qt.QtWidgets importas QtWidgets
 import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
-from PyQt6.QtWidgets import (
+from pyqtgraph.Qt.QtWidgets import (
     QApplication,
     QVBoxLayout,
     QMenuBar,
