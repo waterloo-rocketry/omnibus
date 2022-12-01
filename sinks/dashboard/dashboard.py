@@ -4,7 +4,7 @@ import time
 import sys
 
 import pyqtgraph.Qt.QtCore as QtCore
-import pyqtgraph.Qt.QtWidgets importas QtWidgets
+import pyqtgraph.Qt.QtWidgets  as QtWidgets
 import pyqtgraph as pg
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
