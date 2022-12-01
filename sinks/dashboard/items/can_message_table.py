@@ -209,8 +209,7 @@ class CanMsgTableDashItem(DashboardItem):
             self.layout_widget.layout.addWidget(exp_widget)
 
         # Subscribe to all relavent stream
-        for stream in publisher.get_all_stream("CAN"):
-            publisher.subscribe(stream, self)
+        publisher.subscribe("CAN", self.on_data_update)
 
         self.scrolling_part = QtWidgets.QScrollArea(self)
         self.scrolling_part.setWidgetResizable(True)
@@ -221,21 +220,14 @@ class CanMsgTableDashItem(DashboardItem):
     def get_props(self):
         return self.props
 
-    def get_msg(self):
-        return self.payloadQ[-1]
-
     def on_data_update(self, canSeries):
         # adding this line because canSeries is currently in the form of [timestamp, payload], and we want only the payload
-        canSeries = canSeries[1]
-
-        self.payloadQ.append(canSeries)
-
-        if (len(self.payloadQ) > 50):
-            self.payloadQ.pop(0)
-
-        message = self.get_msg()
-        if canSeries["board_id"] in self.message_dict:
-            self.message_dict[canSeries["board_id"]].update_with_message(message)
+        message = canSeries[1]
+        if message["board_id"] in self.message_dict:
+            self.message_dict[message["board_id"]].update_with_message(message)
 
     def get_name():
         return "CAN Message Table"
+
+    def on_delete(self):
+        publisher.unsubscribe_from_all(self.on_data_update)

@@ -39,7 +39,7 @@ class PlotDashItem (DashboardItem):
         # if no properties are passed in
         # prompt the user for them
         if self.props == None:
-            items = publisher.get_all_stream()
+            items = publisher.get_all_streams()
 
             self.props = prompt_user(
                 self,
@@ -50,7 +50,7 @@ class PlotDashItem (DashboardItem):
             )
 
         # subscribe to stream dictated by properties
-        publisher.subscribe(self.props, self)
+        publisher.subscribe(self.props, self.on_data_update)
 
         # create the plot
         self.plot = pg.PlotItem(title=self.props, left="Data", bottom="Seconds")
@@ -65,13 +65,8 @@ class PlotDashItem (DashboardItem):
         self.layout.addWidget(self.widget, 0, 0)
 
     def on_data_update(self, payload):
-        # Migration of Series logic on add
-        time = payload[0]
-        point = payload[1]
-        desc = ""
-
-        if (len(payload) > 2):
-            desc = payload[2]
+        time, point = payload
+        desc = payload[2] if (len(payload) > 2) else ""
 
         time += self.time_offset
 
@@ -121,3 +116,6 @@ class PlotDashItem (DashboardItem):
 
     def get_name():
         return "Plot"
+
+    def on_delete(self):
+        publisher.unsubscribe_from_all(self.on_data_update)

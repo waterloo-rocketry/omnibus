@@ -26,3 +26,10 @@ class DashboardItem(QtWidgets.QWidget):
         Return whatever data we need to recreate ourselves. This data gets passed to the constructor when reinitializing.
         """
         raise NotImplementedError
+
+    def on_delete(self):
+        """
+        This function is called when a dashitem is removed from the screen. In practice, this will likely be used to
+        remove subscriptions from series
+        """
+        pass

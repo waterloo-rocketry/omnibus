@@ -1,39 +1,33 @@
+
 class Publisher:
     """
-    Abstract class acting as the Subject of Observation from observers.
-    """
+    The core data bus of the dashboard. 
 
+    This class holds a number number of streams. Users may
+    subscribe to these streams to recieve notifications 
+    upon updates. This is done by providing a callback, which
+    is called when the data is updated.
+    """
     def __init__(self):
         self.streams = {}
 
-    def get_all_stream(self, _type=""):
-        return_stream = []
-        for key in list(self.streams.keys()):
-            if key.startswith(_type):
-                return_stream.append(key)
-        return return_stream
+    def get_all_streams(self, _type=""):
+        return self.streams.keys()
 
-    def subscribe(self, stream, observer):
-        """
-        An observer is a dashboard item that cares
-        about data updates. Adding an observer
-        means adding an item to be notified
-        when the data is updated
-        """
-        if stream not in self.streams:
-            self.streams[stream] = []
-        self.streams[stream].append(observer)
+    def subscribe(self, stream, callback):
+        if stream in self.streams:
+            self.streams[stream].append(callback)
 
-    def unsubscribe_from_all(self, observer):
+    def unsubscribe_from_all(self, callback):
         for stream in self.streams:
-            if observer in self.streams[stream]:
-                self.streams[stream].remove(observer)
+            if callback in self.streams[stream]:
+                self.streams[stream].remove(callback)
 
     def update(self, stream, payload):
         if stream not in self.streams:
             self.streams[stream] = []
-        for observer in self.streams[stream]:
-            observer.on_data_update(payload)
+        for callback in self.streams[stream]:
+            callback(payload)
 
 
 publisher = Publisher()

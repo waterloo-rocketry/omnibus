@@ -113,7 +113,7 @@ class Dashboard(QtWidgets.QWidget):
         # registered with any series
         for dock in self.docks:
             item = dock.widgets[0]
-            item.unsubscribe_to_all()
+            item.on_delete()
 
         # Second, remove the entire dock area,
         # thereby deleting all of the docks
@@ -193,9 +193,9 @@ class Dashboard(QtWidgets.QWidget):
         # this. Right now, not a priority.
 
         # Create a call back to execute when docks close to ensure cleaning up is done
-        # right
+        # correctly
         def custom_callback(dock_arg):
-            dashitem.unsubscribe_to_all()
+            dashitem.on_delete()
             self.docks = [dock for dock in self.docks if dock.widgets[0] != dashitem]
 
         dock.sigClosed.connect(custom_callback)
