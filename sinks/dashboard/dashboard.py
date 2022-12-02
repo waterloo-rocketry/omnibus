@@ -70,7 +70,9 @@ class Dashboard(QtWidgets.QWidget):
 
         def prompt_and_add(i):
             def ret_func():
-                self.add(item_types[i](None))
+                props = item_types[i].prompt_for_properties(self)
+                if props:
+                    self.add(item_types[i](props))
             return ret_func
 
         for i in range(len(item_types)):
@@ -213,17 +215,16 @@ class Dashboard(QtWidgets.QWidget):
     def switch(self):
         self.save()
         filename = prompt_user(
-                self,
-                "New File Name",
-                "Enter the name of the file which you wish to load",
-                "items",
-                self.filename_cache,
-                True
-            )
+            self,
+            "New File Name",
+            "Enter the name of the file which you wish to load",
+            "items",
+            self.filename_cache,
+            True
+        )
 
         if filename == None:
             return
-
 
         # If the filename entered is not valid
         # this exhibits the behaviour of creating
@@ -240,7 +241,7 @@ class Dashboard(QtWidgets.QWidget):
         self.counter.tick()
 
         # Filter to 5 frames per update on analytics
-        if not(self.counter.tick_count() % 5):
+        if not (self.counter.tick_count() % 5):
             fps = self.counter.tick_rate()
 
         self.callback()

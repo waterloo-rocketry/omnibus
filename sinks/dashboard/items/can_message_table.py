@@ -175,6 +175,12 @@ class CanMsgTableDashItem(DashboardItem):
 
         self.layout.addWidget(self.scrolling_part)
 
+    def prompt_for_properties(self):
+        """
+        CAN message table does not need props to initialize, so just return True
+        """
+        return True
+
     def get_props(self):
         return self.props
 
