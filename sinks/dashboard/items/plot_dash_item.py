@@ -42,6 +42,12 @@ class PlotDashItem (DashboardItem):
         # subscribe to stream dictated by properties
         publisher.subscribe(self.props[0], self.on_data_update)
 
+        # set the limit for triggering red tint area
+        self.limit = props[2]
+
+        # save props as a field
+        self.props = props
+
         # create the plot
         self.plot = pg.PlotItem(title=self.props[0], left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
