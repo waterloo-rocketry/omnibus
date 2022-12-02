@@ -174,8 +174,6 @@ class CanMsgTableDashItem(DashboardItem):
         super().__init__()
         self.props = props
 
-        self.payloadQ = []
-
         # 1) Establish a structure of one expanding
         #    widget per board
         # 2) For each of those widgets, add a Display

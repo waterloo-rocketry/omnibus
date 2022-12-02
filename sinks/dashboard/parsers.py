@@ -35,9 +35,11 @@ class Register:
 
     def __call__(self, func):
         for msg_channel in self.msg_channels:
-            if msg_channel in Register.func_map:
+            if msg_channel not in Register.func_map:
+                Register.func_map[msg_channel] = [func]
+            else:
                 Register.func_map[msg_channel].append(func)
-            Register.func_map[msg_channel] = [func]
+            
         return func
 
 def parse(msg_channel, msg_payload):
@@ -45,8 +47,7 @@ def parse(msg_channel, msg_payload):
         if msg_channel.startswith(channel):
             for func in Register.func_map[channel]:
                 # For an explanation, please refer to later block of comments
-                stream_message_pair_list = func(msg_payload)
-                for stream_name, timestamp, parsed_message in stream_message_pair_list:
+                for stream_name, timestamp, parsed_message in func(msg_payload):
                     publisher.update(stream_name, (timestamp, parsed_message))
 
 # We insist that each parse have the following signature

@@ -11,12 +11,13 @@ class Publisher:
     def __init__(self):
         self.streams = {}
 
-    def get_all_streams(self, _type=""):
+    def get_all_streams(self):
         return self.streams.keys()
 
     def subscribe(self, stream, callback):
-        if stream in self.streams:
-            self.streams[stream].append(callback)
+        if stream not in self.streams:
+            self.streams[stream] = []
+        self.streams[stream].append(callback)
 
     def unsubscribe_from_all(self, callback):
         for stream in self.streams:
