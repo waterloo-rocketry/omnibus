@@ -1,5 +1,5 @@
 from pyqtgraph.Qt import QtCore
-
+from pyqtgraph.Qt.QtWidgets import QMenuBar
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtWidgets
 from sinks.dashboard.items.dashboard_item import DashboardItem
@@ -97,7 +97,7 @@ class ExpandingWidget(QtWidgets.QWidget):
 
         self.name = name
 
-        menubar = QtGui.QMenuBar(self)
+        menubar = QMenuBar(self)
         self.layout.setMenuBar(menubar)
 
         self.content = widget
