@@ -1,0 +1,1 @@
+{"items": [{"props": ["DAQ", "Fake4", null], "class": "<class 'items.plot_dash_item.PlotDashItem'>"}, {"props": ["DAQ", "Fake3", null], "class": "<class 'items.plot_dash_item.PlotDashItem'>"}], "layout": {"main": ["horizontal", [["dock", "0", {}], ["dock", "1", {}]], {"sizes": [477, 476]}], "float": []}}

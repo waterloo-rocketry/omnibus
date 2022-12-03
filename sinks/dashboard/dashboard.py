@@ -2,6 +2,7 @@ import pickle
 import os
 import time
 import sys
+import json
 
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
@@ -37,7 +38,7 @@ class Dashboard(QtWidgets.QWidget):
         self.callback = callback
 
         # The file from which the dashboard is loaded
-        self.filename = "savefile.sav"
+        self.filename = "savefile.json"
         self.filename_cache = [self.filename]
 
         # A list of all docks in the dock area
@@ -140,8 +141,8 @@ class Dashboard(QtWidgets.QWidget):
         # if the save file exists, set our
         # data variable to it
         if os.path.isfile(self.filename):
-            with open(self.filename, 'rb') as savefile:
-                data = pickle.load(savefile)
+            with open(self.filename, 'r') as savefile:
+                data = json.load(savefile)
         else:
             data = {
                 "items": [],
@@ -151,6 +152,12 @@ class Dashboard(QtWidgets.QWidget):
         # for every item specified by the save file,
         # add that item back to the dock
         for i, item in enumerate(data["items"]):  # { 0: {...}, 1: ..., ...}
+            # Convert item_type string back into item_type
+            # See save() method
+            for item_type in item_types:
+                if item["class"] == str(item_type):
+                    item["class"] = item_type
+
             self.add(item["class"](item["props"]))
 
         # restore the layout
@@ -181,11 +188,18 @@ class Dashboard(QtWidgets.QWidget):
         data["items"] = []
         for dock in self.docks:
             item = dock.widgets[0]
-            data["items"].append({"props": item.get_props(), "class": type(item)})
+
+            # ObjectTypes can't be converted to JSON
+            # Take the string of the class instead
+            for item_type in item_types:
+                if type(item) == item_type:
+                    item_class = str(item_type)
+
+            data["items"].append({"props": item.get_props(), "class": item_class})
 
         # Save to the save file
-        with open(self.filename, 'wb') as savefile:
-            pickle.dump(data, savefile)
+        with open(self.filename, 'w') as savefile:
+            json.dump(data, savefile)
 
     def add(self, dashitem):
         # Create a new dock to be added to the dock area
