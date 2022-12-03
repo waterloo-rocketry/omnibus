@@ -2,10 +2,9 @@ import pickle
 import os
 import time
 import sys
-
 from pyqtgraph.Qt import QtCore
-from pyqtgraph.Qt import QtWidgets
 import pyqtgraph as pg
+import pyqtgraph.Qt.QtWidgets as QtWidgets
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from pyqtgraph.Qt.QtWidgets import (

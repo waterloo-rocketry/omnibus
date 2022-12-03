@@ -1,5 +1,6 @@
 from pyqtgraph.Qt import QtCore
-import pyqtgraph.Qt.QtGui as QtGui
+
+from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtWidgets
 from sinks.dashboard.items.dashboard_item import DashboardItem
 from parsers import CanDisplayParser

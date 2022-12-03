@@ -1,6 +1,6 @@
 from parsers import Parser
 from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt import QGridLayout
+from pyqtgraph.Qt.QtWidgets import QGridLayout
 
 import pyqtgraph as pg
 from pyqtgraph.console import ConsoleWidget
