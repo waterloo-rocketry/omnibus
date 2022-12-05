@@ -33,3 +33,11 @@ class DashboardItem(QtWidgets.QWidget):
         remove subscriptions from series
         """
         pass
+
+    def prompt_for_properties(self):
+        """
+        An abstract function for prompting user input
+        Return a truthy value will result in the props being passed to create the widget
+        Return a falsey value will result in cancelling of the creation of the widget
+        """
+        pass

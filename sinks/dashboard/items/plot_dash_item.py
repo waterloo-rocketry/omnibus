@@ -16,7 +16,7 @@ from utils import prompt_user
 
 
 class PlotDashItem (DashboardItem):
-    def __init__(self, props=None):
+    def __init__(self, props):
         # Call this in **every** dash item constructor
         super().__init__()
 
@@ -33,30 +33,23 @@ class PlotDashItem (DashboardItem):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
 
-        # store the properties
-        self.props = props
-
-        # if no properties are passed in
-        # prompt the user for them
-        if self.props == None:
-            items = publisher.get_all_streams()
-
-            self.props = prompt_user(
-                self,
-                "Data Series",
-                "The stream you wish to plot",
-                "items",
-                items
-            )
-
         # subscribe to stream dictated by properties
         publisher.subscribe(self.props, self.on_data_update)
+
+        # set the limit for triggering red tint area
+        self.limit = props[1]
+
+        # save props as a field
+        self.props = props
 
         # create the plot
         self.plot = pg.PlotItem(title=self.props, left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
+
         self.curve = self.plot.plot(self.times, self.points, pen='y')
+        if self.limit is not None:
+            self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
 
         # create the plot widget
         self.widget = pg.PlotWidget(plotItem=self.plot)
@@ -64,6 +57,39 @@ class PlotDashItem (DashboardItem):
         # add it to the layout
         self.layout.addWidget(self.widget, 0, 0)
 
+    def prompt_for_properties(self):
+        items = []
+        for channel in Parser.parsers.keys():
+            all_series = [series.name for series in Parser.get_all_series(channel)]
+            all_series.sort()
+            for series in all_series:
+                items.append(f"{channel}|{series}")
+
+        channel_and_series = prompt_user(
+            self,
+            "Data Series",
+            "The series you wish to plot",
+            "items",
+            items,
+        )
+        if not channel_and_series:
+            return None
+
+        # threshold_input == None if not set
+        threshold_input = prompt_user(
+            self,
+            "Threshold Value",
+            "Set an upper limit",
+            "number",
+            cancelText="No Threshold"
+        )
+
+        props = channel_and_series.split("|")
+        props.append(threshold_input)
+
+        return props
+
+<<<<<<< HEAD
     def on_data_update(self, payload):
         time, point = payload
         desc = payload[2] if (len(payload) > 2) else ""
@@ -90,6 +116,10 @@ class PlotDashItem (DashboardItem):
         self.points[:-1] = self.points[1:]
         self.points[-1] = point
 
+=======
+
+    def on_data_update(self, series):
+>>>>>>> 8eccd8754ba328453d37de46899cb25a955b2be0
         # update the displayed data
 
         # find the time range
@@ -97,7 +127,7 @@ class PlotDashItem (DashboardItem):
         min_time = t - config.GRAPH_DURATION + config.GRAPH_STEP
         max_time = t + config.GRAPH_STEP
 
-        # filter the times
+        # filter the times, points
 
         times = [self.times[i] for i in range(self.size) if (
             self.times[i] >= min_time and self.times[i] <= max_time)]
@@ -105,11 +135,24 @@ class PlotDashItem (DashboardItem):
         points = [self.points[i] for i in range(self.size) if (
             self.times[i] >= min_time and self.times[i] <= max_time)]
 
+        min_point = min(points)
+        max_point = max(points)
+
+        # set the displayed range of Y axis
+        self.plot.setYRange(min_point, max_point, padding=0.1)
+
+        if self.limit is not None:
+            # plot the warning line, using two points (start and end)
+            self.warning_line.setData([times[0], times[-1]], [self.limit] * 2)
+            # set the red tint
+            self.warning_line.setFillLevel(max_point*2)
+
+        # plot the data curve
         self.curve.setData(times, points)
 
         # current value readout in the title
         self.plot.setTitle(
-                f"[{sum(points)/len(points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props} {desc}")
+            f"[{sum(points)/len(points): <4.4f}] [{points[-1]: <4.4f}] {series.name} {series.desc and (series.desc + ' ') or ''}")
 
     def get_props(self):
         return self.props

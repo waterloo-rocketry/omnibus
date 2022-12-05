@@ -2,42 +2,6 @@ from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from sinks.dashboard.items.dashboard_item import DashboardItem
 from parsers import publisher
 
-CAN_MSG_TYPES = ["GENERAL_CMD",
-                 "ACTUATOR_CMD",
-                 "ALT_ARM_CMD",
-                 "DEBUG_MSG",
-                 "DEBUG_PRINTF",
-                 "ALT_ARM_STATUS",
-                 "ACTUATOR_STATUS",
-                 "GENERAL_BOARD_STATUS",
-                 "RECOVERY_STATUS",
-                 "SENSOR_TEMP",
-                 "SENSOR_ALTITUDE",
-                 "SENSOR_ACC",
-                 "SENSOR_ACC2",
-                 "SENSOR_GYRO",
-                 "SENSOR_MAG",
-                 "SENSOR_ANALOG",
-                 "GPS_TIMESTAMP",
-                 "GPS_LATITUDE",
-                 "GPS_LONGITUDE",
-                 "GPS_ALTITUDE",
-                 "GPS_INFO"]
-
-BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black', "msg_types": ["GENERAL_BOARD_STATUS", "GENERAL_CMD", "ACTUATOR_CMD", "ALT_ARM_CMD"]},
-              "INJECTOR": {"id": 0x01, "index": 1, "color": 'chocolate', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
-              "LOGGER": {"id": 0x03, "index": 2, "color": 'darkCyan', "msg_types": ["GENERAL_BOARD_STATUS"]},
-              "RADIO": {"id": 0x05, "index": 3, "color": 'blue', "msg_types": ["GENERAL_BOARD_STATUS"]},
-              "SENSOR": {"id": 0x07, "index": 4, "color": 'darkblue', "msg_types": ["GENERAL_BOARD_STATUS"]},
-              "VENT": {"id": 0x0B, "index": 5, "color": 'slategray', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
-              "GPS": {"id": 0x0D, "index": 6, "color": 'darkMagenta', "msg_types": ["GENERAL_BOARD_STATUS"]},
-              "ARMING": {"id": 0x11, "index": 7, "color": 'darkGreen', "msg_types": ["GENERAL_BOARD_STATUS"]},
-              "PAPA": {"id": 0x13, "index": 8, "color": 'olive', "msg_types": ["GENERAL_BOARD_STATUS"]},
-              "ROCKET_PI": {"id": 0x15, "index": 9, "color": 'purple', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
-              "ROCKET_PI_2": {"id": 0x16, "index": 10, "color": 'deeppink', "msg_types": ["GENERAL_BOARD_STATUS", "ACTUATOR_STATUS"]},
-              "SENSOR_2": {"id": 0x19, "index": 11, "color": 'steelblue', "msg_types": ["GENERAL_BOARD_STATUS"]},
-              "SENSOR_3": {"id": 0x1B, "index": 12, "color": 'darkorange', "msg_types": ["GENERAL_BOARD_STATUS"]}}
-
 # So, we need a few things
 # 1) a widget that displays an object, in our case a
 #    CAN Message. Will be a QTable
@@ -50,7 +14,7 @@ BOARD_DATA = {"DUMMY": {"id": 0x00, "index": 0, "color": 'black', "msg_types": [
 class DisplayCANTable(QtWidgets.QWidget):
     """
     A widget that displays an object, in our case a
-    CAN Message. Makes use of a QTable
+    CAN message. Makes use of a QTable.
     """
 
     def __init__(self):
@@ -66,16 +30,12 @@ class DisplayCANTable(QtWidgets.QWidget):
         # 8 bytes, 3 used by time stamp leaves 6 total fields
         # + 1 title field
         self.tableWidget.setRowCount(7)
-        self.tableWidget.setColumnCount(2 * len(CAN_MSG_TYPES))
 
         height = self.tableWidget.horizontalHeader().height() + 25
         for i in range(self.tableWidget.rowCount()):
             height += self.tableWidget.rowHeight(i)
 
         self.tableWidget.setMinimumHeight(height)
-
-        for i in range(len(CAN_MSG_TYPES)):
-            self.tableWidget.setSpan(0, 2*i, 1, 2)
 
         self.layout.addWidget(self.tableWidget)
 
@@ -92,6 +52,11 @@ class DisplayCANTable(QtWidgets.QWidget):
             # https://www.riverbankcomputing.com/static/Docs/PyQt4/qt.html#AlignmentFlag-enum
             # because I had issues importing Qt.AlignHCenter
             item.setTextAlignment(4)
+
+            # resize column
+            self.tableWidget.setColumnCount(2 * len(self.msgTypes))
+            for i in range(len(self.msgTypes)):
+                self.tableWidget.setSpan(0, 2*i, 1, 2)
 
             font = QtGui.QFont()
             font.setBold(True)
@@ -200,12 +165,6 @@ class CanMsgTableDashItem(DashboardItem):
         # key is a message type and the value is the
         # specific DisplayObject
 
-        for board in BOARD_DATA:
-            table = DisplayCANTable()
-            self.message_dict[board] = table
-            exp_widget = ExpandingWidget(board, table)
-            self.layout_widget.layout.addWidget(exp_widget)
-
         # Subscribe to all relavent stream
         publisher.subscribe("CAN", self.on_data_update)
 
@@ -215,14 +174,32 @@ class CanMsgTableDashItem(DashboardItem):
 
         self.layout.addWidget(self.scrolling_part)
 
+    def prompt_for_properties(self):
+        """
+        CAN message table does not need props to initialize, so just return True
+        """
+        return True
+
     def get_props(self):
         return self.props
 
     def on_data_update(self, canSeries):
+<<<<<<< HEAD
         # adding this line because canSeries is currently in the form of [timestamp, payload], and we want only the payload
         message = canSeries[1]
         if message["board_id"] in self.message_dict:
             self.message_dict[message["board_id"]].update_with_message(message)
+=======
+        message = canSeries.get_msg()
+        if canSeries.name in self.message_dict:
+            self.message_dict[canSeries.name].update_with_message(message)
+        else:
+            table = DisplayCANTable()
+            self.message_dict[canSeries.name] = table
+            exp_widget = ExpandingWidget(canSeries.name, table)
+            self.layout_widget.layout.addWidget(exp_widget)
+            self.message_dict[canSeries.name].update_with_message(message)
+>>>>>>> 8eccd8754ba328453d37de46899cb25a955b2be0
 
     def get_name():
         return "CAN Message Table"
