@@ -10,13 +10,12 @@ from pyqtgraph.dockarea.DockArea import DockArea
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
 
-from parsers import Parser
 from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
 
-# "Temorary Global Constant"
+# "Temporary Global Constant"
 
 item_types = [
     PlotDashItem,
@@ -116,7 +115,7 @@ class Dashboard(QtWidgets.QWidget):
         # registered with any series
         for dock in self.docks:
             item = dock.widgets[0]
-            item.unsubscribe_to_all()
+            item.on_delete()
 
         # Second, remove the entire dock area,
         # thereby deleting all of the docks
@@ -196,9 +195,9 @@ class Dashboard(QtWidgets.QWidget):
         # this. Right now, not a priority.
 
         # Create a call back to execute when docks close to ensure cleaning up is done
-        # right
+        # correctly
         def custom_callback(dock_arg):
-            dashitem.unsubscribe_to_all()
+            dashitem.on_delete()
             self.docks = [dock for dock in self.docks if dock.widgets[0] != dashitem]
 
         dock.sigClosed.connect(custom_callback)

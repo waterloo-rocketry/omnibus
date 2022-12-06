@@ -9,7 +9,7 @@ class Connection(Enum):
     Represents how a sensor is wired into the NI box.
     """
     SINGLE = nidaqmx.constants.TerminalConfiguration.RSE  # ground referenced single ended
-    DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.DIFF
+    DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.BAL_DIFF
 
 
 class Calibration:
