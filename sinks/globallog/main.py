@@ -13,8 +13,37 @@ CURTIME = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
 # Creates filename
 fname = CURTIME + ".log"
 receiver = Receiver(CHANNEL)
+
+dots = -1
+counter = 0
+
 # Creates new file
 with open(fname, "wb") as f:
+    print(f"Data will be logged to {fname}")
+    # Hides cursor for continous print
+    print('\033[?25l', end="")
+
     while True:
+        # Cool continuously updating print statment
+        if counter % 30 == 0:
+            append = ""
+            if dots == 4:
+                char = " "
+            else:
+                char = "."
+
+            for i in range(dots):
+                append += char
+
+            print(f"\rLogging{append}", end="")
+
+            if dots == 4:
+                dots = 0
+            else:
+                dots += 1
+
+        counter += 1
+
+        # Receives message and writes it to file
         msg = receiver.recv_message()
         f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
