@@ -33,17 +33,17 @@ class PlotDashItem (DashboardItem):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
 
-        # subscribe to stream dictated by properties
-        publisher.subscribe(self.props, self.on_data_update)
-
         # set the limit for triggering red tint area
         self.limit = props[1]
 
         # save props as a field
         self.props = props
 
+        # subscribe to stream dictated by properties
+        publisher.subscribe(self.props[0], self.on_data_update)
+
         # create the plot
-        self.plot = pg.PlotItem(title=self.props, left="Data", bottom="Seconds")
+        self.plot = pg.PlotItem(title=self.props[0], left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
 
@@ -58,19 +58,13 @@ class PlotDashItem (DashboardItem):
         self.layout.addWidget(self.widget, 0, 0)
 
     def prompt_for_properties(self):
-        items = []
-        for channel in Parser.parsers.keys():
-            all_series = [series.name for series in Parser.get_all_series(channel)]
-            all_series.sort()
-            for series in all_series:
-                items.append(f"{channel}|{series}")
 
         channel_and_series = prompt_user(
             self,
             "Data Series",
             "The series you wish to plot",
             "items",
-            items,
+            publisher.get_all_streams(),
         )
         if not channel_and_series:
             return None
@@ -84,12 +78,10 @@ class PlotDashItem (DashboardItem):
             cancelText="No Threshold"
         )
 
-        props = channel_and_series.split("|")
-        props.append(threshold_input)
+        props = [channel_and_series, threshold_input]
 
         return props
 
-<<<<<<< HEAD
     def on_data_update(self, payload):
         time, point = payload
         desc = payload[2] if (len(payload) > 2) else ""
@@ -116,43 +108,24 @@ class PlotDashItem (DashboardItem):
         self.points[:-1] = self.points[1:]
         self.points[-1] = point
 
-=======
-
-    def on_data_update(self, series):
->>>>>>> 8eccd8754ba328453d37de46899cb25a955b2be0
-        # update the displayed data
-
-        # find the time range
-        t = round(self.times[-1] / config.GRAPH_STEP) * config.GRAPH_STEP
-        min_time = t - config.GRAPH_DURATION + config.GRAPH_STEP
-        max_time = t + config.GRAPH_STEP
-
-        # filter the times, points
-
-        times = [self.times[i] for i in range(self.size) if (
-            self.times[i] >= min_time and self.times[i] <= max_time)]
-
-        points = [self.points[i] for i in range(self.size) if (
-            self.times[i] >= min_time and self.times[i] <= max_time)]
-
-        min_point = min(points)
-        max_point = max(points)
+        min_point = min(self.points)
+        max_point = max(self.points)
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
 
         if self.limit is not None:
             # plot the warning line, using two points (start and end)
-            self.warning_line.setData([times[0], times[-1]], [self.limit] * 2)
+            self.warning_line.setData([self.times[0], self.times[-1]], [self.limit] * 2)
             # set the red tint
             self.warning_line.setFillLevel(max_point*2)
 
         # plot the data curve
-        self.curve.setData(times, points)
+        self.curve.setData(self.times, self.points)
 
         # current value readout in the title
         self.plot.setTitle(
-            f"[{sum(points)/len(points): <4.4f}] [{points[-1]: <4.4f}] {series.name} {series.desc and (series.desc + ' ') or ''}")
+            f"[{sum(self.points)/len(self.points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props[0]}")
 
     def get_props(self):
         return self.props

@@ -184,22 +184,15 @@ class CanMsgTableDashItem(DashboardItem):
         return self.props
 
     def on_data_update(self, canSeries):
-<<<<<<< HEAD
-        # adding this line because canSeries is currently in the form of [timestamp, payload], and we want only the payload
         message = canSeries[1]
         if message["board_id"] in self.message_dict:
             self.message_dict[message["board_id"]].update_with_message(message)
-=======
-        message = canSeries.get_msg()
-        if canSeries.name in self.message_dict:
-            self.message_dict[canSeries.name].update_with_message(message)
         else:
             table = DisplayCANTable()
-            self.message_dict[canSeries.name] = table
-            exp_widget = ExpandingWidget(canSeries.name, table)
+            self.message_dict[message["board_id"]] = table
+            exp_widget = ExpandingWidget(message["board_id"], table)
             self.layout_widget.layout.addWidget(exp_widget)
-            self.message_dict[canSeries.name].update_with_message(message)
->>>>>>> 8eccd8754ba328453d37de46899cb25a955b2be0
+            self.message_dict[message["board_id"]].update_with_message(message)
 
     def get_name():
         return "CAN Message Table"
