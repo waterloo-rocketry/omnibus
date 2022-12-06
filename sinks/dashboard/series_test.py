@@ -1,35 +1,65 @@
 import pytest
 
 import config
-from series import Series
+from publisher import Publisher
 
 
-class TestSeries:
-    @pytest.fixture(autouse=True)  # runs before every unit test
-    def constants(self, monkeypatch):
-        monkeypatch.setattr(config, "GRAPH_RESOLUTION", 10)
-        monkeypatch.setattr(config, "GRAPH_DURATION", 10)
+class TestPublisher:
+    def test_subscribe(self):
+        p = Publisher()
+        assert len(p.streams) == 0
 
-    def test_no_downsample(self):
-        s = Series("NAME")
-        s.add([1/10, 1])
-        assert s.points[-2] == 1  # make sure we back-fill()ed the array
-        assert s.points[-1] == 1
-        s.add([2/10, 2])
-        assert s.points[-3] == 1
-        assert s.points[-2] == 1
-        assert s.points[-1] == 2
+        p.subscribe("test1", True)
+        assert p.streams["test1"] == [True]
 
-    def test_downsample(self):
-        s = Series("NAME")
-        s.add([1/20, 1])  # downsampled away
-        s.add([2/20, 2])
-        assert s.points[-2] == 2
-        assert s.points[-1] == 2
-        s.add([3/20, 3])  # downsampled away
-        assert s.points[-2] == 2
-        assert s.points[-1] == 2
-        s.add([4/20, 4])
-        assert s.points[-3] == 2
-        assert s.points[-2] == 2
-        assert s.points[-1] == 4
+        p.subscribe("test2", False)
+        assert p.streams["test2"] == [False]
+        assert p.streams["test1"] == [True]
+
+        p.subscribe("test1", False)
+        assert p.streams["test1"] == [True, False]
+
+    def test_unsubscribe_from_all(self):
+        p = Publisher()
+        p.subscribe("test1", True)
+        p.subscribe("test2", True)
+        assert p.streams["test1"] == [True]
+        assert p.streams["test2"] == [True]
+
+        p.unsubscribe_from_all(True)
+        assert p.streams["test1"] == []
+        assert p.streams["test2"] == []
+
+        p.subscribe("test1", True)
+        p.subscribe("test2", False)
+        assert p.streams["test1"] == [True]
+        assert p.streams["test2"] == [False]
+
+        p.unsubscribe_from_all(True)
+        assert p.streams["test1"] == []
+        assert p.streams["test2"] == [False]
+
+
+    def test_update(self):
+        p = Publisher()
+        data = [0]
+
+        def mutate_counter(payload):
+            data[0] = payload
+
+        p.subscribe("test1", mutate_counter)
+        assert data == [0]
+        p.update("test1", 2)
+        assert data == [2]
+
+        p.update("test2", 3)
+        assert len(p.streams) == 2
+        assert data == [2]
+
+        p.unsubscribe_from_all(mutate_counter)
+        p.update("test1", 3)
+        assert data == [2]
+
+
+
+
