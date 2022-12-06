@@ -201,7 +201,7 @@ class TestParsley:
         assert msg_data == [1, 2, 0xFF]
 
     def test_parse_logger(self):
-        msg_sid, msg_data = parsley.parse_logger("12345678 555 3: 01 02 FF                87654321")
+        msg_sid, msg_data = parsley.parse_logger("5550102FF")
         assert msg_sid == 0x555
         assert msg_data == [1, 2, 0xFF]
 
