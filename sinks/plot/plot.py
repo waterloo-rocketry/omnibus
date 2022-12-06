@@ -63,7 +63,7 @@ class Plotter:
         self.counter.tick()
 
         # Filter to 5 frames per update on analytics
-        if not(self.counter.tick_count() % 5):
+        if not (self.counter.tick_count() % 5):
             fps = self.counter.tick_rate()
             self.txitem.setText(
                 f"FPS: {fps: >4.2f}\nRunning Avg Duration: {config.RUNNING_AVG_DURATION} seconds")

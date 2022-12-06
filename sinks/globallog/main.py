@@ -14,7 +14,7 @@ CURTIME = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
 fname = CURTIME + ".log"
 receiver = Receiver(CHANNEL)
 
-dots = -1
+dots = 0
 counter = 0
 
 # Creates new file
