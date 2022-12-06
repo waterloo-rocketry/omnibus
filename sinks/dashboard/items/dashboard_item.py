@@ -14,7 +14,6 @@ class DashboardItem(QtWidgets.QWidget):
         we saved from a previous run.
         """
         super().__init__()
-        self.subscribed_series = []
 
     def get_name():
         '''
@@ -28,27 +27,17 @@ class DashboardItem(QtWidgets.QWidget):
         """
         raise NotImplementedError
 
-    def on_data_update(self, series):
+    def on_delete(self):
         """
-        Whenever data is updated in a series that we are subscribed
-        to, this method is called. The series that was updated is supplied
-        as a parameter
+        This function is called when a dashitem is removed from the screen. In practice, this will likely be used to
+        remove subscriptions from series
         """
         pass
 
-    def subscribe_to_series(self, series):
+    def prompt_for_properties(self):
         """
-        Ensures that whenever a series' data is updated,
-        the on_data_update method is called
+        An abstract function for prompting user input
+        Return a truthy value will result in the props being passed to create the widget
+        Return a falsey value will result in cancelling of the creation of the widget
         """
-        series.add_observer(self)
-        self.subscribed_series.append(series)
-
-    def unsubscribe_to_all(self):
-        """
-        A helper function, designed to unsubscribe 
-        this dash item from all series its subscribed 
-        to
-        """
-        for series in self.subscribed_series:
-            series.remove_observer(self)
+        pass

@@ -5,7 +5,7 @@ from subprocess import Popen, CREATE_NEW_CONSOLE
 profiles = {
     "test": ['python -m omnibus',
              'python sinks/plot/main.py',
-             'python sources/fakeni/main.py'],
+             'python sources/ni/main.py'],
     "texas": ['python sources/parsley/main.py $arg',
               'python sources/ni/main.py',
               'python -m omnibus']
