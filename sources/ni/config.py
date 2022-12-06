@@ -19,21 +19,28 @@ def setup():
        """
        Sensor Configs, will change from test to test
        """
+       # Port 7
+       Sensor("(PT-5) - Fuel Injector", "ai28", 10, Connection.SINGLE,
+              LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
+       # Port 9
+       Sensor("(PT-3) - Fuel Tank", "ai29", 10, Connection.SINGLE,
+              LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
+       # Port 10
+       Sensor("(PT-4) - Ox Injector", "ai15", 10, Connection.SINGLE,
+              LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
        # Port 11
-       Sensor("(PT-1) - Supply Cylinder Pressure", "ai7", 10, Connection.SINGLE,
+       Sensor("(PT-2) - Ox tank", "ai7", 10, Connection.SINGLE,
               LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
        # Port 12
-       Sensor("(PT-2) - Fill Line Pressure", "ai14", 10, Connection.SINGLE,
+       Sensor("(PT-1) - Ox Fill Block", "ai14", 10, Connection.SINGLE,
               LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
        # Port 1
-       Sensor("Rocket Mass", "ai16", 0.2, Connection.DIFFERENTIAL,
-              # Very estimated calibration 200 kG / (2.0 mV/V * 12V)
-              LinearCalibration(39078, -46.1, "lbs"))
+       Sensor("Honeywell S-type", "ai16", 0.2, Connection.DIFFERENTIAL,
+                
+              LinearCalibration(4177, -0.853, "kgs"))
        # Port 2 - if used
-       Sensor("Big Omega S-Type - Ox Tanks", "ai17", 0.2, Connection.DIFFERENTIAL,
-              # Factory calibration: 1000 kG / (2.9991 mV/V * 12 V)
-              LinearCalibration(1000 / (2.9991 / 1000 * 12), -10.1, "kg"))
-
+       Sensor("Omega S-Type - Ox Tanks", "ai17", 0.2, Connection.DIFFERENTIAL,
+              LinearCalibration(2936, -0.181, "V"))
        """
        Everything below here is just for documentation purposes
        """
