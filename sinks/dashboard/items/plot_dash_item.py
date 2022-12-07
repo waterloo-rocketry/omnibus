@@ -1,9 +1,9 @@
 from publisher import publisher
 from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt.QtGui import QGridLayout
-
+from pyqtgraph.Qt.QtWidgets import QGridLayout
 import pyqtgraph as pg
 from pyqtgraph.console import ConsoleWidget
+
 
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
