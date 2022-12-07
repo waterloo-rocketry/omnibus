@@ -41,9 +41,8 @@ def setup():
     # Port 2 - if used
     Sensor("Omega S-Type - Ox Tanks", "ai17", 0.2, Connection.DIFFERENTIAL,
            LinearCalibration(2936, -0.181, "V"))
-    """
-       Everything below here is just for documentation purposes
 
+       """
     # For every V it powered it will output 2 mV when experiencing Maximum load.
     # Will output about 0 mV when experiencing nothing
     # Linear in between
