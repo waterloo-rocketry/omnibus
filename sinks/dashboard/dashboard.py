@@ -5,11 +5,10 @@ import sys
 
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
+from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
-from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt.QtGui import QVBoxLayout, QMenuBar
-
+from parsers import Parser
 from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
@@ -55,11 +54,11 @@ class Dashboard(QtWidgets.QWidget):
         # Create GridLayout, will be
         # Adding components to this as
         # time goes on
-        self.layout = QVBoxLayout()
+        self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
 
         # Add a menu bar to the layout
-        menubar = QMenuBar(self)
+        menubar = QtWidgets.QMenuBar(self)
 
         # Create a sub menu which will be used
         # to add items to our dash board.
