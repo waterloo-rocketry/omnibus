@@ -55,7 +55,7 @@ class ThermistorCalibration(Calibration):
 
     def __init__(self, voltage, resistance, B, r_inf):
         super().__init__("C")
-        self.voltage = voltage # voltage powering the thermistor
+        self.voltage = voltage  # voltage powering the thermistor
         self.resistance = resistance  # voltage divider resistance
         self.B = B  # not sure, pulled from the LabVIEW
         self.r_inf = r_inf  # not sure, pulled from the LabVIEW
