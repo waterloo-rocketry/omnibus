@@ -14,7 +14,7 @@ from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
 
-# "Temorary Global Constant"
+# "Temporary Global Constant"
 
 item_types = [
     PlotDashItem,
@@ -68,7 +68,9 @@ class Dashboard(QtWidgets.QWidget):
 
         def prompt_and_add(i):
             def ret_func():
-                self.add(item_types[i](None))
+                props = item_types[i].prompt_for_properties(self)
+                if props:
+                    self.add(item_types[i](props))
             return ret_func
 
         for i in range(len(item_types)):
@@ -112,7 +114,7 @@ class Dashboard(QtWidgets.QWidget):
         # registered with any series
         for dock in self.docks:
             item = dock.widgets[0]
-            item.unsubscribe_to_all()
+            item.on_delete()
 
         # Second, remove the entire dock area,
         # thereby deleting all of the docks
@@ -192,9 +194,9 @@ class Dashboard(QtWidgets.QWidget):
         # this. Right now, not a priority.
 
         # Create a call back to execute when docks close to ensure cleaning up is done
-        # right
+        # correctly
         def custom_callback(dock_arg):
-            dashitem.unsubscribe_to_all()
+            dashitem.on_delete()
             self.docks = [dock for dock in self.docks if dock.widgets[0] != dashitem]
 
         dock.sigClosed.connect(custom_callback)
@@ -211,17 +213,16 @@ class Dashboard(QtWidgets.QWidget):
     def switch(self):
         self.save()
         filename = prompt_user(
-                self,
-                "New File Name",
-                "Enter the name of the file which you wish to load",
-                "items",
-                self.filename_cache,
-                True
-            )
+            self,
+            "New File Name",
+            "Enter the name of the file which you wish to load",
+            "items",
+            self.filename_cache,
+            True
+        )
 
         if filename == None:
             return
-
 
         # If the filename entered is not valid
         # this exhibits the behaviour of creating
@@ -238,7 +239,7 @@ class Dashboard(QtWidgets.QWidget):
         self.counter.tick()
 
         # Filter to 5 frames per update on analytics
-        if not(self.counter.tick_count() % 5):
+        if not (self.counter.tick_count() % 5):
             fps = self.counter.tick_rate()
 
         self.callback()

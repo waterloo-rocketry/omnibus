@@ -2,7 +2,7 @@ from pyqtgraph.Qt import QtCore
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtWidgets
 from sinks.dashboard.items.dashboard_item import DashboardItem
-from parsers import CanDisplayParser
+from parsers import publisher
 
 # So, we need a few things
 # 1) a widget that displays an object, in our case a
@@ -167,9 +167,8 @@ class CanMsgTableDashItem(DashboardItem):
         # key is a message type and the value is the
         # specific DisplayObject
 
-        # Subscribe to all relavent series
-        for series in CanDisplayParser.get_all_series():
-            self.subscribe_to_series(series)
+        # Subscribe to all relavent stream
+        publisher.subscribe("CAN", self.on_data_update)
 
         self.scrolling_part = QtWidgets.QScrollArea(self)
         self.scrolling_part.setWidgetResizable(True)
@@ -177,19 +176,28 @@ class CanMsgTableDashItem(DashboardItem):
 
         self.layout.addWidget(self.scrolling_part)
 
+    def prompt_for_properties(self):
+        """
+        CAN message table does not need props to initialize, so just return True
+        """
+        return True
+
     def get_props(self):
         return self.props
 
     def on_data_update(self, canSeries):
-        message = canSeries.get_msg()
-        if canSeries.name in self.message_dict:
-            self.message_dict[canSeries.name].update_with_message(message)
+        message = canSeries[1]
+        if message["board_id"] in self.message_dict:
+            self.message_dict[message["board_id"]].update_with_message(message)
         else:
             table = DisplayCANTable()
-            self.message_dict[canSeries.name] = table
-            exp_widget = ExpandingWidget(canSeries.name, table)
+            self.message_dict[message["board_id"]] = table
+            exp_widget = ExpandingWidget(message["board_id"], table)
             self.layout_widget.layout.addWidget(exp_widget)
-            self.message_dict[canSeries.name].update_with_message(message)
+            self.message_dict[message["board_id"]].update_with_message(message)
 
     def get_name():
         return "CAN Message Table"
+
+    def on_delete(self):
+        publisher.unsubscribe_from_all(self.on_data_update)

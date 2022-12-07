@@ -31,7 +31,7 @@ class TestLinearCalibration:
 
 class TestThermistorCalibration:
     def test_thermistor(self):
-        c = ThermistorCalibration(10000, 3434, 0.099524)
+        c = ThermistorCalibration(5, 10000, 3434, 0.099524)
         assert c.calibrate(0) == 0
         assert c.calibrate(1) == pytest.approx(65.8, 0.1)
         assert c.calibrate(2) == pytest.approx(35.9, 0.1)
