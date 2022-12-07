@@ -20,13 +20,15 @@ func = Register("Chan").__call__(func)
 """
 
 # When a function is registered to a particular channel
-# using the Register decorator, it is added to the 
-# function map. IE, 
+# using the Register decorator, it is added to the
+# function map. IE,
 #   func_map[channel].append(function)
-# Then, when parse is called, it searches 
+# Then, when parse is called, it searches
+
 
 class Register:
     func_map = {}
+
     def __init__(self, msg_channels):
         if isinstance(msg_channels, str):
             self.msg_channels = [msg_channels]
@@ -39,8 +41,9 @@ class Register:
                 Register.func_map[msg_channel] = [func]
             else:
                 Register.func_map[msg_channel].append(func)
-            
+
         return func
+
 
 def parse(msg_channel, msg_payload):
     for channel in Register.func_map:
@@ -62,15 +65,17 @@ def parse(msg_channel, msg_payload):
 # We note that parsers may use the func_map to call other parsers (This is how we plan
 # to handle CAN messages in the future)
 
+
 @Register("DAQ")
 def daq_parser(msg_data):
     timestamp = msg_data["timestamp"]
     parsed_messages = []
 
     for sensor, data in msg_data["data"].items():
-        parsed_messages.append(("DAQ|" + sensor , timestamp, sum(data)/len(data)))
+        parsed_messages.append(("DAQ|" + sensor, timestamp, sum(data)/len(data)))
 
     return parsed_messages
+
 
 @Register("CAN")
 def can_parser(payload):
