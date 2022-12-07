@@ -25,19 +25,13 @@ with open(fname, "wb") as f:
 
     while True:
         # Cool continuously updating print statment
-        if counter % 30 == 0:
-            append = ""
-            if dots == 4:
-                char = " "
-            else:
-                char = "."
-
+        print("\rLogging", end="")
+        if counter % (30*5) == 0:
+            print("   ", end="")
+        elif counter % 30 == 0:
             for i in range(dots):
-                append += char
-
-            print(f"\rLogging{append}", end="")
-
-            if dots == 4:
+                print(".", end="")
+            if dots == 3:
                 dots = 0
             else:
                 dots += 1
