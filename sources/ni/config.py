@@ -42,7 +42,7 @@ def setup():
     Sensor("Omega S-Type - Ox Tanks", "ai17", 0.2, Connection.DIFFERENTIAL,
            LinearCalibration(2936, -0.181, "V"))
 
-       """
+    """
     # For every V it powered it will output 2 mV when experiencing Maximum load.
     # Will output about 0 mV when experiencing nothing
     # Linear in between
@@ -87,3 +87,4 @@ def setup():
     #        LinearCalibration(35.3, -34.2, "psi"))  # Calibrated 13/7/2021
     # Sensor("T8 - Tank Heating", "ai23", 10, Connection.SINGLE,
     #        ThermistorCalibration(10000, 3434, 0.099524))  # Calibration pulled from LabVIEW
+    """
