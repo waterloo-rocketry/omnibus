@@ -39,7 +39,6 @@ class TestPublisher:
         assert p.streams["test1"] == []
         assert p.streams["test2"] == [False]
 
-
     def test_update(self):
         p = Publisher()
         data = [0]
@@ -59,7 +58,3 @@ class TestPublisher:
         p.unsubscribe_from_all(mutate_counter)
         p.update("test1", 3)
         assert data == [2]
-
-
-
-

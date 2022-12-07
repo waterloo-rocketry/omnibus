@@ -3,14 +3,15 @@ import pytest
 from parsers import daq_parser
 from parsers import can_parser
 
+
 class TestParser:
     def test_daq_parser(self):
         data = {
             "timestamp": 4,
             "data": {
-                "fake0" : [0, 0, 0, 0, 0, 0, 0, 0],
-                "fake1" : [1, 1, 1, 1, 1],
-                "fake2" : [2, 2, 2]
+                "fake0": [0, 0, 0, 0, 0, 0, 0, 0],
+                "fake1": [1, 1, 1, 1, 1],
+                "fake2": [2, 2, 2]
             }
         }
 
@@ -23,4 +24,4 @@ class TestParser:
             }
         }
 
-        assert can_parser(can_message) == [("CAN", 4, { "data": { "time": 4}})]
+        assert can_parser(can_message) == [("CAN", 4, {"data": {"time": 4}})]

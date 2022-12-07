@@ -8,6 +8,7 @@ class Publisher:
     upon updates. This is done by providing a callback, which
     is called when the data is updated.
     """
+
     def __init__(self):
         self.streams = {}
 
