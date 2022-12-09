@@ -15,7 +15,7 @@ class TestParser:
             }
         }
 
-        assert daq_parser(data) == [("DAQ|fake0", 4, 0), ("DAQ|fake1", 4, 1), ("DAQ|fake2", 4, 2)]
+        assert daq_parser(data) == [("fake0", 4, 0), ("fake1", 4, 1), ("fake2", 4, 2)]
 
     def test_can_parser(self):
         can_message = {
