@@ -28,3 +28,6 @@ dist/
 .coverage
 coverage.xml
 htmlcov
+
+*.sav
+*.log

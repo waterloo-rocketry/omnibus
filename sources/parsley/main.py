@@ -5,10 +5,10 @@ from omnibus import Sender
 import parsley
 
 
-def reader(port):
+def reader(port, baud):
     if port == "-":
         return input
-    s = serial.Serial(port, 9600)
+    s = serial.Serial(port, baud)
 
     def _reader():
         return s.readline().strip(b'\r\n').decode('utf-8')
@@ -18,34 +18,41 @@ def reader(port):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('port', help='the serial port to read from, or - for stdin')
-    parser.add_argument('--format', default='usb',
-                        help='Options: logger, usb. Parse input in RocketCAN Logger or USB format')
+    parser.add_argument('baud', type=int, nargs='?', default=115200,
+                        help='the baud rate to use')
+    parser.add_argument('--format', default='telemetry',
+                        help='Options: telemetry, logger, usb. Parse input in RocketCAN Logger or USB format')
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
 
-    readline = reader(args.port)
-    parser = parsley.parse_logger if args.format == 'logger' else parsley.parse_usb_debug
+    readline = reader(args.port, args.baud)
+    parser = parsley.parse_live_telemetry
+    if args.format == "usb":
+        parser = parsley.parse_usb_debug
+    elif args.format == "logger":
+        parser = parsley.parse_logger
     if not args.solo:
         sender = Sender()
         CHANNEL = "CAN/Parsley"
 
     while True:
         line = readline()
-        if not line:
-            break
 
         # treat repeated messages in the same way as USB debug
         if line.strip() == '.':
             print('.')
             continue
 
-        msg_sid, msg_data = parser(line)
-        parsed_data = parsley.parse(msg_sid, msg_data)
+        try:
+            msg_sid, msg_data = parser(line)
+            parsed_data = parsley.parse(msg_sid, msg_data)
 
-        print(parsley.fmt_line(parsed_data))
-        if not args.solo:
-            sender.send(CHANNEL, parsed_data)
+            print(parsley.fmt_line(parsed_data))
+            if not args.solo:
+                sender.send(CHANNEL, parsed_data)
+        except Exception as e:
+            print(line)
 
 
 if __name__ == '__main__':
