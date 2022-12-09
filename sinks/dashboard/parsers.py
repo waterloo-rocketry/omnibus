@@ -72,7 +72,7 @@ def daq_parser(msg_data):
     parsed_messages = []
 
     for sensor, data in msg_data["data"].items():
-        parsed_messages.append(("DAQ|" + sensor, timestamp, sum(data)/len(data)))
+        parsed_messages.append((sensor, timestamp, sum(data)/len(data)))
 
     return parsed_messages
 

@@ -188,10 +188,6 @@ class Dashboard(QtWidgets.QWidget):
         # Create a new dock to be added to the dock area
         dock = Dock(f"{len(self.docks)}", closable=True)
 
-        # Bit of a sussy baka, but this is the only way we can really get control over
-        # how the thing closes. In future, I might make a class method that returns
-        # this. Right now, not a priority.
-
         # Create a call back to execute when docks close to ensure cleaning up is done
         # correctly
         def custom_callback(dock_arg):
