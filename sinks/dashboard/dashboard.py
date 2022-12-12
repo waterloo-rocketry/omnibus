@@ -14,12 +14,29 @@ from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
 
-# "Temporary Global Constant"
 
-item_types = [
-    PlotDashItem,
-    CanMsgTableDashItem,
-]
+class Register:
+    item_map = {}
+
+    def __init__(self, item_names):
+        if isinstance(item_names, str):
+            self.item_names = [item_names]
+        else:
+            self.item_names = item_names
+
+    def __call__(self, item):
+        for item_name in self.item_names:
+            Register.item_map[item_name] = item
+
+        return item
+
+@Register("PlotDashItem")
+def plot_dash_item():
+    return PlotDashItem
+
+@Register("CanMsgTableDashItem")
+def can_msg_table_dash_item():
+    return CanMsgTableDashItem
 
 
 class Dashboard(QtWidgets.QWidget):
@@ -66,16 +83,16 @@ class Dashboard(QtWidgets.QWidget):
         # be a corresponding action to add that item
         add_item_menu = menubar.addMenu("Add Item")
 
-        def prompt_and_add(i):
+        def prompt_and_add(item):
             def ret_func():
-                props = item_types[i].prompt_for_properties(self)
+                props = Register.item_map[item]().prompt_for_properties(self)
                 if props:
-                    self.add(item_types[i](props))
+                    self.add(Register.item_map[item]()(props))
             return ret_func
 
-        for i in range(len(item_types)):
-            new_action = add_item_menu.addAction(item_types[i].get_name())
-            new_action.triggered.connect(prompt_and_add(i))
+        for item in Register.item_map:
+            new_action = add_item_menu.addAction(Register.item_map[item]().get_name())
+            new_action.triggered.connect(prompt_and_add(item))
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
@@ -149,11 +166,11 @@ class Dashboard(QtWidgets.QWidget):
         # for every item specified by the save file,
         # add that item back to the dock
         for i, item in enumerate(data["items"]):  # { 0: {...}, 1: ..., ...}
-            # Convert item_type string back into item_type
+            # Convert the name of the class back into the class
             # See save() method
-            for item_type in item_types:
-                if item["class"] == str(item_type):
-                    item["class"] = item_type
+            for item_name, item_type in Register.item_map.items():
+                if item["class"] == item_name:
+                    item["class"] = item_type()
 
             self.add(item["class"](item["props"]))
 
@@ -187,10 +204,10 @@ class Dashboard(QtWidgets.QWidget):
             item = dock.widgets[0]
 
             # ObjectTypes can't be converted to JSON
-            # Take the string of the class instead
-            for item_type in item_types:
-                if type(item) == item_type:
-                    item_class = str(item_type)
+            # Take the name of the class instead
+            for item_name, item_type in Register.item_map.items():
+                if type(item) == item_type():
+                    item_class = item_name
 
             data["items"].append({"props": item.get_props(), "class": item_class})
 
