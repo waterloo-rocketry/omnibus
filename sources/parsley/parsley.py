@@ -153,7 +153,6 @@ def parse_sensor_altitude(msg_data):
 
     return {"time": timestamp, "altitude": altitude}
 
-
 @register("SENSOR_TEMP")
 def parse_sensor_temp(msg_data):
     timestamp = _parse_timestamp(msg_data[:3])
@@ -162,7 +161,10 @@ def parse_sensor_temp(msg_data):
 
     return {"time": timestamp, "sensor_id": sensor, "temperature": temperature}
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5deeacd1d7231b65e2c44e7d6af0795a613186b5
 @register("SENSOR_MAG")
 # the units are in micro tesla updated at 50hz
 def parse_sensor_acc_gyro_mag(msg_data):
@@ -191,8 +193,11 @@ def parse_sensor_acc_mag(msg_data):
 # converting analog to 16bit signed representation.
 # divide by 2^16 to get to the -1 to 1 scale
 # mutiply by 16 to get to the -16 to 16 scale in g
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 5deeacd1d7231b65e2c44e7d6af0795a613186b5
 @register("SENSOR_ACC2")
 def parse_sensor_acc_mag(msg_data):
     timestamp = msg_data[0] << 8 | msg_data[1]
@@ -205,8 +210,11 @@ def parse_sensor_acc_mag(msg_data):
 # converting analog to 16bit signed representation.
 # divide by 2^16 to get to the -1 to 1 scale
 # mutiply by 2000 to get to the -2000 to 2000 scale in degree/s
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 5deeacd1d7231b65e2c44e7d6af0795a613186b5
 @register("SENSOR_GYRO")
 def parse_sensor_acc_mag(msg_data):
     timestamp = msg_data[0] << 8 | msg_data[1]
@@ -216,7 +224,10 @@ def parse_sensor_acc_mag(msg_data):
 
     return {"time": timestamp, "x": x, "y": y, "z": z}
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5deeacd1d7231b65e2c44e7d6af0795a613186b5
 @register("SENSOR_ANALOG")
 def parse_sensor_analog(msg_data):
     timestamp = msg_data[0] << 8 | msg_data[1]
@@ -343,7 +354,10 @@ def parse_live_telemetry(line):
 
     return msg_sid, msg_data
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5deeacd1d7231b65e2c44e7d6af0795a613186b5
 def parse_usb_debug(line):
     line = line.lstrip(' \0')
     if len(line) == 0 or line[0] != '$':

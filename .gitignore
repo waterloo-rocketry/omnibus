@@ -25,9 +25,11 @@ build/
 dist/
 *.egg-info/
 
+cscope*
+
 .coverage
 coverage.xml
 htmlcov
 
-*.sav
+*.json
 *.log

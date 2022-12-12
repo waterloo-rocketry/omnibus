@@ -140,7 +140,11 @@ board_stat_hex = {
     "E_SEGFAULT": 17,                 # x                x                   x                   x
     "E_UNHANDLED_INTERRUPT": 18,      # x                x                   x                   x
     "E_CODING_FUCKUP": 19,            # x                x                   x                   x
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 5deeacd1d7231b65e2c44e7d6af0795a613186b5
     "E_BATT_OVER_CURRENT": 20         # mA_high          mA_low              x                   x
 }
 board_stat_str = {v: k for k, v in board_stat_hex.items()}
