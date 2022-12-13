@@ -30,9 +30,11 @@ class Register:
 
         return item
 
+
 @Register("PlotDashItem")
 def plot_dash_item():
     return PlotDashItem
+
 
 @Register("CanMsgTableDashItem")
 def can_msg_table_dash_item():
