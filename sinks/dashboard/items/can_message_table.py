@@ -157,8 +157,8 @@ class CanMsgTableDashItem(DashboardItem):
         self.layout_widget = LayoutWidget(QtWidgets.QVBoxLayout())
         # self.layout_widget.resize(self.size().width(),1000)
 
-        #lab = QtWidgets.QLabel()
-        #img = QtGui.QImage("test.jpg")
+        # lab = QtWidgets.QLabel()
+        # img = QtGui.QImage("test.jpg")
         # lab.setPixmap(QtGui.QPixmap.fromImage(img))
         # self.layout_widget.layout.addWidget(lab)
 
