@@ -132,6 +132,7 @@ class LayoutWidget(QtWidgets.QWidget):
         self.layout = layout
         self.setLayout(self.layout)
 
+
 @Register
 class CanMsgTableDashItem(DashboardItem):
     """
@@ -202,4 +203,3 @@ class CanMsgTableDashItem(DashboardItem):
 
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)
-
