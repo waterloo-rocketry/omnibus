@@ -4,41 +4,27 @@ import time
 import sys
 import json
 
+from register import Register, item_list
+print("IMPORTED REGISTER")
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
-from items.plot_dash_item import PlotDashItem
+from items.plot_dash_item import PlotDashItem, baz
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
 
+@Register
+class Foo:
+    def get_name():
+        return "foo"
 
-class Register:
-    item_map = {}
-
-    def __init__(self, item_names):
-        if isinstance(item_names, str):
-            self.item_names = [item_names]
-        else:
-            self.item_names = item_names
-
-    def __call__(self, item):
-        for item_name in self.item_names:
-            Register.item_map[item_name] = item
-
-        return item
-
-
-@Register("PlotDashItem")
-def plot_dash_item():
-    return PlotDashItem
-
-
-@Register("CanMsgTableDashItem")
-def can_msg_table_dash_item():
-    return CanMsgTableDashItem
+@Register
+class Bar:
+    def get_name():
+        return "bar"
 
 
 class Dashboard(QtWidgets.QWidget):
@@ -47,6 +33,7 @@ class Dashboard(QtWidgets.QWidget):
     """
 
     def __init__(self, callback):
+        print(item_list)
         # Initilize Super Class
         QtWidgets.QWidget.__init__(self)
 
@@ -85,16 +72,17 @@ class Dashboard(QtWidgets.QWidget):
         # be a corresponding action to add that item
         add_item_menu = menubar.addMenu("Add Item")
 
-        def prompt_and_add(item):
+        def prompt_and_add(i):
             def ret_func():
-                props = Register.item_map[item]().prompt_for_properties(self)
+                props = Register.item_list[i].prompt_for_properties(self)
                 if props:
-                    self.add(Register.item_map[item]()(props))
+                    self.add(Register.item_list[i](props))
             return ret_func
 
-        for item in Register.item_map:
-            new_action = add_item_menu.addAction(Register.item_map[item]().get_name())
-            new_action.triggered.connect(prompt_and_add(item))
+        for i in range(len(Register.item_list)):
+            new_action = add_item_menu.addAction(Register.item_list[i].get_name())
+            new_action.triggered.connect(prompt_and_add(i))
+            print(f"{Register.item_list[i].get_name()} added")
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
@@ -170,9 +158,9 @@ class Dashboard(QtWidgets.QWidget):
         for i, item in enumerate(data["items"]):  # { 0: {...}, 1: ..., ...}
             # Convert the name of the class back into the class
             # See save() method
-            for item_name, item_type in Register.item_map.items():
-                if item["class"] == item_name:
-                    item["class"] = item_type()
+            for item_type in Register.item_list:
+                if item["class"] == item_type.get_name():
+                    item["class"] = item_type
 
             self.add(item["class"](item["props"]))
 
@@ -207,9 +195,9 @@ class Dashboard(QtWidgets.QWidget):
 
             # ObjectTypes can't be converted to JSON
             # Take the name of the class instead
-            for item_name, item_type in Register.item_map.items():
-                if type(item) == item_type():
-                    item_class = item_name
+            for item_type in Register.item_list:
+                if type(item) == item_type:
+                    item_class = item_type.get_name()
 
             data["items"].append({"props": item.get_props(), "class": item_class})
 

@@ -13,9 +13,15 @@ import numpy as np
 from sinks.dashboard.items.dashboard_item import DashboardItem
 import config
 from utils import prompt_user
+from sinks.dashboard.register import Register
 
+@Register
+class baz:
+    def get_name():
+        return "baz"
 
-class PlotDashItem (DashboardItem):
+# @Register
+class PlotDashItem(DashboardItem):
     def __init__(self, props):
         # Call this in **every** dash item constructor
         super().__init__()
