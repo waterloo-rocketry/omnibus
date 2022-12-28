@@ -1,8 +1,9 @@
 from pyqtgraph.Qt import QtCore
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtWidgets
-from sinks.dashboard.items.dashboard_item import DashboardItem
+from .dashboard_item import DashboardItem
 from parsers import publisher
+from .register import Register
 
 # So, we need a few things
 # 1) a widget that displays an object, in our case a
@@ -131,7 +132,7 @@ class LayoutWidget(QtWidgets.QWidget):
         self.layout = layout
         self.setLayout(self.layout)
 
-
+@Register
 class CanMsgTableDashItem(DashboardItem):
     """
     Display table for CAN messages.

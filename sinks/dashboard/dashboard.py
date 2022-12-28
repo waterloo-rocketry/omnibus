@@ -1,30 +1,17 @@
-import pickle
 import os
-import time
 import sys
 import json
 
-from register import Register, item_list
-print("IMPORTED REGISTER")
+from items.register import Register
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
-from items.plot_dash_item import PlotDashItem, baz
+from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
-
-@Register
-class Foo:
-    def get_name():
-        return "foo"
-
-@Register
-class Bar:
-    def get_name():
-        return "bar"
 
 
 class Dashboard(QtWidgets.QWidget):
@@ -33,7 +20,6 @@ class Dashboard(QtWidgets.QWidget):
     """
 
     def __init__(self, callback):
-        print(item_list)
         # Initilize Super Class
         QtWidgets.QWidget.__init__(self)
 
@@ -82,7 +68,6 @@ class Dashboard(QtWidgets.QWidget):
         for i in range(len(Register.item_list)):
             new_action = add_item_menu.addAction(Register.item_list[i].get_name())
             new_action.triggered.connect(prompt_and_add(i))
-            print(f"{Register.item_list[i].get_name()} added")
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
