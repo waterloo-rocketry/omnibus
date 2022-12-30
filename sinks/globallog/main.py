@@ -42,6 +42,6 @@ with open(fname, "wb") as f:
             # Receives message and writes it to file
             msg = receiver.recv_message()
             f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
-    except KeyboardInterrupt:
+    finally:
         # Shows cursor
         print('\033[?25h', end="")
