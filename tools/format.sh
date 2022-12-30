@@ -10,12 +10,7 @@ fi
 WORKSPACE_DIR=$(git rev-parse --show-toplevel)
 cd "$WORKSPACE_DIR"
 
-FILES=$({ git ls-files -o --exclude-standard && git diff --diff-filter=d --name-only master; } | grep '\.py$')
-
-if [ ! -z "$FILES" ]
-then
-    autopep8 -i $FILES
-fi
+autopep8 -i -r sources/ sinks/ omnibus/ tools/ --exit-code
 
 # Check for syntax errors or undefined names
 # here (F): https://flake8.pycqa.org/en/latest/user/error-codes.html
