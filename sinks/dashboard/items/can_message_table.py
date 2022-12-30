@@ -3,7 +3,7 @@ from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtWidgets
 from .dashboard_item import DashboardItem
 from parsers import publisher
-from .register import Register
+from .registry import Registry
 
 # So, we need a few things
 # 1) a widget that displays an object, in our case a
@@ -133,7 +133,7 @@ class LayoutWidget(QtWidgets.QWidget):
         self.setLayout(self.layout)
 
 
-@Register
+@Registry
 class CanMsgTableDashItem(DashboardItem):
     """
     Display table for CAN messages.
