@@ -22,7 +22,7 @@ profiles = {
 if test:
     profile = profiles["test"]
 else:
-    profile = profiles["false"]
+    profile = profiles["real"]
 
 p = []
 
