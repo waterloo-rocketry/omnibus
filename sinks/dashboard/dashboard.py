@@ -2,7 +2,7 @@ import os
 import sys
 import json
 
-from items.registry import Registry
+from items import registry
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtWidgets
@@ -60,13 +60,13 @@ class Dashboard(QtWidgets.QWidget):
 
         def prompt_and_add(i):
             def ret_func():
-                props = Registry.get_items()[i].prompt_for_properties(self)
+                props = registry.get_items()[i].prompt_for_properties(self)
                 if props:
-                    self.add(Registry.get_items()[i](props))
+                    self.add(registry.get_items()[i](props))
             return ret_func
 
-        for i in range(len(Registry.get_items())):
-            new_action = add_item_menu.addAction(Registry.get_items()[i].get_name())
+        for i in range(len(registry.get_items())):
+            new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
             new_action.triggered.connect(prompt_and_add(i))
 
         # Add an action to the menu bar to save the
@@ -103,7 +103,7 @@ class Dashboard(QtWidgets.QWidget):
 
         # First, make sure that the dash
         # items within the docks are not
-        # Registryed with any series
+        # Registered with any series
         for dock in self.docks:
             item = dock.widgets[0]
             item.on_delete()
@@ -143,7 +143,7 @@ class Dashboard(QtWidgets.QWidget):
         for i, item in enumerate(data["items"]):  # { 0: {...}, 1: ..., ...}
             # Convert the name of the class back into the class
             # See save() method
-            for item_type in Registry.get_items():
+            for item_type in registry.get_items():
                 if item["class"] == item_type.get_name():
                     self.add(item_type(item["props"]))
                     break
@@ -179,7 +179,7 @@ class Dashboard(QtWidgets.QWidget):
 
             # ObjectTypes can't be converted to JSON
             # Take the name of the class instead
-            for item_type in Registry.get_items():
+            for item_type in registry.get_items():
                 if type(item) == item_type:
                     data["items"].append({"props": item.get_props(), "class": item_type.get_name()})
                     break

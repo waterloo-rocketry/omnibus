@@ -13,10 +13,10 @@ import numpy as np
 from .dashboard_item import DashboardItem
 import config
 from utils import prompt_user
-from .registry import Registry
+from .registry import Register
 
 
-@Registry
+@Register
 class PlotDashItem(DashboardItem):
     def __init__(self, props):
         # Call this in **every** dash item constructor
