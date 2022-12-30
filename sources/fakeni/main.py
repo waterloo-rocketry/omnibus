@@ -50,12 +50,12 @@ try:
                 dots += 1
 
         counter += 1
-        
+
         sender.send(CHANNEL, data)
         time.sleep(max(READ_BULK/SAMPLE_RATE - (time.time() - start), 0))
 except KeyboardInterrupt:
     if logging:
         log.close()
 
-    #Shows cursor
+    # Shows cursor
     print('\033[?25h', end="")
