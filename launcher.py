@@ -1,37 +1,37 @@
-import sys
-from subprocess import Popen, CREATE_NEW_CONSOLE
+from subprocess import Popen
+import argparse
+import time
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--test', action='store_true', help="run omnibus with FakeNI source")
+test = parser.parse_args().test
 
 profiles = {
-    "test": ['python -m omnibus',
-             'python sinks/plot/main.py',
-             'python sources/ni/main.py'],
-    "texas": ['python sources/parsley/main.py $arg',
-              'python sources/ni/main.py',
-              'python -m omnibus']
-    #   Add other profiles in here
-    #   If any commands require arguments to be passed in, write $arg in its place
-
+    "test": [
+        ['python', '-m', 'omnibus'],
+        ['python', 'sources/fakeni/main.py'],
+        ['python', 'sinks/dashboard/main.py']
+    ],
+    "real": [
+        ['python', '-m', 'omnibus'],
+        ['python', 'sources/fakeni/main.py'],
+        ['python', 'sinks/dashboard/main.py']
+    ]
 }
 
+if test:
+    profile = profiles["test"]
+else:
+    profile = profiles["false"]
 
-try:
-    if sys.argv[1] == "_wrap":
-        p = Popen(sys.argv[2])
-        if p.wait() != 0:
-            input('Press enter to quit')
+p = []
 
-    else:
-        selection = sys.argv[1]
-        processes = profiles[selection]
-        args = sys.argv[2:]
+for i in range(len(profile)):
+    p.append(Popen(profile[i]))
+    time.sleep(0.2)
 
-        for process in processes:
-            while '$arg' in process:
-                process = process.replace('$arg', args[0], 1)
-                args.pop(0)
-            Popen(f'python launcher.py _wrap "{process}"', creationflags=CREATE_NEW_CONSOLE)
+while p[len(p)-1].poll() == None:
+    continue
 
-except (KeyError, IndexError):
-    print('Please enter a single valid profile selection (ex. python launcher.py texas)')
-    print('Ensure that you have entered the correct amount of args required for each script in the right order')
+for i in range(len(p)):
+    p[len(p)-1-i].terminate()
