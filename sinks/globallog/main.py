@@ -23,21 +23,25 @@ with open(fname, "wb") as f:
     # Hides cursor for continous print
     print('\033[?25l', end="")
 
-    while True:
-        # Cool continuously updating print statment
-        print("\rLogging", end="")
-        if counter % (30*5) == 0:
-            print("   ", end="")
-        elif counter % 30 == 0:
-            for i in range(dots):
-                print(".", end="")
-            if dots == 3:
-                dots = 0
-            else:
-                dots += 1
+    try:
+        while True:
+            # Cool continuously updating print statment
+            print("\rLogging", end="")
+            if counter % (20*5) == 0:
+                print("   ", end="")
+            elif counter % 20 == 0:
+                for i in range(dots):
+                    print(".", end="")
+                if dots == 3:
+                    dots = 0
+                else:
+                    dots += 1
 
-        counter += 1
+            counter += 1
 
-        # Receives message and writes it to file
-        msg = receiver.recv_message()
-        f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
+            # Receives message and writes it to file
+            msg = receiver.recv_message()
+            f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
+    except KeyboardInterrupt:
+        #Shows cursor
+        print('\033[?25h', end="")
