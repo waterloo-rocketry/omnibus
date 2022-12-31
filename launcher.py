@@ -1,35 +1,56 @@
 from subprocess import Popen
-import argparse
 import time
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--test', action='store_true', help="run omnibus with FakeNI source")
-test = parser.parse_args().test
-
+# Profiles for what parts of Omnibus should be run
+# Files inside each profile should be listed 
+# IN ORDER of how they should be run 
 profiles = {
-    "test": [
+    "Test": [
         ['python', '-m', 'omnibus'],
         ['python', 'sources/fakeni/main.py'],
         ['python', 'sinks/dashboard/main.py']
     ],
-    "real": [
+    "DAQ": [
         ['python', '-m', 'omnibus'],
-        ['python', 'sources/fakeni/main.py'],
+        ['python', 'sources/ni/main.py'],
+    ],
+    "Dashboard": [
+        ['python', 'sinks/globallog/main.py'],
         ['python', 'sinks/dashboard/main.py']
     ]
+    # Add new profiles here
 }
 
-if test:
-    profile = profiles["test"]
-else:
-    profile = profiles["real"]
+# Presents the user with a list of all available 
+# profiles and prompts them to choose one
+print("The following profiles are available to run Omnibus:\n")
 
+for i, profile in enumerate(profiles):
+    print(f"\t{i+1}. {profile}")
+print()
+
+# Keep asking for input if invalid entry is given
+selection = 0
+while selection < 1 or selection > i+1:
+    selection = input(f"Please enter the number corresponding to your choice [1-{i+1}]: ")
+    try:
+        selection = int(selection)
+    except ValueError:
+        selection = 0
+
+profile = profiles[list(profiles)[selection-1]]
 p = []
 
+# Run every file in the background
 for i in range(len(profile)):
     p.append(Popen(profile[i]))
-    time.sleep(0.2)
+    # Time delay cause CPU too fast and Omnibus 
+    # needs time to setup communication channels
+    time.sleep(0.5)
 
+# Wait until the last file exists, 
+# then terminate all the other ones
+# in reverse order of execution
 while p[len(p)-1].poll() == None:
     continue
 
