@@ -78,10 +78,10 @@ def server():
         if monitor.poll(200):  # 200ms timeout
             monitor.recv_multipart()
             count += 1
-        # if time.time() - t > 0.2:
-        #     print(f"\r{count*5: <5} msgs/sec", end="")
-        #     t = time.time()
-        #     count = 0
+        if time.time() - t > 0.2:
+            print(f"\r{count*5: <5} msgs/sec", end="")
+            t = time.time()
+            count = 0
 
 
 if __name__ == '__main__':
