@@ -1,4 +1,4 @@
-from subprocess import Popen
+from subprocess import Popen, PIPE
 import time
 
 # Profiles for what parts of Omnibus should be run
@@ -40,19 +40,26 @@ while selection < 1 or selection > i+1:
 
 profile = profiles[list(profiles)[selection-1]]
 p = []
+inp = ""
 
 # Run every file in the background
 for i in range(len(profile)):
     p.append(Popen(profile[i]))
+
     # Time delay cause CPU too fast and Omnibus 
     # needs time to setup communication channels
     time.sleep(0.5)
 
-# Wait until the last file exists, 
-# then terminate all the other ones
-# in reverse order of execution
-while p[len(p)-1].poll() == None:
-    continue
+class Finished(Exception): 
+    pass
 
-for i in range(len(p)):
-    p[len(p)-1-i].terminate()
+# If any file exits or the user presses control + c
+# terminate all other files that are running
+try:
+    while True:
+        for process in p:
+            if process.poll() != None:
+                raise Finished
+except (Finished, KeyboardInterrupt):
+    for i in p:
+        i.terminate()
