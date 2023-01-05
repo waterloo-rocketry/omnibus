@@ -1,5 +1,6 @@
 # FakeNI - Mimic the output of the NI source with dummy data for testing.
 
+import argparse
 import random
 import time
 
@@ -11,11 +12,24 @@ READ_BULK = 200  # mimic how the real NI box samples in bulk for better performa
 SAMPLE_RATE = 10000  # total samples/second
 CHANNELS = 8  # number of analog channels to read from
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--log", action="store_true", help="log the data from FakeNI")
+logging = parser.parse_args().log
+
 sender = Sender()
 CHANNEL = "DAQ/Fake"
 
 now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
-with open(f"log_{now}.dat", "wb") as log:
+
+if logging:
+    log = open(f"log_{now}.dat", "wb")
+
+# Hides cursor for continous print
+print('\033[?25l', end="")
+dots = 0
+counter = 0
+
+try:
     while True:
         start = time.time()
         # send a tuple of when the data was recorded and an array of the data for each channel
@@ -24,6 +38,28 @@ with open(f"log_{now}.dat", "wb") as log:
             "data": {f"Fake{i}": [random.random() for _ in range(READ_BULK)] for i in range(CHANNELS)}
         }
 
-        log.write(msgpack.packb(data))
+        if logging:
+            log.write(msgpack.packb(data))
+
+        # Cool continuously updating print statment
+        print("\rSending", end="")
+        if counter % (20*5) == 0:
+            print("   ", end="")
+        elif counter % 20 == 0:
+            for i in range(dots):
+                print(".", end="")
+            if dots == 3:
+                dots = 0
+            else:
+                dots += 1
+
+        counter += 1
+
         sender.send(CHANNEL, data)
         time.sleep(max(READ_BULK/SAMPLE_RATE - (time.time() - start), 0))
+finally:
+    if logging:
+        log.close()
+
+    # Shows cursor
+    print('\033[?25h', end="")
