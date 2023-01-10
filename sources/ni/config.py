@@ -20,16 +20,19 @@ def setup():
        Sensor Configs, will change from test to test
        """
     # Port 7
-    Sensor("(PT-5) - Fuel Injector", "ai28", 10, Connection.SINGLE,
+    Sensor("(PT-1) - Fill", "ai28", 10, Connection.SINGLE,
+           LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
+    # Port 8
+    Sensor("(PT-2) - Ox", "ai29", 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     # Port 9
-    Sensor("(PT-3) - Fuel Tank", "ai29", 10, Connection.SINGLE,
+    Sensor("(PT-3) - Injector Upstream", "ai29", 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     # Port 10
-    Sensor("(PT-4) - Ox Injector", "ai15", 10, Connection.SINGLE,
+    Sensor("(PT-4) - Combustion Chamber", "ai15", 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     # Port 11
-    Sensor("(PT-2) - Ox tank", "ai7", 10, Connection.SINGLE,
+    Sensor("(PT-5) - Perseus", "ai7", 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     # Port 12
     Sensor("(PT-1) - Ox Fill Block", "ai14", 10, Connection.SINGLE,
