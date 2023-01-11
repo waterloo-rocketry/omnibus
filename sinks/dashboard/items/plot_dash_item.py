@@ -24,8 +24,8 @@ class PlotDashItem(DashboardItem):
 
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
         self.last = 0
-        self.times = np.zeros(self.size)
-        self.points = np.zeros(self.size)
+        self.times = {}
+        self.points = {}
         self.sum = 0  # sum of stream
         # "size" of running average
         self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
@@ -40,16 +40,27 @@ class PlotDashItem(DashboardItem):
 
         # save props as a field
         self.props = props
+        self.series = self.props[0][0]
+
+        self.curve_count = 0
+        self.curve_num = len(props[0][0])
 
         # subscribe to stream dictated by properties
-        publisher.subscribe(self.props[0], self.on_data_update)
+        for i in range(self.curve_num):
+            publisher.subscribe(self.series[i], self.on_data_update)
 
+        self.color = ['w', 'g', 'c', 'm', 'y', 'b']
         # create the plot
-        self.plot = pg.PlotItem(title=self.props[0], left="Data", bottom="Seconds")
+        self.plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
-
-        self.curve = self.plot.plot(self.times, self.points, pen='y')
+        self.curves = {}
+        for i in range(self.curve_num):
+            curve = self.plot.plot([], [], pen=self.color[i])
+            self.curves[self.series[i]] = curve
+            self.times[self.series[i]] = np.zeros(self.size)
+            self.points[self.series[i]] = np.zeros(self.size)
+            
         if self.limit is not None:
             self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
 
@@ -65,7 +76,7 @@ class PlotDashItem(DashboardItem):
             self,
             "Data Series",
             "The series you wish to plot",
-            "items",
+            "checkbox",
             publisher.get_all_streams(),
         )
         if not channel_and_series:
@@ -84,7 +95,7 @@ class PlotDashItem(DashboardItem):
 
         return props
 
-    def on_data_update(self, payload):
+    def on_data_update(self, stream, payload):
         time, point = payload
         desc = payload[2] if (len(payload) > 2) else ""
 
@@ -95,39 +106,43 @@ class PlotDashItem(DashboardItem):
             return
 
         if self.last == 0:  # is this the first point we're plotting?
-            self.times.fill(time)  # prevent a rogue datapoint at (0, 0)
-            self.points.fill(point)
+            # prevent a rogue datapoint at (0, 0)
+            for v in self.times.values():
+                v.fill(time)
+            for v in self.points.values():
+                v.fill(point)
             self.sum = self.avgSize * point
 
         self.last += 1 / config.GRAPH_RESOLUTION
 
-        self.sum -= self.points[self.size - self.avgSize]
+        self.sum -= self.points[stream][self.size - self.avgSize]
         self.sum += point
 
         # add the new datapoint to the end of each array, shuffle everything else back
-        self.times[:-1] = self.times[1:]
-        self.times[-1] = time
-        self.points[:-1] = self.points[1:]
-        self.points[-1] = point
+        self.times[stream][:-1] = self.times[stream][1:]
+        self.times[stream][-1] = time
+        self.points[stream][:-1] = self.points[stream][1:]
+        self.points[stream][-1] = point
 
-        min_point = min(self.points)
-        max_point = max(self.points)
+        min_point = min(self.points[stream])
+        max_point = max(self.points[stream])
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
 
         if self.limit is not None:
             # plot the warning line, using two points (start and end)
-            self.warning_line.setData([self.times[0], self.times[-1]], [self.limit] * 2)
+            self.warning_line.setData([self.times[stream][0], self.times[stream][-1]], [self.limit] * 2)
             # set the red tint
             self.warning_line.setFillLevel(max_point*2)
+        # plot the data curves
+        for k,v in self.curves.items():
+            v.setData(self.times[k], self.points[k])
+        
 
-        # plot the data curve
-        self.curve.setData(self.times, self.points)
-
-        # current value readout in the title
-        self.plot.setTitle(
-            f"[{sum(self.points)/len(self.points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props[0]}")
+#        # current value readout in the title
+#        self.plot.setTitle(
+#            f"[{sum(self.points)/len(self.points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props[0]}")
 
     def get_props(self):
         return self.props
