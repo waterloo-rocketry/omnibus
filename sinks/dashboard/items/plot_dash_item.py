@@ -24,12 +24,14 @@ class PlotDashItem(DashboardItem):
 
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
         self.last = 0
-        self.times = {}
-        self.points = {}
         self.sum = 0  # sum of stream
         # "size" of running average
         self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
         self.time_offset = 0
+        # storing the series name as key, its time and points as value
+        # since each PlotDashItem can contain more than one curve
+        self.times = {}
+        self.points = {}
 
         # Specify the layout
         self.layout = QGridLayout()
@@ -40,24 +42,27 @@ class PlotDashItem(DashboardItem):
 
         # save props as a field
         self.props = props
+        # a list of series names to be plotted
         self.series = self.props[0]
 
-        self.curve_count = 0
-        self.curve_num = len(self.series)
-
         # subscribe to stream dictated by properties
-        for i in range(self.curve_num):
+        for i in range(len(self.series)):
             publisher.subscribe(self.series[i], self.on_data_update)
 
+        # a default color list for plotting multiple curves
         self.color = ['w', 'g', 'b', 'm', 'y', 'c']
+
         # create the plot
         self.plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
         if (len(self.series) > 1):
             self.plot.addLegend()
+        # draw the curves
+        # storing the series name as key, its plot object as value
+        # update all curves every time on_data_update() is called
         self.curves = {}
-        for i in range(self.curve_num):
+        for i in range(len(self.series)):
             curve = self.plot.plot([], [], pen=self.color[i], name=self.series[i])
             self.curves[self.series[i]] = curve
             self.times[self.series[i]] = np.zeros(self.size)
@@ -99,7 +104,7 @@ class PlotDashItem(DashboardItem):
                 )
                 threshold_inputs.append(threshold_input)
             props = [channel_and_series, threshold_inputs]
-        # if plotting in the same plot
+        # if plotting in the same plot, only one threshold
         else:
             threshold_input = prompt_user(
                 self,
@@ -124,6 +129,8 @@ class PlotDashItem(DashboardItem):
 
         if self.last == 0:  # is this the first point we're plotting?
             # prevent a rogue datapoint at (0, 0)
+            # here we are filling in all curves with the same initial value, which is not accurate
+            # but once the curve gets its own update, the following values will be accurate
             for v in self.times.values():
                 v.fill(time)
             for v in self.points.values():
@@ -135,12 +142,13 @@ class PlotDashItem(DashboardItem):
         self.sum -= self.points[stream][self.size - self.avgSize]
         self.sum += point
 
-        # add the new datapoint to the end of each array, shuffle everything else back
+        # add the new datapoint to the end of the corresponding stream array, shuffle everything else back
         self.times[stream][:-1] = self.times[stream][1:]
         self.times[stream][-1] = time
         self.points[stream][:-1] = self.points[stream][1:]
         self.points[stream][-1] = point
 
+        # get the min/max point in the whole data set
         min_point = min([min(v) for v in self.points.values()])
         max_point = max([max(v) for v in self.points.values()])
 
@@ -153,6 +161,7 @@ class PlotDashItem(DashboardItem):
                 [self.times[stream][0], self.times[stream][-1]], [self.limit] * 2)
             # set the red tint
             self.warning_line.setFillLevel(max_point*2)
+
         # plot the data curves
         for k, v in self.curves.items():
             v.setData(self.times[k], self.points[k])

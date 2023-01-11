@@ -9,7 +9,6 @@ class CheckBoxDialog(QtWidgets.QDialog):
         self.setWindowTitle(property_name)
 
         QBtn = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
-
         self.buttonBox = QtWidgets.QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
@@ -17,7 +16,7 @@ class CheckBoxDialog(QtWidgets.QDialog):
         self.layout = QtWidgets.QVBoxLayout()
         message = QtWidgets.QLabel(description)
         self.layout.addWidget(message)
-        # set up checkboxes
+        # set up series checkboxes
         self.items = []
         for item in items:
             checkbox = QtWidgets.QCheckBox(item)
