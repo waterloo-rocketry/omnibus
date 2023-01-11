@@ -29,7 +29,7 @@ class Publisher:
         if stream not in self.streams:
             self.streams[stream] = []
         for callback in self.streams[stream]:
-            callback(stream,payload)
+            callback(stream, payload)
 
 
 publisher = Publisher()

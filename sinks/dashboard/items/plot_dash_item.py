@@ -40,16 +40,16 @@ class PlotDashItem(DashboardItem):
 
         # save props as a field
         self.props = props
-        self.series = self.props[0][0]
+        self.series = self.props[0]
 
         self.curve_count = 0
-        self.curve_num = len(props[0][0])
+        self.curve_num = len(self.series)
 
         # subscribe to stream dictated by properties
         for i in range(self.curve_num):
             publisher.subscribe(self.series[i], self.on_data_update)
 
-        self.color = ['w', 'g', 'c', 'm', 'y', 'b']
+        self.color = ['w', 'g', 'b', 'm', 'y', 'c']
         # create the plot
         self.plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
@@ -60,7 +60,7 @@ class PlotDashItem(DashboardItem):
             self.curves[self.series[i]] = curve
             self.times[self.series[i]] = np.zeros(self.size)
             self.points[self.series[i]] = np.zeros(self.size)
-            
+
         if self.limit is not None:
             self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
 
@@ -75,23 +75,38 @@ class PlotDashItem(DashboardItem):
         channel_and_series = prompt_user(
             self,
             "Data Series",
-            "The series you wish to plot",
+            "The serie(s) you wish to plot",
             "checkbox",
             publisher.get_all_streams(),
         )
         if not channel_and_series:
             return None
 
-        # threshold_input == None if not set
-        threshold_input = prompt_user(
-            self,
-            "Threshold Value",
-            "Set an upper limit",
-            "number",
-            cancelText="No Threshold"
-        )
-
-        props = [channel_and_series, threshold_input]
+        # if plotting separately, prompt user for separate thresholds
+        if channel_and_series[1]:
+            threshold_inputs = []
+            for item in channel_and_series[0]:
+                msg = "Set an upper limit for " + item
+                # threshold_input == None if not set
+                threshold_input = prompt_user(
+                    self,
+                    "Threshold Value",
+                    msg,
+                    "number",
+                    cancelText="No Threshold"
+                )
+                threshold_inputs.append(threshold_input)
+            props = [channel_and_series, threshold_inputs]
+        # if plotting in the same plot
+        else:
+            threshold_input = prompt_user(
+                self,
+                "Threshold Value",
+                "Set an upper limit for " + '/'.join(channel_and_series[0]),
+                "number",
+                cancelText="No Threshold"
+            )
+            props = [channel_and_series, threshold_input]
 
         return props
 
@@ -132,17 +147,19 @@ class PlotDashItem(DashboardItem):
 
         if self.limit is not None:
             # plot the warning line, using two points (start and end)
-            self.warning_line.setData([self.times[stream][0], self.times[stream][-1]], [self.limit] * 2)
+            self.warning_line.setData(
+                [self.times[stream][0], self.times[stream][-1]], [self.limit] * 2)
             # set the red tint
             self.warning_line.setFillLevel(max_point*2)
         # plot the data curves
-        for k,v in self.curves.items():
+        for k, v in self.curves.items():
             v.setData(self.times[k], self.points[k])
-        
+
 
 #        # current value readout in the title
 #        self.plot.setTitle(
 #            f"[{sum(self.points)/len(self.points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props[0]}")
+
 
     def get_props(self):
         return self.props

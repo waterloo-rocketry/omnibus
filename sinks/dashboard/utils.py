@@ -1,6 +1,7 @@
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtCore import Qt
 
+
 class CheckBoxDialog(QtWidgets.QDialog):
     def __init__(self, property_name, description, items, parent=None):
         super().__init__(parent)
@@ -16,13 +17,13 @@ class CheckBoxDialog(QtWidgets.QDialog):
         self.layout = QtWidgets.QVBoxLayout()
         message = QtWidgets.QLabel(description)
         self.layout.addWidget(message)
-        #set up checkboxes
+        # set up checkboxes
         self.items = []
         for item in items:
             checkbox = QtWidgets.QCheckBox(item)
             self.items.append(checkbox)
             self.layout.addWidget(checkbox)
-        #set up separate plot checkbox
+        # set up separate plot checkbox
         self.checkbox_separate = QtWidgets.QCheckBox("Plot Separately")
         self.checkbox_separate.setChecked(True)
         self.layout.addWidget(self.checkbox_separate)
@@ -38,10 +39,10 @@ def prompt_user(widget, property_name, description, prompt_type, items=None, can
     Returns None if input selection is not valid or user cancels
     """
     if prompt_type == "checkbox":
-        #set up a checkbox dialog
+        # set up a checkbox dialog
         dia = CheckBoxDialog(property_name, description, items, widget)
         items_length = len(items)
-        #retrieve user input
+        # retrieve user input
         if dia.exec():
             selected_items = []
             for i in range(items_length):
