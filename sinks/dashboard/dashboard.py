@@ -6,13 +6,16 @@ from items import registry
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtWidgets
+from pyqtgraph.Qt.QtGui import QPixmap
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from items.plot_dash_item import PlotDashItem
+from items.image_dash_item import ImageDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
 
+from PIL import Image
 
 class Dashboard(QtWidgets.QWidget):
     """
@@ -58,6 +61,7 @@ class Dashboard(QtWidgets.QWidget):
         # be a corresponding action to add that item
         add_item_menu = menubar.addMenu("Add Item")
 
+
         def prompt_and_add(i):
             def ret_func():
                 props = registry.get_items()[i].prompt_for_properties(self)
@@ -96,6 +100,10 @@ class Dashboard(QtWidgets.QWidget):
         self.load()
 
         self.counter = TickCounter(1)
+        
+        # Demo for ImageDashItem
+        # Issue to resolve: Cannot resize from GUI
+        self.add(ImageDashItem("./weed.png"))
 
     def load(self):
         # First, we need to clear all the
