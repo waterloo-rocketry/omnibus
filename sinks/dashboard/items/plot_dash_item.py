@@ -54,9 +54,11 @@ class PlotDashItem(DashboardItem):
         self.plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
+        if (len(self.series) > 1):
+            self.plot.addLegend()
         self.curves = {}
         for i in range(self.curve_num):
-            curve = self.plot.plot([], [], pen=self.color[i])
+            curve = self.plot.plot([], [], pen=self.color[i], name=self.series[i])
             self.curves[self.series[i]] = curve
             self.times[self.series[i]] = np.zeros(self.size)
             self.points[self.series[i]] = np.zeros(self.size)
