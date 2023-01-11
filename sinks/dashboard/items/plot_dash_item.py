@@ -139,8 +139,8 @@ class PlotDashItem(DashboardItem):
         self.points[stream][:-1] = self.points[stream][1:]
         self.points[stream][-1] = point
 
-        min_point = min(self.points[stream])
-        max_point = max(self.points[stream])
+        min_point = min([min(v) for v in self.points.values()])
+        max_point = max([max(v) for v in self.points.values()])
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
@@ -155,11 +155,21 @@ class PlotDashItem(DashboardItem):
         for k, v in self.curves.items():
             v.setData(self.times[k], self.points[k])
 
+        # value readout in the title
+        # avg values
+        avg_values = [sum(item)/len(item) for item in self.points.values()]
+        title = "avg: "
+        for v in avg_values:
+            title += f"[{v: < 4.4f}]"
+        # current values
+        title += "    current: "
+        last_values = [item[-1] for item in self.points.values()]
+        for v in last_values:
+            title += f"[{v: < 4.4f}]"
+        # data series name
+        title += "    " + "/".join(self.series)
 
-#        # current value readout in the title
-#        self.plot.setTitle(
-#            f"[{sum(self.points)/len(self.points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props[0]}")
-
+        self.plot.setTitle(title)
 
     def get_props(self):
         return self.props
