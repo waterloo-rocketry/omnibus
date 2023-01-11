@@ -9,10 +9,13 @@ import config
 from pyqtgraph.graphicsItems.LabelItem import LabelItem
 from pyqtgraph.graphicsItems.TextItem import TextItem
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
+from pyqtgraph.imageview import ImageView
 
 from parsers import Parser
 
 from omnibus.util import TickCounter
+
+from PIL import Image
 
 
 class Plotter:
@@ -48,13 +51,25 @@ class Plotter:
         # add a viewbox with a textItem in it masquerading as a graph
         self.textvb = self.win.addViewBox(
             col=columns - 1, row=len(series) % columns, enableMenu=False, enableMouse=False)
+
+        self.image = Image.open("reimu.png")
+        # self.image = self.image.resize((10,10))
+        self.npImg = np.asarray(self.image)
+        self.npImg = np.rot90(self.npImg, axes=(1,0))
+        self.imgItm = ImageItem(self.npImg)
+
+        self.textvb.addItem(self.imgItm)
+
         self.txitem = TextItem("", color=(255, 255, 255), anchor=(0.5, 0.5))
         self.textvb.autoRange()
         # Center the Text, x set to 0.55 because 0.5 looks off-centre to the left somehow
         self.txitem.setPos(0.55, 0.5)
         self.textvb.addItem(self.txitem)
 
+
         self.counter = TickCounter(1)
+
+
 
         self.exec()
 
