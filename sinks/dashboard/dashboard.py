@@ -63,13 +63,7 @@ class Dashboard(QtWidgets.QWidget):
                 props = registry.get_items()[i].prompt_for_properties(self)
                 # value returned from PlotDashItem
                 if isinstance(props, list):
-                    # plot separately
-                    if props[0][1]:
-                        for j in range(len(props[0][0])):
-                            self.add(registry.get_items()[i]([[props[0][0][j]], props[1][j]]))
-                    # plot multi-series in one plot
-                    else:
-                        self.add(registry.get_items()[i]([props[0][0], props[1]]))
+                    self.add(registry.get_items()[i]([props[0], props[1]]))
                 # value returned from CanMsgTableDashItem
                 elif props:
                     self.add(registry.get_items()[i](props))

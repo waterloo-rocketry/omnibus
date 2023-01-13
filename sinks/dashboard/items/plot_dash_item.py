@@ -24,10 +24,7 @@ class PlotDashItem(DashboardItem):
 
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
         self.last = 0
-        self.sum = 0  # sum of stream
-        # "size" of running average
-        self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
-        self.time_offset = 0
+
         # storing the series name as key, its time and points as value
         # since each PlotDashItem can contain more than one curve
         self.times = {}
@@ -50,7 +47,8 @@ class PlotDashItem(DashboardItem):
             publisher.subscribe(self.series[i], self.on_data_update)
 
         # a default color list for plotting multiple curves
-        self.color = ['w', 'g', 'b', 'm', 'y', 'c']
+        # yellow green cyan white blue magenta
+        self.color = ['y', 'g', 'c', 'w', 'b', 'm']
 
         # create the plot
         self.plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
@@ -82,46 +80,30 @@ class PlotDashItem(DashboardItem):
         channel_and_series = prompt_user(
             self,
             "Data Series",
-            "The serie(s) you wish to plot",
+            "Select up to 6 serie(s) you wish to plot",
             "checkbox",
             publisher.get_all_streams(),
         )
         if not channel_and_series:
             return None
+        # if more than 6 series are selected, only plot the first 6
+        if len(channel_and_series) > 6:
+            channel_and_series = channel_and_series[:6]
 
-        # if plotting separately, prompt user for separate thresholds
-        if channel_and_series[1]:
-            threshold_inputs = []
-            for item in channel_and_series[0]:
-                msg = "Set an upper limit for " + item
-                # threshold_input == None if not set
-                threshold_input = prompt_user(
-                    self,
-                    "Threshold Value",
-                    msg,
-                    "number",
-                    cancelText="No Threshold"
-                )
-                threshold_inputs.append(threshold_input)
-            props = [channel_and_series, threshold_inputs]
-        # if plotting in the same plot, only one threshold
-        else:
-            threshold_input = prompt_user(
-                self,
-                "Threshold Value",
-                "Set an upper limit for " + '/'.join(channel_and_series[0]),
-                "number",
-                cancelText="No Threshold"
-            )
-            props = [channel_and_series, threshold_input]
+        threshold_input = prompt_user(
+            self,
+            "Threshold Value",
+            "Set an upper limit for " + '/'.join(channel_and_series),
+            "number",
+            cancelText="No Threshold"
+        )
+        props = [channel_and_series, threshold_input]
 
         return props
 
     def on_data_update(self, stream, payload):
         time, point = payload
         desc = payload[2] if (len(payload) > 2) else ""
-
-        time += self.time_offset
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last < 1 / config.GRAPH_RESOLUTION:
@@ -135,12 +117,8 @@ class PlotDashItem(DashboardItem):
                 v.fill(time)
             for v in self.points.values():
                 v.fill(point)
-            self.sum = self.avgSize * point
 
         self.last += 1 / config.GRAPH_RESOLUTION
-
-        self.sum -= self.points[stream][self.size - self.avgSize]
-        self.sum += point
 
         # add the new datapoint to the end of the corresponding stream array, shuffle everything else back
         self.times[stream][:-1] = self.times[stream][1:]

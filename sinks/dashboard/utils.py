@@ -22,11 +22,6 @@ class CheckBoxDialog(QtWidgets.QDialog):
             checkbox = QtWidgets.QCheckBox(item)
             self.items.append(checkbox)
             self.layout.addWidget(checkbox)
-        # set up separate plot checkbox
-        self.checkbox_separate = QtWidgets.QCheckBox("Plot Separately")
-        self.checkbox_separate.setChecked(True)
-        self.layout.addWidget(self.checkbox_separate)
-        self.layout.setAlignment(self.checkbox_separate, Qt.AlignRight)
 
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
@@ -47,10 +42,7 @@ def prompt_user(widget, property_name, description, prompt_type, items=None, can
             for i in range(items_length):
                 if dia.items[i].isChecked():
                     selected_items.append(list(items)[i])
-            if dia.checkbox_separate.isChecked():
-                return [selected_items, True]
-            else:
-                return [selected_items, False]
+            return selected_items
     else:
         # set up a dialog template
         dialog_template = QtWidgets.QInputDialog()
