@@ -3,6 +3,7 @@ import time
 i = 0
 
 while True:
-	print({"time": i})
+	print(f'{{"time": {i}}}', flush=True)
 	i += 1
-	# time.sleep()
+	time.sleep(1)
+	

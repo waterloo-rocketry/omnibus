@@ -1,11 +1,13 @@
 from subprocess import Popen, PIPE
 import sys
 import time
+from omnibus import Sender
+import json
 
-inp = Popen(['python', 'test.py'], stdout = PIPE)
-proc1 = Popen(['python', 'sender.py'], stdin=PIPE)
+inp = Popen(sys.argv[1:], stdout = PIPE)
+sender = Sender()
+CHANNEL = "SE/Fake"
 
 for line in inp.stdout:
-	proc1.stdin.write(line)
-
-proc1.wait()
+	js = json.loads(line.strip())
+	sender.send(CHANNEL, js)
