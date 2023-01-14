@@ -44,11 +44,11 @@ def setup():
 
     # Perseus, 1500 psi with a FSO@10V of 75 mV, but we're running it at 12V.
     Sensor("PT-5 Perseus", ports[3], 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(1500 / (0.075 / 10 * 12), 0, "psi")
+           LinearCalibration(1500 / (0.075 / 10 * 12), 0, "psi"))
 
     # Honeywell S-type, 1000 N (divide by 9.81 to kg) an 2.002 mv/V at 12V
-    Sensor("Honeywell S-type (Ox tank)", ports[1], 0.2, connection.DIFFERENTIAL,
-           LinearCalibration((1000/9.81)/(2.002/1000*12), 0, "kg")
+    Sensor("Honeywell S-type (Ox tank)", ports[1], 0.2, Connection.DIFFERENTIAL,
+           LinearCalibration((1000/9.81)/(2.002/1000*12), 0, "kg"))
 
     # CAS BSA-5KLB 5000 lbf, 3 mv/v, 12v excitation
     Sensor("Thrust", ports[2], 0.2, Connection.DIFFERENTIAL,
