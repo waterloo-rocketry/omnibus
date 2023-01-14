@@ -20,29 +20,43 @@ def setup():
        Sensor Configs, will change from test to test
        """
     # Port 7
-    Sensor("(PT-5) - Fuel Injector", "ai28", 10, Connection.SINGLE,
-           LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
+    # Sensor("(PT-5) - Fuel Injector", "ai28", 10, Connection.SINGLE,
+    #        LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     # Port 9
-    Sensor("(PT-3) - Fuel Tank", "ai29", 10, Connection.SINGLE,
+    Sensor("(PT-3) - Injector", "ai29", 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     # Port 10
-    Sensor("(PT-4) - Ox Injector", "ai15", 10, Connection.SINGLE,
+    Sensor("(PT-4) - Injector Tank", "ai15", 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     # Port 11
-    Sensor("(PT-2) - Ox tank", "ai7", 10, Connection.SINGLE,
+    Sensor("(PT-2) - Ox Tank", "ai7", 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     # Port 12
     Sensor("(PT-1) - Ox Fill Block", "ai14", 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     # Port 1
-    Sensor("Honeywell S-type", "ai16", 0.2, Connection.DIFFERENTIAL,
-
-           LinearCalibration(4177, -0.853, "kgs"))
+    # Sensor("Honeywell S-type", "ai16", 0.2, Connection.DIFFERENTIAL,
+    #        LinearCalibration(4177, -0.853, "kgs"))
     # Port 2 - if used
     Sensor("Omega S-Type - Ox Tanks", "ai17", 0.2, Connection.DIFFERENTIAL,
            LinearCalibration(2936, -0.181, "V"))
 
+    Sensor("Thermocouple 1", "ai0", 5, Connection.SINGLE,
+           LinearCalibration(1200/5, -100 + (23.4 - -18), "C"))
+    Sensor("Thermocouple 2", "ai8", 5, Connection.SINGLE,
+           LinearCalibration(1200/5, -100 + (23.4 - -3), "C"))
+    Sensor("Thermocouple 3", "ai1", 5, Connection.SINGLE,
+           LinearCalibration(1200/5, -100 + (23.4 - -24), "C"))
+    Sensor("Thermocouple 4", "ai9", 5, Connection.SINGLE,
+           LinearCalibration(1200/5, -100, "C"))
+
+    # Port 3
+    # CAS BSA-5KLB 5000 lbf, 3 mv/v, 12v excitation
+    Sensor("Thrust", "ai18", 0.2, Connection.DIFFERENTIAL,
+           LinearCalibration(5000 / (3/1000*12), -20, "lbs"))
     """
+       Everything below here is just for documentation purposes
+       """
     # For every V it powered it will output 2 mV when experiencing Maximum load.
     # Will output about 0 mV when experiencing nothing
     # Linear in between
@@ -87,4 +101,3 @@ def setup():
     #        LinearCalibration(35.3, -34.2, "psi"))  # Calibrated 13/7/2021
     # Sensor("T8 - Tank Heating", "ai23", 10, Connection.SINGLE,
     #        ThermistorCalibration(10000, 3434, 0.099524))  # Calibration pulled from LabVIEW
-    """
