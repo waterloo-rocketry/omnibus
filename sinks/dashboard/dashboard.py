@@ -61,11 +61,7 @@ class Dashboard(QtWidgets.QWidget):
         def prompt_and_add(i):
             def ret_func():
                 props = registry.get_items()[i].prompt_for_properties(self)
-                # value returned from PlotDashItem
-                if isinstance(props, list):
-                    self.add(registry.get_items()[i]([props[0], props[1]]))
-                # value returned from CanMsgTableDashItem
-                elif props:
+                if props:
                     self.add(registry.get_items()[i](props))
             return ret_func
 
