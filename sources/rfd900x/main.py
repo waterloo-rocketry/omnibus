@@ -24,7 +24,7 @@ def main():
         while True:
             # serial in
             c = ser.read()
-            
+
             if c != b'\n':
                 buff += c
 
