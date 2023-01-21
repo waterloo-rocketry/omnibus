@@ -64,9 +64,9 @@ def setup():
            LinearCalibration(1200/5, -100, "C"))
 
     Sensor("Thermocouple 5", "ai8", 5, Connection.SINGLE,
-           LinearCalibration(1/220*1300/0.016, -0.04*1300/0.016, "C"))
+           LinearCalibration(1/220*1300/0.016, -0.004*1300/0.016, "C"))
     Sensor("Thermocouple 6", "ai0", 5, Connection.SINGLE,
-           LinearCalibration(1/220*1300/0.016, -0.04*1300/0.016, "C"))
+           LinearCalibration(1/220*1300/0.016, -0.004*1300/0.016, "C"))
 
     """
     Everything below here is just for documentation purposes
