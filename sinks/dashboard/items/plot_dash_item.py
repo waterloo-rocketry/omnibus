@@ -23,7 +23,7 @@ class PlotDashItem(DashboardItem):
         super().__init__()
 
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
-        self.last = 0
+        self.last = {}
 
         # storing the series name as key, its time and points as value
         # since each PlotDashItem can contain more than one curve
@@ -43,8 +43,8 @@ class PlotDashItem(DashboardItem):
         self.series = self.props[0]
 
         # subscribe to stream dictated by properties
-        for i in range(len(self.series)):
-            publisher.subscribe(self.series[i], self.on_data_update)
+        for series in self.series:
+            publisher.subscribe(series, self.on_data_update)
 
         # a default color list for plotting multiple curves
         # yellow green cyan white blue magenta
@@ -60,11 +60,12 @@ class PlotDashItem(DashboardItem):
         # storing the series name as key, its plot object as value
         # update all curves every time on_data_update() is called
         self.curves = {}
-        for i in range(len(self.series)):
-            curve = self.plot.plot([], [], pen=self.color[i], name=self.series[i])
-            self.curves[self.series[i]] = curve
-            self.times[self.series[i]] = np.zeros(self.size)
-            self.points[self.series[i]] = np.zeros(self.size)
+        for i,series in enumerate(self.series):
+            curve = self.plot.plot([], [], pen=self.color[i], name=series)
+            self.curves[series] = curve
+            self.times[series] = np.zeros(self.size)
+            self.points[series] = np.zeros(self.size)
+            self.last[series] = 0
 
         if self.limit is not None:
             self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
@@ -80,7 +81,7 @@ class PlotDashItem(DashboardItem):
         channel_and_series = prompt_user(
             self,
             "Data Series",
-            "Select up to 6 serie(s) you wish to plot",
+            "Select up to 6 series you wish to plot",
             "checkbox",
             publisher.get_all_streams(),
         )
@@ -106,19 +107,15 @@ class PlotDashItem(DashboardItem):
         desc = payload[2] if (len(payload) > 2) else ""
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
-        if time - self.last < 1 / config.GRAPH_RESOLUTION:
+        if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
 
-        if self.last == 0:  # is this the first point we're plotting?
+        if self.last[stream] == 0:  # is this the first point we're plotting?
             # prevent a rogue datapoint at (0, 0)
-            # here we are filling in all curves with the same initial value, which is not accurate
-            # but once the curve gets its own update, the following values will be accurate
-            for v in self.times.values():
-                v.fill(time)
-            for v in self.points.values():
-                v.fill(point)
+            self.times[stream].fill(time)
+            self.points[stream].fill(point)
 
-        self.last += 1 / config.GRAPH_RESOLUTION
+        self.last[stream] += 1 / config.GRAPH_RESOLUTION
 
         # add the new datapoint to the end of the corresponding stream array, shuffle everything else back
         self.times[stream][:-1] = self.times[stream][1:]
@@ -140,9 +137,8 @@ class PlotDashItem(DashboardItem):
             # set the red tint
             self.warning_line.setFillLevel(max_point*2)
 
-        # plot the data curves
-        for k, v in self.curves.items():
-            v.setData(self.times[k], self.points[k])
+        # update the data curve
+        self.curves[stream].setData(self.times[stream], self.points[stream])
 
         # value readout in the title
         # avg values

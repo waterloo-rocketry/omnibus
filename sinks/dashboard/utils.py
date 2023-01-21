@@ -39,9 +39,9 @@ def prompt_user(widget, property_name, description, prompt_type, items=None, can
         # retrieve user input
         if dia.exec():
             selected_items = []
-            for i in range(items_length):
+            for i, item in enumerate(items):
                 if dia.items[i].isChecked():
-                    selected_items.append(list(items)[i])
+                    selected_items.append(item)
             return selected_items
     else:
         # set up a dialog template
