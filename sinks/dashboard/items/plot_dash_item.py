@@ -60,7 +60,7 @@ class PlotDashItem(DashboardItem):
         # storing the series name as key, its plot object as value
         # update all curves every time on_data_update() is called
         self.curves = {}
-        for i,series in enumerate(self.series):
+        for i, series in enumerate(self.series):
             curve = self.plot.plot([], [], pen=self.color[i], name=series)
             self.curves[series] = curve
             self.times[series] = np.zeros(self.size)
