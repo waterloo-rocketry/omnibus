@@ -1,7 +1,7 @@
 from calibration import Sensor, Connection, LinearCalibration, ThermistorCalibration
 
-RATE = 1000  # Analog data sample rate
-READ_BULK = 20  # Number of samples to read at once for better performance
+RATE = 5000  # Analog data sample rate
+READ_BULK = 100  # Number of samples to read at once for better performance
 
 # Mapping between briefcase ports and ai channels such that you can do ports[1] through ports[12]
 ports = [
@@ -42,6 +42,10 @@ def setup():
     Sensor("PT-6 Nitrogen", ports[11], 10, Connection.SINGLE,
            LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
 
+    # PSE540-R06 pneumatic transducer. 1-5V output for 0-1 MPa
+    Sensor("PT-7 Pneumatics", ports[4], 10, Connection.SINGLE,
+           LinearCalibration(145 / (5 - 1), -145 / (5 - 1), "psi"))
+
     # Perseus, 1500 psi with a FSO@10V of 75 mV, but we're running it at 12V.
     Sensor("PT-5 Perseus", ports[3], 0.2, Connection.DIFFERENTIAL,
            LinearCalibration(1500 / (0.075 / 10 * 12), 0, "psi"))
@@ -53,6 +57,9 @@ def setup():
     # CAS BSA-5KLB 5000 lbf, 3 mv/v, 12v excitation
     Sensor("Thrust", ports[2], 0.2, Connection.DIFFERENTIAL,
            LinearCalibration(5000 / (3/1000*12), -20, "lbs"))
+
+    Sensor("Vent Thermistor", ports[12], 10, Connection.SINGLE,
+           ThermistorCalibration(12, 10000, 3434, 0.099524))  # Calibration pulled from LabVIEW
 
     Sensor("Thermocouple 1", "ai10", 5, Connection.SINGLE,
            LinearCalibration(1200/5, -100, "C"))

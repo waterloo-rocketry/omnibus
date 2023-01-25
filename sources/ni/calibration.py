@@ -62,7 +62,7 @@ class ThermistorCalibration(Calibration):
 
     def calibrate(self, value):
         # thermistor magic pulled from the LabVIEW
-        R_therm = (value * self.resistance) / (self.voltage - value)
+        R_therm = self.voltage / (value / self.resistance) - self.resistance
         if R_therm <= 0:
             return 0
         return self.B / math.log(R_therm / self.r_inf) - 273.15
