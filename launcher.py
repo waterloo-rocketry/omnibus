@@ -15,7 +15,7 @@ profiles = {
         ['python', 'sources/ni/main.py'],
     ],
     "Dashboard": [
-        ['python', 'sinks/globallog/main.py'],
+        #['python', 'sinks/globallog/main.py'],
         ['python', 'sinks/dashboard/main.py']
     ]
     # Add new profiles here
@@ -44,7 +44,7 @@ inp = ""
 
 # Run every file in the background
 for i in range(len(profile)):
-    p.append(Popen(profile[i]))
+    p.append(Popen(profile[i], stderr=PIPE))
 
     # Time delay cause CPU too fast and Omnibus 
     # needs time to setup communication channels
@@ -60,6 +60,9 @@ try:
         for process in p:
             if process.poll() != None:
                 raise Finished
-except (Finished, KeyboardInterrupt):
+except (Finished, KeyboardInterrupt, Exception):
     for i in p:
         i.terminate()
+        err = i.stderr.read().decode()
+        if err:
+            print(err)
