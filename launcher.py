@@ -1,5 +1,5 @@
 from subprocess import Popen, PIPE
-import time
+import time, signal
 
 # Profiles for what parts of Omnibus should be run
 # Files inside each profile should be listed 
@@ -15,7 +15,10 @@ profiles = {
         ['python', 'sources/ni/main.py'],
     ],
     "Dashboard": [
-        #['python', 'sinks/globallog/main.py'],
+        ['python', 'sinks/dashboard/main.py']
+    ],
+    "Log + Dashboard": [
+        ['python', 'sinks/globallog/main.py'],
         ['python', 'sinks/dashboard/main.py']
     ]
     # Add new profiles here
@@ -40,17 +43,17 @@ while selection < 1 or selection > i+1:
 
 profile = profiles[list(profiles)[selection-1]]
 p = []
-inp = ""
+print(f"Running Omnibus with selection {selection}...")
 
 # Run every file in the background
 for i in range(len(profile)):
-    p.append(Popen(profile[i], stderr=PIPE))
+    p.append(Popen(profile[i], stdout=PIPE, stderr=PIPE))
 
     # Time delay cause CPU too fast and Omnibus 
     # needs time to setup communication channels
     time.sleep(0.5)
 
-class Finished(Exception): 
+class Finished(Exception):
     pass
 
 # If any file exits or the user presses control + c
@@ -62,7 +65,8 @@ try:
                 raise Finished
 except (Finished, KeyboardInterrupt, Exception):
     for i in p:
-        i.terminate()
-        err = i.stderr.read().decode()
-        if err:
-            print(err)
+        i.send_signal(signal.SIGINT)
+        print(f"\nOutput from {i.args}:\n{i.stdout.read().decode()}")
+
+        if i.returncode not in [None, 0]:
+            print(i.stderr.read().decode())
