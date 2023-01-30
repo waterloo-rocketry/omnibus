@@ -23,6 +23,8 @@ class PlotDashItem(DashboardItem):
         super().__init__()
 
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
+        self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
+        self.sum = {}
         self.last = {}
 
         # storing the series name as key, its time and points as value
@@ -65,6 +67,7 @@ class PlotDashItem(DashboardItem):
             self.curves[series] = curve
             self.times[series] = np.zeros(self.size)
             self.points[series] = np.zeros(self.size)
+            self.sum[series] = 0
             self.last[series] = 0
 
         if self.limit is not None:
@@ -114,8 +117,12 @@ class PlotDashItem(DashboardItem):
             # prevent a rogue datapoint at (0, 0)
             self.times[stream].fill(time)
             self.points[stream].fill(point)
+            self.sum[stream] = self.avgSize * point
 
         self.last[stream] += 1 / config.GRAPH_RESOLUTION
+
+        self.sum[stream] -= self.points[stream][self.size - self.avgSize]
+        self.sum[stream] += point
 
         # add the new datapoint to the end of the corresponding stream array, shuffle everything else back
         self.times[stream][:-1] = self.times[stream][1:]
@@ -142,13 +149,13 @@ class PlotDashItem(DashboardItem):
 
         # value readout in the title
         # avg values
-        avg_values = [sum(item)/len(item) for item in self.points.values()]
+        avg_values = [self.sum[item]/len(self.points[item]) for item in self.series]
         title = "avg: "
         for v in avg_values:
             title += f"[{v: < 4.4f}]"
         # current values
         title += "    current: "
-        last_values = [item[-1] for item in self.points.values()]
+        last_values = [self.points[item][-1] for item in self.series]
         for v in last_values:
             title += f"[{v: < 4.4f}]"
         # data series name
