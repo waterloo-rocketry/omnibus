@@ -1,8 +1,8 @@
-import pickle
 import os
-import time
 import sys
+import json
 
+from items import registry
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtWidgets
@@ -12,13 +12,6 @@ from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
-
-# "Temporary Global Constant"
-
-item_types = [
-    PlotDashItem,
-    CanMsgTableDashItem,
-]
 
 
 class Dashboard(QtWidgets.QWidget):
@@ -34,7 +27,7 @@ class Dashboard(QtWidgets.QWidget):
         self.callback = callback
 
         # The file from which the dashboard is loaded
-        self.filename = "savefile.sav"
+        self.filename = "savefile.json"
         self.filename_cache = [self.filename]
 
         # A list of all docks in the dock area
@@ -67,13 +60,13 @@ class Dashboard(QtWidgets.QWidget):
 
         def prompt_and_add(i):
             def ret_func():
-                props = item_types[i].prompt_for_properties(self)
+                props = registry.get_items()[i].prompt_for_properties(self)
                 if props:
-                    self.add(item_types[i](props))
+                    self.add(registry.get_items()[i](props))
             return ret_func
 
-        for i in range(len(item_types)):
-            new_action = add_item_menu.addAction(item_types[i].get_name())
+        for i in range(len(registry.get_items())):
+            new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
             new_action.triggered.connect(prompt_and_add(i))
 
         # Add an action to the menu bar to save the
@@ -110,7 +103,7 @@ class Dashboard(QtWidgets.QWidget):
 
         # First, make sure that the dash
         # items within the docks are not
-        # registered with any series
+        # Registered with any series
         for dock in self.docks:
             item = dock.widgets[0]
             item.on_delete()
@@ -137,8 +130,8 @@ class Dashboard(QtWidgets.QWidget):
         # if the save file exists, set our
         # data variable to it
         if os.path.isfile(self.filename):
-            with open(self.filename, 'rb') as savefile:
-                data = pickle.load(savefile)
+            with open(self.filename, 'r') as savefile:
+                data = json.load(savefile)
         else:
             data = {
                 "items": [],
@@ -148,7 +141,12 @@ class Dashboard(QtWidgets.QWidget):
         # for every item specified by the save file,
         # add that item back to the dock
         for i, item in enumerate(data["items"]):  # { 0: {...}, 1: ..., ...}
-            self.add(item["class"](item["props"]))
+            # Convert the name of the class back into the class
+            # See save() method
+            for item_type in registry.get_items():
+                if item["class"] == item_type.get_name():
+                    self.add(item_type(item["props"]))
+                    break
 
         # restore the layout
         if data["layout"]:
@@ -178,11 +176,17 @@ class Dashboard(QtWidgets.QWidget):
         data["items"] = []
         for dock in self.docks:
             item = dock.widgets[0]
-            data["items"].append({"props": item.get_props(), "class": type(item)})
+
+            # ObjectTypes can't be converted to JSON
+            # Take the name of the class instead
+            for item_type in registry.get_items():
+                if type(item) == item_type:
+                    data["items"].append({"props": item.get_props(), "class": item_type.get_name()})
+                    break
 
         # Save to the save file
-        with open(self.filename, 'wb') as savefile:
-            pickle.dump(data, savefile)
+        with open(self.filename, 'w') as savefile:
+            json.dump(data, savefile)
 
     def add(self, dashitem):
         # Create a new dock to be added to the dock area

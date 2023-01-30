@@ -29,5 +29,5 @@ dist/
 coverage.xml
 htmlcov
 
-*.sav
+*.json
 *.log
