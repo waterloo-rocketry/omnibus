@@ -3,6 +3,10 @@ from sys import platform
 from os import kill 
 import time, signal
 
+if platform == "win32":
+    from subprocess import CREATE_NEW_PROCESS_GROUP
+
+
 # Profiles for what parts of Omnibus should be run
 # Files inside each profile should be listed 
 # IN ORDER of how they should be run 
@@ -49,7 +53,14 @@ print(f"Running Omnibus with selection {selection}...")
 
 # Run every file in the background
 for i in range(len(profile)):
-    p.append(Popen(profile[i], stdout=PIPE, stderr=PIPE))
+    # This distinction is necessary to properly 
+    # exit the subprocesses on Windows
+    if platform == "win32":
+        process = Popen(profile[i], stdout=PIPE, stderr=PIPE, creationflags=CREATE_NEW_PROCESS_GROUP)
+    else:
+        process = Popen(profile[i], stdout=PIPE, stderr=PIPE)
+
+    p.append(process)
 
     # Time delay cause CPU too fast and Omnibus 
     # needs time to setup communication channels
