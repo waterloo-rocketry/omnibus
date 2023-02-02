@@ -1,4 +1,6 @@
 from subprocess import Popen, PIPE
+from sys import platform
+from os import kill 
 import time, signal
 
 # Profiles for what parts of Omnibus should be run
@@ -65,7 +67,11 @@ try:
                 raise Finished
 except (Finished, KeyboardInterrupt, Exception):
     for i in p:
-        i.send_signal(signal.SIGINT)
+        if platform == "win32":
+            kill(i.pid, signal.CTRL_C_EVENT)
+        else:
+            i.send_signal(signal.SIGINT)
+
         print(f"\nOutput from {i.args}:\n{i.stdout.read().decode()}")
 
         if i.returncode not in [None, 0]:
