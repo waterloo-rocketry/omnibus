@@ -83,7 +83,11 @@ except (Finished, KeyboardInterrupt, Exception):
         else:
             i.send_signal(signal.SIGINT)
 
-        print(f"\nOutput from {i.args}:\n{i.stdout.read().decode()}")
+        output, err = i.communicate()
+        output, err = output.decode(), err.decode()
+        print(f"\nOutput from {i.args}:")
+        print(output)
 
-        if i.returncode not in [None, 0]:
-            print(i.stderr.read().decode())
+        if err and "KeyboardInterrupt" not in err:
+            print(f"\nError from {i.args}:")
+            print(err)
