@@ -16,28 +16,17 @@ from utils import prompt_user
 #if there is error for opengl use the following command to install the acc : sudo easy_install pyopengl
 from .registry import Register
 
+pos_list = []
 
 @Register
-class PlotDashItem (DashboardItem):
+class PayloadDashItem (DashboardItem):
     def __init__(self, props):
         # Call this in **every** dash item constructor
         super().__init__()
 
-        self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
-        self.last = 0
-        self.times = np.zeros(self.size)
-        self.points = np.zeros(self.size)
-        self.sum = 0  # sum of stream
-        # "size" of running average
-        self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
-        self.time_offset = 0
-
         # Specify the layout
         self.layout = QGridLayout()
         self.setLayout(self.layout)
-
-        # set the limit for triggering red tint area
-        self.limit = props[1]
 
         # save props as a field
         self.props = props
@@ -45,44 +34,32 @@ class PlotDashItem (DashboardItem):
         # subscribe to stream dictated by properties
         publisher.subscribe(self.props[0], self.on_data_update)
 
-        # create the plot
-        self.plot = pg.PlotItem(title=self.props[0], left="Data", bottom="Seconds")
-        self.plot.setMouseEnabled(x=False, y=False)
-        self.plot.hideButtons()
+        self.w = gl.GLViewWidget()
 
-        self.curve = self.plot.plot(self.times, self.points, pen='y')
-        if self.limit is not None:
-            self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
-
-
-        pos = np.random.random(size=(100000,3))
+        pos = np.random.random(size=(1,3))
         pos *= [10,-10,10]
         pos[0] = (0,0,0)
-        color = np.ones((pos.shape[0], 4))
         size = np.random.random(size=pos.shape[0])*10
-        self.widget = gl.GLScatterPlotItem(pos=pos, color=(1,1,1,1), size=size)
-        # create the plot widget
-       
-    
-        w = gl.GLViewWidget()
-        w.show()
-        w.setCameraPosition(distance=40)
+        self.widget = gl.GLLinePlotItem() #pos=pos, color=(1,1,1,1), size=size
+
+        self.w.setCameraPosition(distance=40)
         gx = gl.GLGridItem()
         gx.rotate(90, 0, 1, 0)
         gx.translate(-10, 0, 0)
-        w.addItem(gx)
+        self.w.addItem(gx)
         gy = gl.GLGridItem()
         gy.rotate(90, 1, 0, 0)
         gy.translate(0, -10, 0)
-        w.addItem(gy)
+        self.w.addItem(gy)
         gz = gl.GLGridItem()
         gz.translate(0, 0, -10)
-        w.addItem(gz)
-        w.addItem(self.widget)
-        
+        self.w.addItem(gz)
+        self.w.addItem(self.widget)
 
         # add it to the layout
-        self.layout.addWidget(w, 0, 0)
+        self.layout.addWidget(self.w, 0, 0)
+
+       
 
     def prompt_for_properties(self):
 
@@ -96,70 +73,34 @@ class PlotDashItem (DashboardItem):
         if not channel_and_series:
             return None
 
-        # threshold_input == None if not set
-        threshold_input = prompt_user(
-            self,
-            "Threshold Value",
-            "Set an upper limit",
-            "number",
-            cancelText="No Threshold"
-        )
-
-        props = [channel_and_series, threshold_input]
-
-        return props
+        return [channel_and_series]
 
     def on_data_update(self, payload):
-        time, point = payload
-        desc = payload[2] if (len(payload) > 2) else ""
-
-        time += self.time_offset
-
-        # time should be passed as seconds, GRAPH_RESOLUTION is points per second
-        if time - self.last < 1 / config.GRAPH_RESOLUTION:
-            return
-
-        if self.last == 0:  # is this the first point we're plotting?
-            self.times.fill(time)  # prevent a rogue datapoint at (0, 0)
-            self.points.fill(point)
-            self.sum = self.avgSize * point
-
-        self.last += 1 / config.GRAPH_RESOLUTION
-
-        self.sum -= self.points[self.size - self.avgSize]
-        self.sum += point
-
-        # add the new datapoint to the end of each array, shuffle everything else back
-        self.times[:-1] = self.times[1:]
-        self.times[-1] = time
-        self.points[:-1] = self.points[1:]
-        self.points[-1] = point
-
-        min_point = min(self.points)
-        max_point = max(self.points)
-
-        # set the displayed range of Y axis
-        #self.plot.setYRange(min_point, max_point, padding=0.1)
-
-        if self.limit is not None:
-            # plot the warning line, using two points (start and end)
-            self.warning_line.setData([self.times[0], self.times[-1]], [self.limit] * 2)
-            # set the red tint
-            self.warning_line.setFillLevel(max_point*2)
-
-        # plot the data curve
-        #self.curve.setData(self.times, self.points)
-        # current value readout in the title
-        #self.plot.setTitle(
-            #f"[{sum(self.points)/len(self.points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props[0]}")
         
- 
+        pos = (payload[1]*10,payload[1]*10,payload[1]*10)
+        pos_list.append(pos)
+        #pos *= [10,-10,10]
+        pos_array = np.array(pos_list)
+
+        size = [[1]]
+        color = np.empty((53, 4))
+        z = 0.5
+        d = 6.0
+        print(pos_list)
+        self.widget.setData(pos=pos_array, color=(1.0,1.0,1.0,1.0))
+        #drawing_variable = gl.GLLinePlotItem(pos = pos_list, width = 1, antialias = True)   #make a variable to store drawing data(specify the points, set antialiasing)
+        #self.w.addItem(drawing_variable) #draw the item
+
+        #drawing_variable = gl.GLLinePlotItem(pos = pos_array[0,:], color=(1.0,1.0,1.0,1.0) , antialias = True)   #make a variable to store drawing data(specify the points, set antialiasing)
+       # self.w.addItem(drawing_variable) #draw the item
+
+    
 
     def get_props(self):
         return self.props
 
     def get_name():
-        return "Plot"
+        return "Paniz Plot"
 
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)
