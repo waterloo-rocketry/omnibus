@@ -38,12 +38,12 @@ class PlotDashItem(DashboardItem):
         self.setLayout(self.layout)
 
         # set the limit for triggering red tint area
-        self.limit = props[1]
+        self.limit = None
 
         # save props as a field
         self.props = props
         # a list of series names to be plotted
-        self.series = self.props[0]
+        self.series = self.props
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -85,10 +85,10 @@ class PlotDashItem(DashboardItem):
     def eventFilter(self, source, event):
         if event.type() == QEvent.ContextMenu and source is self.widget:
             menu = QMenu(self)
-            add_threshold = menu.addAction('Add threshold')
+            change_threshold = menu.addAction('Change threshold')
 
             action = menu.exec_(event.globalPos())
-            if action == add_threshold:
+            if action == change_threshold:
                 threshold_input = prompt_user(
                     self,
                     "Threshold Value",
@@ -115,14 +115,7 @@ class PlotDashItem(DashboardItem):
         if len(channel_and_series) > 6:
             channel_and_series = channel_and_series[:6]
 
-        threshold_input = prompt_user(
-            self,
-            "Threshold Value",
-            "Set an upper limit for " + '/'.join(channel_and_series),
-            "number",
-            cancelText="No Threshold"
-        )
-        props = [channel_and_series, threshold_input]
+        props = channel_and_series
 
         return props
 
