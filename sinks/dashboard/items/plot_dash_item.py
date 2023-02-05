@@ -117,6 +117,9 @@ class PlotDashItem(DashboardItem):
         )
         if not channel_and_series:
             return None
+        # if more than 6 series are selected, only plot the first 6
+        if len(channel_and_series) > 6:
+            channel_and_series = channel_and_series[:6]
 
         if (channel_and_series[1]):     # plot separately
             props = [{"series": [series], "limit": None} for series in channel_and_series[0]]
