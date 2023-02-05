@@ -23,13 +23,14 @@ class PlotDashItem(DashboardItem):
         super().__init__()
 
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
-        self.last = 0
-        self.times = np.zeros(self.size)
-        self.points = np.zeros(self.size)
-        self.sum = 0  # sum of stream
-        # "size" of running average
         self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
-        self.time_offset = 0
+        self.sum = {}
+        self.last = {}
+
+        # storing the series name as key, its time and points as value
+        # since each PlotDashItem can contain more than one curve
+        self.times = {}
+        self.points = {}
 
         # Specify the layout
         self.layout = QGridLayout()
@@ -40,16 +41,35 @@ class PlotDashItem(DashboardItem):
 
         # save props as a field
         self.props = props
+        # a list of series names to be plotted
+        self.series = self.props[0]
 
         # subscribe to stream dictated by properties
-        publisher.subscribe(self.props[0], self.on_data_update)
+        for series in self.series:
+            publisher.subscribe(series, self.on_data_update)
+
+        # a default color list for plotting multiple curves
+        # yellow green cyan white blue magenta
+        self.color = ['y', 'g', 'c', 'w', 'b', 'm']
 
         # create the plot
-        self.plot = pg.PlotItem(title=self.props[0], left="Data", bottom="Seconds")
+        self.plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
+        if (len(self.series) > 1):
+            self.plot.addLegend()
+        # draw the curves
+        # storing the series name as key, its plot object as value
+        # update all curves every time on_data_update() is called
+        self.curves = {}
+        for i, series in enumerate(self.series):
+            curve = self.plot.plot([], [], pen=self.color[i], name=series)
+            self.curves[series] = curve
+            self.times[series] = np.zeros(self.size)
+            self.points[series] = np.zeros(self.size)
+            self.sum[series] = 0
+            self.last[series] = 0
 
-        self.curve = self.plot.plot(self.times, self.points, pen='y')
         if self.limit is not None:
             self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
 
@@ -64,70 +84,84 @@ class PlotDashItem(DashboardItem):
         channel_and_series = prompt_user(
             self,
             "Data Series",
-            "The series you wish to plot",
-            "items",
+            "Select up to 6 series you wish to plot",
+            "checkbox",
             publisher.get_all_streams(),
         )
         if not channel_and_series:
             return None
+        # if more than 6 series are selected, only plot the first 6
+        if len(channel_and_series) > 6:
+            channel_and_series = channel_and_series[:6]
 
-        # threshold_input == None if not set
         threshold_input = prompt_user(
             self,
             "Threshold Value",
-            "Set an upper limit",
+            "Set an upper limit for " + '/'.join(channel_and_series),
             "number",
             cancelText="No Threshold"
         )
-
         props = [channel_and_series, threshold_input]
 
         return props
 
-    def on_data_update(self, payload):
+    def on_data_update(self, stream, payload):
         time, point = payload
         desc = payload[2] if (len(payload) > 2) else ""
 
-        time += self.time_offset
-
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
-        if time - self.last < 1 / config.GRAPH_RESOLUTION:
+        if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
 
-        if self.last == 0:  # is this the first point we're plotting?
-            self.times.fill(time)  # prevent a rogue datapoint at (0, 0)
-            self.points.fill(point)
-            self.sum = self.avgSize * point
+        if self.last[stream] == 0:  # is this the first point we're plotting?
+            # prevent a rogue datapoint at (0, 0)
+            self.times[stream].fill(time)
+            self.points[stream].fill(point)
+            self.sum[stream] = self.avgSize * point
 
-        self.last += 1 / config.GRAPH_RESOLUTION
+        self.last[stream] += 1 / config.GRAPH_RESOLUTION
 
-        self.sum -= self.points[self.size - self.avgSize]
-        self.sum += point
+        self.sum[stream] -= self.points[stream][self.size - self.avgSize]
+        self.sum[stream] += point
 
-        # add the new datapoint to the end of each array, shuffle everything else back
-        self.times[:-1] = self.times[1:]
-        self.times[-1] = time
-        self.points[:-1] = self.points[1:]
-        self.points[-1] = point
+        # add the new datapoint to the end of the corresponding stream array, shuffle everything else back
+        self.times[stream][:-1] = self.times[stream][1:]
+        self.times[stream][-1] = time
+        self.points[stream][:-1] = self.points[stream][1:]
+        self.points[stream][-1] = point
 
-        min_point = min(self.points)
-        max_point = max(self.points)
+        # get the min/max point in the whole data set
+        min_point = min([min(v) for v in self.points.values()])
+        max_point = max([max(v) for v in self.points.values()])
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
 
         if self.limit is not None:
             # plot the warning line, using two points (start and end)
-            self.warning_line.setData([self.times[0], self.times[-1]], [self.limit] * 2)
+            self.warning_line.setData(
+                [self.times[stream][0], self.times[stream][-1]], [self.limit] * 2)
             # set the red tint
             self.warning_line.setFillLevel(max_point*2)
 
-        # plot the data curve
-        self.curve.setData(self.times, self.points)
+        # update the data curve
+        self.curves[stream].setData(self.times[stream], self.points[stream])
 
-        # current value readout in the title
-        self.plot.setTitle(
-            f"[{sum(self.points)/len(self.points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props[0]}")
+        # value readout in the title
+        # avg values
+        avg_values = [self.sum[item]/len(self.points[item]) for item in self.series]
+        title = "avg: "
+        for v in avg_values:
+            title += f"[{v: < 4.4f}]"
+        # current values
+        title += "    current: "
+        last_values = [self.points[item][-1] for item in self.series]
+        for v in last_values:
+            title += f"[{v: < 4.4f}]"
+        # data series name
+        title += "    " + "/".join(self.series)
+
+        self.plot.setTitle(title)
 
     def get_props(self):
         return self.props

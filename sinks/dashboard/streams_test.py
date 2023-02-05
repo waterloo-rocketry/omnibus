@@ -43,7 +43,7 @@ class TestPublisher:
         p = Publisher()
         data = [0]
 
-        def mutate_counter(payload):
+        def mutate_counter(stream, payload):
             data[0] = payload
 
         p.subscribe("test1", mutate_counter)

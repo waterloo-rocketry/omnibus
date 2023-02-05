@@ -187,7 +187,7 @@ class CanMsgTableDashItem(DashboardItem):
     def get_props(self):
         return self.props
 
-    def on_data_update(self, canSeries):
+    def on_data_update(self, stream, canSeries):
         message = canSeries[1]
         if message["board_id"] in self.message_dict:
             self.message_dict[message["board_id"]].update_with_message(message)
