@@ -44,7 +44,7 @@ class PlotDashItem(DashboardItem):
         self.series = props["series"]
 
         # save props as a field
-        self.props = {"series":props["series"], "limit":props["limit"]}
+        self.props = {"series": props["series"], "limit": props["limit"]}
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -99,6 +99,10 @@ class PlotDashItem(DashboardItem):
                 )
                 self.limit = threshold_input
                 self.props["limit"] = threshold_input
+                # if user changes threshold to No threshold
+                if self.limit == None:
+                    self.warning_line.setData([], [])
+                    self.warning_line.setFillLevel(None)
             return True
         return super().eventFilter(source, event)
 
@@ -107,17 +111,20 @@ class PlotDashItem(DashboardItem):
         channel_and_series = prompt_user(
             self,
             "Data Series",
-            "Select up to 6 series you wish to plot",
+            "Select the series you wish to plot. Up to 6 if plotting together.",
             "checkbox",
             publisher.get_all_streams(),
         )
         if not channel_and_series:
             return None
-        # if more than 6 series are selected, only plot the first 6
-        if len(channel_and_series) > 6:
-            channel_and_series = channel_and_series[:6]
 
-        props = {"series":channel_and_series, "limit":None}
+        if (channel_and_series[1]):     # plot separately
+            props = [{"series": [series], "limit": None} for series in channel_and_series[0]]
+        else:                           # plot together
+            # if more than 6 series are selected, only plot the first 6
+            if len(channel_and_series) > 6:
+                channel_and_series = channel_and_series[:6]
+            props = [{"series": channel_and_series[0], "limit": None}]
 
         return props
 
