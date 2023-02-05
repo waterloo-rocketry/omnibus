@@ -38,12 +38,13 @@ class PlotDashItem(DashboardItem):
         self.setLayout(self.layout)
 
         # set the limit for triggering red tint area
-        self.limit = None
+        self.limit = props["limit"]
+
+        # a list of series names to be plotted
+        self.series = props["series"]
 
         # save props as a field
-        self.props = props
-        # a list of series names to be plotted
-        self.series = self.props
+        self.props = {"series":props["series"], "limit":props["limit"]}
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -97,6 +98,7 @@ class PlotDashItem(DashboardItem):
                     cancelText="No Threshold"
                 )
                 self.limit = threshold_input
+                self.props["limit"] = threshold_input
             return True
         return super().eventFilter(source, event)
 
@@ -115,7 +117,7 @@ class PlotDashItem(DashboardItem):
         if len(channel_and_series) > 6:
             channel_and_series = channel_and_series[:6]
 
-        props = channel_and_series
+        props = {"series":channel_and_series, "limit":None}
 
         return props
 
