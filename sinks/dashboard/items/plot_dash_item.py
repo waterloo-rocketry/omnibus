@@ -1,6 +1,7 @@
 from publisher import publisher
 from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt.QtWidgets import QGridLayout
+from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu
+from pyqtgraph.Qt.QtCore import QEvent
 import pyqtgraph as pg
 from pyqtgraph.console import ConsoleWidget
 
@@ -54,6 +55,7 @@ class PlotDashItem(DashboardItem):
 
         # create the plot
         self.plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
+        self.plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.hideButtons()
         if (len(self.series) > 1):
@@ -70,14 +72,33 @@ class PlotDashItem(DashboardItem):
             self.sum[series] = 0
             self.last[series] = 0
 
-        if self.limit is not None:
-            self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
+        # initialize the threshold line, but do not plot it unless a limit is specified
+        self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
 
         # create the plot widget
         self.widget = pg.PlotWidget(plotItem=self.plot)
+        self.widget.installEventFilter(self)
 
         # add it to the layout
         self.layout.addWidget(self.widget, 0, 0)
+
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.ContextMenu and source is self.widget:
+            menu = QMenu(self)
+            add_threshold = menu.addAction('Add threshold')
+
+            action = menu.exec_(event.globalPos())
+            if action == add_threshold:
+                threshold_input = prompt_user(
+                    self,
+                    "Threshold Value",
+                    "Set an upper limit",
+                    "number",
+                    cancelText="No Threshold"
+                )
+                self.limit = threshold_input
+            return True
+        return super().eventFilter(source, event)
 
     def prompt_for_properties(self):
 
