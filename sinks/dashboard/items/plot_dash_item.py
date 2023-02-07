@@ -44,7 +44,7 @@ class PlotDashItem(DashboardItem):
         self.series = props["series"]
 
         # save props as a field
-        self.props = {"series": props["series"], "limit": props["limit"]}
+        self.props = props
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -113,13 +113,13 @@ class PlotDashItem(DashboardItem):
             "checkbox",
             publisher.get_all_streams(),
         )
-        if not channel_and_series:
+        if not channel_and_series[0]:
             return None
         # if more than 6 series are selected, only plot the first 6
         if len(channel_and_series) > 6:
             channel_and_series = channel_and_series[:6]
 
-        if (channel_and_series[1]):     # plot separately
+        if channel_and_series[1]:     # plot separately
             props = [{"series": [series], "limit": None} for series in channel_and_series[0]]
         else:                           # plot together
             # if more than 6 series are selected, only plot the first 6

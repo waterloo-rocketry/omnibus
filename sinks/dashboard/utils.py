@@ -48,10 +48,7 @@ def prompt_user(widget, property_name, description, prompt_type, items=None, can
                 if dia.items[i].isChecked():
                     selected_items.append(item)
 
-            if dia.checkbox_separate.isChecked():
-                return [selected_items, True]
-            else:
-                return [selected_items, False]
+            return [selected_items, dia.checkbox_separate.isChecked()]
         return None
 
     # if prompt_type is text/items/number
