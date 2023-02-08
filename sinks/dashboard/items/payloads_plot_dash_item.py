@@ -78,11 +78,12 @@ class PayloadDashItem (DashboardItem):
         return [channel_and_series]
 
     def on_data_update(self, payload):
-        
-        delta = time.time() - self.start_time
-        pos = (delta,payload[1]*10,payload[1]*10)
+        time, point = payload
+        pos = tuple(point)
         pos_list.append(pos)
-        #pos *= [10,-10,10]
+        if len(pos_list) > 200:
+            pos_list.pop(0)
+
         pos_array = np.array(pos_list)
 
         size = [[1]]
@@ -96,8 +97,6 @@ class PayloadDashItem (DashboardItem):
 
         #drawing_variable = gl.GLLinePlotItem(pos = pos_array[0,:], color=(1.0,1.0,1.0,1.0) , antialias = True)   #make a variable to store drawing data(specify the points, set antialiasing)
        # self.w.addItem(drawing_variable) #draw the item
-
-    
 
     def get_props(self):
         return self.props
