@@ -81,3 +81,7 @@ def daq_parser(msg_data):
 def can_parser(payload):
     return [("CAN", payload["data"]["time"], payload)]
     # Note, we plan to revist the way that CAN message are handled
+
+# @Register("Payload")
+# def payload_parser(payload):
+
