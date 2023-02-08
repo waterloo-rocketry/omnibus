@@ -1,0 +1,51 @@
+from omnibus import Sender
+import random
+import time
+import math
+
+READ_BULK = 200  # mimic how the real NI box samples in bulk for better performance
+SAMPLE_RATE = 10000  # total samples/second
+
+running_angles = [0, 0, 0]
+count = 0
+
+sender = Sender()
+CHANNEL = "Payload"
+
+def shift_angle(angle):
+	for i in range(3):
+		angle[i] = (angle[i] + random.uniform(-0.01, 0.01)) % 360
+
+while True:
+    start = time.time()
+    # send a tuple of when the data was recorded and an array of the data for each channel
+    running_angles = shift_angle(running_angles)
+    data = {
+        "timestamp": start,
+        "data": {
+            "orientation": running_angles,
+            "position": [10 * math.cos(count/100), 10 * math.sin(count/100), 0]
+        }
+    }
+
+    count += 1
+
+    if logging:
+        log.write(msgpack.packb(data))
+
+    # Cool continuously updating print statment
+    print("\rSending", end="")
+    if counter % (20*5) == 0:
+        print("   ", end="")
+    elif counter % 20 == 0:
+        for i in range(dots):
+            print(".", end="")
+        if dots == 3:
+            dots = 0
+        else:
+            dots += 1
+
+    counter += 1
+
+    sender.send(CHANNEL, data)
+    time.sleep(max(READ_BULK/SAMPLE_RATE - (time.time() - start), 0))
