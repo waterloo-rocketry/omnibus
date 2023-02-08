@@ -9,13 +9,18 @@ SAMPLE_RATE = 10000  # total samples/second
 running_angles = [0, 0, 0]
 count = 0
 
+
+
 sender = Sender()
 CHANNEL = "Payload"
 
 def shift_angle(angle):
-	for i in range(3):
-		angle[i] = (angle[i] + random.uniform(-0.01, 0.01)) % 360
+    for i in range(3):
+        angle[i] = (angle[i] + random.uniform(-0.01, 0.01)) % 360
+    return angle
 
+dots = 0
+counter = 0
 while True:
     start = time.time()
     # send a tuple of when the data was recorded and an array of the data for each channel
@@ -29,9 +34,6 @@ while True:
     }
 
     count += 1
-
-    if logging:
-        log.write(msgpack.packb(data))
 
     # Cool continuously updating print statment
     print("\rSending", end="")
