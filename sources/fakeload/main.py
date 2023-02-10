@@ -16,7 +16,7 @@ CHANNEL = "Payload"
 
 def shift_angle(angle):
     angle[0] = (angle[0] + math.pi + 0.01) % (2 * math.pi) - math.pi
-    angle[1] = (angle[1] + math.pi/2 + 0.01) % (math.pi) - math.pi/2
+    angle[1] = (angle[1] + math.pi + 0.01) % (2 * math.pi) - math.pi
     angle[2] = (angle[2] + math.pi + 0.01) % (2 * math.pi) - math.pi
     return angle
 
@@ -30,7 +30,7 @@ while True:
         "timestamp": start,
         "data": {
             "orientation": running_angles,
-            "position": [10 * math.cos(count/100), 10 * math.sin(count/100), 0]
+            "position": [10 * math.cos(count/100), 10 * math.sin(count/100), 2 * math.sin(count/10)]
         }
     }
 
