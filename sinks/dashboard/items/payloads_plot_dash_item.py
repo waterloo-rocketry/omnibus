@@ -111,7 +111,7 @@ class PayloadDashItem (DashboardItem):
         self.zaxis.setData(pos=zlist, color=(0.0,0.0,1.0,1.0))
 
     def transform(self, point, euler_angle):
-        return self.Ry(self.Rz(point, euler_angle[0]), euler_angle[1])
+        return self.Rx(self.Ry(self.Rz(point, euler_angle[0]), euler_angle[1]), euler_angle[2])
 
     def Rz(self, point, gamma):
         x, y, z = point
