@@ -82,7 +82,7 @@ def can_parser(payload):
     return [("CAN", payload["data"]["time"], payload)]
     # Note, we plan to revist the way that CAN message are handled
 
-@Register("Payload")
+@Register("StateEstimation")
 def payload_parser(payload):
     timestamp = payload["timestamp"]
     return [
