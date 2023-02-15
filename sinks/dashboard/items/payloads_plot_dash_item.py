@@ -151,6 +151,3 @@ class PayloadDashItem (DashboardItem):
             publisher.unsubscribe_from_all(self.on_data_update_orientation)
         else:
             publisher.unsubscribe_from_all(self.on_data_update_position)
-
-if __name__ == '__main__':    
-    pg.exec()
