@@ -119,7 +119,7 @@ class PayloadDashItem (DashboardItem):
 
         return [channel_and_series, enable_orientation]
 
-    def on_data_update_position(self, payload):
+    def on_data_update_position(self,stream, payload):
         time, point = payload
         self.pos_list.append(tuple(point))
         if len(self.pos_list) > 200:
@@ -127,7 +127,7 @@ class PayloadDashItem (DashboardItem):
 
         self.line.setData(pos=self.pos_list, color=(1.0,1.0,1.0,1.0))
 
-    def on_data_update_orientation(self, payload):
+    def on_data_update_orientation(self,stream, payload):
         time, orientation = payload
 
         xlist = [(0,0,0), self.transform((10, 0, 0), orientation)]
