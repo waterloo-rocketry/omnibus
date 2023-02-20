@@ -1,6 +1,6 @@
 import os
 import sys
-import json 
+import json
 from items import registry
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
@@ -8,7 +8,7 @@ from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from items.plot_dash_item import PlotDashItem
-from items.payloads_plot_dash_item import PayloadDashItem 
+from items.payloads_plot_dash_item import PayloadDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user

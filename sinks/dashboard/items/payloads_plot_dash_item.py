@@ -14,8 +14,9 @@ import config
 from utils import prompt_user
 import time
 
-#if there is error for opengl use the following command to install the acc : sudo easy_install pyopengl
+# if there is error for opengl use the following command to install the acc : sudo easy_install pyopengl
 from .registry import Register
+
 
 @Register
 class PayloadDashItem (DashboardItem):
@@ -54,7 +55,7 @@ class PayloadDashItem (DashboardItem):
             self.view.addItem(self.yaxis)
             self.zaxis = gl.GLLinePlotItem()
             self.view.addItem(self.zaxis)
-            self.orientation = (0, 0, 0) # Euler Angles
+            self.orientation = (0, 0, 0)  # Euler Angles
         else:
             publisher.subscribe(self.props[0], self.on_data_update_position)
             self.pos_list = []
@@ -64,8 +65,6 @@ class PayloadDashItem (DashboardItem):
         # add it to the layout
         self.layout.addWidget(self.view, 0, 0)
         self.start_time = time.time()
-
-       
 
     def prompt_for_properties(self):
 
@@ -91,24 +90,24 @@ class PayloadDashItem (DashboardItem):
 
         return [channel_and_series, enable_orientation]
 
-    def on_data_update_position(self,stream, payload):
+    def on_data_update_position(self, stream, payload):
         time, point = payload
         self.pos_list.append(tuple(point))
         if len(self.pos_list) > 200:
             self.pos_list.pop(0)
 
-        self.line.setData(pos=self.pos_list, color=(1.0,1.0,1.0,1.0))
+        self.line.setData(pos=self.pos_list, color=(1.0, 1.0, 1.0, 1.0))
 
-    def on_data_update_orientation(self,stream, payload):
+    def on_data_update_orientation(self, stream, payload):
         time, orientation = payload
 
-        xlist = [(0,0,0), self.transform((10, 0, 0), orientation)]
-        ylist = [(0,0,0), self.transform((0, 10, 0), orientation)]
-        zlist = [(0,0,0), self.transform((0, 0, 10), orientation)]
+        xlist = [(0, 0, 0), self.transform((10, 0, 0), orientation)]
+        ylist = [(0, 0, 0), self.transform((0, 10, 0), orientation)]
+        zlist = [(0, 0, 0), self.transform((0, 0, 10), orientation)]
 
-        self.xaxis.setData(pos=xlist, color=(1.0,0.0,0.0,1.0))
-        self.yaxis.setData(pos=ylist, color=(0.0,1.0,0.0,1.0))
-        self.zaxis.setData(pos=zlist, color=(0.0,0.0,1.0,1.0))
+        self.xaxis.setData(pos=xlist, color=(1.0, 0.0, 0.0, 1.0))
+        self.yaxis.setData(pos=ylist, color=(0.0, 1.0, 0.0, 1.0))
+        self.zaxis.setData(pos=zlist, color=(0.0, 0.0, 1.0, 1.0))
 
     def transform(self, point, euler_angle):
         return self.Rx(self.Ry(self.Rz(point, euler_angle[0]), euler_angle[1]), euler_angle[2])
@@ -120,7 +119,7 @@ class PayloadDashItem (DashboardItem):
             np.cos(gamma)*x - np.sin(gamma)*y,
             np.sin(gamma)*x + np.cos(gamma)*y,
             z
-            )
+        )
 
     def Ry(self, point, beta):
         x, y, z = point
@@ -129,7 +128,7 @@ class PayloadDashItem (DashboardItem):
             np.cos(beta)*x + np.sin(beta)*z,
             y,
             -np.sin(beta)*x + np.cos(beta)*z
-            )
+        )
 
     def Rx(self, point, alpha):
         x, y, z = point
@@ -138,7 +137,7 @@ class PayloadDashItem (DashboardItem):
             x,
             np.cos(alpha)*y - np.sin(alpha)*z,
             np.sin(alpha)*y + np.cos(alpha)*z
-            )
+        )
 
     def get_props(self):
         return self.props
