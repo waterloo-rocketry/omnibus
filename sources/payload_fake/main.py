@@ -10,7 +10,7 @@ running_angles = [0, 0, 0]
 count = 0
 
 sender = Sender()
-CHANNEL = "Payload"
+CHANNEL = "StateEstimation"
 
 def shift_angle(angle):
     angle[0] = (angle[0] + math.pi + 0.01) % (2 * math.pi) - math.pi
