@@ -60,9 +60,14 @@ class Dashboard(QtWidgets.QWidget):
 
         def prompt_and_add(i):
             def ret_func():
+                # props for a single item is contained in a dictionary
                 props = registry.get_items()[i].prompt_for_properties(self)
                 if props:
-                    self.add(registry.get_items()[i](props))
+                    if isinstance(props, list):
+                        for item in props:
+                            self.add(registry.get_items()[i](item))
+                    else:
+                        self.add(registry.get_items()[i](props))
             return ret_func
 
         for i in range(len(registry.get_items())):
