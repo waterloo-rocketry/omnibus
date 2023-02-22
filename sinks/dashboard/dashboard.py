@@ -26,6 +26,11 @@ from items import registry
 from omnibus.util import TickCounter
 from utils import ConfirmDialog
 
+# These need to be imported to be added to the registry
+from items.plot_dash_item import PlotDashItem
+from items.can_message_table import CanMsgTableDashItem
+from items.can_sender.can_sender import CanSender
+
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
