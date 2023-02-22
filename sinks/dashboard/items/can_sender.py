@@ -1,281 +1,207 @@
-from math import ceil, log10
-from typing import List, Union
-from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics
-from pyqtgraph.Qt.QtWidgets import (
-    QComboBox,
-    QGridLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton
-)
-
-import parsley.fields as pf
-from parsley.message_definitions import CAN_MSG
-from parsley.bitstring import BitString
-from omnibus import Sender
-from .registry import Register
+from pyqtgraph.Qt import QtCore
+from pyqtgraph.Qt import QtGui
+from pyqtgraph.Qt import QtWidgets
 from .dashboard_item import DashboardItem
-from utils import EventTracker
-@Register
-class CanSender(DashboardItem):
-    """
-    Visual blueprint of the CanSender dashboard item:
-                  
-    |-------------------------------------------------------------|
-    | msg_type | board_id | time             | command |          | <- field names
-    |----------|----------|------------------|---------|----------|
-    | Dropdown | Dropdown | 24-bit text_field| Dropdown|   Send   | <- field-dependent widgets that take user input
-    |-------------------------------------------------------------|
+from parsers import publisher
+from .registry import Register
 
-    - Dropdowns contain a field's dictionary keys
-        => when a Switch is encountered, populate the first key's fields
-    - Text fields contain two different input masks:
-        => Numerics: only numbers
-        => ASCII: any string
-    - Upon pressing send:
-        => for every field that fails to encode its data, pulse the field in quick succession
-        => if every field successfully encodes its data, long pulse all of the fields once
+# So, we need a few things
+# 1) a widget that displays an object, in our case a
+#    CAN Message. Will be a QTable
+# 2) An expandable and collapsable widget which
+#    will allow us to filter the table as we wish
+# 3) A large container, which we will use to update
+#    the object display with messages
+
+
+class DisplayCANTable(QtWidgets.QWidget):
+    """
+    A widget that displays an object, in our case a
+    CAN message. Makes use of a QTable.
     """
 
-    def __init__(self, props):
+    def __init__(self):
+        # Super Class Init
         super().__init__()
-        # constants
-        self.INVALID_PULSES = 3 # number of pulses to display when a field fails to encode data
-        self.INVALID_PULSE_PERIOD = 100 # ms
-        self.VALID_PULSES = 1
-        self.VALID_PULSE_PERIOD = 500
-        self.WIDGET_TEXT_PADDING = 50 # pixels
+        self.layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.layout)
 
-        # use grid layout so that widgets can be placed in a grid
-        self.layout_manager = QGridLayout(self)
-        self.setLayout(self.layout_manager)
+        self.tableWidget = QtWidgets.QTableWidget()
+        self.msgTypes = []
+        self.msgInd = 0
 
-        # track backspace key presses to move the cursor backwards when the current textfield is empty
-        self.text_signals = EventTracker()
-        self.text_signals.backspace_pressed.connect(self.try_move_cursor_backwards)
+        # 8 bytes, 3 used by time stamp leaves 6 total fields
+        # + 1 title field
+        self.tableWidget.setRowCount(7)
 
-        # track enter/return key presses to send the CAN message (equilvalent to pressing the send button)
-        # installing the event filter on the dashboard widget since whenever the dashboard widget
-        # is under focus, we want to be able to send the CAN message
-        self.send_signals = EventTracker()
-        self.send_signals.enter_pressed.connect(self.send_can_message)
-        self.installEventFilter(self.send_signals)
+        height = self.tableWidget.horizontalHeader().height() + 25
+        for i in range(self.tableWidget.rowCount()):
+            height += self.tableWidget.rowHeight(i)
 
-        # text field regular expression input mask (won't accept characters not defined here)
-        self.numeric_mask = "[\.\-0-9]" # allows numbers, periods, and minus sign
-        self.ascii_mask = "[\x00-\x7F]" # allows all ASCII characters
+        self.tableWidget.setMinimumHeight(height)
 
-        # preallocate the size of the arrays since the length of a CAN message is dynamic
-        self.fields = [None] * 16 # stores the parsley fields
-        self.widgets = [None] * 16 # stores the PyQT input widgets
-        self.widget_labels = [None] * 16 # store the PyQT labels describing the parsley field names
-        self.widget_index = -1 # index of the right-most PyQT widget
-        self.widget_to_index = {} # map to associate widgets to their index
+        self.layout.addWidget(self.tableWidget)
 
-        # display contents onto the dashboard item
-        self.display_can_fields([CAN_MSG])
-        self.create_send_button()
+    def update_with_message(self, msg):
+        msg_type = msg["msg_type"]
+        msg_data = msg["data"]
+        # current hacky fix to ensure that SENSOR_ANALOG data isn't overwritten since different sensor Ids are sent at different times
+        combo_type = f"{msg_type}_{msg_data['sensor_id']}" if msg_type == "SENSOR_ANALOG" else msg_type
 
-        # when a button is pressed, pulse widgets for visual feedback
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.pulse_widgets)
-        self.pulse_indexes = []
+        if combo_type not in self.msgTypes:
+            self.msgTypes.append(combo_type)
+            item = QtWidgets.QTableWidgetItem(combo_type)
+            # taking advantage of this
+            # https://www.riverbankcomputing.com/static/Docs/PyQt4/qt.html#AlignmentFlag-enum
+            # because I had issues importing Qt.AlignHCenter
+            item.setTextAlignment(4)
 
-        # when a button is pressed, try to send the message out
-        self.omnibus_sender = Sender()
-        self.channel = "CAN/Commands"
+            # resize column
+            self.tableWidget.setColumnCount(2 * len(self.msgTypes))
+            for i in range(len(self.msgTypes)):
+                self.tableWidget.setSpan(0, 2*i, 1, 2)
 
-    def display_can_fields(self, fields: List[pf.Field]):
-        for field in fields:
-            self.widget_index += 1
-            if isinstance(field, pf.Switch) or isinstance(field, pf.Enum):
-                dropdown_items = list(field.get_keys())
-                dropdown_max_length = max(len(item) for item in dropdown_items)
+            font = QtGui.QFont()
+            font.setBold(True)
 
-                dropdown = QComboBox()
-                dropdown.addItems(dropdown_items)
-                max_width = self.get_widget_text_width(dropdown, dropdown_max_length)
-                dropdown.setFixedWidth(max_width + self.WIDGET_TEXT_PADDING)
-                # unfortuantely on Macs, you aren't able to customize the dropdown, which means
-                # you cant scroll the contents (it'll be one huge list)
-                # see: https://doc.qt.io/qt-5/qcombobox.html#maxVisibleItems-prop
-                dropdown.setMaxVisibleItems(15)
-                dropdown.setFocusPolicy(Qt.StrongFocus) # display the blue border when widget is focused
-                self.widgets[self.widget_index] = dropdown
-            elif isinstance(field, pf.Numeric) or isinstance(field, pf.ASCII):
-                mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
-                data_length = self.get_field_length(field)
+            item.setFont(font)
+            self.tableWidget.setItem(0, 2*self.msgInd, item)
+            self.msgInd += 1
 
-                text_field = QLineEdit()
-                max_width = self.get_widget_text_width(text_field, data_length)
-                text_field.setFixedWidth(max_width + self.WIDGET_TEXT_PADDING)
-                text_field.setAlignment(Qt.AlignCenter)
-                text_field.setValidator(QRegularExpressionValidator(data_length * mask))
-                text_field.setPlaceholderText(data_length * "0")
-                text_field.installEventFilter(self.text_signals)
-                # when a textfield is full, move the cursor forwards to the next widget
-                text_field.textChanged.connect(self.try_move_cursor_forwards)
-                text_field.setFocusPolicy(Qt.StrongFocus) # display the blue border when widget is focused
-                self.widgets[self.widget_index] = text_field
+        index = -1
 
-            # if the field comes with a unit, display it in brackets
-            label_text = f"{field.name} ({field.unit})" if field.unit else field.name
-            label = QLabel(label_text)
-            label.setWordWrap(True)
+        for i in range(len(self.msgTypes)):
+            if combo_type == self.msgTypes[i]:
+                index = i
 
-            self.fields[self.widget_index] = field
-            self.widget_labels[self.widget_index] = label
-            # create a mapping between widget and its index in the can message
-            self.widget_to_index[self.widgets[self.widget_index]] = self.widget_index
-            self.layout_manager.addWidget(self.widget_labels[self.widget_index], 0, self.widget_index)
-            self.layout_manager.addWidget(self.widgets[self.widget_index], 1, self.widget_index)
+        for i, (k, v) in enumerate(msg_data.items()):
+            key_item = QtWidgets.QTableWidgetItem(str(k))
+            key_item.setTextAlignment(4)
+            self.tableWidget.setItem(i+1, 2*index, key_item)
 
-            # if the current field is a switch, then display the first row's contents
-            if isinstance(field, pf.Switch):
-                self.widgets[self.widget_index].currentTextChanged.connect(self.update_can_msg)
-                nested_fields = field.get_fields(dropdown_items[0])
-                self.display_can_fields(nested_fields)
+            value_item = QtWidgets.QTableWidgetItem(str(v))
+            value_item.setTextAlignment(4)
+            self.tableWidget.setItem(i+1, 2*index + 1, value_item)
 
-    def update_can_msg(self, text: str):
-        dropdown = self.sender()
-        dropdown_index = self.widget_to_index[dropdown]
 
-        # delete the widgets from [dropdown_index + 1, self.widget_index) from layout manager
-        for index in range(dropdown_index + 1, self.widget_index):
-            widget = self.widgets[index]
-            label = self.widget_labels[index]
-            # remove widget from layout manager
-            self.layout_manager.removeWidget(widget)
-            self.layout_manager.removeWidget(label)
-            # remove widget from memory
-            widget.deleteLater()
-            label.deleteLater()
-        # remove send button
-        self.layout_manager.removeWidget(self.send_button)
-        self.send_button.deleteLater()
 
-        # insert the new widgets
-        self.widget_index = dropdown_index
-        switch_field = self.fields[self.widget_index]
-        nested_fields = switch_field.get_fields(text)
-        self.display_can_fields(nested_fields)
-        # bring back the send button
-        self.create_send_button()
-
-    def send_can_message(self):
-        bit_str = self.parse_can_msg()
-
-        if bit_str == None:
-            return
-        # if every field successfully encoded its data, long pulse all of the fields once
-        self.pulse_indexes = [i for i in range(0, self.widget_index)]
-        self.pulse(pulse_invalid=False)
-        bit_length = bit_str.length
-        bit_data = bit_str.pop(bit_length)
-        message = {
-            "data": bit_data,
-            "length": bit_length
-        }
-        self.omnibus_sender.send(self.channel, message)
-
-    def parse_can_msg(self) -> Union[BitString, None]:
-        self.pulse_indexes = []
-        bit_str = BitString()
-        for index in range(0, self.widget_index):
-            widget = self.widgets[index]
-            field = self.fields[index]
-            text = widget.text() if isinstance(widget, QLineEdit) else widget.currentText()
-            try:
-                if isinstance(field, pf.Numeric):
-                    text = float(text)
-                bit_str.push(*field.encode(text))
-            except Exception as e:
-                print(f"{field.name} | {e}")
-                self.pulse_indexes.append(index)
-
-        if self.pulse_indexes:
-            self.pulse(pulse_invalid=True)
-
-        return None if self.pulse_indexes else bit_str
-
-    def pulse(self, pulse_invalid: bool):
-        self.pulse_count = 0
-        self.invalid = pulse_invalid
-        pulse_period = self.INVALID_PULSE_PERIOD if pulse_invalid else self.VALID_PULSE_PERIOD
-        self.timer.start(pulse_period)
-
-    def pulse_widgets(self):
-        pulse_frq = self.INVALID_PULSES if self.invalid else self.VALID_PULSES
-        if self.pulse_count < 2*pulse_frq:
-            for index in self.pulse_indexes:
-                widget = self.widgets[index]
-                widget.setDisabled(self.pulse_count%2 == 0)
-            self.pulse_count += 1
+    def toggle(self):
+        if self.is_expanded:
+            self.layout.removeWidget(self.content)
+            self.content.setParent(None)
+            self.expand_contract_action.setText(f"> {self.name}")
+            self.is_expanded = False
         else:
-            self.timer.stop()
+            self.layout.addWidget(self.content)
+            self.expand_contract_action.setText(f"V {self.name}")
+            self.is_expanded = True
 
-    def get_field_length(self, field: pf.Field) -> int:
-        match type(field):
-            case pf.ASCII:
-                return field.length // 8
-            case pf.Numeric:
-                minus_sign = 1 if field.signed else 0
-                return minus_sign + ceil(field.length * log10(2))
-            case _:
-                return -1
 
-    def get_widget_text_width(self, widget, max_chars: int) -> int:
-        font_metrics = QFontMetrics(widget.font())
-        text_width = font_metrics.boundingRect('X' * max_chars).width()
-        return text_width
+class LayoutWidget(QtWidgets.QWidget):
+    """
+    A widget whose sole job is to hold
+    a layout. The hacky stuff QT makes 
+    me do smh.
+    """
 
-    def create_send_button(self):
-        self.widget_index += 1
-        self.send_button = QPushButton("SEND")
-        max_width = self.get_widget_text_width(self.send_button, 4)
-        self.send_button.setFixedWidth(max_width + self.WIDGET_TEXT_PADDING)
-        self.send_button.setFocusPolicy(Qt.TabFocus)
-        self.send_button.clicked.connect(self.send_can_message)
-        self.layout_manager.addWidget(self.send_button, 1, self.widget_index)
+    def __init__(self, layout):
+        super().__init__()
+        self.layout = layout
+        self.setLayout(self.layout)
 
-    # moves the cursor to the next input widget if the current textfield is full
-    def try_move_cursor_forwards(self):
-        widget = self.sender()
-        index = self.widget_to_index[widget]
-        field = self.fields[index]
-        data_length = self.get_field_length(field)
-        text_length = len(widget.text())
 
-        if text_length == data_length:
-            # self.widget_index refers to the send button, so the
-            # last focusable widget is the one before it
-            next_index = min(self.widget_index - 1, index + 1)
-            next_widget = self.widgets[next_index]
-            next_widget.setFocus()
+class BackspaceEventFilter(QtCore.QObject):
+    valid_backspace = QtCore.Signal()
+    name = "n/a"
 
-    # moves the cursor to the previous input widget if the current textfield is empty
-    def try_move_cursor_backwards(self, widget):
-        index = self.widget_to_index[widget]
-        text_length = len(widget.text())
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Backspace and len(obj.text())==0:
+            self.name = obj.objectName()
+            self.valid_backspace.emit()
+        return super().eventFilter(obj, event)
 
-        if text_length == 0:
-            previous_index = max(0, index - 1)
-            previous_widget = self.widgets[previous_index]
-            previous_widget.setFocus()
-            if isinstance(previous_widget, QLineEdit):
-                # backspace was pressed and the current textfield is empty, so
-                # remove a character from the previous textfield
-                previous_widget.setText(previous_widget.text()[:-1])
+@Register
+class CanMsgSndr(DashboardItem):
+    """
+    Display table for CAN messages.
+    """
+
+    def onTextChange(self, new_text):
+        obj_name = self.sender().objectName()
+        cur_idx = self.line_edits_map[obj_name]
+        cur_len = len(self.line_edits[cur_idx].text())
+
+        if cur_len == 2:
+            nxt_idx = min(7, cur_idx+1)
+            nxt_obj = self.line_edits[nxt_idx]
+            nxt_obj.setFocus()
+
+    def onBackspace(self):
+        obj_name = self.sender().name # this is so hacky
+        cur_idx = self.line_edits_map[obj_name]
+        prv_idx = max(0, cur_idx-1)
+        prv_obj = self.line_edits[prv_idx]
+        prv_obj.setFocus()
+
+    def __init__(self, props=None):
+        super().__init__()
+        self.props = props
+
+        self.layout = QtWidgets.QHBoxLayout(self)
+        self.setLayout(self.layout)
+
+        self.layout_widget = LayoutWidget(QtWidgets.QHBoxLayout())
+
+        self.msg_typ_part = QtWidgets.QLineEdit(self)
+        self.msg_typ_part.setPlaceholderText("Message Type")
+
+
+        valid_hexes = QtGui.QRegularExpressionValidator("[A-F0-9][A-F0-9]")
+        self.line_edits = []
+        self.line_edits_map = {}
+        self.backspace_event_filter = BackspaceEventFilter()
+        self.backspace_event_filter.valid_backspace.connect(self.onBackspace)
+        for i in range(8):
+            line_edit = QtWidgets.QLineEdit()
+            line_edit.setValidator(valid_hexes)
+            line_edit.setPlaceholderText("00")
+            line_edit.setObjectName("QLineEdit #{}".format(i))
+            line_edit.installEventFilter(self.backspace_event_filter)
+            line_edit.textChanged.connect(self.onTextChange)
+            self.line_edits.append(line_edit)
+            self.line_edits_map[line_edit.objectName()] = i
+
+        self.send = QtWidgets.QPushButton(self)
+        self.send.setText("SEND")
+        # Subscribe to all relavent stream
+        publisher.subscribe("CAN/Commands", self.on_data_update)
+
+        self.layout.addWidget(self.msg_typ_part, 2)
+        for i in range(len(self.line_edits)):
+            self.layout.addWidget(self.line_edits[i], 1)
+        # self.layout.addWidget(self.input_part, 3)
+        self.layout.addWidget(self.send)
+
+    def prompt_for_properties(self):
+        return True
+
+    def get_props(self):
+        return self.props
+
+    def on_data_update(self, stream, canSeries):
+        message = canSeries[1]
+        if message["board_id"] in self.message_dict:
+            self.message_dict[message["board_id"]].update_with_message(message)
+        else:
+            table = DisplayCANTable()
+            self.message_dict[message["board_id"]] = table
+            exp_widget = ExpandingWidget(message["board_id"], table)
+            self.layout_widget.layout.addWidget(exp_widget)
+            self.message_dict[message["board_id"]].update_with_message(message)
+
 
     def get_name():
         return "CAN Sender"
 
-    def get_props(self):
-        return True
-
     def on_delete(self):
-        pass
-
-    def prompt_for_properties(self):
-        return True
+        publisher.unsubscribe_from_all(self.on_data_update)
