@@ -14,89 +14,6 @@ from .registry import Register
 #    the object display with messages
 
 
-class DisplayCANTable(QtWidgets.QWidget):
-    """
-    A widget that displays an object, in our case a
-    CAN message. Makes use of a QTable.
-    """
-
-    def __init__(self):
-        # Super Class Init
-        super().__init__()
-        self.layout = QtWidgets.QVBoxLayout()
-        self.setLayout(self.layout)
-
-        self.tableWidget = QtWidgets.QTableWidget()
-        self.msgTypes = []
-        self.msgInd = 0
-
-        # 8 bytes, 3 used by time stamp leaves 6 total fields
-        # + 1 title field
-        self.tableWidget.setRowCount(7)
-
-        height = self.tableWidget.horizontalHeader().height() + 25
-        for i in range(self.tableWidget.rowCount()):
-            height += self.tableWidget.rowHeight(i)
-
-        self.tableWidget.setMinimumHeight(height)
-
-        self.layout.addWidget(self.tableWidget)
-
-    def update_with_message(self, msg):
-        msg_type = msg["msg_type"]
-        msg_data = msg["data"]
-        # current hacky fix to ensure that SENSOR_ANALOG data isn't overwritten since different sensor Ids are sent at different times
-        combo_type = f"{msg_type}_{msg_data['sensor_id']}" if msg_type == "SENSOR_ANALOG" else msg_type
-
-        if combo_type not in self.msgTypes:
-            self.msgTypes.append(combo_type)
-            item = QtWidgets.QTableWidgetItem(combo_type)
-            # taking advantage of this
-            # https://www.riverbankcomputing.com/static/Docs/PyQt4/qt.html#AlignmentFlag-enum
-            # because I had issues importing Qt.AlignHCenter
-            item.setTextAlignment(4)
-
-            # resize column
-            self.tableWidget.setColumnCount(2 * len(self.msgTypes))
-            for i in range(len(self.msgTypes)):
-                self.tableWidget.setSpan(0, 2*i, 1, 2)
-
-            font = QtGui.QFont()
-            font.setBold(True)
-
-            item.setFont(font)
-            self.tableWidget.setItem(0, 2*self.msgInd, item)
-            self.msgInd += 1
-
-        index = -1
-
-        for i in range(len(self.msgTypes)):
-            if combo_type == self.msgTypes[i]:
-                index = i
-
-        for i, (k, v) in enumerate(msg_data.items()):
-            key_item = QtWidgets.QTableWidgetItem(str(k))
-            key_item.setTextAlignment(4)
-            self.tableWidget.setItem(i+1, 2*index, key_item)
-
-            value_item = QtWidgets.QTableWidgetItem(str(v))
-            value_item.setTextAlignment(4)
-            self.tableWidget.setItem(i+1, 2*index + 1, value_item)
-
-
-
-    def toggle(self):
-        if self.is_expanded:
-            self.layout.removeWidget(self.content)
-            self.content.setParent(None)
-            self.expand_contract_action.setText(f"> {self.name}")
-            self.is_expanded = False
-        else:
-            self.layout.addWidget(self.content)
-            self.expand_contract_action.setText(f"V {self.name}")
-            self.is_expanded = True
-
-
 class LayoutWidget(QtWidgets.QWidget):
     """
     A widget whose sole job is to hold
@@ -124,9 +41,21 @@ class BackspaceEventFilter(QtCore.QObject):
 class CanMsgSndr(DashboardItem):
     """
     Display table for CAN messages.
+    |    |    |    |    |    |
+----|----|----|----|----|----|----
+ 0,0|    | lbl| lbl|... |lbl |0,11
+----|----|----|----|----|----|----
+ Msg type|Byte|Byte|... |Byte| Button
+----|----|----|----|----|----|----
+ 2,0|    |    |    |    |    |2,11
+----|----|----|----|----|----|----
+    Using the QGridLayout to structure the layout
+    Msg type = the type of message to send
+    Byte     = the 2 hexadecimal message
+    lbl      = the "datatype" occupied at that column
     """
 
-    def onTextChange(self, new_text):
+    def onDataChange(self):
         obj_name = self.sender().objectName()
         cur_idx = self.line_edits_map[obj_name]
         cur_len = len(self.line_edits[cur_idx].text())
@@ -136,51 +65,43 @@ class CanMsgSndr(DashboardItem):
             nxt_obj = self.line_edits[nxt_idx]
             nxt_obj.setFocus()
 
+    def onMessageTypeChange(self):
+        obj = self.sender()
+
+        if obj is None or obj.text() not in self.getValidMessageTypes():
+            self.lockLineEdit(0) 
+        else: 
+            amt_of_unlock = 0 if obj.text() in ["LEDS_ON", "LEDS_OFF"] else 8
+            print(amt_of_unlock)
+            self.lockLineEdit(amt_of_unlock)
+
+    # 0-indexed
+    def lockLineEdit(self, amountOfUnlocks):
+        for i in range(len(self.line_edits)):
+            self.line_edits[i].setReadOnly(i >= amountOfUnlocks)
+            self.line_edits[i].setDisabled(i >= amountOfUnlocks)
+
     def onBackspace(self):
-        obj_name = self.sender().name # this is so hacky
+        obj_name = self.sender().name # TODO: this is so hacky
         cur_idx = self.line_edits_map[obj_name]
         prv_idx = max(0, cur_idx-1)
         prv_obj = self.line_edits[prv_idx]
         prv_obj.setFocus()
+        prv_obj.setText(prv_obj.text()[:-1])
 
     def __init__(self, props=None):
         super().__init__()
         self.props = props
 
-        self.layout = QtWidgets.QHBoxLayout(self)
-        self.setLayout(self.layout)
+        self.layout_manager = QtWidgets.QGridLayout(self)
+        self.setLayout(self.layout_manager)
 
-        self.layout_widget = LayoutWidget(QtWidgets.QHBoxLayout())
-
-        self.msg_typ_part = QtWidgets.QLineEdit(self)
-        self.msg_typ_part.setPlaceholderText("Message Type")
-
-
-        valid_hexes = QtGui.QRegularExpressionValidator("[A-F0-9][A-F0-9]")
-        self.line_edits = []
-        self.line_edits_map = {}
-        self.backspace_event_filter = BackspaceEventFilter()
-        self.backspace_event_filter.valid_backspace.connect(self.onBackspace)
-        for i in range(8):
-            line_edit = QtWidgets.QLineEdit()
-            line_edit.setValidator(valid_hexes)
-            line_edit.setPlaceholderText("00")
-            line_edit.setObjectName("QLineEdit #{}".format(i))
-            line_edit.installEventFilter(self.backspace_event_filter)
-            line_edit.textChanged.connect(self.onTextChange)
-            self.line_edits.append(line_edit)
-            self.line_edits_map[line_edit.objectName()] = i
-
-        self.send = QtWidgets.QPushButton(self)
-        self.send.setText("SEND")
+        self.setupWidgets()
+        self.placeWidgets()
+        
         # Subscribe to all relavent stream
         publisher.subscribe("CAN/Commands", self.on_data_update)
 
-        self.layout.addWidget(self.msg_typ_part, 2)
-        for i in range(len(self.line_edits)):
-            self.layout.addWidget(self.line_edits[i], 1)
-        # self.layout.addWidget(self.input_part, 3)
-        self.layout.addWidget(self.send)
 
     def prompt_for_properties(self):
         return True
@@ -205,3 +126,73 @@ class CanMsgSndr(DashboardItem):
 
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)
+
+    def getValidMessageTypes(self):
+        # this'll eventually be a map datastructure.map(get_name) or smth trust it'll be clean
+        ret = ["LEDS_ON", "LEDS_OFF", "SENSOR_MAG"]
+        return ret
+
+
+    def setupWidgets(self):
+        # message type with autocomplete to choose from
+        auto_complete = QtWidgets.QCompleter(self.getValidMessageTypes(), self)
+        self.message_type = QtWidgets.QLineEdit(self)
+        self.message_type.setPlaceholderText("Message Type")
+        self.message_type.setCompleter(auto_complete)
+        self.message_type.textChanged.connect(self.onMessageTypeChange)
+
+        # setting the color to look disabled
+        self.palette = QtGui.QPalette()
+        self.palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.Base, QtGui.QColor("darkGrey"))
+
+        # array of QLineEdits to represent data bytes
+        valid_hexes = QtGui.QRegularExpressionValidator("[A-F0-9][A-F0-9]")
+        self.line_edits = []
+        self.line_edits_map = {}
+        self.backspace_event_filter = BackspaceEventFilter()
+        self.backspace_event_filter.valid_backspace.connect(self.onBackspace)
+        for i in range(8):
+            line_edit = QtWidgets.QLineEdit()
+            line_edit.setValidator(valid_hexes)
+            line_edit.setPlaceholderText("00")
+            line_edit.setAlignment(QtCore.Qt.AlignCenter)
+            line_edit.setObjectName("QLineEdit #{}".format(i))
+            line_edit.setPalette(self.palette)
+            line_edit.installEventFilter(self.backspace_event_filter)
+            line_edit.textChanged.connect(self.onDataChange)
+            self.line_edits.append(line_edit)
+            self.line_edits_map[line_edit.objectName()] = i
+
+        self.send = QtWidgets.QPushButton(self)
+        self.send.setText("SEND")
+
+        # array of QLabels that dictate what kind of datatype belonds to this column
+        self.top_labels = []
+        self.bot_labels = []
+        for i in range(8):
+            top_label = QtWidgets.QLabel("None")
+            # top_label.setStyleSheet("border: 1px solid black;")
+            top_label.setAlignment(QtCore.Qt.AlignBottom | QtCore.Qt.AlignLeft)
+            top_label.setWordWrap(True)
+            self.top_labels.append(top_label)
+
+            bot_label = QtWidgets.QLabel()
+            # bot_label.setStyleSheet("border: 1px solid black;")
+            bot_label.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+            bot_label.setWordWrap(True)
+            self.bot_labels.append(bot_label)
+
+        # visual touches
+        self.onMessageTypeChange()
+
+    def placeWidgets(self):
+        self.layout_manager.addWidget(self.message_type, 1, 0, 1, 1)
+
+        for i in range(len(self.line_edits)):
+            self.layout_manager.addWidget(self.line_edits[i], 1, i+2, 1, 1)
+
+        self.layout_manager.addWidget(self.send, 1, 11, 1, 1)
+
+        for i in range(len(self.top_labels)):
+            self.layout_manager.addWidget(self.top_labels[i], 0, i+2, 1, 1)
+            self.layout_manager.addWidget(self.bot_labels[i], 2, i+2, 1, 1)
