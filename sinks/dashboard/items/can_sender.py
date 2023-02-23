@@ -4,6 +4,7 @@ from pyqtgraph.Qt import QtWidgets
 from .dashboard_item import DashboardItem
 from parsers import publisher
 from .registry import Register
+import sources.parsley.message_types as mt
 
 # So, we need a few things
 # 1) a widget that displays an object, in our case a
@@ -41,14 +42,13 @@ class BackspaceEventFilter(QtCore.QObject):
 class CanMsgSndr(DashboardItem):
     """
     Display table for CAN messages.
-    |    |    |    |    |    |
-----|----|----|----|----|----|----
- 0,0|    | lbl| lbl|... |lbl |0,11
-----|----|----|----|----|----|----
- Msg type|Byte|Byte|... |Byte| Button
-----|----|----|----|----|----|----
- 2,0|    |    |    |    |    |2,11
-----|----|----|----|----|----|----
+|--------|----|----|----|----|------|
+| (0,0)  | lbl| lbl|... |lbl |(0,10)|
+|--------|----|----|----|----|------|
+|Msg Type|Byte|Byte|... |Byte|Button|
+|--------|----|----|----|----|------|
+| (2,0)  |    |    |    |    |(2,10)|
+|--------|----|----|----|----|------|
     Using the QGridLayout to structure the layout
     Msg type = the type of message to send
     Byte     = the 2 hexadecimal message
@@ -72,7 +72,6 @@ class CanMsgSndr(DashboardItem):
             self.lockLineEdit(0) 
         else: 
             amt_of_unlock = 0 if obj.text() in ["LEDS_ON", "LEDS_OFF"] else 8
-            print(amt_of_unlock)
             self.lockLineEdit(amt_of_unlock)
 
     # 0-indexed
@@ -89,6 +88,13 @@ class CanMsgSndr(DashboardItem):
         prv_obj.setFocus()
         prv_obj.setText(prv_obj.text()[:-1])
 
+    def onButtonPress(self):
+        # check valid message type 
+        # check that unlocked bytes are filled
+        # check that unlocked bytes are valid
+        # send message over
+        print("press")
+
     def __init__(self, props=None):
         super().__init__()
         self.props = props
@@ -97,36 +103,9 @@ class CanMsgSndr(DashboardItem):
         self.setLayout(self.layout_manager)
 
         self.setupWidgets()
+        self.logicfyWidgets()
         self.placeWidgets()
         
-        # Subscribe to all relavent stream
-        publisher.subscribe("CAN/Commands", self.on_data_update)
-
-
-    def prompt_for_properties(self):
-        return True
-
-    def get_props(self):
-        return self.props
-
-    def on_data_update(self, stream, canSeries):
-        message = canSeries[1]
-        if message["board_id"] in self.message_dict:
-            self.message_dict[message["board_id"]].update_with_message(message)
-        else:
-            table = DisplayCANTable()
-            self.message_dict[message["board_id"]] = table
-            exp_widget = ExpandingWidget(message["board_id"], table)
-            self.layout_widget.layout.addWidget(exp_widget)
-            self.message_dict[message["board_id"]].update_with_message(message)
-
-
-    def get_name():
-        return "CAN Sender"
-
-    def on_delete(self):
-        publisher.unsubscribe_from_all(self.on_data_update)
-
     def getValidMessageTypes(self):
         # this'll eventually be a map datastructure.map(get_name) or smth trust it'll be clean
         ret = ["LEDS_ON", "LEDS_OFF", "SENSOR_MAG"]
@@ -134,37 +113,23 @@ class CanMsgSndr(DashboardItem):
 
 
     def setupWidgets(self):
-        # message type with autocomplete to choose from
-        auto_complete = QtWidgets.QCompleter(self.getValidMessageTypes(), self)
+        # CAN bus message type
         self.message_type = QtWidgets.QLineEdit(self)
         self.message_type.setPlaceholderText("Message Type")
-        self.message_type.setCompleter(auto_complete)
-        self.message_type.textChanged.connect(self.onMessageTypeChange)
 
-        # setting the color to look disabled
-        self.palette = QtGui.QPalette()
-        self.palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.Base, QtGui.QColor("darkGrey"))
-
-        # array of QLineEdits to represent data bytes
-        valid_hexes = QtGui.QRegularExpressionValidator("[A-F0-9][A-F0-9]")
+        # CAN bus message data
         self.line_edits = []
         self.line_edits_map = {}
-        self.backspace_event_filter = BackspaceEventFilter()
-        self.backspace_event_filter.valid_backspace.connect(self.onBackspace)
         for i in range(8):
             line_edit = QtWidgets.QLineEdit()
-            line_edit.setValidator(valid_hexes)
             line_edit.setPlaceholderText("00")
             line_edit.setAlignment(QtCore.Qt.AlignCenter)
+            # assign uuid to obtain line_edit <=> index relationship
             line_edit.setObjectName("QLineEdit #{}".format(i))
-            line_edit.setPalette(self.palette)
-            line_edit.installEventFilter(self.backspace_event_filter)
-            line_edit.textChanged.connect(self.onDataChange)
             self.line_edits.append(line_edit)
             self.line_edits_map[line_edit.objectName()] = i
 
-        self.send = QtWidgets.QPushButton(self)
-        self.send.setText("SEND")
+        self.send = QtWidgets.QPushButton("SEND", self)
 
         # array of QLabels that dictate what kind of datatype belonds to this column
         self.top_labels = []
@@ -182,8 +147,31 @@ class CanMsgSndr(DashboardItem):
             bot_label.setWordWrap(True)
             self.bot_labels.append(bot_label)
 
-        # visual touches
-        self.onMessageTypeChange()
+    def logicfyWidgets(self):
+        # applying auto complete list onto message_type
+        auto_complete = QtWidgets.QCompleter(self.getValidMessageTypes(), self)
+        self.message_type.setCompleter(auto_complete)
+        self.message_type.textChanged.connect(self.onMessageTypeChange)
+        self.onMessageTypeChange() # apply so they start disabled
+
+        # qol additions for message_data
+        valid_hexes = QtGui.QRegularExpressionValidator("[A-F0-9][A-F0-9]")
+        self.palette = QtGui.QPalette()
+        self.palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.Base, QtGui.QColor("darkGrey"))
+        self.backspace_event_filter = BackspaceEventFilter()
+        self.backspace_event_filter.valid_backspace.connect(self.onBackspace)
+        for i in range(len(self.line_edits)):
+            # applying regex input mask
+            self.line_edits[i].setValidator(valid_hexes)
+            # ensuring QLineEdits "look" disabled
+            self.line_edits[i].setPalette(self.palette)
+            # emits that a backspace was pressed (not possible through default api afaik)
+            self.line_edits[i].installEventFilter(self.backspace_event_filter)
+            # if current data byte is full, mouse becomes focused onto next data byte 
+            self.line_edits[i].textChanged.connect(self.onDataChange)
+
+        # on button press, try to send message to parsley
+        self.send.clicked.connect(self.onButtonPress)
 
     def placeWidgets(self):
         self.layout_manager.addWidget(self.message_type, 1, 0, 1, 1)
@@ -196,3 +184,15 @@ class CanMsgSndr(DashboardItem):
         for i in range(len(self.top_labels)):
             self.layout_manager.addWidget(self.top_labels[i], 0, i+2, 1, 1)
             self.layout_manager.addWidget(self.bot_labels[i], 2, i+2, 1, 1)
+
+    def get_name():
+        return "CAN Sender"
+
+    def get_props(self):
+        return self.props
+
+    def on_delete(self):
+        publisher.unsubscribe_from_all(self.on_data_update)
+
+    def prompt_for_properties(self):
+        return True
