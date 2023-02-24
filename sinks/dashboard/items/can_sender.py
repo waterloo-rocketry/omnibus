@@ -5,6 +5,7 @@ from .dashboard_item import DashboardItem
 from parsers import publisher
 from .registry import Register
 import sources.parsley.message_types as mt
+from omnibus import Sender
 
 # So, we need a few things
 # 1) a widget that displays an object, in our case a
@@ -71,7 +72,7 @@ class CanMsgSndr(DashboardItem):
         if obj is None or obj.text() not in self.getValidMessageTypes():
             self.lockLineEdit(0) 
         else: 
-            amt_of_unlock = 0 if obj.text() in ["LEDS_ON", "LEDS_OFF"] else 8
+            amt_of_unlock = 0 if obj.text() in ["LEDS_ON", "LEDS_OFF"] else 8 # TODO 
             self.lockLineEdit(amt_of_unlock)
 
     # 0-indexed
@@ -89,11 +90,23 @@ class CanMsgSndr(DashboardItem):
         prv_obj.setText(prv_obj.text()[:-1])
 
     def onButtonPress(self):
+        if not self.message_type.text() in self.getValidMessageTypes():
+            return
         # check valid message type 
         # check that unlocked bytes are filled
         # check that unlocked bytes are valid
-        # send message over
-        print("press")
+
+        msg_type = mt.msg_type_hex[self.message_type.text()]
+        msg_board = 0 # QUESTION: do we have a special omnibus board id?
+        msg_sid = msg_type | msg_board
+        msg_data = "".join(byte.text() for byte in self.line_edits)
+        
+        """
+         dont hate the player hate the game tldr omnibus dashboard receives all messages
+         and requires that there be a [data][time] in the messages so...
+        """
+        formatted_data = {'data': {'time': -1}, 'message': (msg_sid, msg_data)}
+        self.sender_thing.send(self.channel, formatted_data)
 
     def __init__(self, props=None):
         super().__init__()
@@ -105,6 +118,9 @@ class CanMsgSndr(DashboardItem):
         self.setupWidgets()
         self.logicfyWidgets()
         self.placeWidgets()
+
+        self.sender_thing = Sender() #this name collashes with something else, need better name
+        self.channel = "CAN/Commands"
         
     def getValidMessageTypes(self):
         # this'll eventually be a map datastructure.map(get_name) or smth trust it'll be clean
