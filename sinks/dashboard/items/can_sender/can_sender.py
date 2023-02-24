@@ -1,34 +1,14 @@
 from pyqtgraph.Qt import QtCore
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtWidgets
-from .dashboard_item import DashboardItem
+from ..dashboard_item import DashboardItem
 from parsers import publisher
-from .registry import Register
+from ..registry import Register
 import sources.parsley.message_types as mt
 from omnibus import Sender
+from .canlib_metadata import CanlibMetadata
 
-# So, we need a few things
-# 1) a widget that displays an object, in our case a
-#    CAN Message. Will be a QTable
-# 2) An expandable and collapsable widget which
-#    will allow us to filter the table as we wish
-# 3) A large container, which we will use to update
-#    the object display with messages
-
-
-class LayoutWidget(QtWidgets.QWidget):
-    """
-    A widget whose sole job is to hold
-    a layout. The hacky stuff QT makes 
-    me do smh.
-    """
-
-    def __init__(self, layout):
-        super().__init__()
-        self.layout = layout
-        self.setLayout(self.layout)
-
-
+# not sure if this should be a nested class
 class BackspaceEventFilter(QtCore.QObject):
     valid_backspace = QtCore.Signal()
     name = "n/a"
@@ -115,6 +95,9 @@ class CanMsgSndr(DashboardItem):
         self.layout_manager = QtWidgets.QGridLayout(self)
         self.setLayout(self.layout_manager)
 
+        self.canlib_info = CanlibMetadata("can_sender_data.txt")
+        print(self.canlib_info.getMessageTypes())
+
         self.setupWidgets()
         self.logicfyWidgets()
         self.placeWidgets()
@@ -123,15 +106,18 @@ class CanMsgSndr(DashboardItem):
         self.channel = "CAN/Commands"
         
     def getValidMessageTypes(self):
-        # this'll eventually be a map datastructure.map(get_name) or smth trust it'll be clean
-        ret = ["LEDS_ON", "LEDS_OFF", "SENSOR_MAG"]
-        return ret
+        return self.canlib_info.getMessageTypes()
 
 
     def setupWidgets(self):
         # CAN bus message type
-        self.message_type = QtWidgets.QLineEdit(self)
-        self.message_type.setPlaceholderText("Message Type")
+        # self.message_type = QtWidgets.QLineEdit(self)
+        # self.message_type.setPlaceholderText("Message Type")
+
+        self.message_type = QtWidgets.QComboBox()
+        for msg_type in self.getValidMessageTypes():
+            self.message_type.addItem(msg_type)
+        # self.message_type.addItem(self.getValidMessageTypes())
 
         # CAN bus message data
         self.line_edits = []
@@ -165,10 +151,10 @@ class CanMsgSndr(DashboardItem):
 
     def logicfyWidgets(self):
         # applying auto complete list onto message_type
-        auto_complete = QtWidgets.QCompleter(self.getValidMessageTypes(), self)
-        self.message_type.setCompleter(auto_complete)
-        self.message_type.textChanged.connect(self.onMessageTypeChange)
-        self.onMessageTypeChange() # apply so they start disabled
+        # auto_complete = QtWidgets.QCompleter(self.getValidMessageTypes(), self)
+        # self.message_type.setCompleter(auto_complete)
+        # self.message_type.textChanged.connect(self.onMessageTypeChange)
+        # self.onMessageTypeChange() # apply so they start disabled
 
         # qol additions for message_data
         valid_hexes = QtGui.QRegularExpressionValidator("[A-F0-9][A-F0-9]")
