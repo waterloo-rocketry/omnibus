@@ -1,14 +1,14 @@
 import argparse
 import serial
 
-from omnibus import Sender
+from omnibus import Sender, Receiver
 import parsley
-
+import sources.parsley.message_types as mt
 
 def reader(port, baud):
     if port == "-":
         return input
-    s = serial.Serial(port, baud)
+    s = serial.Serial(port, baud, timeout=0) # non-blocking input
 
     def _reader():
         return s.readline().strip(b'\r\n').decode('utf-8')
@@ -36,8 +36,17 @@ def main():
         sender = Sender()
         CHANNEL = "CAN/Parsley"
 
+    receiver = Receiver("CAN/Commands")
+
     while True:
+        while msg := receiver.recv_message(0):
+            print(msg.payload['message'])
+            msg_sid, msg_data = msg.payload['message']
+            print(f"{msg_sid} => {mt.msg_type_str[msg_sid]}")
+
         line = readline()
+        if not line:
+            continue
 
         # treat repeated messages in the same way as USB debug
         if line.strip() == '.':
