@@ -28,12 +28,6 @@ from utils import ConfirmDialog
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
-from items.can_message_table import CanMsgTableDashItem
-from items.can_sender.can_sender import CanSender
-
-
-# These need to be imported to be added to the registry
-from items.plot_dash_item import PlotDashItem
 from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.can_message_table import CanMsgTableDashItem
@@ -265,8 +259,12 @@ class Dashboard(QWidget):
             xpos = mapped.x() - (width/2)
             ypos = mapped.y() - (height/2)
 
+<<<<<<< HEAD
         proxy.setPos(xpos, ypos)
         proxy.setFocusPolicy(Qt.NoFocus)
+=======
+        proxy.setPos(pos[0], pos[1])
+>>>>>>> 1851856 (things pulse if they're incorrect)
 
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
