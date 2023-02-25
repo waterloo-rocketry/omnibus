@@ -5,20 +5,16 @@ from omnibus import Sender, Receiver
 import parsley
 import sources.parsley.message_types as mt
 
-def reader(port, baud):
-    if port == "-":
-        return input
-    s = serial.Serial(port, baud, timeout=0) # non-blocking input
-
-    def _reader():
-        return s.readline().strip(b'\r\n').decode('utf-8')
-    return _reader
-
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
+        self.port = port
+        if self.port == "-":
+            return
         self.serial = serial.Serial(port, baud, timeout=timeout)
 
     def read(self):
+        if self.port == "-":
+            return input()
         return self.serial.readline().strip(b'\r\n').decode('utf-8')
 
     def write(self, msg):
@@ -49,19 +45,12 @@ def main():
 
     while True:
         while msg := receiver.recv_message(0):
-            print(msg.payload['message'])
             msg_sid, msg_data = msg.payload['message']
-            # print(msg_sid, msg_data)
-            print(parsley.parse(msg_sid, msg_data))
-            # print(f"{msg_sid} => {mt.msg_type_str[msg_sid]}")
+            # print(parsley.parse(msg_sid, msg_data))
+            # communicator.write(msg_sid | msg_data)
 
         line = communicator.read()
         if not line:
-            continue
-
-        # treat repeated messages in the same way as USB debug
-        if line.strip() == '.':
-            print('.')
             continue
 
         try:
