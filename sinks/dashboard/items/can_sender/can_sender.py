@@ -123,6 +123,7 @@ class CanMsgSndr(DashboardItem):
         # there were invalid field(s), dont send message
         if self.pulse_widgets():
             return
+        print(self.parse_data())
         self.sender_thing.send(self.channel, self.parse_data())
         
     def parse_data(self):
