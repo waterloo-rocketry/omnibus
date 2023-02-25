@@ -33,8 +33,8 @@ class CanlibMetadata:
                     self.info[msg_type] = msg_data
         self.info = dict(sorted(self.info.items()))
 
-    def getMessageTypes(self):
+    def get_msg_type(self):
         return list(self.info.keys())
 
-    def getDataInfo(self, key):
+    def get_msg_data(self, key):
         return self.info.get(key, [])

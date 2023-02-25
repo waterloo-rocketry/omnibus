@@ -8,7 +8,7 @@ from ..dashboard_item import DashboardItem
 from .canlib_metadata import CanlibMetadata
 import sources.parsley.message_types as mt
 
-# QT doens't provide any event handlers to check whether a certain key has been pressed
+# there aren't any event handlers to check whether a certain key has been pressed
 class BackspaceEventFilter(QtCore.QObject):
     valid_backspace = QtCore.Signal()
     __obj_name = ""
@@ -50,7 +50,7 @@ class CanMsgSndr(DashboardItem):
         self.setLayout(self.layout_manager)
 
         self.canlib_info = CanlibMetadata("can_sender_data.txt")
-        self.sender_thing = Sender() #this name collashes with something else, need better name
+        self.sender_thing = Sender() #the name "sender" collashes with Sender(), need better name
         self.channel = "CAN/Commands"
 
         self.setupWidgets()
@@ -61,7 +61,7 @@ class CanMsgSndr(DashboardItem):
         # CAN bus message type
         self.message_type = QtWidgets.QComboBox()
         self.message_type.setPlaceholderText("Message Type")
-        self.message_type.addItems(self.canlib_info.getMessageTypes())
+        self.message_type.addItems(self.canlib_info.get_msg_type())
 
         # CAN bus message data
         self.line_edits = []
@@ -128,7 +128,7 @@ class CanMsgSndr(DashboardItem):
     def parse_data(self):
         msg_type = self.message_type.currentText()
         msg_data = b""
-        amt_of_data = len(self.canlib_info.getDataInfo(msg_type))
+        amt_of_data = len(self.canlib_info.get_msg_data(msg_type))
         for i in range(amt_of_data):
             # padding text with 0 until len = 2
             msg_data += bytes.fromhex(self.line_edits[i].text().zfill(2))
@@ -145,7 +145,7 @@ class CanMsgSndr(DashboardItem):
         return formatted_data
 
     def refresh_widget_info(self, new_msg_type):
-        msg_data = self.canlib_info.getDataInfo(new_msg_type)
+        msg_data = self.canlib_info.get_msg_data(new_msg_type)
         amount_of_data = len(msg_data)
         for i in range(self.__number_of_bytes):
             # locks that data bytes that aren't in use
@@ -165,7 +165,7 @@ class CanMsgSndr(DashboardItem):
     def get_invalid_bytes(self):
         bad_indexes = []
         msg_type = self.message_type.currentText()
-        msg_data_info = self.canlib_info.getDataInfo(msg_type)
+        msg_data_info = self.canlib_info.get_msg_data(msg_type)
         if not msg_type:
             bad_indexes.append(-1)
         for i in range(len(msg_data_info)):
