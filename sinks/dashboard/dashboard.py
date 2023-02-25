@@ -10,7 +10,7 @@ from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
-from items.can_sender import CanMsgSndr #idk why this is needed but it doesn't show in dropdown otherwise
+from items.can_sender.can_sender import CanMsgSndr #idk why this is needed but it doesn't show in dropdown otherwise
 from omnibus.util import TickCounter
 from utils import prompt_user
 
