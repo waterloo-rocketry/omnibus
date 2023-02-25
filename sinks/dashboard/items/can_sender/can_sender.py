@@ -24,7 +24,7 @@ class BackspaceEventFilter(QtCore.QObject):
         return self.__obj_name
 
 @Register
-class CanMsgSndr(DashboardItem):
+class CanSender(DashboardItem):
     """
     QGridLayout blueprint
     |--------|----|----|----|----|------|
