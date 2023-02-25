@@ -46,9 +46,8 @@ def main():
     while True:
         while msg := receiver.recv_message(0):
             msg_sid, msg_data = msg.payload['message']
-            # print(msg_sid, msg_data)
-            print(parsley.parse(msg_sid, msg_data))
-            # print(f"{msg_sid} => {mt.msg_type_str[msg_sid]}")
+            # print(parsley.parse(msg_sid, msg_data))
+            # communicator.write(msg_sid | msg_data)
 
         line = communicator.read()
         if not line:
