@@ -28,7 +28,7 @@ class CanMsgSndr(DashboardItem):
 |--------|----|----|----|----|------|
 |Msg Type|Byte|Byte|... |Byte|Button|
 |--------|----|----|----|----|------|
-| (2,0)  |    |    |    |    |(2,10)|
+| (2,0)  | lbl| lbl|... |lbl |(2,10)|
 |--------|----|----|----|----|------|
     Using the QGridLayout to structure the layout
     Msg type = the type of message to send
@@ -51,8 +51,7 @@ class CanMsgSndr(DashboardItem):
         byteInfo = self.canlib_info.getDataInfo(newMsgType)
         amountOfUnlocks = len(byteInfo)
         for i in range(len(self.line_edits)):
-            self.line_edits[i].setReadOnly(i >= amountOfUnlocks)
-            self.line_edits[i].setDisabled(i >= amountOfUnlocks)
+            self.line_edits[i].setEnabled(i < amountOfUnlocks)
             self.labels[i][0].setText("")
             self.labels[i][1].setText("")
             if i < amountOfUnlocks:
@@ -67,15 +66,39 @@ class CanMsgSndr(DashboardItem):
         prv_obj.setFocus()
         prv_obj.setText(prv_obj.text()[:-1])
 
-    def onButtonPress(self):
+    def getBadIndexes(self):
+        bad_indexes = []
+        msg_type = self.message_type.currentText()
+        byteInfo = self.canlib_info.getDataInfo(msg_type)
+        if not msg_type:
+            bad_indexes.append(-1)
+        for i in range(len(byteInfo)):
+            if not self.line_edits[i].text():
+                bad_indexes.append(i)
+        return bad_indexes
+
+    def pulse(self, indexes):
+        if self.color_count < 7:
+            for i in indexes:
+                widget = self.message_type if i == -1 else self.line_edits[i]
+                widget.setDisabled(self.color_count%2!=0)
+            self.color_count += 1
+        else:
+            self.timers.stop()
+
+    def pulseWidgets(self, bad_indexes):
+        # determining what color to pulse
+        msg_type = self.message_type.currentText()
+        byteInfo = self.canlib_info.getDataInfo(msg_type)
+
+        self.timers = QtCore.QTimer()
+        self.timers.timeout.connect(lambda: self.pulse(bad_indexes))
+        self.timers.start(100)
+
+    def parseData(self):
         msg_type = self.message_type.currentText()
         msg_data = b""
-        byteInfo = self.canlib_info.getDataInfo(msg_type)
-        if not msg_type: # QComboText has placeholder text
-            return
-        for i in range(len(byteInfo)):
-            if not self.line_edits[i]: # QLineEdit is empty
-                return
+        for i in range(len(self.canlib_info.getDataInfo(msg_type))):
             # padding text with 0 until len = 2
             msg_data += bytes.fromhex(self.line_edits[i].text().zfill(2))
 
@@ -89,7 +112,15 @@ class CanMsgSndr(DashboardItem):
         """
         formatted_data = {'data': {'time': -1}, 'message': (msg_sid, msg_data)}
         print(formatted_data)
-        self.sender_thing.send(self.channel, formatted_data)
+        return formatted_data
+
+    def onButtonPress(self):
+        self.color_count = 0
+        self.pulseWidgets(self.getBadIndexes())
+        can_msg = self.parseData()
+        if can_msg:
+            self.sender_thing.send(self.channel, can_msg)
+        
 
     def __init__(self, props=None):
         super().__init__()
