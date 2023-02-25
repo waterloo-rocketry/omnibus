@@ -14,6 +14,13 @@ def reader(port, baud):
         return s.readline().strip(b'\r\n').decode('utf-8')
     return _reader
 
+class SerialCommunicator:
+    def __init__(self, port, baud, timeout):
+        self.serial = serial.Serial(port, baud, timeout=timeout)
+
+    def read(self):
+        return self.serial.readline().strip(b'\r\n').decode('utf-8')
+
     def write(self, msg):
         self.serial.write(msg)
 
@@ -47,9 +54,11 @@ def main():
         while msg := receiver.recv_message(0):
             print(msg.payload['message'])
             msg_sid, msg_data = msg.payload['message']
-            print(f"{msg_sid} => {mt.msg_type_str[msg_sid]}")
+            # print(msg_sid, msg_data)
+            print(parsley.parse(msg_sid, msg_data))
+            # print(f"{msg_sid} => {mt.msg_type_str[msg_sid]}")
 
-        line = readline()
+        line = communicator.read()
         if not line:
             continue
 
