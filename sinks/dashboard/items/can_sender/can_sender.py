@@ -1,126 +1,46 @@
 from pyqtgraph.Qt import QtCore
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtWidgets
-from ..dashboard_item import DashboardItem
+from omnibus import Sender
 from parsers import publisher
 from ..registry import Register
-import sources.parsley.message_types as mt
-from omnibus import Sender
+from ..dashboard_item import DashboardItem
 from .canlib_metadata import CanlibMetadata
+import sources.parsley.message_types as mt
 
-# not sure if this should be a nested class
+# QT doens't provide any event handlers to check whether a certain key has been pressed
 class BackspaceEventFilter(QtCore.QObject):
     valid_backspace = QtCore.Signal()
-    name = "n/a"
+    __obj_name = ""
 
+    # emitting custom event
     def eventFilter(self, obj, event):
-        if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Backspace and len(obj.text())==0:
-            self.name = obj.objectName()
+        if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Backspace:
+            self.__obj_name = obj.objectName()
             self.valid_backspace.emit()
         return super().eventFilter(obj, event)
+    
+    def objectName(self):
+        return self.__obj_name
 
 @Register
 class CanMsgSndr(DashboardItem):
     """
-    Display table for CAN messages.
-|--------|----|----|----|----|------|
-| (0,0)  | lbl| lbl|... |lbl |(0,10)|
-|--------|----|----|----|----|------|
-|Msg Type|Byte|Byte|... |Byte|Button|
-|--------|----|----|----|----|------|
-| (2,0)  | lbl| lbl|... |lbl |(2,10)|
-|--------|----|----|----|----|------|
-    Using the QGridLayout to structure the layout
-    Msg type = the type of message to send
-    Byte     = the 2 hexadecimal message
-    lbl      = the "datatype" occupied at that column
+    QGridLayout blueprint
+    |--------|----|----|----|----|------|
+    | (0,0)  | lbl| lbl|... |lbl |(0,10)|
+    |--------|----|----|----|----|------|
+    |Msg Type|Byte|Byte|... |Byte|Button|
+    |--------|----|----|----|----|------|
+    | (2,0)  | lbl| lbl|... |lbl |(2,10)|
+    |--------|----|----|----|----|------|
+    Msg type = CAN bus message type
+    Byte     = CAN bus data
+    lbl      = describes the type of data in that column
     """
-
-    def onDataChange(self):
-        obj_name = self.sender().objectName()
-        cur_idx = self.line_edits_map[obj_name]
-        cur_len = len(self.line_edits[cur_idx].text())
-
-        if cur_len == 2:
-            nxt_idx = min(7, cur_idx+1)
-            nxt_obj = self.line_edits[nxt_idx]
-            nxt_obj.setFocus()
-
-    def onMessageTypeChange(self, newMsgType):
-        # unlocks the amount of bytes based on canlib, locks the rest
-        byteInfo = self.canlib_info.getDataInfo(newMsgType)
-        amountOfUnlocks = len(byteInfo)
-        for i in range(len(self.line_edits)):
-            self.line_edits[i].setEnabled(i < amountOfUnlocks)
-            self.labels[i][0].setText("")
-            self.labels[i][1].setText("")
-            if i < amountOfUnlocks:
-                # alternating between top and bottom label
-                self.labels[i][i%2].setText(byteInfo[i])
-
-    def onBackspace(self):
-        obj_name = self.sender().name # TODO: this is so hacky
-        cur_idx = self.line_edits_map[obj_name]
-        prv_idx = max(0, cur_idx-1)
-        prv_obj = self.line_edits[prv_idx]
-        prv_obj.setFocus()
-        prv_obj.setText(prv_obj.text()[:-1])
-
-    def getBadIndexes(self):
-        bad_indexes = []
-        msg_type = self.message_type.currentText()
-        byteInfo = self.canlib_info.getDataInfo(msg_type)
-        if not msg_type:
-            bad_indexes.append(-1)
-        for i in range(len(byteInfo)):
-            if not self.line_edits[i].text():
-                bad_indexes.append(i)
-        return bad_indexes
-
-    def pulse(self, indexes):
-        if self.color_count < 7:
-            for i in indexes:
-                widget = self.message_type if i == -1 else self.line_edits[i]
-                widget.setDisabled(self.color_count%2!=0)
-            self.color_count += 1
-        else:
-            self.timers.stop()
-
-    def pulseWidgets(self, bad_indexes):
-        # determining what color to pulse
-        msg_type = self.message_type.currentText()
-        byteInfo = self.canlib_info.getDataInfo(msg_type)
-
-        self.timers = QtCore.QTimer()
-        self.timers.timeout.connect(lambda: self.pulse(bad_indexes))
-        self.timers.start(100)
-
-    def parseData(self):
-        msg_type = self.message_type.currentText()
-        msg_data = b""
-        for i in range(len(self.canlib_info.getDataInfo(msg_type))):
-            # padding text with 0 until len = 2
-            msg_data += bytes.fromhex(self.line_edits[i].text().zfill(2))
-
-        msg_type = mt.msg_type_hex[msg_type]
-        msg_board = 0 # QUESTION: do we have a special omnibus board id?
-        msg_sid = msg_type | msg_board
-        
-        """
-         dont hate the player hate the game tldr omnibus dashboard receives all messages
-         and requires that there be a [data][time] in the messages so...
-        """
-        formatted_data = {'data': {'time': -1}, 'message': (msg_sid, msg_data)}
-        print(formatted_data)
-        return formatted_data
-
-    def onButtonPress(self):
-        self.color_count = 0
-        self.pulseWidgets(self.getBadIndexes())
-        can_msg = self.parseData()
-        if can_msg:
-            self.sender_thing.send(self.channel, can_msg)
-        
+    __pulse_occurances = 3
+    __pulse_frequency = 100
+    __number_of_bytes = 8
 
     def __init__(self, props=None):
         super().__init__()
@@ -130,84 +50,160 @@ class CanMsgSndr(DashboardItem):
         self.setLayout(self.layout_manager)
 
         self.canlib_info = CanlibMetadata("can_sender_data.txt")
+        self.sender_thing = Sender() #this name collashes with something else, need better name
+        self.channel = "CAN/Commands"
 
         self.setupWidgets()
         self.logicfyWidgets()
         self.placeWidgets()
 
-        self.sender_thing = Sender() #this name collashes with something else, need better name
-        self.channel = "CAN/Commands"
-        
-    def getValidMessageTypes(self):
-        return self.canlib_info.getMessageTypes()
-
-
     def setupWidgets(self):
         # CAN bus message type
         self.message_type = QtWidgets.QComboBox()
         self.message_type.setPlaceholderText("Message Type")
-        self.message_type.addItems(self.getValidMessageTypes())
+        self.message_type.addItems(self.canlib_info.getMessageTypes())
 
         # CAN bus message data
         self.line_edits = []
         self.line_edits_map = {}
-        for i in range(8):
+        for i in range(self.__number_of_bytes):
             line_edit = QtWidgets.QLineEdit()
             line_edit.setPlaceholderText("00")
             line_edit.setAlignment(QtCore.Qt.AlignCenter)
             # assign uuid to obtain line_edit <=> index relationship
             line_edit.setObjectName("QLineEdit #{}".format(i))
+
             self.line_edits.append(line_edit)
             self.line_edits_map[line_edit.objectName()] = i
-
         self.send = QtWidgets.QPushButton("SEND", self)
 
-        # array of QLabels that dictate what kind of datatype belonds to this column
-        self.labels = [] #2d array of labels, 0 = top, 1 = bot labels
-        for i in range(8):
+        # 2d array of QLabels that dictate what kind of datatype belonds to this column
+        # self.labels[i][0] = top, self.labels[i][1] = bot labels
+        self.labels = []
+        for i in range(self.__number_of_bytes):
             top_label = QtWidgets.QLabel("None")
             top_label.setAlignment(QtCore.Qt.AlignBottom | QtCore.Qt.AlignLeft)
             top_label.setWordWrap(True)
-
             bot_label = QtWidgets.QLabel()
             bot_label.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
             bot_label.setWordWrap(True)
+
             self.labels.append([top_label, bot_label])
 
     def logicfyWidgets(self):
-        # locks/unlocks QLineEdits based on the msg type that was changed
-        self.message_type.currentTextChanged.connect(self.onMessageTypeChange)
-
-        # qol additions for message_data
-        valid_hexes = QtGui.QRegularExpressionValidator("[A-F0-9][A-F0-9]")
+        # locks/unlocks QLineEdits based on the new msg_type
+        self.message_type.currentTextChanged.connect(self.refresh_widget_info)
+        # input mask for valid msg_data characters
+        valid_hexes = QtGui.QRegularExpressionValidator("[A-Fa-f0-9][A-Fa-f0-9]")
+        # customizing palette to ensure QLineEdits have that "disabled" look
         self.palette = QtGui.QPalette()
         self.palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.Base, QtGui.QColor("darkGrey"))
+        # tracks when a backspace has been pressed
         self.backspace_event_filter = BackspaceEventFilter()
-        self.backspace_event_filter.valid_backspace.connect(self.onBackspace)
-        for i in range(len(self.line_edits)):
-            # applying regex input mask
+        self.backspace_event_filter.valid_backspace.connect(self.move_cursor_backwards)
+        for i in range(self.__number_of_bytes):
             self.line_edits[i].setValidator(valid_hexes)
-            # ensuring QLineEdits "look" disabled
             self.line_edits[i].setPalette(self.palette)
-            # emits that a backspace was pressed (not possible through default api afaik)
             self.line_edits[i].installEventFilter(self.backspace_event_filter)
-            # if current data byte is full, mouse becomes focused onto next data byte 
-            self.line_edits[i].textChanged.connect(self.onDataChange)
-
+            self.line_edits[i].textChanged.connect(self.move_cursor_forwards)
         # on button press, try to send message to parsley
-        self.send.clicked.connect(self.onButtonPress)
+        self.send.clicked.connect(self.send_can_message)
 
     def placeWidgets(self):
-        self.layout_manager.addWidget(self.message_type, 1, 0, 1, 1)
-
-        for i in range(len(self.line_edits)):
+        # addWidget(row, col, height, width)
+        self.layout_manager.addWidget(self.message_type, 1, 0, 1, 2)
+        self.layout_manager.addWidget(self.send, 1, self.__number_of_bytes+3, 1, 1)
+        for i in range(self.__number_of_bytes):
+            self.layout_manager.addWidget(self.labels[i][0],  0, i+2, 1, 1)
             self.layout_manager.addWidget(self.line_edits[i], 1, i+2, 1, 1)
+            self.layout_manager.addWidget(self.labels[i][1],  2, i+2, 1, 1)
 
-        self.layout_manager.addWidget(self.send, 1, 11, 1, 1)
+    def send_can_message(self):
+        self.pulse_count = 0
+        # there were invalid field(s), dont send message
+        if self.pulse_widgets():
+            return
+        self.sender_thing.send(self.channel, self.parse_data())
+        
+    def parse_data(self):
+        msg_type = self.message_type.currentText()
+        msg_data = b""
+        amt_of_data = len(self.canlib_info.getDataInfo(msg_type))
+        for i in range(amt_of_data):
+            # padding text with 0 until len = 2
+            msg_data += bytes.fromhex(self.line_edits[i].text().zfill(2))
 
-        for i in range(len(self.labels)):
-            self.layout_manager.addWidget(self.labels[i][0], 0, i+2, 1, 1)
-            self.layout_manager.addWidget(self.labels[i][1], 2, i+2, 1, 1)
+        msg_type = mt.msg_type_hex[msg_type]
+        msg_board = 0 # QUESTION: do we have a special omnibus board id?
+        msg_sid = msg_type | msg_board
+        
+        """
+         dont hate the player hate the game tldr omnibus dashboard receives all messages
+         being sent and requires that there be a [data][time] in the message object so...
+        """
+        formatted_data = {'data': {'time': -1}, 'message': (msg_sid, msg_data)}
+        return formatted_data
+
+    def refresh_widget_info(self, new_msg_type):
+        msg_data = self.canlib_info.getDataInfo(new_msg_type)
+        amount_of_data = len(msg_data)
+        for i in range(self.__number_of_bytes):
+            # locks that data bytes that aren't in use
+            self.line_edits[i].setEnabled(i < amount_of_data)
+            self.labels[i][0].setText("")
+            self.labels[i][1].setText("")
+            if i < amount_of_data:
+                self.labels[i][i%2].setText(msg_data[i])
+
+    def pulse_widgets(self):
+        bad_indexes = self.get_invalid_bytes()
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(lambda: self.pulse(bad_indexes))
+        self.timer.start(self.__pulse_frequency)
+        return len(bad_indexes) > 0 # return whether we pulsed (error) anything
+
+    def get_invalid_bytes(self):
+        bad_indexes = []
+        msg_type = self.message_type.currentText()
+        msg_data_info = self.canlib_info.getDataInfo(msg_type)
+        if not msg_type:
+            bad_indexes.append(-1)
+        for i in range(len(msg_data_info)):
+            if not self.line_edits[i].text():
+                bad_indexes.append(i)
+        return bad_indexes
+
+    def pulse(self, indexes):
+        if self.pulse_count < self.__pulse_occurances*2:
+            for i in indexes:
+                widget = self.message_type if i == -1 else self.line_edits[i]
+                widget.setDisabled(self.pulse_count%2 == 0)
+            self.pulse_count += 1
+        else:
+            self.timer.stop()
+
+    def move_cursor_forwards(self):
+        obj = self.sender()
+        obj.setText(obj.text().upper())
+        obj_name = obj.objectName()
+        cur_idx = self.line_edits_map[obj_name]
+        cur_len = len(self.line_edits[cur_idx].text())
+
+        if cur_len == 2:
+            nxt_idx = min(self.__number_of_bytes-1, cur_idx+1)
+            nxt_obj = self.line_edits[nxt_idx]
+            nxt_obj.setFocus()
+
+    def move_cursor_backwards(self):
+        obj_name = self.sender().objectName()
+        cur_idx = self.line_edits_map[obj_name]
+        cur_len = len(self.line_edits[cur_idx].text())
+
+        if cur_len == 0:
+            prv_idx = max(0, cur_idx-1)
+            prv_obj = self.line_edits[prv_idx]
+            prv_obj.setFocus()
+            prv_obj.setText(prv_obj.text()[:-1])
 
     def get_name():
         return "CAN Sender"
