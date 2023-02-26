@@ -8,21 +8,6 @@ from ..dashboard_item import DashboardItem
 from .canlib_metadata import CanlibMetadata
 import sources.parsley.message_types as mt
 
-# there aren't any event handlers to check whether a certain key has been pressed
-class BackspaceEventFilter(QtCore.QObject):
-    valid_backspace = QtCore.Signal()
-    __obj_name = ""
-
-    # emitting custom event
-    def eventFilter(self, obj, event):
-        if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Backspace:
-            self.__obj_name = obj.objectName()
-            self.valid_backspace.emit()
-        return super().eventFilter(obj, event)
-    
-    def objectName(self):
-        return self.__obj_name
-
 @Register
 class CanSender(DashboardItem):
     """
@@ -72,7 +57,6 @@ class CanSender(DashboardItem):
             line_edit.setAlignment(QtCore.Qt.AlignCenter)
             # assign uuid to obtain line_edit <=> index relationship
             line_edit.setObjectName("QLineEdit #{}".format(i))
-
             self.line_edits.append(line_edit)
             self.line_edits_map[line_edit.objectName()] = i
         self.send = QtWidgets.QPushButton("SEND", self)
@@ -81,17 +65,17 @@ class CanSender(DashboardItem):
         # self.labels[i][0] = top, self.labels[i][1] = bot labels
         self.labels = []
         for i in range(self.__number_of_bytes):
-            top_label = QtWidgets.QLabel("None")
+            top_label = QtWidgets.QLabel()
             top_label.setAlignment(QtCore.Qt.AlignBottom | QtCore.Qt.AlignLeft)
             top_label.setWordWrap(True)
             bot_label = QtWidgets.QLabel()
             bot_label.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
             bot_label.setWordWrap(True)
-
             self.labels.append([top_label, bot_label])
+            self.labels[i][i%2].setText("None")
 
     def logicfyWidgets(self):
-        # locks/unlocks QLineEdits based on the new msg_type
+        # locks/unlocks QLineEdits based on the updated msg_type
         self.message_type.currentTextChanged.connect(self.refresh_widget_info)
         # input mask for valid msg_data characters
         valid_hexes = QtGui.QRegularExpressionValidator("[A-Fa-f0-9][A-Fa-f0-9]")
@@ -106,11 +90,10 @@ class CanSender(DashboardItem):
             self.line_edits[i].setPalette(self.palette)
             self.line_edits[i].installEventFilter(self.backspace_event_filter)
             self.line_edits[i].textChanged.connect(self.move_cursor_forwards)
-        # on button press, try to send message to parsley
         self.send.clicked.connect(self.send_can_message)
 
     def placeWidgets(self):
-        # addWidget(row, col, height, width)
+        # format: addWidget(row, col, height, width)
         self.layout_manager.addWidget(self.message_type, 1, 0, 1, 2)
         self.layout_manager.addWidget(self.send, 1, self.__number_of_bytes+3, 1, 1)
         for i in range(self.__number_of_bytes):
@@ -119,11 +102,9 @@ class CanSender(DashboardItem):
             self.layout_manager.addWidget(self.labels[i][1],  2, i+2, 1, 1)
 
     def send_can_message(self):
-        self.pulse_count = 0
-        # there were invalid field(s), dont send message
+        # there were invalid field(s) and we pulsed, dont send message
         if self.pulse_widgets():
             return
-        print(self.parse_data())
         self.sender_thing.send(self.channel, self.parse_data())
         
     def parse_data(self):
@@ -135,7 +116,7 @@ class CanSender(DashboardItem):
             msg_data += bytes.fromhex(self.line_edits[i].text().zfill(2))
 
         msg_type = mt.msg_type_hex[msg_type]
-        msg_board = 0 # QUESTION: do we have a special omnibus board id?
+        msg_board = 0
         msg_sid = msg_type | msg_board
         
         """
@@ -145,23 +126,22 @@ class CanSender(DashboardItem):
         formatted_data = {'data': {'time': -1}, 'message': (msg_sid, msg_data)}
         return formatted_data
 
-    def refresh_widget_info(self, new_msg_type):
-        msg_data = self.canlib_info.get_msg_data(new_msg_type)
-        amount_of_data = len(msg_data)
-        for i in range(self.__number_of_bytes):
-            # locks that data bytes that aren't in use
-            self.line_edits[i].setEnabled(i < amount_of_data)
-            self.labels[i][0].setText("")
-            self.labels[i][1].setText("")
-            if i < amount_of_data:
-                self.labels[i][i%2].setText(msg_data[i])
-
     def pulse_widgets(self):
         bad_indexes = self.get_invalid_bytes()
+        self.pulse_count = 0
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(lambda: self.pulse(bad_indexes))
         self.timer.start(self.__pulse_frequency)
         return len(bad_indexes) > 0 # return whether we pulsed (error) anything
+
+    def pulse(self, indexes):
+        if self.pulse_count < self.__pulse_occurances*2:
+            for i in indexes:
+                widget = self.message_type if i == -1 else self.line_edits[i]
+                widget.setDisabled(self.pulse_count%2 == 0)
+            self.pulse_count += 1
+        else:
+            self.timer.stop()
 
     def get_invalid_bytes(self):
         bad_indexes = []
@@ -174,14 +154,17 @@ class CanSender(DashboardItem):
                 bad_indexes.append(i)
         return bad_indexes
 
-    def pulse(self, indexes):
-        if self.pulse_count < self.__pulse_occurances*2:
-            for i in indexes:
-                widget = self.message_type if i == -1 else self.line_edits[i]
-                widget.setDisabled(self.pulse_count%2 == 0)
-            self.pulse_count += 1
-        else:
-            self.timer.stop()
+    def refresh_widget_info(self, new_msg_type):
+        msg_data = self.canlib_info.get_msg_data(new_msg_type)
+        amount_of_data = len(msg_data)
+        for i in range(self.__number_of_bytes):
+            # locks that data bytes that aren't in use
+            self.line_edits[i].setEnabled(i < amount_of_data)
+            # clears and sets the new msg_data datatype
+            self.labels[i][0].setText("")
+            self.labels[i][1].setText("")
+            if i < amount_of_data:
+                self.labels[i][i%2].setText(msg_data[i])
 
     def move_cursor_forwards(self):
         obj = self.sender()
@@ -217,3 +200,18 @@ class CanSender(DashboardItem):
 
     def prompt_for_properties(self):
         return True
+
+# there aren't any event handlers to check whether a certain key has been pressed
+# I need to know when a backspace has been pressed to potentially move the cursor back
+class BackspaceEventFilter(QtCore.QObject):
+    valid_backspace = QtCore.Signal()
+    __obj_name = ""
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Backspace:
+            self.__obj_name = obj.objectName()
+            self.valid_backspace.emit()
+        return super().eventFilter(obj, event)
+    
+    def objectName(self):
+        return self.__obj_name
