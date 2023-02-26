@@ -35,7 +35,7 @@ class CanSender(DashboardItem):
         self.setLayout(self.layout_manager)
 
         self.canlib_info = CanlibMetadata("can_sender_data.txt")
-        self.sender_thing = Sender() #the name "sender" collashes with Sender(), need better name
+        self.sender_thing = Sender()
         self.channel = "CAN/Commands"
 
         self.setupWidgets()
