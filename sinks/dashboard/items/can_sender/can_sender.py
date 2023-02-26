@@ -24,7 +24,7 @@ class CanSender(DashboardItem):
     lbl      = describes the type of data in that column
     """
     __pulse_occurances = 3
-    __pulse_frequency = 100
+    __pulse_frequency = 100 #in ms
     __number_of_bytes = 8
 
     def __init__(self, props=None):
