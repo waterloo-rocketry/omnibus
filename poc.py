@@ -104,6 +104,9 @@ class Ascii(Field):
         return data.decode('ascii')
     
     def encode(self, value):
+        # i need to go test to ensure my sanity
+        if self.length < len(value):
+            raise ValueError(f"String {value} is too large for {self.length}")
         if not value.isascii():
             raise UnicodeEncodeError(f"Value contains non-ascii characters")
         return value.encode('ascii')
