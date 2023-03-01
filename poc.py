@@ -121,8 +121,8 @@ FIELDS = {
     "RESET_CMD": [TIMESTAMP_3, Enum("id", 8, mt.board_id_hex)],
 
     "DEBUG_MSG": [TIMESTAMP_3, Numeric("level", 4), Numeric("line", 12), Ascii("data", 24)],
-    "DEBUG_PRINTF": [Ascii("string", 64)], # entirely ascii
-    "DEBUG_RADIO_CMD": [Ascii("string", 64)], # entirely ascii
+    "DEBUG_PRINTF": [Ascii("string", 64)],
+    "DEBUG_RADIO_CMD": [Ascii("string", 64)],
 
     "ACTUATOR_STAT": [TIMESTAMP_3, Enum("actuator", 8, mt.actuator_id_hex), Enum("req_state", 8, mt.actuator_states_hex), Enum("cur_state", 8, mt.actuator_states_hex)],
     "ALT_ARM_STAT": [TIMESTAMP_3, Enum("state", 4, mt.arm_states_hex), Numeric("number", 4), Numeric("drogue_v", 16, signed=True), Numeric("main_v", 16, signed=True)],
