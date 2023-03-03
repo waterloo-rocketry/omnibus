@@ -1,6 +1,5 @@
-import os
-import sys
-import json
+import os, sys, json
+from time import sleep
 
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtWidgets import (
@@ -11,7 +10,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QMenuBar,
     QVBoxLayout,
     QGraphicsItem,
-    QGraphicsRectItem
+    QGraphicsRectItem,
+    QPushButton
 )
 
 from items import registry
@@ -28,12 +28,15 @@ class Dashboard(QWidget):
         # Called every frame to get new data
         self.callback = callback 
 
+        # List to keep track of widgets
+        self.widgets = {}
+
         # The file from which the dashboard is loaded
         self.filename = "savefile.json"
         self.filename_cache = [self.filename]
 
         # Create a GUI
-        self.scene = QGraphicsScene(0,0,1000,600)
+        self.scene = QGraphicsScene(0,0,2000,1500)
         self.setWindowTitle("Omnibus Dashboard")
         self.resize(1100, 700)
 
@@ -84,6 +87,11 @@ class Dashboard(QWidget):
 
         self.layout.setMenuBar(menubar)
 
+        # Add a button to remove the selected widget
+        remove = QPushButton("Remove Selected Widget")
+        remove.clicked.connect(self.remove)
+        self.layout.addWidget(remove)
+
         # Load the last saved state
         self.load()
 
@@ -110,6 +118,16 @@ class Dashboard(QWidget):
         rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
         self.scene.addItem(rect)
+        self.widgets[rect] = [proxy, dashitem]
+
+    def remove(self):
+        for item in self.scene.selectedItems():
+            components = self.widgets[item]
+            proxy = components[0]
+            dashitem = components[1]
+            self.scene.removeItem(item)
+            proxy.deleteLater()
+            dashitem.on_delete()
 
     def load(self):
         # TODO
