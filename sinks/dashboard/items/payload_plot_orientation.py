@@ -47,20 +47,16 @@ class PayloadDashItem (DashboardItem):
         self.view.addItem(gz)
 
         # subscribe to stream dictated by properties
-        if self.props[1]:
-            publisher.subscribe(self.props[0], self.on_data_update_orientation)
-            self.xaxis = gl.GLLinePlotItem()
-            self.view.addItem(self.xaxis)
-            self.yaxis = gl.GLLinePlotItem()
-            self.view.addItem(self.yaxis)
-            self.zaxis = gl.GLLinePlotItem()
-            self.view.addItem(self.zaxis)
-            self.orientation = (0, 0, 0)  # Euler Angles
-        else:
-            publisher.subscribe(self.props[0], self.on_data_update_position)
-            self.pos_list = []
-            self.line = gl.GLLinePlotItem()
-            self.view.addItem(self.line)
+
+        publisher.subscribe(self.props[0], self.on_data_update_orientation)
+        self.xaxis = gl.GLLinePlotItem()
+        self.view.addItem(self.xaxis)
+        self.yaxis = gl.GLLinePlotItem()
+        self.view.addItem(self.yaxis)
+        self.zaxis = gl.GLLinePlotItem()
+        self.view.addItem(self.zaxis)
+        self.orientation = (0, 0, 0)  # Euler Angles
+
 
         # add it to the layout
         self.layout.addWidget(self.view, 0, 0)
@@ -74,10 +70,10 @@ class PayloadDashItem (DashboardItem):
             "Orientation Mode",
             "Is the data a position or orientation?",
             "items",
-            ["Position", "Orientation"]
+            ["Orientation"]
         )
 
-        enable_orientation = True if orientation_mode == "Orientation" else False
+        enable_orientation = True 
 
         channel_and_series = prompt_user(
             self,
@@ -91,13 +87,6 @@ class PayloadDashItem (DashboardItem):
 
         return [channel_and_series, enable_orientation]
 
-    def on_data_update_position(self, stream, payload):
-        time, point = payload
-        self.pos_list.append(tuple(point))
-        if len(self.pos_list) > 200:
-            self.pos_list.pop(0)
-
-        self.line.setData(pos=self.pos_list, color=(1.0, 1.0, 1.0, 1.0))
 
     def on_data_update_orientation(self, stream, payload):
         time, orientation = payload
@@ -145,10 +134,8 @@ class PayloadDashItem (DashboardItem):
         return self.props
 
     def get_name():
-        return "Payload Plot"
+        return "Payload Orientation Plot"
 
     def on_delete(self):
-        if self.props[1]:
             publisher.unsubscribe_from_all(self.on_data_update_orientation)
-        else:
-            publisher.unsubscribe_from_all(self.on_data_update_position)
+
