@@ -159,6 +159,8 @@ class CanSender(DashboardItem):
             # resets labels/input boxes
             self.labels[i][0].setText("")
             self.labels[i][1].setText("")
+            # TODO: keep a temporray history of text so that if we go from 8 -> 4 back to 8 bytes,
+            # then the last 4 bytes of data is restored
             self.line_edits[i].setText("")
             self.line_edits[i].setPlaceholderText("")
             if i < amount_of_data:
