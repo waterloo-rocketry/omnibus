@@ -157,7 +157,7 @@ class CanSender(DashboardItem):
             # clears and sets the new msg_data datatype
             self.labels[i][0].setText("")
             self.labels[i][1].setText("")
-            # self.line_edits[i].setText("") # asking around to guage feedback on clearing un-needed fields
+            self.line_edits[i].setText("") # asking around to guage feedback on clearing un-needed fields
             self.line_edits[i].setPlaceholderText("")
             if i < amount_of_data:
                 self.line_edits[i].setPlaceholderText("00")
