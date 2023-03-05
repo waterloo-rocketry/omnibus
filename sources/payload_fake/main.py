@@ -3,8 +3,8 @@ import random
 import time
 import math
 
-READ_BULK = 200  # mimic how the real NI box samples in bulk for better performance
-SAMPLE_RATE = 10000  # total samples/second
+WAIT_TIME = 0.02
+SAMPLE_RATE = 10  # total samples/second
 
 running_angles = [0, 0, 0]
 count = 0
@@ -55,4 +55,4 @@ while True:
     counter += 1
 
     sender.send(CHANNEL, data)
-    time.sleep(max(READ_BULK/SAMPLE_RATE - (time.time() - start), 0))
+    time.sleep(max(WAIT_TIME - (time.time() - start), 0))

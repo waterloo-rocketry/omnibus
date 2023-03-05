@@ -56,16 +56,6 @@ class PayloadDashItem (DashboardItem):
 
     def prompt_for_properties(self):
 
-        orientation_mode = prompt_user(
-            self,
-            "Orientation Mode",
-            "Is the data a position?",
-            "items",
-            ["Position"]
-        )
-
-        enable_orientation = False
-
         channel_and_series = prompt_user(
             self,
             "Data Series",
@@ -76,7 +66,7 @@ class PayloadDashItem (DashboardItem):
         if not channel_and_series:
             return None
 
-        return [channel_and_series, enable_orientation]
+        return [channel_and_series]
 
     def on_data_update_position(self, stream, payload):
         time, point = payload
