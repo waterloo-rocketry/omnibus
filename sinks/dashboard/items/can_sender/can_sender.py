@@ -111,10 +111,11 @@ class CanSender(DashboardItem):
         amt_of_data = len(self.canlib_info.get_msg_data(msg_type))
         for i in range(amt_of_data):
             # pad data with 0s until len = 2
+            # TODO: check if this is actually necessar, i dont think it is
             msg_data += bytes.fromhex(self.line_edits[i].text().zfill(2))
 
         msg_type = mt.msg_type_hex[msg_type]
-        msg_board = 0
+        msg_board = 0 # dummby board
         msg_sid = msg_type | msg_board
         
         formatted_data = {'message': (msg_sid, msg_data)}
@@ -153,15 +154,17 @@ class CanSender(DashboardItem):
         msg_data = self.canlib_info.get_msg_data(new_msg_type)
         amount_of_data = len(msg_data)
         for i in range(self.MAX_MESSAGE_BYTES):
-            # locks that input fields that aren't required
+            # locks input fields that aren't in use
             self.line_edits[i].setEnabled(i < amount_of_data)
-            # clears and sets the new msg_data datatype
+            # resets labels/input boxes
             self.labels[i][0].setText("")
             self.labels[i][1].setText("")
-            self.line_edits[i].setText("") # asking around to guage feedback on clearing un-needed fields
+            self.line_edits[i].setText("")
             self.line_edits[i].setPlaceholderText("")
             if i < amount_of_data:
+                # TODO: add astersik for label if mandatory
                 self.labels[i][i%2].setText(msg_data[i])
+                # TODO: add placeholder text if mandatory
                 self.line_edits[i].setPlaceholderText("00")
 
     def move_cursor_forwards(self):
