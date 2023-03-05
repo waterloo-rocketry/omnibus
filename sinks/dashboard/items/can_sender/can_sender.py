@@ -11,7 +11,7 @@ import sources.parsley.message_types as mt
 @Register
 class CanSender(DashboardItem):
     """
-    grid layout blueprint
+    blueprint of grid layout
     |--------|----|----|----|----|------|
     | (0,0)  | lbl| lbl|... |lbl |(0,10)|
     |--------|----|----|----|----|------|
@@ -21,7 +21,8 @@ class CanSender(DashboardItem):
     |--------|----|----|----|----|------|
     Msg type = CAN bus message type
     Byte     = CAN bus data
-    lbl      = describes the datatype in that column
+    lbl      = describes the datatype in that column 
+      => (only one of top or bottom label will be shown at a time)
     """
     NUM_PULSES = 3
     PULSE_FREQUENCY = 100 #in ms
@@ -42,12 +43,12 @@ class CanSender(DashboardItem):
         self.place_widgets()
 
     def create_widgets(self):
-        # CAN bus message type
+        # CAN message type
         self.message_type = QtWidgets.QComboBox()
         self.message_type.setPlaceholderText("Message Type")
         self.message_type.addItems(self.canlib_info.get_msg_type())
 
-        # CAN bus message data
+        # CAN message data
         self.line_edits = []
         self.line_edits_map = {}
         for i in range(self.MAX_MESSAGE_BYTES):
@@ -160,16 +161,16 @@ class CanSender(DashboardItem):
             self.line_edits[i].setText("") # asking around to guage feedback on clearing un-needed fields
             self.line_edits[i].setPlaceholderText("")
             if i < amount_of_data:
-                self.line_edits[i].setPlaceholderText("00")
                 self.labels[i][i%2].setText(msg_data[i])
+                self.line_edits[i].setPlaceholderText("00")
 
     def move_cursor_forwards(self):
         obj = self.sender()
-        obj.setText(obj.text().upper())
         obj_name = obj.objectName()
         cur_idx = self.line_edits_map[obj_name]
         cur_len = len(self.line_edits[cur_idx].text())
 
+        obj.setText(obj.text().upper())
         if cur_len == 2:
             nxt_idx = min(self.MAX_MESSAGE_BYTES-1, cur_idx+1)
             nxt_obj = self.line_edits[nxt_idx]
