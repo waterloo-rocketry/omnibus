@@ -57,22 +57,11 @@ class PayloadDashItem (DashboardItem):
         self.view.addItem(self.zaxis)
         self.orientation = (0, 0, 0)  # Euler Angles
 
-
         # add it to the layout
         self.layout.addWidget(self.view, 0, 0)
         self.start_time = time.time()
 
     def prompt_for_properties(self):
-
-        orientation_mode = prompt_user(
-            self,
-            "Orientation Mode",
-            "Is the data a orientation?",
-            "items",
-            ["Orientation"]
-        )
-
-        enable_orientation = True 
 
         channel_and_series = prompt_user(
             self,
@@ -84,8 +73,7 @@ class PayloadDashItem (DashboardItem):
         if not channel_and_series:
             return None
 
-        return [channel_and_series, enable_orientation]
-
+        return [channel_and_series]
 
     def on_data_update_orientation(self, stream, payload):
         time, orientation = payload
@@ -135,5 +123,4 @@ class PayloadDashItem (DashboardItem):
         return "Payload Orientation Plot"
 
     def on_delete(self):
-            publisher.unsubscribe_from_all(self.on_data_update_orientation)
-
+        publisher.unsubscribe_from_all(self.on_data_update_orientation)
