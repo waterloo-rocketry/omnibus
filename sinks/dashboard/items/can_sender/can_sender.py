@@ -11,7 +11,7 @@ import sources.parsley.message_types as mt
 @Register
 class CanSender(DashboardItem):
     """
-    QGridLayout blueprint
+    grid layout blueprint
     |--------|----|----|----|----|------|
     | (0,0)  | lbl| lbl|... |lbl |(0,10)|
     |--------|----|----|----|----|------|
@@ -21,7 +21,7 @@ class CanSender(DashboardItem):
     |--------|----|----|----|----|------|
     Msg type = CAN bus message type
     Byte     = CAN bus data
-    lbl      = describes the type of data in that column
+    lbl      = describes the datatype in that column
     """
     NUM_PULSES = 3
     PULSE_FREQUENCY = 100 #in ms
@@ -60,8 +60,8 @@ class CanSender(DashboardItem):
             self.line_edits_map[line_edit.objectName()] = i
         self.send = QtWidgets.QPushButton("SEND", self)
 
-        # 2d array of QLabels that dictate what kind of datatype belonds to this column
-        # self.labels[i][0] = top, self.labels[i][1] = bot labels
+        # 2d array of labels that remind users what datatype belongs to what column
+        # self.labels[i][0] = top row, self.labels[i][1] = bototom row
         self.labels = []
         for i in range(self.MAX_MESSAGE_BYTES):
             top_label = QtWidgets.QLabel()
@@ -74,14 +74,14 @@ class CanSender(DashboardItem):
             self.labels[i][i%2].setText("None")
 
     def setup_widgets(self):
-        # locks/unlocks QLineEdits based on the updated msg_type
+        # locks/unlocks input fields based on the updated msg_type
         self.message_type.currentTextChanged.connect(self.refresh_widget_info)
-        # input mask for valid msg_data characters
+        # input mask for valid msg_data characters, blocks all other characters not in this regex
         valid_hexes = QtGui.QRegularExpressionValidator("[A-Fa-f0-9][A-Fa-f0-9]")
-        # customizing palette to ensure QLineEdits have that "disabled" look
+        # customizing palette to ensure input fields have that "disabled" look
         self.palette = QtGui.QPalette()
         self.palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.Base, QtGui.QColor("darkGrey"))
-        # tracks when a backspace has been pressed
+        # tracks when a backspace has been pressed for UX purposes
         self.backspace_event_filter = BackspaceEventFilter()
         self.backspace_event_filter.valid_backspace.connect(self.move_cursor_backwards)
         for i in range(self.MAX_MESSAGE_BYTES):
@@ -109,7 +109,7 @@ class CanSender(DashboardItem):
         msg_data = b""
         amt_of_data = len(self.canlib_info.get_msg_data(msg_type))
         for i in range(amt_of_data):
-            # pad text with 0 until len = 2
+            # pad data with 0s until len = 2
             msg_data += bytes.fromhex(self.line_edits[i].text().zfill(2))
 
         msg_type = mt.msg_type_hex[msg_type]
@@ -121,10 +121,11 @@ class CanSender(DashboardItem):
 
     def has_invalid_fields(self):
         bad_indexes = self.get_invalid_inputs()
-        self.pulse_count = 0
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(lambda: self.pulse(bad_indexes))
-        self.timer.start(self.PULSE_FREQUENCY)
+        if bad_indexes:
+            self.pulse_count = 0
+            self.timer = QtCore.QTimer()
+            self.timer.timeout.connect(lambda: self.pulse(bad_indexes))
+            self.timer.start(self.PULSE_FREQUENCY)
         return len(bad_indexes) > 0
 
     def pulse(self, indexes):
@@ -151,12 +152,15 @@ class CanSender(DashboardItem):
         msg_data = self.canlib_info.get_msg_data(new_msg_type)
         amount_of_data = len(msg_data)
         for i in range(self.MAX_MESSAGE_BYTES):
-            # locks that data bytes that aren't in use
+            # locks that input fields that aren't required
             self.line_edits[i].setEnabled(i < amount_of_data)
             # clears and sets the new msg_data datatype
             self.labels[i][0].setText("")
             self.labels[i][1].setText("")
+            # self.line_edits[i].setText("") # asking around to guage feedback on clearing un-needed fields
+            self.line_edits[i].setPlaceholderText("")
             if i < amount_of_data:
+                self.line_edits[i].setPlaceholderText("00")
                 self.labels[i][i%2].setText(msg_data[i])
 
     def move_cursor_forwards(self):
