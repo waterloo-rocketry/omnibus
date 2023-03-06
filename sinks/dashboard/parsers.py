@@ -84,9 +84,9 @@ def can_parser(payload):
 
 
 @Register("StateEstimation")
-def payload_parser(state_est):
-    timestamp = state_est["timestamp"]
+def state_est_parser(payload):
+    timestamp = payload["timestamp"]
     return [
-        ("StateEstimation/Orientation", timestamp, state_est["data"]["orientation"]),
-        ("StateEstimation/Position", timestamp, state_est["data"]["position"])
+        ("StateEstimation/Orientation", timestamp, payload["data"]["orientation"]),
+        ("StateEstimation/Position", timestamp, payload["data"]["position"])
     ]
