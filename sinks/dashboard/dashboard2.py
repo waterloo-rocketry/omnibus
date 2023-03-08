@@ -1,7 +1,7 @@
 import os, sys, json
 from time import sleep
 
-from pyqtgraph.Qt.QtCore import Qt, QTimer
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QPoint
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -19,6 +19,46 @@ from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
+
+class MyQGraphicsView(QGraphicsView):
+
+    def __init__ (self, parent=None):
+        super(MyQGraphicsView, self).__init__ (parent)
+        self.zoom = False
+
+    def wheelEvent(self, event):
+        print(self.zoom)
+        if self.zoom:
+            print("I'm in")
+            # Zoom Factor
+            zoomInFactor = 1.1
+            zoomOutFactor = 1 / zoomInFactor
+
+            # Set Anchors
+            self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+
+            # Zoom
+            angle = event.angleDelta().y()
+            if angle > 0:
+                zoomFactor = zoomInFactor
+            elif angle < 0:
+                zoomFactor = zoomOutFactor
+            else:
+                zoomFactor = 1
+
+            self.scale(zoomFactor, zoomFactor)
+            print("Scaled")
+ 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Shift: 
+            print("Pressed")
+            self.zoom =  True
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_Shift:
+            print("Released")
+            self.zoom = False
+
 
 class Dashboard(QWidget):
     def __init__(self, callback):
@@ -99,10 +139,10 @@ class Dashboard(QWidget):
         self.counter = TickCounter(1)
 
         # Create the view and add it to the widget
-        view = QGraphicsView(self.scene)
+        view = MyQGraphicsView(self.scene)
+        view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.layout.addWidget(view)
         self.setLayout(self.layout)
-
 
     def add(self, dashitem):
         # Add the dash item to the scene and get
