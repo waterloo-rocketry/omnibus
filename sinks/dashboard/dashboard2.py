@@ -46,6 +46,8 @@ class MyQGraphicsView(QGraphicsView):
                 zoomFactor = 1
 
             self.scale(zoomFactor, zoomFactor)
+        else:
+            super(MyQGraphicsView, self).wheelEvent(event)
 
 
 class Dashboard(QWidget):
@@ -64,11 +66,13 @@ class Dashboard(QWidget):
         self.filename_cache = [self.filename]
 
         # Create a GUI
-        self.width = 2000
-        self.height = 1500
-        self.scene = QGraphicsScene(0, 0, self.width, self.height)
+        self.width = 1100
+        self.height = 700
         self.setWindowTitle("Omnibus Dashboard")
-        self.resize(1100, 700)
+        self.resize(self.width, self.height)
+
+        # Create a large scene underneath the view
+        self.scene = QGraphicsScene(0, 0, self.width*10, self.height*10)
 
         # Create a grid layout
         self.layout = QVBoxLayout()
@@ -117,11 +121,6 @@ class Dashboard(QWidget):
 
         self.layout.setMenuBar(menubar)
 
-        # Add a button to remove the selected widget
-        remove = QPushButton("Remove Selected Widget")
-        remove.clicked.connect(self.remove)
-        self.layout.addWidget(remove)
-
         # Load the last saved state
         self.load()
 
@@ -138,6 +137,7 @@ class Dashboard(QWidget):
         # Get the current size of the view area and map
         # it to the underlying scene
         viewport = self.view.viewport().size()
+        print(viewport)
         mapped = self.view.mapToScene(viewport.width()/2, viewport.height()/2)
 
         # Add the dash item to the scene and get
@@ -145,6 +145,7 @@ class Dashboard(QWidget):
         proxy = self.scene.addWidget(dashitem)
         height = proxy.size().height()
         width = proxy.size().width()
+        print(f"W: {width}, H: {height}")
 
         # Center the widget in the view. Qt sets position
         # based on the upper left corner, so subtract
@@ -153,6 +154,7 @@ class Dashboard(QWidget):
         xpos = mapped.x() - (width/2)
         ypos = mapped.y() - (height/2)
         proxy.setPos(xpos, ypos)
+        proxy.setFocusPolicy(Qt.NoFocus)
         
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
@@ -195,6 +197,11 @@ class Dashboard(QWidget):
             fps = self.counter.tick_rate()
 
         self.callback()
+
+    # Handling user events
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Backspace:
+            self.remove()
 
 
 def dashboard_driver(callback):
