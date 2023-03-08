@@ -3,6 +3,21 @@ from calibration import Sensor, Connection, LinearCalibration, ThermistorCalibra
 RATE = 1000  # Analog data sample rate
 READ_BULK = 20  # Number of samples to read at once for better performance
 
+# Mapping between briefcase ports and ai channels such that you can do ports[1] through ports[12]
+ports = [
+    None,  # port 0
+    "ai16", "ai17", "ai18",  # Differental channels 1-3
+    "ai19", "ai27", "ai20",  # Direct voltage channels 4-6
+    "ai28", "ai21", "ai29",  # 4-20 mA channels 7-9
+    "ai15", "ai7", "ai14",  # 4-20 mA channels 10-12
+]
+
+thermo_ports = [
+    None,  # port 0
+    "ai10", "ai2", "ai9", "ai1",
+    "ai8", "ai0"
+]
+
 
 def setup():
     """
@@ -19,40 +34,45 @@ def setup():
     """
        Sensor Configs, will change from test to test
        """
-    # Port 7
-    # Sensor("(PT-5) - Fuel Injector", "ai28", 10, Connection.SINGLE,
-    #        LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-    # Port 9
-    Sensor("(PT-3) - Injector", "ai29", 10, Connection.SINGLE,
+    Sensor("(PT-1) - Fill Tank", ports[7], 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-    # Port 10
-    Sensor("(PT-4) - Injector Tank", "ai15", 10, Connection.SINGLE,
+
+    Sensor("(PT-2) - Ox Tank", ports[8], 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-    # Port 11
-    Sensor("(PT-2) - Ox Tank", "ai7", 10, Connection.SINGLE,
+
+    Sensor("(PT-3) - Fuel Tank", ports[9], 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-    # Port 12
-    Sensor("(PT-1) - Ox Fill Block", "ai14", 10, Connection.SINGLE,
+
+    Sensor("(PT-4) - Pneumatic", ports[10], 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-    # Port 1
-    # Sensor("Honeywell S-type", "ai16", 0.2, Connection.DIFFERENTIAL,
-    #        LinearCalibration(4177, -0.853, "kgs"))
-    # Port 2 - if used
-    Sensor("Omega S-Type - Ox Tanks", "ai17", 0.2, Connection.DIFFERENTIAL,
+
+    Sensor("(PT-5) - Combustion Chamber 1", ports[11], 10, Connection.SINGLE,
+           LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
+
+    Sensor("(PT-6) - Combustion Chamber 2", ports[12], 10, Connection.SINGLE,
+           LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
+
+    Sensor("Honeywell S-type", ports[1], 0.2, Connection.DIFFERENTIAL,
+         LinearCalibration(4177, -0.853, "kgs"))
+    Sensor("Omega S-Type - Ox Tanks", ports[2], 0.2, Connection.DIFFERENTIAL,
            LinearCalibration(2936, -0.181, "V"))
 
-    Sensor("Thermocouple 1", "ai0", 5, Connection.SINGLE,
+    Sensor("Thermocouple 1", thermo_ports[1], 5, Connection.SINGLE,
            LinearCalibration(1200/5, -100 + (23.4 - -18), "C"))
-    Sensor("Thermocouple 2", "ai8", 5, Connection.SINGLE,
+    Sensor("Thermocouple 2", thermo_ports[2], 5, Connection.SINGLE,
            LinearCalibration(1200/5, -100 + (23.4 - -3), "C"))
-    Sensor("Thermocouple 3", "ai1", 5, Connection.SINGLE,
+    Sensor("Thermocouple 3", thermo_ports[3], 5, Connection.SINGLE,
            LinearCalibration(1200/5, -100 + (23.4 - -24), "C"))
-    Sensor("Thermocouple 4", "ai9", 5, Connection.SINGLE,
+    Sensor("Thermocouple 4", thermo_ports[4], 5, Connection.SINGLE,
+           LinearCalibration(1200/5, -100, "C"))
+    Sensor("Thermocouple 5", thermo_ports[5], 5, Connection.SINGLE,
+           LinearCalibration(1200/5, -100, "C"))
+    Sensor("Thermocouple 6", thermo_ports[6], 5, Connection.SINGLE,
            LinearCalibration(1200/5, -100, "C"))
 
     # Port 3
     # CAS BSA-5KLB 5000 lbf, 3 mv/v, 12v excitation
-    Sensor("Thrust", "ai18", 0.2, Connection.DIFFERENTIAL,
+    Sensor("Thrust", ports[3], 0.2, Connection.DIFFERENTIAL,
            LinearCalibration(5000 / (3/1000*12), -20, "lbs"))
     """
        Everything below here is just for documentation purposes
