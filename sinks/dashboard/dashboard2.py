@@ -1,7 +1,7 @@
 import os, sys, json
 from time import sleep
 
-from pyqtgraph.Qt.QtCore import Qt, QTimer, QPoint
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -13,6 +13,7 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsRectItem,
     QPushButton
 )
+from pyqtgraph.widgets.GraphicsView import GraphicsView
 
 from items import registry
 from items.plot_dash_item import PlotDashItem
@@ -27,9 +28,7 @@ class MyQGraphicsView(QGraphicsView):
         self.zoom = False
 
     def wheelEvent(self, event):
-        print(self.zoom)
-        if self.zoom:
-            print("I'm in")
+        if event.modifiers() & Qt.ShiftModifier:
             # Zoom Factor
             zoomInFactor = 1.1
             zoomOutFactor = 1 / zoomInFactor
@@ -38,26 +37,15 @@ class MyQGraphicsView(QGraphicsView):
             self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
             # Zoom
-            angle = event.angleDelta().y()
-            if angle > 0:
+            angle = event.angleDelta()
+            if angle.x() > 0 or angle.y() > 0:
                 zoomFactor = zoomInFactor
-            elif angle < 0:
+            elif angle.x() < 0 or angle.y() > 0:
                 zoomFactor = zoomOutFactor
             else:
                 zoomFactor = 1
 
             self.scale(zoomFactor, zoomFactor)
-            print("Scaled")
- 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Shift: 
-            print("Pressed")
-            self.zoom =  True
-
-    def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_Shift:
-            print("Released")
-            self.zoom = False
 
 
 class Dashboard(QWidget):
@@ -68,7 +56,7 @@ class Dashboard(QWidget):
         # Called every frame to get new data
         self.callback = callback 
 
-        # List to keep track of widgets
+        # Dictionary to keep track of widgets
         self.widgets = {}
 
         # The file from which the dashboard is loaded
@@ -76,7 +64,9 @@ class Dashboard(QWidget):
         self.filename_cache = [self.filename]
 
         # Create a GUI
-        self.scene = QGraphicsScene(0,0,2000,1500)
+        self.width = 2000
+        self.height = 1500
+        self.scene = QGraphicsScene(0, 0, self.width, self.height)
         self.setWindowTitle("Omnibus Dashboard")
         self.resize(1100, 700)
 
@@ -139,25 +129,40 @@ class Dashboard(QWidget):
         self.counter = TickCounter(1)
 
         # Create the view and add it to the widget
-        view = MyQGraphicsView(self.scene)
-        view.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.layout.addWidget(view)
+        self.view = MyQGraphicsView(self.scene)
+        self.view.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.layout.addWidget(self.view)
         self.setLayout(self.layout)
 
     def add(self, dashitem):
+        # Get the current size of the view area and map
+        # it to the underlying scene
+        viewport = self.view.viewport().size()
+        mapped = self.view.mapToScene(viewport.width()/2, viewport.height()/2)
+
         # Add the dash item to the scene and get
-        # its proxy widget
+        # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
         height = proxy.size().height()
         width = proxy.size().width()
+
+        # Center the widget in the view. Qt sets position
+        # based on the upper left corner, so subtract
+        # half the width and height of the widget to 
+        # center the center
+        xpos = mapped.x() - (width/2)
+        ypos = mapped.y() - (height/2)
+        proxy.setPos(xpos, ypos)
         
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
-        rect = QGraphicsRectItem(-1, -1, width+1, height+1)
+        rect = QGraphicsRectItem(xpos-1, ypos-1, width+1, height+1)
         proxy.setParentItem(rect)
         rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
         self.scene.addItem(rect)
+
+        # Add the proxy widget and dashitem to the dict
         self.widgets[rect] = [proxy, dashitem]
 
     def remove(self):
