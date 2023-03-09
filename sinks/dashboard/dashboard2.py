@@ -13,6 +13,7 @@ from pyqtgraph.Qt.QtWidgets import (
 )
 from items import registry
 from omnibus.util import TickCounter
+from utils import prompt_user
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
@@ -238,8 +239,27 @@ class Dashboard(QWidget):
             json.dump(data, savefile)
 
     def switch(self):
-        # TODO
-        pass
+        self.save()
+        filename = prompt_user(
+            self,
+            "New File Name",
+            "Enter the name of the file which you wish to load",
+            "items",
+            self.filename_cache,
+            True
+        )
+
+        if filename == None:
+            return
+
+        # If the filename entered is not valid
+        # this exhibits the behaviour of creating
+        # a new one
+        if filename not in self.filename_cache:
+            self.filename_cache.append(filename)
+
+        self.filename = filename
+        self.load()
         
     # called every frame
     def update(self):
