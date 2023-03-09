@@ -61,6 +61,9 @@ class Dashboard(QWidget):
         # and dashitems
         self.widgets = {}
 
+        # Keep track of if editing is allowed
+        self.locked = False
+
         # The file from which the dashboard is loaded
         self.filename = "savefile.json"
         self.filename_cache = [self.filename]
@@ -79,6 +82,10 @@ class Dashboard(QWidget):
 
         # Create a menubar for actions
         menubar = QMenuBar(self)
+
+        # List to keep track of menu bar action that 
+        # can be disabled when dashboard is locked
+        self.disable = []
 
         # Create a sub menu which will be used
         # to add items to our dash board.
@@ -101,23 +108,36 @@ class Dashboard(QWidget):
         for i in range(len(registry.get_items())):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
             new_action.triggered.connect(prompt_and_add(i))
+            self.disable.append(new_action)
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
         add_save_menu = menubar.addMenu("Save")
         save_layout_action = add_save_menu.addAction("Save Current Config")
         save_layout_action.triggered.connect(self.save)
+        self.disable.append(save_layout_action)
 
         # Add an action to the menu bar to load the
         # layout of the dashboard.
         add_restore_menu = menubar.addMenu("Load")
         restore_layout_action = add_restore_menu.addAction("Load from File")
         restore_layout_action.triggered.connect(self.load)
+        self.disable.append(restore_layout_action)
 
         # Add an action to the menu bar to open a file
         add_open_menu = menubar.addMenu("Open")
         open_file_action = add_open_menu.addAction("Open File")
         open_file_action.triggered.connect(self.switch)
+        self.disable.append(open_file_action)
+
+        # Add an action to the menu bar to lock/unlock
+        # the dashboard
+        add_open_menu = menubar.addMenu("Lock")
+        lock_action = add_open_menu.addAction("Lock Dashboard")
+        lock_action.triggered.connect(self.lock)
+        self.disable.append(lock_action)
+        unlock_action = add_open_menu.addAction("Unlock Dashboard")
+        unlock_action.triggered.connect(self.unlock)
 
         self.layout.setMenuBar(menubar)
 
@@ -260,6 +280,32 @@ class Dashboard(QWidget):
 
         self.filename = filename
         self.load()
+
+    def lock(self):
+        self.locked = True
+        self.setWindowTitle("Omnibus Dashboard - LOCKED")
+
+        # Disable menu actions
+        for menu_item in self.disable:
+            menu_item.setEnabled(False)
+
+        # Disable selecting and moving plots
+        for rect in self.widgets:
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
+        
+    def unlock(self):
+        self.locked = False
+        self.setWindowTitle("Omnibus Dashboard")
+
+        # Enable menu actions
+        for menu_item in self.disable:
+            menu_item.setEnabled(True)
+
+        # Enable selecting and moving plots
+        for rect in self.widgets:
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=True)
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=True)
         
     # called every frame
     def update(self):
@@ -273,7 +319,7 @@ class Dashboard(QWidget):
 
     # Handling user events
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Backspace:
+        if event.key() == Qt.Key_Backspace and not self.locked:
             for item in self.scene.selectedItems():
                 self.remove(item)
                 self.widgets.pop(item)
