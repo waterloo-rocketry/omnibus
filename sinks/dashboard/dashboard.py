@@ -1,4 +1,6 @@
-import os, sys, json
+import os
+import sys
+import json
 
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QPainter
@@ -22,10 +24,12 @@ from items.can_message_table import CanMsgTableDashItem
 
 # Custom class derived from QGraphicsView to capture mouse
 # wheel events by overriding the wheelEvent function
+
+
 class MyQGraphicsView(QGraphicsView):
-    def __init__ (self, parent=None):
+    def __init__(self, parent=None):
         # Initialize the super class
-        super(MyQGraphicsView, self).__init__ (parent)
+        super(MyQGraphicsView, self).__init__(parent)
 
     def wheelEvent(self, event):
         # Zoom if Shift is held, otherwise scroll
@@ -58,9 +62,9 @@ class Dashboard(QWidget):
         super().__init__()
 
         # Called every frame to get new data
-        self.callback = callback 
+        self.callback = callback
 
-        # Dictionary to map rectitems to widgets 
+        # Dictionary to map rectitems to widgets
         # and dashitems
         self.widgets = {}
 
@@ -86,7 +90,7 @@ class Dashboard(QWidget):
         # Create a menubar for actions
         menubar = QMenuBar(self)
 
-        # List to keep track of menu bar action that 
+        # List to keep track of menu bar action that
         # can be disabled when dashboard is locked
         self.disable = []
 
@@ -179,14 +183,14 @@ class Dashboard(QWidget):
 
             # Center the widget in the view. Qt sets position
             # based on the upper left corner, so subtract
-            # half the width and height of the widget to 
+            # half the width and height of the widget to
             # center the center
             xpos = mapped.x() - (width/2)
             ypos = mapped.y() - (height/2)
 
         proxy.setPos(xpos, ypos)
         proxy.setFocusPolicy(Qt.NoFocus)
-        
+
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
         rect = QGraphicsRectItem(xpos-1, ypos-1, width+1, height+1)
@@ -258,7 +262,7 @@ class Dashboard(QWidget):
             # Add the position, dashitem name and dashitem props
             for item_type in registry.get_items():
                 if type(dashitem) == item_type:
-                    data.append({"class": item_type.get_name(), 
+                    data.append({"class": item_type.get_name(),
                                  "props": dashitem.get_props(),
                                  "pos": [viewpos.x(), viewpos.y()]})
                     break
@@ -304,7 +308,7 @@ class Dashboard(QWidget):
         for rect in self.widgets:
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
-        
+
     # Method to unlock dashboard
     def unlock(self):
         self.locked = False
@@ -318,7 +322,7 @@ class Dashboard(QWidget):
         for rect in self.widgets:
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=True)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=True)
-        
+
     # Method to get new data for widgets
     def update(self):
         self.counter.tick()
