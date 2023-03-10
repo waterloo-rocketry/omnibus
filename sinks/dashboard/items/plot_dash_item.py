@@ -173,7 +173,7 @@ class PlotDashItem(DashboardItem):
 
         # value readout in the title
         # avg values
-        avg_values = [self.sum[item]/len(self.points[item]) for item in self.series]
+        avg_values = [self.sum[item]/self.avgSize for item in self.series]
         title = "avg: "
         for v in avg_values:
             title += f"[{v: < 4.4f}]"
