@@ -3,7 +3,6 @@ import random
 import time
 import math
 
-WAIT_TIME = 0.02
 SAMPLE_RATE = 10  # total samples/second
 
 running_angles = [0, 0, 0]
@@ -55,4 +54,4 @@ while True:
     counter += 1
 
     sender.send(CHANNEL, data)
-    time.sleep(max(WAIT_TIME - (time.time() - start), 0))
+    time.sleep(1 / SAMPLE_RATE)
