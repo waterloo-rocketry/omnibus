@@ -59,7 +59,6 @@ class PayloadDashItem (DashboardItem):
 
         # add it to the layout
         self.layout.addWidget(self.view, 0, 0)
-        self.start_time = time.time()
 
     def prompt_for_properties(self):
 
