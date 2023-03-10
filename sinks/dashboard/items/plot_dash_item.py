@@ -24,7 +24,7 @@ class PlotDashItem(DashboardItem):
         super().__init__()
 
         self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
-        self.avgSize = config.RUNNING_AVG_DURATION * config.GRAPH_RESOLUTION
+        self.avgSize = config.GRAPH_RESOLUTION * config.RUNNING_AVG_DURATION
         self.sum = {}
         self.last = {}
 
@@ -131,7 +131,6 @@ class PlotDashItem(DashboardItem):
 
     def on_data_update(self, stream, payload):
         time, point = payload
-        desc = payload[2] if (len(payload) > 2) else ""
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
@@ -143,7 +142,7 @@ class PlotDashItem(DashboardItem):
             self.points[stream].fill(point)
             self.sum[stream] = self.avgSize * point
 
-        self.last[stream] += 1 / config.GRAPH_RESOLUTION
+        self.last[stream] = time
 
         self.sum[stream] -= self.points[stream][self.size - self.avgSize]
         self.sum[stream] += point
@@ -155,8 +154,8 @@ class PlotDashItem(DashboardItem):
         self.points[stream][-1] = point
 
         # get the min/max point in the whole data set
-        min_point = min([min(v) for v in self.points.values()])
-        max_point = max([max(v) for v in self.points.values()])
+        min_point = min(min(v) for v in self.points.values())
+        max_point = max(max(v) for v in self.points.values())
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
@@ -171,25 +170,34 @@ class PlotDashItem(DashboardItem):
         # update the data curve
         self.curves[stream].setData(self.times[stream], self.points[stream])
 
-        # value readout in the title
-        # avg values
-        avg_values = [self.sum[item]/self.avgSize for item in self.series]
-        title = "avg: "
-        for v in avg_values:
-            title += f"[{v: < 4.4f}]"
-        # current values
-        title += "    current: "
-        last_values = [self.points[item][-1] for item in self.series]
-        for v in last_values:
-            title += f"[{v: < 4.4f}]"
+        # round the time to the nearest GRAPH_STEP
+        t = round(self.times[stream][-1] / config.GRAPH_STEP) * config.GRAPH_STEP
+        self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
+                            t + config.GRAPH_STEP, padding=0)
+
+        # value readout in the title for at most 2 series
+        title = ""
+        if len(self.series) <= 2:
+            # avg values
+            avg_values = [self.sum[item]/self.avgSize for item in self.series]
+            title += "avg: "
+            for v in avg_values:
+                title += f"[{v: < 4.4f}]"
+            # current values
+            title += "    current: "
+            last_values = [self.points[item][-1] for item in self.series]
+            for v in last_values:
+                title += f"[{v: < 4.4f}]"
+            title += "    "
         # data series name
-        title += "    " + "/".join(self.series)
+        title += "/".join(self.series)
 
         self.plot.setTitle(title)
 
     def get_props(self):
         return self.props
 
+    @staticmethod
     def get_name():
         return "Plot"
 
