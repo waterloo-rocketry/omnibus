@@ -9,28 +9,16 @@ SAMPLE_RATE = 10000  # total samples/second
 running_angles = [0, 0, 0]
 count = 0
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 9259940 (Start adding a new payload data source)
 sender = Sender()
 CHANNEL = "Payload"
 
 def shift_angle(angle):
-<<<<<<< HEAD
-    angle[0] = (angle[0] + math.pi + 0.01) % (2 * math.pi) - math.pi
-    angle[1] = (angle[1] + math.pi + 0.01) % (2 * math.pi) - math.pi
-    angle[2] = (angle[2] + math.pi + 0.01) % (2 * math.pi) - math.pi
+    for i in range(3):
+        angle[i] = (angle[i] + random.uniform(-0.01, 0.01)) % 360
     return angle
 
 dots = 0
 counter = 0
-=======
-	for i in range(3):
-		angle[i] = (angle[i] + random.uniform(-0.01, 0.01)) % 360
-
->>>>>>> 9259940 (Start adding a new payload data source)
 while True:
     start = time.time()
     # send a tuple of when the data was recorded and an array of the data for each channel
@@ -39,22 +27,15 @@ while True:
         "timestamp": start,
         "data": {
             "orientation": running_angles,
-<<<<<<< HEAD
             "position": [10 * math.cos(count/100), 10 * math.sin(count/100), 2 * math.sin(count/10)]
-=======
-            "position": [10 * math.cos(count/100), 10 * math.sin(count/100), 0]
->>>>>>> 9259940 (Start adding a new payload data source)
         }
     }
 
     count += 1
 
-<<<<<<< HEAD
-=======
     if logging:
         log.write(msgpack.packb(data))
 
->>>>>>> 9259940 (Start adding a new payload data source)
     # Cool continuously updating print statment
     print("\rSending", end="")
     if counter % (20*5) == 0:
