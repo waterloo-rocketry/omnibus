@@ -65,7 +65,44 @@ class PayloadDashItem (DashboardItem):
         self.layout.addWidget(self.view, 0, 0)
         self.start_time = time.time()
 
+        # create the plot
+        self.plot = pg.PlotItem(title=self.props[0], left="Data", bottom="Seconds")
+        self.plot.setMouseEnabled(x=False, y=False)
+        self.plot.hideButtons()
+
+        self.curve = self.plot.plot(self.times, self.points, pen='y')
+        if self.limit is not None:
+            self.warning_line = self.plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
+
+
+        pos = np.random.random(size=(100000,3))
+        pos *= [10,-10,10]
+        pos[0] = (0,0,0)
+        color = np.ones((pos.shape[0], 4))
+        size = np.random.random(size=pos.shape[0])*10
+        self.widget = gl.GLScatterPlotItem(pos=pos, color=(1,1,1,1), size=size)
+        # create the plot widget
        
+    
+        w = gl.GLViewWidget()
+        w.show()
+        w.setCameraPosition(distance=40)
+        gx = gl.GLGridItem()
+        gx.rotate(90, 0, 1, 0)
+        gx.translate(-10, 0, 0)
+        w.addItem(gx)
+        gy = gl.GLGridItem()
+        gy.rotate(90, 1, 0, 0)
+        gy.translate(0, -10, 0)
+        w.addItem(gy)
+        gz = gl.GLGridItem()
+        gz.translate(0, 0, -10)
+        w.addItem(gz)
+        w.addItem(self.widget)
+        
+
+        # add it to the layout
+        self.layout.addWidget(w, 0, 0)
 
     def prompt_for_properties(self):
 
@@ -196,29 +233,7 @@ class PayloadDashItem (DashboardItem):
         #self.plot.setTitle(
             #f"[{sum(self.points)/len(self.points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props[0]}")
         
-        w = gl.GLViewWidget()
-        w.show()
-        w.setWindowTitle('pyqtgraph example: GLLinePlotItem')
-        self.layout.addWidget(w, 0, 0)
-        w.setCameraPosition(distance=40)
-        gx = gl.GLGridItem()
-        gx.rotate(90, 0, 1, 0)
-        gx.translate(-10, 0, 0)
-        w.addItem(gx)
-        gy = gl.GLGridItem()
-        gy.rotate(90, 1, 0, 0)
-        gy.translate(0, -10, 0)
-        w.addItem(gy)
-        gz = gl.GLGridItem()
-        gz.translate(0, 0, -10)
-        w.addItem(gz)
-        n = 51
-        y = np.linspace(-10,10,n)
-        x = np.linspace(-10,10,100)
-        for i in range(self.points.size()):      
-            pts = np.column_stack([x, np.full_like(self.times, self.points), i])    
-            self.plot = gl.GLLinePlotItem(pos=pts, color=pg.mkColor((i,n*1.3)), width=(i+1)/10., antialias=True)    
-            w.addItem(self.plot) 
+ 
 
     def get_props(self):
         return self.props
