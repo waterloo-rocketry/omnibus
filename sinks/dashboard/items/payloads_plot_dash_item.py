@@ -91,6 +91,7 @@ class PayloadDashItem (DashboardItem):
 
         # add it to the layout
         self.layout.addWidget(self.w, 0, 0)
+        self.start_time = time.time()
 
        
 
@@ -181,7 +182,8 @@ class PayloadDashItem (DashboardItem):
 
     def on_data_update(self, payload):
         
-        pos = (payload[1]*10,payload[1]*10,payload[1]*10)
+        delta = time.time() - self.start_time
+        pos = (delta,payload[1]*10,payload[1]*10)
         pos_list.append(pos)
         #pos *= [10,-10,10]
         pos_array = np.array(pos_list)
@@ -190,7 +192,7 @@ class PayloadDashItem (DashboardItem):
         color = np.empty((53, 4))
         z = 0.5
         d = 6.0
-        print(pos_list)
+        #print(pos_list)
         self.widget.setData(pos=pos_array, color=(1.0,1.0,1.0,1.0))
         #drawing_variable = gl.GLLinePlotItem(pos = pos_list, width = 1, antialias = True)   #make a variable to store drawing data(specify the points, set antialiasing)
         #self.w.addItem(drawing_variable) #draw the item
