@@ -13,8 +13,10 @@ sender = Sender()
 CHANNEL = "Payload"
 
 def shift_angle(angle):
-    for i in range(3):
-        angle[i] = (angle[i] + random.uniform(-0.01, 0.01)) % 360
+    angle[0] = (angle[0] + math.pi + 0.01) % (2 * math.pi) - math.pi
+    angle[1] = (angle[1] + math.pi + 0.01) % (2 * math.pi) - math.pi
+    angle[2] = (angle[2] + math.pi + 0.01) % (2 * math.pi) - math.pi
+
     return angle
 
 dots = 0
