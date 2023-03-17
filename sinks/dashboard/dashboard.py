@@ -3,7 +3,10 @@ import os
 import time
 import sys
 import json 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3be4bed (line plot)
 from items import registry
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
