@@ -36,8 +36,6 @@ while True:
 
     count += 1
 
-    if logging:
-        log.write(msgpack.packb(data))
 
     # Cool continuously updating print statment
     print("\rSending", end="")
