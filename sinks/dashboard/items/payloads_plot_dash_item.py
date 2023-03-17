@@ -17,6 +17,7 @@ import time
 #if there is error for opengl use the following command to install the acc : sudo easy_install pyopengl
 from .registry import Register
 
+
 @Register
 class PayloadDashItem (DashboardItem):
     def __init__(self, props):
@@ -26,7 +27,6 @@ class PayloadDashItem (DashboardItem):
         # Specify the layout
         self.layout = QGridLayout()
         self.setLayout(self.layout)
-
         # save props as a field
         self.props = props
 
@@ -139,6 +139,86 @@ class PayloadDashItem (DashboardItem):
             np.cos(alpha)*y - np.sin(alpha)*z,
             np.sin(alpha)*y + np.cos(alpha)*z
             )
+        # threshold_input == None if not set
+        threshold_input = prompt_user(
+            self,
+            "Threshold Value",
+            "Set an upper limit",
+            "number",
+            cancelText="No Threshold"
+        )
+
+        props = [channel_and_series, threshold_input]
+
+        return props
+
+    def on_data_update(self, payload):
+        time, point = payload
+        desc = payload[2] if (len(payload) > 2) else ""
+
+        time += self.time_offset
+
+        # time should be passed as seconds, GRAPH_RESOLUTION is points per second
+        if time - self.last < 1 / config.GRAPH_RESOLUTION:
+            return
+
+        if self.last == 0:  # is this the first point we're plotting?
+            self.times.fill(time)  # prevent a rogue datapoint at (0, 0)
+            self.points.fill(point)
+            self.sum = self.avgSize * point
+
+        self.last += 1 / config.GRAPH_RESOLUTION
+
+        self.sum -= self.points[self.size - self.avgSize]
+        self.sum += point
+
+        # add the new datapoint to the end of each array, shuffle everything else back
+        self.times[:-1] = self.times[1:]
+        self.times[-1] = time
+        self.points[:-1] = self.points[1:]
+        self.points[-1] = point
+
+        min_point = min(self.points)
+        max_point = max(self.points)
+
+        # set the displayed range of Y axis
+        #self.plot.setYRange(min_point, max_point, padding=0.1)
+
+        if self.limit is not None:
+            # plot the warning line, using two points (start and end)
+            self.warning_line.setData([self.times[0], self.times[-1]], [self.limit] * 2)
+            # set the red tint
+            self.warning_line.setFillLevel(max_point*2)
+
+        # plot the data curve
+        #self.curve.setData(self.times, self.points)
+        # current value readout in the title
+        #self.plot.setTitle(
+            #f"[{sum(self.points)/len(self.points): <4.4f}] [{self.points[-1]: <4.4f}] {self.props[0]}")
+        
+        w = gl.GLViewWidget()
+        w.show()
+        w.setWindowTitle('pyqtgraph example: GLLinePlotItem')
+        self.layout.addWidget(w, 0, 0)
+        w.setCameraPosition(distance=40)
+        gx = gl.GLGridItem()
+        gx.rotate(90, 0, 1, 0)
+        gx.translate(-10, 0, 0)
+        w.addItem(gx)
+        gy = gl.GLGridItem()
+        gy.rotate(90, 1, 0, 0)
+        gy.translate(0, -10, 0)
+        w.addItem(gy)
+        gz = gl.GLGridItem()
+        gz.translate(0, 0, -10)
+        w.addItem(gz)
+        n = 51
+        y = np.linspace(-10,10,n)
+        x = np.linspace(-10,10,100)
+        for i in range(self.points.size()):      
+            pts = np.column_stack([x, np.full_like(self.times, self.points), i])    
+            self.plot = gl.GLLinePlotItem(pos=pts, color=pg.mkColor((i,n*1.3)), width=(i+1)/10., antialias=True)    
+            w.addItem(self.plot) 
 
     def get_props(self):
         return self.props
