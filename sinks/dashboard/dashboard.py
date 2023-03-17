@@ -1,6 +1,6 @@
 import os
 import sys
-import json 
+import json
 
 from items import registry
 from pyqtgraph.Qt import QtCore

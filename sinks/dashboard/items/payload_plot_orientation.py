@@ -68,7 +68,7 @@ class PayloadDashItem (DashboardItem):
         orientation_mode = prompt_user(
             self,
             "Orientation Mode",
-            "Is the data a position or orientation?",
+            "Is the data a orientation?",
             "items",
             ["Orientation"]
         )
