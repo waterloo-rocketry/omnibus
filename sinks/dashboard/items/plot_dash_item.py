@@ -131,7 +131,7 @@ class PlotDashItem(DashboardItem):
 
     def on_data_update(self, stream, payload):
         time, point = payload
-        #desc = payload[2] if (len(payload) > 2) else ""
+        # desc = payload[2] if (len(payload) > 2) else ""
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
