@@ -59,7 +59,6 @@ class OrientationDashItem (DashboardItem):
         # add it to the layout
         self.layout.addWidget(self.view, 0, 0)
 
-
     def prompt_for_properties(self):
 
         channel_and_series = prompt_user(
@@ -133,7 +132,6 @@ class OrientationDashItem (DashboardItem):
             np.cos(alpha)*y - np.sin(alpha)*z,
             np.sin(alpha)*y + np.cos(alpha)*z
         )
-
 
     def get_props(self):
         return self.props

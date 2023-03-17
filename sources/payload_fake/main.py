@@ -36,7 +36,6 @@ while True:
 
     count += 1
 
-
     # Cool continuously updating print statment
     print("\rSending", end="")
     if counter % (20*5) == 0:
