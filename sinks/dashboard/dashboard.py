@@ -9,8 +9,8 @@ from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from items.plot_dash_item import PlotDashItem
-from items.payload_plot_orientation import PayloadDashItem
-from items.payload_plot_position import PayloadDashItem
+from items.state_estimation_plot_orientation import OrientationDashItem
+from items.state_estimation_plot_position import Position3DDashItem
 from items.can_message_table import CanMsgTableDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user

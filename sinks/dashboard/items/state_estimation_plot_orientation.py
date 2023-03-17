@@ -14,12 +14,11 @@ import config
 from utils import prompt_user
 import time
 
-# if there is error for opengl use the following command to install the acc : sudo easy_install pyopengl
 from .registry import Register
 
 
 @Register
-class PayloadDashItem (DashboardItem):
+class OrientationDashItem (DashboardItem):
     def __init__(self, props):
         # Call this in **every** dash item constructor
         super().__init__()
@@ -87,9 +86,20 @@ class PayloadDashItem (DashboardItem):
         self.zaxis.setData(pos=zlist, color=(0.0, 0.0, 1.0, 1.0))
 
     def transform(self, point, euler_angle):
+        """
+        This function applies a Euler Angle to a point
+        using 3 rotation matricies. The specifics can be found
+        here
+
+        https://mathworld.wolfram.com/EulerAngles.html
+        """
         return self.Rx(self.Ry(self.Rz(point, euler_angle[0]), euler_angle[1]), euler_angle[2])
 
     def Rz(self, point, gamma):
+        """
+        Apply a rotation of gamma radians about
+        the z-axis (on the xy plane)
+        """
         x, y, z = point
 
         return (
@@ -99,6 +109,10 @@ class PayloadDashItem (DashboardItem):
         )
 
     def Ry(self, point, beta):
+        """
+        Apply a rotation of gamma radians about
+        the y-axis (on the xz plane)
+        """
         x, y, z = point
 
         return (
@@ -108,6 +122,10 @@ class PayloadDashItem (DashboardItem):
         )
 
     def Rx(self, point, alpha):
+        """
+        Apply a rotation of gamma radians about
+        the x-axis (on the zy plane)
+        """
         x, y, z = point
 
         return (
@@ -121,7 +139,7 @@ class PayloadDashItem (DashboardItem):
         return self.props
 
     def get_name():
-        return "Payload Orientation Plot"
+        return "Orientation Plot"
 
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update_orientation)

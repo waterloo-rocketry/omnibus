@@ -18,7 +18,7 @@ from .registry import Register
 
 
 @Register
-class PayloadDashItem (DashboardItem):
+class Position3DDashItem (DashboardItem):
     def __init__(self, props):
         # Call this in **every** dash item constructor
         super().__init__()
@@ -79,7 +79,7 @@ class PayloadDashItem (DashboardItem):
         return self.props
 
     def get_name():
-        return "Payload Position Plot"
+        return "3D Position Plot"
 
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update_position)
