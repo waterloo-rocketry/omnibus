@@ -205,11 +205,7 @@ class PayloadDashItem (DashboardItem):
         return self.props
 
     def get_name():
-<<<<<<< HEAD
         return "Payload Plot"
-=======
-        return "Paniz Plot"
->>>>>>> 3be4bed (line plot)
 
     def on_delete(self):
         if self.props[1]:
