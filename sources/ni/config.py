@@ -35,7 +35,7 @@ def setup():
     """
     Sensor Configs, will change from test to test
     """
-    
+
     # Standard TDL35 and TDM51 transducers: 4-20mA 0-3000 psi
     Sensor("PT-1 Ox Fill", ports[7], 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
@@ -49,7 +49,7 @@ def setup():
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     Sensor("PT-7 CC 2", ports[12], 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-           
+
     # PSE540-R06 pneumatic transducer. 1-5V output for 0-1 MPa
     Sensor("PT-4 Pneumatics", ports[4], 10, Connection.SINGLE,
            LinearCalibration(145 / (5 - 1), -145 / (5 - 1), "psi"))
@@ -61,7 +61,7 @@ def setup():
     # Honeywell S-type, 1000 N (divide by 9.81 to kg) an 2.002 mv/V at 12V
     Sensor("Honeywell S-type - Ox Tank", ports[1], 0.2, Connection.DIFFERENTIAL,
            LinearCalibration((1000/9.81)/(2.002/1000*12), -0.7, "kg"))
-    
+
     # Omega S-type (LC-103B), 200 lb (divide by 2.2 to kg), 3 mV/V at 12V
     Sensor("Omega S-Type - Fuel Tank", ports[2], 0.2, Connection.DIFFERENTIAL,
            LinearCalibration((200/2.205) / (3/1000*12), -1.9, "kg"))
@@ -87,7 +87,7 @@ def setup():
            LinearCalibration(1200/5, -100 + (23.4 - -24), "C"))
     Sensor("Thermocouple 4", thermo_ports[4], 5, Connection.SINGLE,
            LinearCalibration(1200/5, -100, "C"))
-    
+
     # Thermocouples using the blue 4-20mA converters.
     Sensor("Thermocouple 5", thermo_ports[5], 5, Connection.SINGLE,
            LinearCalibration(1/220*1300/0.016, -0.004*1300/0.016, "C"))
