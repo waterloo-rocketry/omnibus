@@ -45,7 +45,7 @@ class MyQGraphicsView(QGraphicsView):
             angle = event.angleDelta()
             if angle.x() > 0 or angle.y() > 0:
                 zoomFactor = zoomInFactor
-            elif angle.x() < 0 or angle.y() > 0:
+            elif angle.x() < 0 or angle.y() < 0:
                 zoomFactor = zoomOutFactor
             else:
                 zoomFactor = 1
@@ -92,7 +92,7 @@ class Dashboard(QWidget):
 
         # List to keep track of menu bar action that
         # can be disabled when dashboard is locked
-        self.disable = []
+        self.actions = []
 
         # Create a sub menu which will be used
         # to add items to our dash board.
@@ -115,34 +115,34 @@ class Dashboard(QWidget):
         for i in range(len(registry.get_items())):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
             new_action.triggered.connect(prompt_and_add(i))
-            self.disable.append(new_action)
+            self.actions.append(new_action)
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
         add_save_menu = menubar.addMenu("Save")
         save_layout_action = add_save_menu.addAction("Save Current Config")
         save_layout_action.triggered.connect(self.save)
-        self.disable.append(save_layout_action)
+        self.actions.append(save_layout_action)
 
         # Add an action to the menu bar to load the
         # layout of the dashboard.
         add_restore_menu = menubar.addMenu("Load")
         restore_layout_action = add_restore_menu.addAction("Load from File")
         restore_layout_action.triggered.connect(self.load)
-        self.disable.append(restore_layout_action)
+        self.actions.append(restore_layout_action)
 
         # Add an action to the menu bar to open a file
         add_open_menu = menubar.addMenu("Open")
         open_file_action = add_open_menu.addAction("Open File")
         open_file_action.triggered.connect(self.switch)
-        self.disable.append(open_file_action)
+        self.actions.append(open_file_action)
 
         # Add an action to the menu bar to lock/unlock
         # the dashboard
         add_open_menu = menubar.addMenu("Lock")
         lock_action = add_open_menu.addAction("Lock Dashboard")
         lock_action.triggered.connect(self.lock)
-        self.disable.append(lock_action)
+        self.actions.append(lock_action)
         unlock_action = add_open_menu.addAction("Unlock Dashboard")
         unlock_action.triggered.connect(self.unlock)
 
@@ -301,7 +301,7 @@ class Dashboard(QWidget):
         self.setWindowTitle("Omnibus Dashboard - LOCKED")
 
         # Disable menu actions
-        for menu_item in self.disable:
+        for menu_item in self.actions:
             menu_item.setEnabled(False)
 
         # Disable selecting and moving plots
@@ -315,7 +315,7 @@ class Dashboard(QWidget):
         self.setWindowTitle("Omnibus Dashboard")
 
         # Enable menu actions
-        for menu_item in self.disable:
+        for menu_item in self.actions:
             menu_item.setEnabled(True)
 
         # Enable selecting and moving plots
