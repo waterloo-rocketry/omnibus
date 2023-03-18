@@ -24,33 +24,36 @@ from items.can_message_table import CanMsgTableDashItem
 
 # Custom class derived from QGraphicsView to capture mouse
 # wheel events by overriding the wheelEvent function
-
-
 class MyQGraphicsView(QGraphicsView):
     def __init__(self, parent=None):
         # Initialize the super class
         super(MyQGraphicsView, self).__init__(parent)
 
+    def zoom(self, direction: str):
+        # Zoom factor
+        zoomInFactor = 1.1
+        zoomOutFactor = 1/zoomInFactor
+
+        # Zooms to the position of the mouse
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+
+        if direction.lower() == "in":
+            zoomFactor = zoomInFactor
+        elif direction.lower() == "out":
+            zoomFactor = zoomOutFactor
+
+        # Scale the scene
+        self.scale(zoomFactor, zoomFactor)
+
     def wheelEvent(self, event):
         # Zoom if Shift is held, otherwise scroll
-        if event.modifiers() & Qt.ShiftModifier:
-            # Zoom Factor
-            zoomInFactor = 1.1
-            zoomOutFactor = 1 / zoomInFactor
-
-            # Zooms to the position of the mouse
-            self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-
+        if event.modifiers() == Qt.ShiftModifier:
             # Determine zoom in/out by how much the wheel moves
             angle = event.angleDelta()
             if angle.x() > 0 or angle.y() > 0:
-                zoomFactor = zoomInFactor
+                self.zoom("in")
             elif angle.x() < 0 or angle.y() < 0:
-                zoomFactor = zoomOutFactor
-            else:
-                zoomFactor = 1
-
-            self.scale(zoomFactor, zoomFactor)
+                self.zoom("out")
         else:
             super(MyQGraphicsView, self).wheelEvent(event)
 
@@ -328,12 +331,28 @@ class Dashboard(QWidget):
         self.counter.tick()
         self.callback()
 
+    # Method to center the view
+    def center(self):
+        scene_width = self.scene.width()
+        scene_height = self.scene.height()
+        self.view.centerOn(scene_width/2, scene_height/2)
+
     # Method to capture key presses
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Backspace and not self.locked:
+            # Delete all selected items
             for item in self.scene.selectedItems():
                 self.remove(item)
                 self.widgets.pop(item)
+        elif event.modifiers() == Qt.ControlModifier:
+            # Forward event to proper handler
+            match event.key():
+                case Qt.Key_Equal:
+                    self.view.zoom("in")
+                case Qt.Key_Minus:
+                    self.view.zoom("out")
+                case Qt.Key_0:
+                    self.center()
 
 
 # Function to launch the dashboard
