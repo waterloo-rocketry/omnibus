@@ -24,6 +24,8 @@ from items.can_message_table import CanMsgTableDashItem
 
 # Custom class derived from QGraphicsView to capture mouse
 # wheel events by overriding the wheelEvent function
+
+
 class MyQGraphicsView(QGraphicsView):
     def __init__(self, parent=None):
         # Initialize the super class
@@ -275,8 +277,8 @@ class Dashboard(QWidget):
             for item_type in registry.get_items():
                 if type(dashitem) == item_type:
                     data["widgets"].append({"class": item_type.get_name(),
-                                 "props": dashitem.get_props(),
-                                 "pos": [viewpos.x(), viewpos.y()]})
+                                            "props": dashitem.get_props(),
+                                            "pos": [viewpos.x(), viewpos.y()]})
                     break
 
         # Write data to savefile
