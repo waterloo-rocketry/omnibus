@@ -28,6 +28,7 @@ class MyQGraphicsView(QGraphicsView):
     def __init__(self, parent=None):
         # Initialize the super class
         super(MyQGraphicsView, self).__init__(parent)
+        self.zoomed = 1
 
     def zoom(self, direction: str):
         # Zoom factor
@@ -43,6 +44,7 @@ class MyQGraphicsView(QGraphicsView):
             zoomFactor = zoomOutFactor
 
         # Scale the scene
+        self.zoomed *= zoomFactor
         self.scale(zoomFactor, zoomFactor)
 
     def wheelEvent(self, event):
@@ -241,7 +243,7 @@ class Dashboard(QWidget):
             return
 
         # Add every widget in the data
-        for widget in data:
+        for widget in data["widgets"]:
             # ObjectTypes can't be converted to JSON
             # See the save method
             for item_type in registry.get_items():
@@ -249,9 +251,16 @@ class Dashboard(QWidget):
                     self.add(item_type(widget["props"]), widget["pos"])
                     break
 
+        # Set the zoom
+        curr_zoom = self.view.zoomed
+        self.view.scale(1/curr_zoom, 1/curr_zoom)
+        new_zoom = data["zoom"]
+        self.view.scale(new_zoom, new_zoom)
+        self.view.zoomed = new_zoom
+
     # Method to save current layout to file
     def save(self):
-        data = []
+        data = {"zoom": self.view.zoomed, "widgets": []}
         for items in self.widgets.values():
             # Get the proxy widget and dashitem
             proxy = items[0]
@@ -265,7 +274,7 @@ class Dashboard(QWidget):
             # Add the position, dashitem name and dashitem props
             for item_type in registry.get_items():
                 if type(dashitem) == item_type:
-                    data.append({"class": item_type.get_name(),
+                    data["widgets"].append({"class": item_type.get_name(),
                                  "props": dashitem.get_props(),
                                  "pos": [viewpos.x(), viewpos.y()]})
                     break
@@ -332,7 +341,12 @@ class Dashboard(QWidget):
         self.callback()
 
     # Method to center the view
-    def center(self):
+    def reset(self):
+        # Reset the zoom
+        self.view.scale(1/self.view.zoomed, 1/self.view.zoomed)
+        self.view.zoomed = 1
+
+        # Center the view
         scene_width = self.scene.width()
         scene_height = self.scene.height()
         self.view.centerOn(scene_width/2, scene_height/2)
@@ -352,7 +366,7 @@ class Dashboard(QWidget):
                 case Qt.Key_Minus:
                     self.view.zoom("out")
                 case Qt.Key_0:
-                    self.center()
+                    self.reset()
 
 
 # Function to launch the dashboard
