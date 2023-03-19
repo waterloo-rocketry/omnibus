@@ -59,7 +59,7 @@ class MyQGraphicsView(QGraphicsView):
             elif angle.x() < 0 or angle.y() < 0:
                 self.zoom("out")
         else:
-            super(MyQGraphicsView, self).wheelEvent(event)
+            super(QGraphicsView, self).wheelEvent(event)
 
 
 # Custom Dashboard class derived from QWidget
