@@ -22,10 +22,9 @@ from utils import prompt_user
 from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
 
+
 # Custom class derived from QGraphicsView to capture mouse
 # wheel events by overriding the wheelEvent function
-
-
 class MyQGraphicsView(QGraphicsView):
     def __init__(self, parent=None):
         # Initialize the super class
