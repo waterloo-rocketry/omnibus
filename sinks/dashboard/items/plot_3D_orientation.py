@@ -1,24 +1,15 @@
 from publisher import publisher
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtWidgets import QGridLayout
-import pyqtgraph as pg
-from pyqtgraph.console import ConsoleWidget
 import pyqtgraph.opengl as gl
-from pyqtgraph.graphicsItems.LabelItem import LabelItem
-from pyqtgraph.graphicsItems.TextItem import TextItem
-
-import numpy as np
-
 from sinks.dashboard.items.dashboard_item import DashboardItem
-import config
 from utils import prompt_user
-import time
-
+import numpy as np
 from .registry import Register
 
 
 @Register
-class OrientationDashItem (DashboardItem):
+class Orientation3DDashItem (DashboardItem):
     def __init__(self, props):
         # Call this in **every** dash item constructor
         super().__init__()
@@ -47,7 +38,7 @@ class OrientationDashItem (DashboardItem):
 
         # subscribe to stream dictated by properties
 
-        publisher.subscribe(self.props[0], self.on_data_update_orientation)
+        publisher.subscribe(self.props, self.on_data_update_orientation)
         self.xaxis = gl.GLLinePlotItem()
         self.view.addItem(self.xaxis)
         self.yaxis = gl.GLLinePlotItem()
@@ -61,17 +52,17 @@ class OrientationDashItem (DashboardItem):
 
     def prompt_for_properties(self):
 
-        channel_and_series = prompt_user(
+        series = prompt_user(
             self,
             "Data Series",
             "The series you wish to plot",
             "items",
             publisher.get_all_streams(),
         )
-        if not channel_and_series:
+        if not series:
             return None
 
-        return [channel_and_series]
+        return series
 
     def on_data_update_orientation(self, stream, payload):
         time, orientation = payload

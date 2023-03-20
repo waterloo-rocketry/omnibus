@@ -1,19 +1,9 @@
 from publisher import publisher
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtWidgets import QGridLayout
-import pyqtgraph as pg
-from pyqtgraph.console import ConsoleWidget
 import pyqtgraph.opengl as gl
-from pyqtgraph.graphicsItems.LabelItem import LabelItem
-from pyqtgraph.graphicsItems.TextItem import TextItem
-
-import numpy as np
-
 from sinks.dashboard.items.dashboard_item import DashboardItem
-import config
 from utils import prompt_user
-import time
-
 from .registry import Register
 
 
@@ -45,9 +35,9 @@ class Position3DDashItem (DashboardItem):
         gz.translate(0, 0, -10)
         self.view.addItem(gz)
 
-        publisher.subscribe(self.props[0], self.on_data_update_position)
+        publisher.subscribe(self.props, self.on_data_update_position)
         self.pos_list = []
-        self.line = gl.GLLinePlotItem()
+        self.line = gl.GLLinePlotItem(pos=self.pos_list)
         self.view.addItem(self.line)
 
         # add it to the layout
@@ -55,17 +45,17 @@ class Position3DDashItem (DashboardItem):
 
     def prompt_for_properties(self):
 
-        channel_and_series = prompt_user(
+        series = prompt_user(
             self,
             "Data Series",
             "The series you wish to plot",
             "items",
             publisher.get_all_streams(),
         )
-        if not channel_and_series:
+        if not series:
             return None
 
-        return [channel_and_series]
+        return series
 
     def on_data_update_position(self, stream, payload):
         time, point = payload
