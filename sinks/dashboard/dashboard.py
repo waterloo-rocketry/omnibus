@@ -10,6 +10,7 @@ from pyqtgraph.dockarea.Dock import Dock
 from pyqtgraph.dockarea.DockArea import DockArea
 from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
+from items.image_item import ImageDashItem
 from omnibus.util import TickCounter
 from utils import prompt_user
 
