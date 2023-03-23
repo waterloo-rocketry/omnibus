@@ -44,7 +44,7 @@ class LabelDashItem(DashboardItem):
 
         # create the label widget
         self.widget = QLabel(self)
-        self.widget.setText("Text")
+        self.widget.setText(("\n").join(self.series))
 
         # add it to the layout
         self.layout.addWidget(self.widget, 0, 0)
