@@ -104,6 +104,8 @@ class LabelDashItem(DashboardItem):
                 channel_and_series = channel_and_series[:6]
             props = [{"series": channel_and_series[0], "limit": None}]
 
+        # ask the user about low and high thresholds on the labels
+
         return props
 
     def on_data_update(self, stream, payload):
@@ -114,16 +116,19 @@ class LabelDashItem(DashboardItem):
 
         self.counter += 1
 
-        if self.counter % 10 == 0:
+        # if self.counter % 10 == 0:
 
-            self.data[stream] = point
+        self.data[stream] = point
 
-            self.title = ""
+        self.title = ""
 
-            for s in self.series:
-                self.title += f"{s}: {self.data[s]}\n"
+        # i cant believe, and i dont want to believe, that the syntax
+        # for styling qlabel text is,,
+        #   <font color=\"blue\">hello, world</font>
+        for s in self.series:
+            self.title += f"{s}: {self.data[s]} \n"
 
-            self.widget.setText(self.title)
+        self.widget.setText(self.title)
 
     def get_props(self):
         return self.props
