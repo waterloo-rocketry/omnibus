@@ -159,6 +159,7 @@ class Dashboard(QWidget):
         self.view = MyQGraphicsView(self.scene)
         self.view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.view.setRenderHints(QPainter.Antialiasing)
+        self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
         self.layout.addWidget(self.view)
         self.setLayout(self.layout)
 
