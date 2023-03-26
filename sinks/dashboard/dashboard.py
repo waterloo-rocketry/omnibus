@@ -241,6 +241,13 @@ class Dashboard(QWidget):
         with open(self.filename, "r") as savefile:
             data = json.load(savefile)
 
+        # Set the zoom
+        curr_zoom = self.view.zoomed
+        self.view.scale(1/curr_zoom, 1/curr_zoom)
+        new_zoom = data["zoom"]
+        self.view.scale(new_zoom, new_zoom)
+        self.view.zoomed = new_zoom
+
         # Add every widget in the data
         for widget in data["widgets"]:
             # ObjectTypes can't be converted to JSON
@@ -249,13 +256,6 @@ class Dashboard(QWidget):
                 if widget["class"] == item_type.get_name():
                     self.add(item_type(widget["props"]), widget["pos"])
                     break
-
-        # Set the zoom
-        curr_zoom = self.view.zoomed
-        self.view.scale(1/curr_zoom, 1/curr_zoom)
-        new_zoom = data["zoom"]
-        self.view.scale(new_zoom, new_zoom)
-        self.view.zoomed = new_zoom
 
     # Method to save current layout to file
     def save(self):
