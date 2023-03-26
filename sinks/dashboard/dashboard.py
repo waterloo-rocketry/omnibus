@@ -31,32 +31,30 @@ class MyQGraphicsView(QGraphicsView):
         super(MyQGraphicsView, self).__init__(parent)
         self.zoomed = 1
 
-    def zoom(self, direction: str):
-        # Zoom factor
-        zoomInFactor = 1.1
-        zoomOutFactor = 1/zoomInFactor
-
         # Zooms to the position of the mouse
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
-        if direction.lower() == "in":
-            zoomFactor = zoomInFactor
-        elif direction.lower() == "out":
-            zoomFactor = zoomOutFactor
+    def zoom(self, angle: float):
+        # Create the zoom factor based on the angle
+        zoomFactor = 1 + angle/1000
 
         # Scale the scene
         self.zoomed *= zoomFactor
         self.scale(zoomFactor, zoomFactor)
 
     def wheelEvent(self, event):
-        # Zoom if Shift is held, otherwise scroll
-        if event.modifiers() == Qt.ShiftModifier:
-            # Determine zoom in/out by how much the wheel moves
+        # Zoom if Shift or Control is held, otherwise scroll
+        if event.modifiers() == Qt.ShiftModifier or event.modifiers() == Qt.ControlModifier:
             angle = event.angleDelta()
-            if angle.x() > 0 or angle.y() > 0:
-                self.zoom("in")
-            elif angle.x() < 0 or angle.y() < 0:
-                self.zoom("out")
+            
+            # When a modifier key is held on macOS, it inverts
+            # the reported direction (so y -> x and x -> y)
+            # We pass the direction with the greatest absolute
+            # value to the zoom function
+            if abs(angle.x()) > abs(angle.y()):
+                self.zoom(float(angle.x()))
+            else:
+                self.zoom(float(angle.y()))
         else:
             super(QGraphicsView, self).wheelEvent(event)
 
@@ -98,7 +96,7 @@ class Dashboard(QWidget):
 
         # List to keep track of menu bar action that
         # can be disabled when dashboard is locked
-        self.actions = []
+        self.lockableActions = []
 
         # Create a sub menu which will be used
         # to add items to our dash board.
@@ -121,34 +119,34 @@ class Dashboard(QWidget):
         for i in range(len(registry.get_items())):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
             new_action.triggered.connect(prompt_and_add(i))
-            self.actions.append(new_action)
+            self.lockableActions.append(new_action)
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
         add_save_menu = menubar.addMenu("Save")
         save_layout_action = add_save_menu.addAction("Save Current Config")
         save_layout_action.triggered.connect(self.save)
-        self.actions.append(save_layout_action)
+        self.lockableActions.append(save_layout_action)
 
         # Add an action to the menu bar to load the
         # layout of the dashboard.
         add_restore_menu = menubar.addMenu("Load")
         restore_layout_action = add_restore_menu.addAction("Load from File")
         restore_layout_action.triggered.connect(self.load)
-        self.actions.append(restore_layout_action)
+        self.lockableActions.append(restore_layout_action)
 
         # Add an action to the menu bar to open a file
         add_open_menu = menubar.addMenu("Open")
         open_file_action = add_open_menu.addAction("Open File")
         open_file_action.triggered.connect(self.switch)
-        self.actions.append(open_file_action)
+        self.lockableActions.append(open_file_action)
 
         # Add an action to the menu bar to lock/unlock
         # the dashboard
         add_open_menu = menubar.addMenu("Lock")
         lock_action = add_open_menu.addAction("Lock Dashboard")
         lock_action.triggered.connect(self.lock)
-        self.actions.append(lock_action)
+        self.lockableActions.append(lock_action)
         unlock_action = add_open_menu.addAction("Unlock Dashboard")
         unlock_action.triggered.connect(self.unlock)
 
@@ -237,11 +235,11 @@ class Dashboard(QWidget):
         self.remove_all()
 
         # Then load the data from the savefile
-        if os.path.exists(self.filename):
-            with open(self.filename, "r") as savefile:
-                data = json.load(savefile)
-        else:
+        if not os.path.exists(self.filename):
             return
+        
+        with open(self.filename, "r") as savefile:
+            data = json.load(savefile)
 
         # Add every widget in the data
         for widget in data["widgets"]:
@@ -314,7 +312,7 @@ class Dashboard(QWidget):
         self.setWindowTitle("Omnibus Dashboard - LOCKED")
 
         # Disable menu actions
-        for menu_item in self.actions:
+        for menu_item in self.lockableActions:
             menu_item.setEnabled(False)
 
         # Disable selecting and moving plots
@@ -328,7 +326,7 @@ class Dashboard(QWidget):
         self.setWindowTitle("Omnibus Dashboard")
 
         # Enable menu actions
-        for menu_item in self.actions:
+        for menu_item in self.lockableActions:
             menu_item.setEnabled(True)
 
         # Enable selecting and moving plots
@@ -363,9 +361,9 @@ class Dashboard(QWidget):
             # Forward event to proper handler
             match event.key():
                 case Qt.Key_Equal:
-                    self.view.zoom("in")
+                    self.view.zoom(100.0)
                 case Qt.Key_Minus:
-                    self.view.zoom("out")
+                    self.view.zoom(-100.0)
                 case Qt.Key_0:
                     self.reset()
 
