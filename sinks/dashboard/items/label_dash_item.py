@@ -60,6 +60,8 @@ class LabelDashItem(DashboardItem):
 
         # create the label widget
         self.widget = QLabel(self)
+        # wrap text
+        self.widget.setWordWrap(True)
         # just some default text that will be over-written on update
         self.widget.setText(("\n").join(self.series))
 
