@@ -151,14 +151,15 @@ class LabelDashItem(DashboardItem):
         # i cant believe, and i dont want to believe, that the syntax
         # for styling qlabel text is,,
         #   <font color=\"blue\">hello, world</font>
+        # Note: <br> is same as \n, but \n won't work with above syntax
         for s in self.series:
             # the data is initalised to 0, this is to prevent us from accessing it
             if type(self.data[s]) is not int:
-                self.title += f"{s} -- Message Type: {self.data[s]['msg_type']} -- \n"
+                self.title += f"{s} <font color=\"gray\">-- Message Type: {self.data[s]['msg_type']} -- </font><br>"
 
                 for data_keys in self.data[s]['data']:
-                    self.title += f"{data_keys}: {self.data[s]['data'][data_keys]}\n"
-                self.title += "\n"
+                    self.title += f"<font color=\"#e0d000\">{data_keys}:</font> {self.data[s]['data'][data_keys]}<br>"
+                self.title += "<br>"
 
         self.widget.setText(self.title)
 
