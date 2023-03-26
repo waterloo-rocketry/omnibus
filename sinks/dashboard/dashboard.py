@@ -46,7 +46,7 @@ class MyQGraphicsView(QGraphicsView):
         # Zoom if Shift or Control is held, otherwise scroll
         if event.modifiers() == Qt.ShiftModifier or event.modifiers() == Qt.ControlModifier:
             angle = event.angleDelta()
-            
+
             # When a modifier key is held on macOS, it inverts
             # the reported direction (so y -> x and x -> y)
             # We pass the direction with the greatest absolute
@@ -238,7 +238,7 @@ class Dashboard(QWidget):
         # Then load the data from the savefile
         if not os.path.exists(self.filename):
             return
-        
+
         with open(self.filename, "r") as savefile:
             data = json.load(savefile)
 
