@@ -1,6 +1,5 @@
 from publisher import publisher
-from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt.QtWidgets import QGridLayout
+from pyqtgraph.Qt.QtWidgets import QBoxLayout
 import pyqtgraph.opengl as gl
 from sinks.dashboard.items.dashboard_item import DashboardItem
 from utils import prompt_user
@@ -15,7 +14,7 @@ class Orientation3DDashItem (DashboardItem):
         super().__init__()
 
         # Specify the layout
-        self.layout = QGridLayout()
+        self.layout = QBoxLayout(QBoxLayout.LeftToRight)
         self.setLayout(self.layout)
 
         # save props as a field
@@ -48,7 +47,7 @@ class Orientation3DDashItem (DashboardItem):
         self.orientation = (0, 0, 0)  # Euler Angles
 
         # add it to the layout
-        self.layout.addWidget(self.view, 0, 0)
+        self.layout.addWidget(self.view)
 
     def prompt_for_properties(self):
 
@@ -71,9 +70,9 @@ class Orientation3DDashItem (DashboardItem):
         ylist = [(0, 0, 0), self.transform((0, 10, 0), orientation)]
         zlist = [(0, 0, 0), self.transform((0, 0, 10), orientation)]
 
-        self.xaxis.setData(pos=xlist, color=(1.0, 0.0, 0.0, 1.0))
-        self.yaxis.setData(pos=ylist, color=(0.0, 1.0, 0.0, 1.0))
-        self.zaxis.setData(pos=zlist, color=(0.0, 0.0, 1.0, 1.0))
+        self.xaxis.setData(pos=np.array(xlist), color=(1.0, 0.0, 0.0, 1.0))
+        self.yaxis.setData(pos=np.array(ylist), color=(0.0, 1.0, 0.0, 1.0))
+        self.zaxis.setData(pos=np.array(zlist), color=(0.0, 0.0, 1.0, 1.0))
 
     def transform(self, point, euler_angle):
         """
