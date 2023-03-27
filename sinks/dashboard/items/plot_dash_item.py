@@ -23,7 +23,7 @@ class PlotDashItem(DashboardItem):
         # Call this in **every** dash item constructor
         super().__init__()
 
-        self.size = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
+        self.length = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
         self.avgSize = config.GRAPH_RESOLUTION * config.RUNNING_AVG_DURATION
         self.sum = {}
         self.last = {}
@@ -68,8 +68,8 @@ class PlotDashItem(DashboardItem):
         for i, series in enumerate(self.series):
             curve = self.plot.plot([], [], pen=self.color[i], name=series)
             self.curves[series] = curve
-            self.times[series] = np.zeros(self.size)
-            self.points[series] = np.zeros(self.size)
+            self.times[series] = np.zeros(self.length)
+            self.points[series] = np.zeros(self.length)
             self.sum[series] = 0
             self.last[series] = 0
 
@@ -144,7 +144,7 @@ class PlotDashItem(DashboardItem):
 
         self.last[stream] = time
 
-        self.sum[stream] -= self.points[stream][self.size - self.avgSize]
+        self.sum[stream] -= self.points[stream][self.length - self.avgSize]
         self.sum[stream] += point
 
         # add the new datapoint to the end of the corresponding stream array, shuffle everything else back
