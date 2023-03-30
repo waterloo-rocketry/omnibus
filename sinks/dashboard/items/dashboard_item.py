@@ -51,9 +51,20 @@ class DashboardItem(QWidget):
         """
         return self.parameters
 
+    def get_serialized_parameters(self):
+        """
+        This function is called when a dashitem is saved to the config file. It should return a dictionary of
+        properties that are required to recreate the dashitem.
+        """
+        params_dict = {}
+        for child in self.parameters.children():
+            params_dict[child.name()] = child.value()
+        return params_dict
+
     def on_delete(self):
         """
         This function is called when a dashitem is removed from the screen. In practice, this will likely be used to
         remove subscriptions from series
         """
         pass
+

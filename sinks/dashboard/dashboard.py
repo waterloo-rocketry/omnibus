@@ -17,7 +17,6 @@ from pyqtgraph.Qt.QtWidgets import (
 from pyqtgraph.parametertree import ParameterTree, ParameterItem
 from items import registry
 from omnibus.util import TickCounter
-from utils import prompt_user
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
@@ -106,9 +105,17 @@ class Dashboard(QWidget):
         # be a corresponding action to add that item
         add_item_menu = menubar.addMenu("Add Item")
 
-        for item in registry.get_items():
-            new_action = add_item_menu.addAction(item.get_name())
-            new_action.triggered.connect(lambda: self.add(item()))
+        # Need to create triggers like this
+        # because of the way python handles
+        def create_registry_trigger(i):
+            def return_fun():
+                if not self.locked:
+                    self.add(registry.get_items()[i]())
+            return return_fun
+
+        for i in range(len(registry.get_items())):
+            new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
+            new_action.triggered.connect(create_registry_trigger(i))
             self.lockableActions.append(new_action)
 
         # Add an action to the menu bar to save the
@@ -265,7 +272,7 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    self.add(item_type(widget["props"]), widget["pos"])
+                    self.add(item_type(widget["params"]), widget["pos"])
                     break
 
     # Method to save current layout to file
@@ -285,7 +292,7 @@ class Dashboard(QWidget):
             for item_type in registry.get_items():
                 if type(dashitem) == item_type:
                     data["widgets"].append({"class": item_type.get_name(),
-                                            "props": dashitem.get_props(),
+                                            "params": dashitem.get_serialized_parameters(),
                                             "pos": [viewpos.x(), viewpos.y()]})
                     break
 
@@ -388,6 +395,7 @@ def dashboard_driver(callback):
     timer.timeout.connect(dash.update)
     timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
+    dash.update()
     dash.show()
     dash.load()
     app.exec()
