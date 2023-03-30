@@ -29,14 +29,14 @@ class MyQGraphicsView(QGraphicsView):
     def __init__(self, parent=None):
         # Initialize the super class
         super(MyQGraphicsView, self).__init__(parent)
-        self.zoomed = 1
+        self.zoomed = 1.0
 
         # Zooms to the position of the mouse
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
-    def zoom(self, angle: float):
+    def zoom(self, angle: int):
         # Create the zoom factor based on the angle
-        zoomFactor = 1 + angle/1000
+        zoomFactor = 1 + angle*0.001
 
         # Scale the scene
         self.zoomed *= zoomFactor
@@ -44,17 +44,11 @@ class MyQGraphicsView(QGraphicsView):
 
     def wheelEvent(self, event):
         # Zoom if Shift or Control is held, otherwise scroll
-        if event.modifiers() == Qt.ShiftModifier or event.modifiers() == Qt.ControlModifier:
+        if event.modifiers() == Qt.ControlModifier:
             angle = event.angleDelta()
-
-            # When a modifier key is held on macOS, it inverts
-            # the reported direction (so y -> x and x -> y)
-            # We pass the direction with the greatest absolute
-            # value to the zoom function
-            if abs(angle.x()) > abs(angle.y()):
-                self.zoom(float(angle.x()))
-            else:
-                self.zoom(float(angle.y()))
+            self.zoom(angle.y())
+        elif event.modifiers() == Qt.ShiftModifier:
+            self.horizontalScrollBar().wheelEvent(event)
         else:
             super(QGraphicsView, self).wheelEvent(event)
 
@@ -173,32 +167,23 @@ class Dashboard(QWidget):
 
         # If a position is given, use it. If not, position
         # the widget in the center of the current view
-        if pos:
-            mapped = self.view.mapToScene(pos[0], pos[1])
-            xpos = mapped.x()
-            ypos = mapped.y()
-        else:
+        if not pos:
             # Get the current size of the view area and map
             # it to the underlying scene
-            viewport = self.view.viewport().size()
-            view_xpos = viewport.width()/2
-            view_ypos = viewport.height()/2
-
-            mapped = self.view.mapToScene(view_xpos, view_ypos)
+            mapped = self.view.mapToScene(self.view.width()/2, self.view.height()/2)
 
             # Center the widget in the view. Qt sets position
             # based on the upper left corner, so subtract
             # half the width and height of the widget to
             # center the center
-            xpos = mapped.x() - (width/2)
-            ypos = mapped.y() - (height/2)
+            pos = [mapped.x() - (width/2), mapped.y() - (height/2)]
 
-        proxy.setPos(xpos, ypos)
+        proxy.setPos(pos[0], pos[1])
         proxy.setFocusPolicy(Qt.NoFocus)
 
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
-        rect = QGraphicsRectItem(xpos-1, ypos-1, width+1, height+1)
+        rect = QGraphicsRectItem(pos[0]-1, pos[1]-1, width+1, height+1)
         proxy.setParentItem(rect)
         rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
@@ -242,12 +227,13 @@ class Dashboard(QWidget):
         with open(self.filename, "r") as savefile:
             data = json.load(savefile)
 
+        # Center the view
+        self.view.centerOn(data["center"][0], data["center"][1])
+
         # Set the zoom
-        curr_zoom = self.view.zoomed
-        self.view.scale(1/curr_zoom, 1/curr_zoom)
-        new_zoom = data["zoom"]
-        self.view.scale(new_zoom, new_zoom)
-        self.view.zoomed = new_zoom
+        self.view.scale(1.0/self.view.zoomed, 1.0/self.view.zoomed)
+        self.view.scale(data["zoom"], data["zoom"])
+        self.view.zoomed = data["zoom"]
 
         # Add every widget in the data
         for widget in data["widgets"]:
@@ -260,23 +246,27 @@ class Dashboard(QWidget):
 
     # Method to save current layout to file
     def save(self):
-        data = {"zoom": self.view.zoomed, "widgets": []}
+        # General structure for saving the dashboard info
+        data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
+
+        # Save the coordinates of the center of the view on the scene
+        scene_center = self.view.mapToScene(self.view.width()/2, self.view.height()/2)
+        data["center"] = [scene_center.x(), scene_center.y()]
+
         for items in self.widgets.values():
             # Get the proxy widget and dashitem
             proxy = items[0]
             dashitem = items[1]
 
-            # Get the coordinates of the proxy widget
-            # on the view not the scene
+            # Get the coordinates of the proxy widget on the scene
             scenepos = proxy.scenePos()
-            viewpos = self.view.mapFromScene(scenepos)
 
             # Add the position, dashitem name and dashitem props
             for item_type in registry.get_items():
                 if type(dashitem) == item_type:
                     data["widgets"].append({"class": item_type.get_name(),
                                             "props": dashitem.get_props(),
-                                            "pos": [viewpos.x(), viewpos.y()]})
+                                            "pos": [scenepos.x(), scenepos.y()]})
                     break
 
         # Write data to savefile
@@ -362,9 +352,9 @@ class Dashboard(QWidget):
             # Forward event to proper handler
             match event.key():
                 case Qt.Key_Equal:
-                    self.view.zoom(100.0)
+                    self.view.zoom(200)
                 case Qt.Key_Minus:
-                    self.view.zoom(-100.0)
+                    self.view.zoom(-200)
                 case Qt.Key_0:
                     self.reset()
 
