@@ -145,7 +145,7 @@ class Dashboard(QWidget):
         unlock_action = add_lock_menu.addAction("Unlock Dashboard")
         unlock_action.triggered.connect(self.unlock)
 
-        # Add an action to the meny bar to display a 
+        # Add an action to the menu bar to display a
         # help box
         add_help_menu = menubar.addMenu("Help")
         help_action = add_help_menu.addAction("Omnibus Help")
