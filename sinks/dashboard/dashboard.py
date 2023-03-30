@@ -16,7 +16,7 @@ from pyqtgraph.Qt.QtWidgets import (
 )
 from items import registry
 from omnibus.util import TickCounter
-from utils import prompt_user, CheckBoxDialog
+from utils import prompt_user, ConfirmDialog
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
@@ -43,15 +43,21 @@ class MyQGraphicsView(QGraphicsView):
         self.scale(zoomFactor, zoomFactor)
 
     def wheelEvent(self, event):
-        # Zoom if Control/CMD is held, scroll horizontally
-        # if Shift is held, scroll normally otherwise
+        # Zoom if ctrl/cmd is held
+        # Scroll horizontally if shift is held
+        # Scroll vertically otherwise
+        angle = event.angleDelta()
+        scroll_sensitivity_factor = 1/4 # feels good for non high-res mouse
         if event.modifiers() == Qt.ControlModifier:
-            angle = event.angleDelta()
             self.zoom(angle.y())
         elif event.modifiers() == Qt.ShiftModifier:
-            self.horizontalScrollBar().wheelEvent(event)
+            numDegrees = angle.x() * scroll_sensitivity_factor
+            value = self.horizontalScrollBar().value()
+            self.horizontalScrollBar().setValue(value + numDegrees)
         else:
-            super(QGraphicsView, self).wheelEvent(event)
+            numDegrees = angle.y() * scroll_sensitivity_factor
+            value = self.verticalScrollBar().value()
+            self.verticalScrollBar().setValue(value + numDegrees)
 
 
 # Custom Dashboard class derived from QWidget
@@ -347,18 +353,18 @@ class Dashboard(QWidget):
             - Control/CMD + scrolling zooms in and out
             - Control/CMD + "=" or "-" also zooms in and out
             - Control/CMD + 0 resets the view to the middle
-
-
-            Ignore the checkbox below or make a PR to fix it
-            Also the buttons don't do anything, click either one
         """
-        help_box = CheckBoxDialog("Omnibus Help", message, [])
+        help_box = ConfirmDialog("Omnibus Help", message)
         help_box.exec()
 
     # Method to get new data for widgets
     def update(self):
-        self.counter.tick()
-        self.callback()
+        try:
+            self.counter.tick()
+            self.callback()
+        except KeyboardInterrupt:
+            # Catch the KeyboardInterrupt exception and exit the application
+            QApplication.quit()
 
     # Method to center the view
     def reset(self):
