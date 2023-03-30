@@ -16,7 +16,7 @@ from pyqtgraph.Qt.QtWidgets import (
 )
 from items import registry
 from omnibus.util import TickCounter
-from utils import prompt_user
+from utils import prompt_user, CheckBoxDialog
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
@@ -43,7 +43,8 @@ class MyQGraphicsView(QGraphicsView):
         self.scale(zoomFactor, zoomFactor)
 
     def wheelEvent(self, event):
-        # Zoom if Shift or Control is held, otherwise scroll
+        # Zoom if Control/CMD is held, scroll horizontally
+        # if Shift is held, scroll normally otherwise
         if event.modifiers() == Qt.ControlModifier:
             angle = event.angleDelta()
             self.zoom(angle.y())
@@ -137,12 +138,18 @@ class Dashboard(QWidget):
 
         # Add an action to the menu bar to lock/unlock
         # the dashboard
-        add_open_menu = menubar.addMenu("Lock")
-        lock_action = add_open_menu.addAction("Lock Dashboard")
+        add_lock_menu = menubar.addMenu("Lock")
+        lock_action = add_lock_menu.addAction("Lock Dashboard")
         lock_action.triggered.connect(self.lock)
         self.lockableActions.append(lock_action)
-        unlock_action = add_open_menu.addAction("Unlock Dashboard")
+        unlock_action = add_lock_menu.addAction("Unlock Dashboard")
         unlock_action.triggered.connect(self.unlock)
+
+        # Add an action to the meny bar to display a 
+        # help box
+        add_help_menu = menubar.addMenu("Help")
+        help_action = add_help_menu.addAction("Omnibus Help")
+        help_action.triggered.connect(self.help)
 
         self.layout.setMenuBar(menubar)
 
@@ -324,6 +331,29 @@ class Dashboard(QWidget):
         for rect in self.widgets:
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=True)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=True)
+
+    # Method to display help box
+    # Yes it's jank deal with it
+    def help(self):
+        message = """
+            WELCOME TO THE OMNIBUS DASHBOARD!
+
+            Here are some useful navigation tips:
+
+            - Regular scrolling moves stuff up and down
+            - Shift + scrolling moves stuff left and right
+                    - This sucks rn so use click and drag
+                    - Someone fix it
+            - Control/CMD + scrolling zooms in and out
+            - Control/CMD + "=" or "-" also zooms in and out
+            - Control/CMD + 0 resets the view to the middle
+
+
+            Ignore the checkbox below or make a PR to fix it
+            Also the buttons don't do anything, click either one
+        """
+        help_box = CheckBoxDialog("Omnibus Help", message, [])
+        help_box.exec()
 
     # Method to get new data for widgets
     def update(self):
