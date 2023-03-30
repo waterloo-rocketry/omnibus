@@ -171,4 +171,4 @@ class LabelDashItem(DashboardItem):
         return "Label"
 
     def on_delete(self):
-        publisher.unsubscribe_f
+        publisher.unsubscribe_from_all(self.on_data_update)

@@ -20,6 +20,7 @@ from utils import prompt_user
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
+from items.label_dash_item import LabelDashItem
 from items.can_message_table import CanMsgTableDashItem
 
 

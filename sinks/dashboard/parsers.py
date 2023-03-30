@@ -62,7 +62,7 @@ def parse(msg_channel, msg_payload):
 # the reason we do this, rather than having the parser directly update the streams is
 # to enable unit testing of this following code
 
-# We note that parsers may use the func_map to call other parsers (This is how we plan
+# We note that parsers may use the  func_map to call other parsers (This is how we plan
 # to handle CAN messages in the future)
 
 
@@ -79,5 +79,14 @@ def daq_parser(msg_data):
 
 @Register("CAN")
 def can_parser(payload):
-    return [("CAN", payload["data"]["time"], payload), (payload["board_id"], payload["data"]["time"], payload)]
     # Note, we plan to revist the way that CAN message are handled
+    output = [("CAN", payload["data"]["time"], payload)]
+
+    # Add a series for every board and every message type, and every field
+    for field in payload['data'].keys():
+        output.append((
+            f"{payload['board_id']} {payload['msg_type']} {field}",
+            payload['data']['time'],
+            payload['data'][field]))
+
+    return output
