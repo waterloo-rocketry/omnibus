@@ -149,6 +149,10 @@ class CanMsgTableDashItem(DashboardItem):
         #    way that when a message is recieved, it
         #    is rendered in the right object
 
+        if params:
+            self.parameters.param('Width').setValue(params['Width'])
+            self.parameters.param('Height').setValue(params['Height'])
+
         self.layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(self.layout)
 
