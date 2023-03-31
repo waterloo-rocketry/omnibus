@@ -33,6 +33,23 @@ class CheckBoxDialog(QtWidgets.QDialog):
         self.setLayout(self.layout)
 
 
+class ConfirmDialog(QtWidgets.QDialog):
+    def __init__(self, property_name, description, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle(property_name)
+
+        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.accepted.connect(self.accept)
+
+        self.layout = QtWidgets.QVBoxLayout()
+        message = QtWidgets.QLabel(description)
+        self.layout.addWidget(message)
+
+        self.layout.addWidget(self.buttonBox)
+        self.setLayout(self.layout)
+
+
 def prompt_user(widget, property_name, description, prompt_type, items=None, can_add_items=False, okText="OK", cancelText="Cancel"):
     """
     Opens a pop up asking user for input.
