@@ -51,12 +51,12 @@ class MyQGraphicsView(QGraphicsView):
             self.zoom(angle.y())
         elif event.source() == Qt.MouseEventNotSynthesized:
             # mouse wheel event
-            scroll_sensitivity_factor = 1/3 # feels good constant
+            scroll_sensitivity_factor = 1/3  # feels good constant
             if event.modifiers() == Qt.ShiftModifier:
                 numDegrees = angle.x() * scroll_sensitivity_factor
                 value = self.horizontalScrollBar().value()
                 self.horizontalScrollBar().setValue(value + numDegrees)
-            else: 
+            else:
                 numDegrees = angle.y() * scroll_sensitivity_factor
                 value = self.verticalScrollBar().value()
                 self.verticalScrollBar().setValue(value + numDegrees)
@@ -64,6 +64,8 @@ class MyQGraphicsView(QGraphicsView):
             super(QGraphicsView, self).wheelEvent(event)
 
 # Custom Dashboard class derived from QWidget
+
+
 class Dashboard(QWidget):
     def __init__(self, callback):
         # Initialize the super class
