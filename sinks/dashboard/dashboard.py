@@ -47,18 +47,21 @@ class MyQGraphicsView(QGraphicsView):
         # Scroll horizontally if shift is held
         # Scroll vertically otherwise
         angle = event.angleDelta()
-        scroll_sensitivity_factor = 1/4 # feels good for non high-res mouse
         if event.modifiers() == Qt.ControlModifier:
             self.zoom(angle.y())
-        elif event.modifiers() == Qt.ShiftModifier:
-            numDegrees = angle.x() * scroll_sensitivity_factor
-            value = self.horizontalScrollBar().value()
-            self.horizontalScrollBar().setValue(value + numDegrees)
+        elif event.source() == Qt.MouseEventNotSynthesized:
+            # mouse wheel event
+            scroll_sensitivity_factor = 1/3 # feels good constant
+            if event.modifiers() == Qt.ShiftModifier:
+                numDegrees = angle.x() * scroll_sensitivity_factor
+                value = self.horizontalScrollBar().value()
+                self.horizontalScrollBar().setValue(value + numDegrees)
+            else: 
+                numDegrees = angle.y() * scroll_sensitivity_factor
+                value = self.verticalScrollBar().value()
+                self.verticalScrollBar().setValue(value + numDegrees)
         else:
-            numDegrees = angle.y() * scroll_sensitivity_factor
-            value = self.verticalScrollBar().value()
-            self.verticalScrollBar().setValue(value + numDegrees)
-
+            super(QGraphicsView, self).wheelEvent(event)
 
 # Custom Dashboard class derived from QWidget
 class Dashboard(QWidget):
