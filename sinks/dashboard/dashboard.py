@@ -53,7 +53,7 @@ class MyQGraphicsView(QGraphicsView):
             # mouse wheel event
             scroll_sensitivity_factor = 1/3  # feels good constant
             if event.modifiers() == Qt.ShiftModifier:
-                numDegrees = angle.x() * scroll_sensitivity_factor
+                numDegrees = angle.y() * scroll_sensitivity_factor
                 value = self.horizontalScrollBar().value()
                 self.horizontalScrollBar().setValue(value + numDegrees)
             else:
