@@ -364,12 +364,8 @@ class Dashboard(QWidget):
 
     # Method to get new data for widgets
     def update(self):
-        try:
-            self.counter.tick()
-            self.callback()
-        except KeyboardInterrupt:
-            # Catch the KeyboardInterrupt exception and exit the application
-            QApplication.quit()
+        self.counter.tick()
+        self.callback()
 
     # Method to center the view
     def reset(self):
