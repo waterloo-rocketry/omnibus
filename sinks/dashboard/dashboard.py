@@ -12,7 +12,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QMenuBar,
     QHBoxLayout,
     QGraphicsItem,
-    QGraphicsRectItem
+    QGraphicsRectItem,
+    QFileDialog
 )
 from pyqtgraph.parametertree import ParameterTree, ParameterItem
 from items import registry
@@ -77,7 +78,6 @@ class Dashboard(QWidget):
 
         # The file from which the dashboard is loaded
         self.filename = "savefile.json"
-        self.filename_cache = [self.filename]
 
         # Create a GUI
         self.width = 1100
@@ -303,23 +303,10 @@ class Dashboard(QWidget):
     # Method to switch to a layout in a different file
     def switch(self):
         self.save()
-        filename = prompt_user(
-            self,
-            "New File Name",
-            "Enter the name of the file which you wish to load",
-            "items",
-            self.filename_cache,
-            True
-        )
+        (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
 
-        if filename == None:
+        if filename is None:
             return
-
-        # If the filename entered is not valid
-        # this exhibits the behaviour of creating
-        # a new one
-        if filename not in self.filename_cache:
-            self.filename_cache.append(filename)
 
         self.filename = filename
         self.load()
