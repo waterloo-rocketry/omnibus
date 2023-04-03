@@ -16,12 +16,26 @@ class CheckBoxDialog(QtWidgets.QDialog):
         self.layout = QtWidgets.QVBoxLayout()
         message = QtWidgets.QLabel(description)
         self.layout.addWidget(message)
+
+        # Series checkboxes
+        # add a scrollbar
+        self.scrollbar = QtWidgets.QScrollArea(widgetResizable=True)
+        self.checkboxes = QtWidgets.QVBoxLayout()
+        self.checkboxes_parent = QtWidgets.QWidget()
         # set up series checkboxes
         self.items = []
         for item in items:
             checkbox = QtWidgets.QCheckBox(item)
             self.items.append(checkbox)
-            self.layout.addWidget(checkbox)
+            self.checkboxes.addWidget(checkbox)
+
+        self.checkboxes_parent.setLayout(self.checkboxes)
+
+        #Scroll Area Properties
+        self.scrollbar.setWidgetResizable(True)
+        self.scrollbar.setWidget(self.checkboxes_parent)
+
+        self.layout.addWidget(self.scrollbar)
 
         # set up separate plot checkbox
         self.checkbox_separate = QtWidgets.QCheckBox("Plot Separately")
@@ -45,6 +59,9 @@ def prompt_user(widget, property_name, description, prompt_type, items=None, can
         if dia.exec():
             selected_items = []
             for i, item in enumerate(items):
+                if i == 0:
+                    print(len(dia.items))
+                    print(len(items))
                 if dia.items[i].isChecked():
                     selected_items.append(item)
 

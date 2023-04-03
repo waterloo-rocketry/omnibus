@@ -99,6 +99,9 @@ class LabelDashItem(DashboardItem):
             "checkbox",
             publisher.get_all_streams(),
         )
+        if channel_and_series is None:
+            return None
+
         if not channel_and_series[0]:
             return None
         # if more than 6 series are selected, only display the first 6
