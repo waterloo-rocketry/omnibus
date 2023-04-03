@@ -10,13 +10,13 @@ from pyqtgraph.Qt.QtWidgets import (
     QApplication,
     QWidget,
     QMenuBar,
-    QVBoxLayout,
+    QHBoxLayout,
     QGraphicsItem,
     QGraphicsRectItem
 )
+from pyqtgraph.parametertree import ParameterTree, ParameterItem
 from items import registry
 from omnibus.util import TickCounter
-from utils import prompt_user
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
@@ -88,9 +88,10 @@ class Dashboard(QWidget):
 
         # Create a large scene underneath the view
         self.scene = QGraphicsScene(0, 0, self.width*100, self.height*100)
+        self.scene.selectionChanged.connect(self.onSelectionChanged)
 
         # Create a grid layout
-        self.layout = QVBoxLayout()
+        self.layout = QHBoxLayout()
 
         # Create a menubar for actions
         menubar = QMenuBar(self)
@@ -105,21 +106,17 @@ class Dashboard(QWidget):
         # be a corresponding action to add that item
         add_item_menu = menubar.addMenu("Add Item")
 
-        def prompt_and_add(i):
-            def ret_func():
-                # props for a single item is contained in a dictionary
-                props = registry.get_items()[i].prompt_for_properties(self)
-                if props:
-                    if isinstance(props, list):
-                        for item in props:
-                            self.add(registry.get_items()[i](item))
-                    else:
-                        self.add(registry.get_items()[i](props))
-            return ret_func
+        # Need to create triggers like this
+        # because of the way python handles
+        def create_registry_trigger(i):
+            def return_fun():
+                if not self.locked:
+                    self.add(registry.get_items()[i]())
+            return return_fun
 
         for i in range(len(registry.get_items())):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
-            new_action.triggered.connect(prompt_and_add(i))
+            new_action.triggered.connect(create_registry_trigger(i))
             self.lockableActions.append(new_action)
 
         # Add an action to the menu bar to save the
@@ -161,8 +158,28 @@ class Dashboard(QWidget):
         self.view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.view.setRenderHints(QPainter.Antialiasing)
         self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
-        self.layout.addWidget(self.view)
+        self.layout.addWidget(self.view, stretch=3)
+
+        self.parameter_tree = None
+
         self.setLayout(self.layout)
+
+    def onSelectionChanged(self):
+        items = self.scene.selectedItems()
+        # First, clean up the old parameter tree if it's visible
+        if self.parameter_tree is not None:
+            self.parameter_tree.hide()
+            self.layout.removeWidget(self.parameter_tree)
+            self.parameter_tree = None
+        # Don't show the tree unless exactly one item is selected
+        if len(items) != 1:
+            return
+        # Show the tree
+        item = self.widgets[items[0]][1]
+        self.parameter_tree = ParameterTree(showHeader=False)
+        self.parameter_tree.setParameters(item.get_parameters(), showTop=False)
+        if self.layout.count() == 1:
+            self.layout.addWidget(self.parameter_tree, stretch=1)
 
     # Method to add widgets
     def add(self, dashitem, pos=None):
@@ -256,7 +273,7 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    self.add(item_type(widget["props"]), widget["pos"])
+                    self.add(item_type(widget["params"]), widget["pos"])
                     break
 
     # Method to save current layout to file
@@ -276,7 +293,7 @@ class Dashboard(QWidget):
             for item_type in registry.get_items():
                 if type(dashitem) == item_type:
                     data["widgets"].append({"class": item_type.get_name(),
-                                            "props": dashitem.get_props(),
+                                            "params": dashitem.get_serialized_parameters(),
                                             "pos": [viewpos.x(), viewpos.y()]})
                     break
 
@@ -379,6 +396,7 @@ def dashboard_driver(callback):
     timer.timeout.connect(dash.update)
     timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
+    dash.update()
     dash.show()
     dash.load()
     app.exec()
