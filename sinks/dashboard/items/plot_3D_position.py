@@ -1,5 +1,5 @@
 from publisher import publisher
-from pyqtgraph.Qt.QtWidgets import QBoxLayout 
+from pyqtgraph.Qt.QtWidgets import QBoxLayout
 import pyqtgraph.opengl as gl
 from sinks.dashboard.items.dashboard_item import DashboardItem
 from utils import prompt_user
@@ -36,8 +36,7 @@ class Position3DDashItem (DashboardItem):
 
         publisher.subscribe(self.props, self.on_data_update_position)
         self.pos_list = []
-        self.line = gl.GLLinePlotItem(pos=self.pos_list)
-        self.view.addItem(self.line)
+        self.line = None
 
         # add it to the layout
         self.layout.addWidget(self.view)
@@ -59,6 +58,14 @@ class Position3DDashItem (DashboardItem):
     def on_data_update_position(self, stream, payload):
         time, point = payload
         self.pos_list.append(tuple(point))
+        if len(self.pos_list) < 2:
+            return None
+
+        if self.line == None:
+            self.line = gl.GLLinePlotItem(pos=self.pos_list)
+            self.view.addItem(self.line)
+            return None
+
         if len(self.pos_list) > 200:
             self.pos_list.pop(0)
 
