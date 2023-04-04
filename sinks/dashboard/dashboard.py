@@ -10,12 +10,14 @@ from pyqtgraph.Qt.QtWidgets import (
     QApplication,
     QWidget,
     QMenuBar,
-    QHBoxLayout,
+    QVBoxLayout,
     QGraphicsItem,
     QGraphicsRectItem,
-    QFileDialog
+    QFileDialog,
+    QHeaderView,
+    QSplitter
 )
-from pyqtgraph.parametertree import ParameterTree, ParameterItem
+from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
 from utils import ConfirmDialog
@@ -97,7 +99,9 @@ class Dashboard(QWidget):
         self.scene.selectionChanged.connect(self.onSelectionChanged)
 
         # Create a grid layout
-        self.layout = QHBoxLayout()
+        self.layout = QVBoxLayout()
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.layout.addWidget(self.splitter)
 
         # Create a menubar for actions
         menubar = QMenuBar(self)
@@ -170,26 +174,39 @@ class Dashboard(QWidget):
         self.view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.view.setRenderHints(QPainter.Antialiasing)
         self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
-        self.layout.addWidget(self.view, stretch=3)
-        self.parameter_tree = None
+        self.splitter.addWidget(self.view)
+
+        self.parameter_tree = ParameterTree(showHeader=True)
+        header = self.parameter_tree.header()
+        header.setMinimumSectionSize(100)  # maybe this is bad for small window sizes, but it's a decent start
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        self.splitter.addWidget(self.parameter_tree)
+        self.parameter_tree.hide()
+
         self.setLayout(self.layout)
 
     def onSelectionChanged(self):
         items = self.scene.selectedItems()
-        # First, clean up the old parameter tree if it's visible
-        if self.parameter_tree is not None:
-            self.parameter_tree.hide()
-            self.layout.removeWidget(self.parameter_tree)
-            self.parameter_tree = None
-        # Don't show the tree unless exactly one item is selected
         if len(items) != 1:
+            self.parameter_tree.hide()
             return
         # Show the tree
         item = self.widgets[items[0]][1]
-        self.parameter_tree = ParameterTree(showHeader=False)
+        item.get_parameters().sigTreeStateChanged.connect(self.onCheckStateChanged)
         self.parameter_tree.setParameters(item.get_parameters(), showTop=False)
-        if self.layout.count() == 1:
-            self.layout.addWidget(self.parameter_tree, stretch=1)
+        self.parameter_tree.show()
+
+    def onCheckStateChanged(self, param, changes):
+        items = self.scene.selectedItems()
+        if len(items) != 1:
+            self.parameter_tree.hide()
+            return
+
+        proxy = self.widgets[items[0]][0]
+        item = self.widgets[items[0]][1]
+        width = item.parameters.param('Width').value() + 1
+        height = item.parameters.param('Height').value() + 1
+        proxy.parentItem().setRect(0, 0, width, height)
 
     # Method to add widgets
     def add(self, dashitem, pos=None):
