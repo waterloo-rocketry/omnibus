@@ -1,6 +1,7 @@
 from publisher import publisher
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu
+from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 from pyqtgraph.Qt.QtCore import QEvent
 import pyqtgraph as pg
 from pyqtgraph.console import ConsoleWidget
@@ -21,7 +22,7 @@ from .registry import Register
 
 @Register
 class LabelDashItem(DashboardItem):
-    def __init__(self, props):
+    def __init__(self, params=None):
         # Call this in **every** dash item constructor
         super().__init__()
 
@@ -29,20 +30,29 @@ class LabelDashItem(DashboardItem):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
 
-        # a list of series names to be plotted
-        self.series = props["series"]
+        series_param = ChecklistParameter(name='Series',
+                                          type='list',
+                                          value=[],
+                                          itemClass=ChecklistParameter,
+                                          limits=publisher.get_all_streams())
+
+        self.parameters.addChild(series_param)
+
+        # a list of series names to be displayed
+        self.series = self.parameters.param('Series').value()
+        self.parameters.param('Series').sigValueChanged.connect(self.on_series_change)
 
         # dict of the type of messages that should be displayed
         # with series names as the key
         # and the msg_type to be displayed as the value
-        self.display_msg_type = props["display"]
+        # self.display_msg_type = props["display"]
 
         # debug print,
         # but might be useful to leave in
-        print(self.display_msg_type)
+        # print(self.display_msg_type)
 
         # save props as a field
-        self.props = props
+        # self.props = props
 
         # storing the data to be displayed of a series,
         # with series names as keys and the data as value
@@ -52,7 +62,7 @@ class LabelDashItem(DashboardItem):
             self.data[s] = 0
 
         # The title the label is displaying
-        self.title = ""
+        self.title = "Select series to continue"
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -63,81 +73,70 @@ class LabelDashItem(DashboardItem):
         # wrap text
         self.widget.setWordWrap(True)
         # just some default text that will be over-written on update
-        self.widget.setText(("\n").join(self.series))
+        self.widget.setText(self.title)
 
         # add it to the layout
         self.layout.addWidget(self.widget, 0, 0)
 
-    # overriding QWidget method to create custom context menu
-    # needs to be re-done for a label
-    def contextMenuEvent(self, event):
-        menu = QMenu(self)
-        change_threshold = menu.addAction('Change threshold')
 
-        action = menu.exec_(event.globalPos())
-        if action == change_threshold:
-            threshold_input = prompt_user(
-                self,
-                "Threshold Value",
-                "Set an upper limit",
-                "number",
-                cancelText="No Threshold"
-            )
-            self.limit = threshold_input
-            self.props["limit"] = threshold_input
-            # if user changes threshold to No threshold
-            if self.limit is None:
-                self.warning_line.setData([], [])
-                self.warning_line.setFillLevel(None)
+    # def prompt_for_properties(self):
+    #     channel_and_series = prompt_user(
+    #         self,
+    #         "Data Series",
+    #         "Select the series you wish to display. Up to 6 if displaying together.",
+    #         "checkbox",
+    #         publisher.get_all_streams(),
+    #     )
+    #     if channel_and_series is None:
+    #         return None
 
-    def prompt_for_properties(self):
+    #     if not channel_and_series[0]:
+    #         return None
+    #     # if more than 6 series are selected, only display the first 6
+    #     if len(channel_and_series) > 6:
+    #         channel_and_series = channel_and_series[:6]
 
-        channel_and_series = prompt_user(
-            self,
-            "Data Series",
-            "Select the series you wish to display. Up to 6 if displaying together.",
-            "checkbox",
-            publisher.get_all_streams(),
-        )
-        if channel_and_series is None:
-            return None
+    #     if channel_and_series[1]:     # display separately
+    #         props = [{"series": [series], "display": {}} for series in channel_and_series[0]]
+    #     else:                           # display together
+    #         # if more than 6 series are selected, only display the first 6
+    #         if len(channel_and_series) > 6:
+    #             channel_and_series = channel_and_series[:6]
+    #         props = [{"series": channel_and_series[0], "display": {}}]
 
-        if not channel_and_series[0]:
-            return None
-        # if more than 6 series are selected, only display the first 6
-        if len(channel_and_series) > 6:
-            channel_and_series = channel_and_series[:6]
+    #     # ask the user about what type of messages they want to see displayed
+    #     for s in props:
+    #         # for series displayed together
+    #         if type(s["series"]) is list:
+    #             for s2 in s["series"]:
+    #                 msg_type = prompt_user(
+    #                     self,
+    #                     "Message Type",
+    #                     f"What message type would you like to display for {s2}. Leave blank for all message types.",
+    #                     "text",
+    #                 )
+    #                 s["display"][s2] = msg_type
+    #         else:
+    #         # for series displayed separately
+    #             msg_type = prompt_user(
+    #                     self,
+    #                     "Message Type",
+    #                     f"What message type would you like to display for {s['series']}. Leave blank for all message types.",
+    #                     "text",
+    #             )
+    #             s["display"][s["series"]] = msg_type  # awkward syntax, but it leads to
+    #     return props                                  # {... "display": {series_name: msg_type}}
 
-        if channel_and_series[1]:     # display separately
-            props = [{"series": [series], "display": {}} for series in channel_and_series[0]]
-        else:                           # display together
-            # if more than 6 series are selected, only display the first 6
-            if len(channel_and_series) > 6:
-                channel_and_series = channel_and_series[:6]
-            props = [{"series": channel_and_series[0], "display": {}}]
 
-        # ask the user about what type of messages they want to see displayed
-        for s in props:
-            # for series displayed together
-            if type(s["series"]) is list:
-                for s2 in s["series"]:
-                    msg_type = prompt_user(
-                        self,
-                        "Message Type",
-                        f"What message type would you like to display for {s2}. Leave blank for all message types.",
-                        "text",
-                    )
-                    s["display"][s2] = msg_type
-            else:
-            # for series displayed separately
-                msg_type = prompt_user(
-                        self,
-                        "Message Type",
-                        f"What message type would you like to display for {s['series']}. Leave blank for all message types.",
-                        "text",
-                )
-                s["display"][s["series"]] = msg_type  # awkward syntax, but it leads to
-        return props                                  # {... "display": {series_name: msg_type}}
+    def on_series_change(self, param, value):
+        if len(value) > 6:
+            self.parameters.param('Series').setValue(value[:6])
+        self.series = self.parameters.param('Series').childrenValue()
+        print(self.series)
+        # resubscribe to the new streams
+        publisher.unsubscribe_from_all(self.on_data_update)
+        for series in self.series:
+            publisher.subscribe(series, self.on_data_update)
 
     def on_data_update(self, stream, payload):
         # time, point = payload
@@ -146,28 +145,30 @@ class LabelDashItem(DashboardItem):
         time, data = payload
 
         # if display msg type is blank then the user input nothing and wants all messages
-        if (data["msg_type"] == self.display_msg_type[stream]) or (self.display_msg_type[stream] == ''):
-            self.data[stream] = data
+        # if (data["msg_type"] == self.display_msg_type[stream]) or (self.display_msg_type[stream] == ''):
+        #     self.data[stream] = data
 
-        self.title = ""
+        print(payload)
+
+        self.title = f"{data}"
 
         # i cant believe, and i dont want to believe, that the syntax
         # for styling qlabel text is,,
         #   <font color=\"blue\">hello, world</font>
         # Note: <br> is same as \n, but \n won't work with above syntax
-        for s in self.series:
+        # for s in self.series:
             # the data is initalised to 0, this is to prevent us from accessing it
-            if type(self.data[s]) is not int:
-                self.title += f"{s} <font color=\"gray\">-- Message Type: {self.data[s]['msg_type']} -- </font><br>"
+            # if type(self.data[s]) is not int:
+            #     self.title += f"{s} <font color=\"gray\">-- Message Type: {self.data[s]['msg_type']} -- </font><br>"
 
-                for data_keys in self.data[s]['data']:
-                    self.title += f"<font color=\"#e0d000\">{data_keys}:</font> {self.data[s]['data'][data_keys]}<br>"
-                self.title += "<br>"
+            #     for data_keys in self.data[s]['data']:
+            #         self.title += f"<font color=\"#e0d000\">{data_keys}:</font> {self.data[s]['data'][data_keys]}<br>"
+            #     self.title += "<br>"
 
         self.widget.setText(self.title)
 
-    def get_props(self):
-        return self.props
+    # def get_props(self):
+    #     return self.props
 
     @staticmethod
     def get_name():
