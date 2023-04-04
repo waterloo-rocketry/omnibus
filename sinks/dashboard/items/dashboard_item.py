@@ -22,16 +22,18 @@ class DashboardItem(QWidget):
         when parameters change, just like how we listen to the size values here:
         """
         self.parameters = Parameter.create(name=self.get_name(), type='group', children=[
-            { "name": "Width", "type": "int", "default": 100 },
-            { "name": "Height", "type": "int", "default": 100 }
+            {"name": "Width", "type": "int", "default": 100},
+            {"name": "Height", "type": "int", "default": 100}
         ])
 
         self.parameters.child("Width").sigValueChanged.connect(lambda _, val:
-            self.resize(val, self.size().height())
-        )
+                                                               self.resize(
+                                                                   val, self.size().height())
+                                                               )
         self.parameters.child("Height").sigValueChanged.connect(lambda _, val:
-            self.resize(self.size().width(), val)
-        )
+                                                                self.resize(
+                                                                    self.size().width(), val)
+                                                                )
 
     def resizeEvent(self, _):
         with self.parameters.treeChangeBlocker():
@@ -67,4 +69,3 @@ class DashboardItem(QWidget):
         remove subscriptions from series
         """
         pass
-

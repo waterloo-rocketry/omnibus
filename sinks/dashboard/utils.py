@@ -1,5 +1,6 @@
 from pyqtgraph.Qt import QtWidgets
 
+
 class ConfirmDialog(QtWidgets.QDialog):
     def __init__(self, property_name, description, parent=None):
         super().__init__(parent)
