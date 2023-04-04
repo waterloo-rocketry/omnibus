@@ -78,56 +78,6 @@ class LabelDashItem(DashboardItem):
         # add it to the layout
         self.layout.addWidget(self.widget, 0, 0)
 
-
-    # def prompt_for_properties(self):
-    #     channel_and_series = prompt_user(
-    #         self,
-    #         "Data Series",
-    #         "Select the series you wish to display. Up to 6 if displaying together.",
-    #         "checkbox",
-    #         publisher.get_all_streams(),
-    #     )
-    #     if channel_and_series is None:
-    #         return None
-
-    #     if not channel_and_series[0]:
-    #         return None
-    #     # if more than 6 series are selected, only display the first 6
-    #     if len(channel_and_series) > 6:
-    #         channel_and_series = channel_and_series[:6]
-
-    #     if channel_and_series[1]:     # display separately
-    #         props = [{"series": [series], "display": {}} for series in channel_and_series[0]]
-    #     else:                           # display together
-    #         # if more than 6 series are selected, only display the first 6
-    #         if len(channel_and_series) > 6:
-    #             channel_and_series = channel_and_series[:6]
-    #         props = [{"series": channel_and_series[0], "display": {}}]
-
-    #     # ask the user about what type of messages they want to see displayed
-    #     for s in props:
-    #         # for series displayed together
-    #         if type(s["series"]) is list:
-    #             for s2 in s["series"]:
-    #                 msg_type = prompt_user(
-    #                     self,
-    #                     "Message Type",
-    #                     f"What message type would you like to display for {s2}. Leave blank for all message types.",
-    #                     "text",
-    #                 )
-    #                 s["display"][s2] = msg_type
-    #         else:
-    #         # for series displayed separately
-    #             msg_type = prompt_user(
-    #                     self,
-    #                     "Message Type",
-    #                     f"What message type would you like to display for {s['series']}. Leave blank for all message types.",
-    #                     "text",
-    #             )
-    #             s["display"][s["series"]] = msg_type  # awkward syntax, but it leads to
-    #     return props                                  # {... "display": {series_name: msg_type}}
-
-
     def on_series_change(self, param, value):
         if len(value) > 6:
             self.parameters.param('Series').setValue(value[:6])
@@ -139,18 +89,9 @@ class LabelDashItem(DashboardItem):
             publisher.subscribe(series, self.on_data_update)
 
     def on_data_update(self, stream, payload):
-        # time, point = payload
-
-        # self.widget.setText(str(point))
         time, data = payload
 
-        # if display msg type is blank then the user input nothing and wants all messages
-        # if (data["msg_type"] == self.display_msg_type[stream]) or (self.display_msg_type[stream] == ''):
-        #     self.data[stream] = data
-
-        print(payload)
-
-        self.title = f"{data}"
+        self.title = f"{stream}: {data}"
 
         # i cant believe, and i dont want to believe, that the syntax
         # for styling qlabel text is,,
@@ -166,9 +107,6 @@ class LabelDashItem(DashboardItem):
             #     self.title += "<br>"
 
         self.widget.setText(self.title)
-
-    # def get_props(self):
-    #     return self.props
 
     @staticmethod
     def get_name():
