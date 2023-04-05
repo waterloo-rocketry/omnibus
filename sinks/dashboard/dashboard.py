@@ -12,8 +12,12 @@ from pyqtgraph.Qt.QtWidgets import (
     QMenuBar,
     QVBoxLayout,
     QGraphicsItem,
-    QGraphicsRectItem
+    QGraphicsRectItem,
+    QFileDialog,
+    QHeaderView,
+    QSplitter
 )
+from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
 from utils import prompt_user, ConfirmDialog
@@ -83,7 +87,6 @@ class Dashboard(QWidget):
 
         # The file from which the dashboard is loaded
         self.filename = "savefile.json"
-        self.filename_cache = [self.filename]
 
         # Create a GUI
         self.width = 1100
@@ -93,9 +96,12 @@ class Dashboard(QWidget):
 
         # Create a large scene underneath the view
         self.scene = QGraphicsScene(0, 0, self.width*100, self.height*100)
+        self.scene.selectionChanged.connect(self.onSelectionChanged)
 
         # Create a grid layout
         self.layout = QVBoxLayout()
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.layout.addWidget(self.splitter)
 
         # Create a menubar for actions
         menubar = QMenuBar(self)
@@ -113,7 +119,7 @@ class Dashboard(QWidget):
         def prompt_and_add(i):
             def ret_func():
                 # props for a single item is contained in a dictionary
-                props = registry.get_items()[i].prompt_for_properties(self)
+                props = registry.get_items()[i].prompt_for_parameters(self)
                 if props:
                     if isinstance(props, list):
                         for item in props:
@@ -172,8 +178,42 @@ class Dashboard(QWidget):
         self.view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.view.setRenderHints(QPainter.Antialiasing)
         self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
-        self.layout.addWidget(self.view)
+        self.splitter.addWidget(self.view)
+
+        self.parameter_tree = ParameterTree(showHeader=True)
+        header = self.parameter_tree.header()
+        # maybe this is bad for small window sizes, but it's a decent start
+        header.setMinimumSectionSize(100)
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        self.splitter.addWidget(self.parameter_tree)
+        self.parameter_tree.hide()
+
+        self.splitter.setCollapsible(0, False)
+        self.splitter.setCollapsible(1, False)
         self.setLayout(self.layout)
+
+    def onSelectionChanged(self):
+        items = self.scene.selectedItems()
+        if len(items) != 1:
+            self.parameter_tree.hide()
+            return
+        # Show the tree
+        item = self.widgets[items[0]][1]
+        item.get_parameters().sigTreeStateChanged.connect(self.onCheckStateChanged)
+        self.parameter_tree.setParameters(item.get_parameters(), showTop=False)
+        self.parameter_tree.show()
+
+    def onCheckStateChanged(self, param, changes):
+        items = self.scene.selectedItems()
+        if len(items) != 1:
+            self.parameter_tree.hide()
+            return
+
+        proxy = self.widgets[items[0]][0]
+        item = self.widgets[items[0]][1]
+        width = item.parameters.param('Width').value() + 1
+        height = item.parameters.param('Height').value() + 1
+        proxy.parentItem().setRect(0, 0, width, height)
 
     # Method to add widgets
     def add(self, dashitem, pos=None):
@@ -185,23 +225,32 @@ class Dashboard(QWidget):
 
         # If a position is given, use it. If not, position
         # the widget in the center of the current view
-        if not pos:
+        if pos:
+            mapped = self.view.mapToScene(pos[0], pos[1])
+            xpos = mapped.x()
+            ypos = mapped.y()
+        else:
             # Get the current size of the view area and map
             # it to the underlying scene
-            mapped = self.view.mapToScene(self.view.width()/2, self.view.height()/2)
+            viewport = self.view.viewport().size()
+            view_xpos = viewport.width()/2
+            view_ypos = viewport.height()/2
+
+            mapped = self.view.mapToScene(view_xpos, view_ypos)
 
             # Center the widget in the view. Qt sets position
             # based on the upper left corner, so subtract
             # half the width and height of the widget to
             # center the center
-            pos = [mapped.x() - (width/2), mapped.y() - (height/2)]
+            xpos = mapped.x() - (width/2)
+            ypos = mapped.y() - (height/2)
 
-        proxy.setPos(pos[0], pos[1])
+        proxy.setPos(xpos, ypos)
         proxy.setFocusPolicy(Qt.NoFocus)
 
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
-        rect = QGraphicsRectItem(pos[0]-1, pos[1]-1, width+1, height+1)
+        rect = QGraphicsRectItem(xpos-1, ypos-1, width+1, height+1)
         proxy.setParentItem(rect)
         rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
@@ -245,13 +294,12 @@ class Dashboard(QWidget):
         with open(self.filename, "r") as savefile:
             data = json.load(savefile)
 
-        # Center the view
-        self.view.centerOn(data["center"][0], data["center"][1])
-
         # Set the zoom
-        self.view.scale(1.0/self.view.zoomed, 1.0/self.view.zoomed)
-        self.view.scale(data["zoom"], data["zoom"])
-        self.view.zoomed = data["zoom"]
+        curr_zoom = self.view.zoomed
+        self.view.scale(1/curr_zoom, 1/curr_zoom)
+        new_zoom = data["zoom"]
+        self.view.scale(new_zoom, new_zoom)
+        self.view.zoomed = new_zoom
 
         # Add every widget in the data
         for widget in data["widgets"]:
@@ -259,7 +307,7 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    self.add(item_type(widget["props"]), widget["pos"])
+                    self.add(item_type(widget["params"]), widget["pos"])
                     break
 
     # Method to save current layout to file
@@ -276,15 +324,16 @@ class Dashboard(QWidget):
             proxy = items[0]
             dashitem = items[1]
 
-            # Get the coordinates of the proxy widget on the scene
+            # Get the coordinates of the proxy widget on the view not the scene
             scenepos = proxy.scenePos()
+            viewpos = self.view.mapFromScene(scenepos)
 
             # Add the position, dashitem name and dashitem props
             for item_type in registry.get_items():
                 if type(dashitem) == item_type:
                     data["widgets"].append({"class": item_type.get_name(),
-                                            "props": dashitem.get_props(),
-                                            "pos": [scenepos.x(), scenepos.y()]})
+                                            "params": dashitem.get_serialized_parameters(),
+                                            "pos": [viewpos.x(), viewpos.y()]})
                     break
 
         # Write data to savefile
@@ -294,23 +343,10 @@ class Dashboard(QWidget):
     # Method to switch to a layout in a different file
     def switch(self):
         self.save()
-        filename = prompt_user(
-            self,
-            "New File Name",
-            "Enter the name of the file which you wish to load",
-            "items",
-            self.filename_cache,
-            True
-        )
+        (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
 
-        if filename == None:
+        if filename is None:
             return
-
-        # If the filename entered is not valid
-        # this exhibits the behaviour of creating
-        # a new one
-        if filename not in self.filename_cache:
-            self.filename_cache.append(filename)
 
         self.filename = filename
         self.load()
@@ -389,9 +425,9 @@ class Dashboard(QWidget):
             # Forward event to proper handler
             match event.key():
                 case Qt.Key_Equal:
-                    self.view.zoom(200)
+                    self.view.zoom(100.0)
                 case Qt.Key_Minus:
-                    self.view.zoom(-200)
+                    self.view.zoom(-100.0)
                 case Qt.Key_0:
                     self.reset()
 
@@ -405,6 +441,7 @@ def dashboard_driver(callback):
     timer.timeout.connect(dash.update)
     timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
+    dash.update()
     dash.show()
     dash.load()
     app.exec()
