@@ -1,4 +1,5 @@
 import sources.parsley.message_types as mt
+import crc8
 
 _func_map = {}
 
@@ -331,14 +332,12 @@ def parse_live_telemetry(line):
     msg_data, msg_checksum = msg_data.split(";")
     msg_sid = int(msg_sid, 16)
     msg_data = [int(byte, 16) for byte in msg_data.split(",")]
-    sum1 = 0
-    sum2 = 0
-    for c in line[:-1]:
-        if c.lower() in "0123456789abcdef":
-            sum1 = (sum1 + int(c, 16)) % 15
-            sum2 = (sum1 + sum2) % 15
-    if int(msg_checksum, 16) != sum1 ^ sum2:
-        print(f"Bad checksum, expected {sum1 ^ sum2} but got {msg_checksum}")
+    exp_sum = crc8.crc8(msg_sid.to_bytes(2, 'big'))
+    for c in msg_data:
+        exp_sum.update(c.to_bytes(1, 'big'))
+    exp_sum_value = exp_sum.hexdigest().upper()
+    if msg_checksum != exp_sum_value:
+        print(f"Bad checksum, expected {exp_sum_value} but got {msg_checksum}")
         return None
 
     return msg_sid, msg_data
