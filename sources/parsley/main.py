@@ -1,19 +1,24 @@
 import argparse
 import serial
 
-from omnibus import Sender
+from omnibus import Sender, Receiver
 import parsley
+import sources.parsley.message_types as mt
 
+class SerialCommunicator:
+    def __init__(self, port, baud, timeout):
+        self.port = port
+        if self.port == "-":
+            return
+        self.serial = serial.Serial(port, baud, timeout=timeout)
 
-def reader(port, baud):
-    if port == "-":
-        return input
-    s = serial.Serial(port, baud)
+    def read(self):
+        if self.port == "-":
+            return input()
+        return self.serial.readline().strip(b'\r\n').decode('utf-8')
 
-    def _reader():
-        return s.readline().strip(b'\r\n').decode('utf-8')
-    return _reader
-
+    def write(self, msg):
+        self.serial.write(msg)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -26,7 +31,7 @@ def main():
                         help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
 
-    readline = reader(args.port, args.baud)
+    communicator = SerialCommunicator(args.port, args.baud, 0)
     parser = parsley.parse_live_telemetry
     if args.format == "usb":
         parser = parsley.parse_usb_debug
@@ -36,12 +41,16 @@ def main():
         sender = Sender()
         CHANNEL = "CAN/Parsley"
 
-    while True:
-        line = readline()
+    receiver = Receiver("CAN/Commands")
 
-        # treat repeated messages in the same way as USB debug
-        if line.strip() == '.':
-            print('.')
+    while True:
+        while msg := receiver.recv_message(0):
+            msg_sid, msg_data = msg.payload['message']
+            # print(parsley.parse(msg_sid, msg_data))
+            # communicator.write(msg_sid | msg_data)
+
+        line = communicator.read()
+        if not line:
             continue
 
         try:

@@ -1,5 +1,7 @@
 from publisher import publisher
+from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu
+from pyqtgraph.Qt.QtCore import QEvent
 import pyqtgraph as pg
 import numpy as np
 
