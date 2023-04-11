@@ -21,43 +21,57 @@ from utils import prompt_user, ConfirmDialog
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
+from items.can_message_table import CanMsgTableDashItem
+from items.can_sender.can_sender import CanSender
+from omnibus.util import TickCounter
+from utils import prompt_user, ConfirmDialog
+
+# These need to be imported to be added to the registry
+from items.plot_dash_item import PlotDashItem
 from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.can_message_table import CanMsgTableDashItem
 from items.can_sender import CanSender
 
-class QGraphicsViewWrapper(QGraphicsView):
-    """
-    Creating a QGraphicsView wrapper to intercept wheelEvents for UI enhancements.
-    For example, we want to allow horizontal scrolling with a mouse, which we define
-    as scrolling with a mouse while pressing the shift key.
-    """
-    def __init__(self, scene):
-        super().__init__(scene) # initialize the super class
-        self.SCROLL_SENSITIVITY = 1/3 # scale down the scrolling sensitivity
+# Custom class derived from QGraphicsView to capture mouse
+# wheel events by overriding the wheelEvent function
+class MyQGraphicsView(QGraphicsView):
+    def __init__(self, parent=None):
+        # Initialize the super class
+        super(MyQGraphicsView, self).__init__(parent)
+        self.zoomed = 1.0
+
+        # Zooms to the position of the mouse
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+
+    def zoom(self, angle: int):
+        # Create the zoom factor based on the angle
+        zoomFactor = 1 + angle*0.001
+
+        # Scale the scene
+        self.zoomed *= zoomFactor
+        self.scale(zoomFactor, zoomFactor)
 
     def wheelEvent(self, event):
+        # Zoom if ctrl/cmd is held
+        # Scroll horizontally if shift is held
+        # Scroll vertically otherwise
         angle = event.angleDelta()
         if event.modifiers() == Qt.ControlModifier:
             self.zoom(angle.y())
-        elif event.source() == Qt.MouseEventNotSynthesized: # event comes from a mouse
+        elif event.source() == Qt.MouseEventNotSynthesized:
+            # mouse wheel event
+            scroll_sensitivity_factor = 1/3  # feels good constant
             if event.modifiers() == Qt.ShiftModifier:
-                # determining the scrolling orientation based on the larger x/y component value
-                absolute_angle = angle.x() if abs(angle.x()) > abs(angle.y()) else angle.y()
-                numDegrees = absolute_angle * self.SCROLL_SENSITIVITY
+                numDegrees = angle.y() * scroll_sensitivity_factor
                 value = self.horizontalScrollBar().value()
                 self.horizontalScrollBar().setValue(value + numDegrees)
             else:
-                numDegrees = angle.y() * self.SCROLL_SENSITIVITY
+                numDegrees = angle.y() * scroll_sensitivity_factor
                 value = self.verticalScrollBar().value()
                 self.verticalScrollBar().setValue(value + numDegrees)
-        else: # let the default implementation occur for everything else
-            super().wheelEvent(event)
-
-    # we define a function for zooming since keyboard zooming needs a function
-    def zoom(self, angle: int):
-        zoomFactor = 1 + angle*0.001 # create adjusted zoom factor
-        self.scale(zoomFactor, zoomFactor) # scale the scene
+        else:
+            super(QGraphicsView, self).wheelEvent(event)
 
 # Custom Dashboard class derived from QWidget
 
@@ -70,7 +84,8 @@ class Dashboard(QWidget):
         # Called every frame to get new data
         self.callback = callback
 
-        # Dictionary to map rectitems to widgets and dashitems
+        # Dictionary to map rectitems to widgets
+        # and dashitems
         self.widgets = {}
 
         # Keep track of if editing is allowed
@@ -89,7 +104,7 @@ class Dashboard(QWidget):
         # Create a large scene underneath the view
         self.scene = QGraphicsScene(0, 0, self.width*100, self.height*100)
 
-        # Create a layout manager
+        # Create a grid layout
         self.layout = QVBoxLayout()
 
         # Create a menubar for actions
@@ -163,22 +178,12 @@ class Dashboard(QWidget):
         self.counter = TickCounter(1)
 
         # Create the view and add it to the widget
-        self.view = QGraphicsViewWrapper(self.scene)
+        self.view = MyQGraphicsView(self.scene)
         self.view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.view.setRenderHints(QPainter.Antialiasing)
-        self.view.setTransformationAnchor(QGraphicsView.AnchorUnderMouse) # zooms to the position of mouse
         self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
         self.layout.addWidget(self.view)
         self.setLayout(self.layout)
-
-        # enable certain keyboard shortcuts
-        self.key_press_signals = EventTracker()
-        self.key_press_signals.zoom_in.connect(lambda: self.view.zoom(200))
-        self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))
-        self.key_press_signals.zoom_reset.connect(self.reset_zoom)
-        self.key_press_signals.backspace_pressed.connect(self.remove_selected)
-        self.installEventFilter(self.key_press_signals)
-
 
     # Method to add widgets
     def add(self, dashitem, pos=None):
@@ -202,6 +207,7 @@ class Dashboard(QWidget):
             pos = [mapped.x() - (width/2), mapped.y() - (height/2)]
 
         proxy.setPos(pos[0], pos[1])
+        proxy.setFocusPolicy(Qt.NoFocus)
 
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
@@ -348,14 +354,17 @@ class Dashboard(QWidget):
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=True)
 
     # Method to display help box
+    # Yes it's jank deal with it
     def help(self):
         message = """
             WELCOME TO THE OMNIBUS DASHBOARD!
 
             Here are some useful navigation tips:
 
-            - Regular scrolling moves stuff vertically
-            - Shift + scrolling moves stuff horizontally
+            - Regular scrolling moves stuff up and down
+            - Shift + scrolling moves stuff left and right
+                    - This sucks rn so use click and drag
+                    - Someone fix it
             - Control/CMD + scrolling zooms in and out
             - Control/CMD + "=" or "-" also zooms in and out
             - Control/CMD + 0 resets the view to the middle
@@ -369,7 +378,7 @@ class Dashboard(QWidget):
         self.callback()
 
     # Method to center the view
-    def reset_zoom(self):
+    def reset(self):
         # Reset the zoom
         self.view.scale(1/self.view.zoomed, 1/self.view.zoomed)
         self.view.zoomed = 1
@@ -379,17 +388,26 @@ class Dashboard(QWidget):
         scene_height = self.scene.height()
         self.view.centerOn(scene_width/2, scene_height/2)
 
-    def remove_selected(self):
-        if self.locked:
-            return
-        for item in self.scene.selectedItems():
-            self.remove(item)
-            self.widgets.pop(item)
+    # Method to capture key presses
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Backspace and not self.locked:
+            # Delete all selected items
+            for item in self.scene.selectedItems():
+                self.remove(item)
+                self.widgets.pop(item)
+        elif event.modifiers() == Qt.ControlModifier:
+            # Forward event to proper handler
+            match event.key():
+                case Qt.Key_Equal:
+                    self.view.zoom(200)
+                case Qt.Key_Minus:
+                    self.view.zoom(-200)
+                case Qt.Key_0:
+                    self.reset()
 
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
-    signal.signal(signal.SIGINT, lambda *args: QApplication.quit()) # quit applicaiton from terminal
     app = QApplication(sys.argv)
     dash = Dashboard(callback)
 
