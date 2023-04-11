@@ -20,6 +20,8 @@ from utils import prompt_user, ConfirmDialog
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
+from items.plot_3D_orientation import Orientation3DDashItem
+from items.plot_3D_position import Position3DDashItem
 from items.can_message_table import CanMsgTableDashItem
 
 
