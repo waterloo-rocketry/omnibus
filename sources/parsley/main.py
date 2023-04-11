@@ -3,6 +3,7 @@ import serial
 
 from omnibus import Sender, Receiver
 import parsley
+import sources.parsley.message_types as mt
 
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
