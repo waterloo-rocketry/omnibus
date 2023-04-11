@@ -3,23 +3,21 @@ import serial
 
 from omnibus import Sender, Receiver
 import parsley
+import sources.parsley.message_types as mt
 
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
         self.port = port
-        self.serial = None
-        if self.port != "-":
-            self.serial = serial.Serial(port, baud, timeout)
+        if self.port == "-":
+            return
+        self.serial = serial.Serial(port, baud, timeout=timeout)
 
     def read(self):
-        if self.serial == None:
-            return input
+        if self.port == "-":
+            return input()
         return self.serial.readline().strip(b'\r\n').decode('utf-8')
 
     def write(self, msg):
-        if self.serial == None:
-            print(msg)
-            return
         self.serial.write(msg)
 
 def main():
@@ -34,6 +32,7 @@ def main():
     args = parser.parse_args()
 
     communicator = SerialCommunicator(args.port, args.baud, 0)
+    parser = parsley.parse_live_telemetry
     if args.format == "usb":
         parser = parsley.parse_usb_debug
     elif args.format == "logger":
@@ -49,19 +48,12 @@ def main():
 
     while True:
         while msg := receiver.recv_message(0):
-            data = msg.payload['data']
-            length = msg.payload['length']
-            bit_str = parsley.BitString(data, length)
-            msg_sid, msg_data = parsley.parse_bitstring(bit_str)
-            formatted_msg_sid = f"{msg_sid:03X}"
-            byte_length = (length-11 + 7) // 8  # calculate the number of bytes required
-            byte_array = msg_data.to_bytes(byte_length, byteorder='big')  # convert to bytes
-            formatted_msg_data = ','.join([f"{byte:02X}" for byte in byte_array])  # convert to hex with commas
-            formatted_string = f"m{formatted_msg_sid},{formatted_msg_data};"
-            communicator.write(formatted_string)
+            msg_sid, msg_data = msg.payload['message']
+            # print(parsley.parse(msg_sid, msg_data))
+            # communicator.write(msg_sid | msg_data)
 
         line = communicator.read()
-        if line is not None or line is input:
+        if not line:
             continue
 
         try:
