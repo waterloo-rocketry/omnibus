@@ -1,4 +1,20 @@
-from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+from typing import List
+from pyqtgraph.Qt.QtCore import Qt
+from pyqtgraph.Qt.QtGui import (
+    QColor,
+    QPalette,
+    QRegularExpressionValidator
+)
+from pyqtgraph.Qt.QtWidgets import (
+    QComboBox,
+    QGridLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton
+)
+
+import parsley.fields as pf
+from parsley.message_definitions import CAN_MSG
 # from omnibus import Sender
 # from parsers import publisher
 from .registry import Register
@@ -30,28 +46,97 @@ class CanSender(DashboardItem):
     """
 
     def __init__(self):
+        """
+        Coding checklist:
+        - text field signal
+            => check if after entering this character, the text field is maxed out, then move cursor/highlight the next field
+            => check if backspace, might need to move cursor/highlight the previous field
+        - dropdown signal
+            => TODO: check if you can unselect your option (would be equilvalent to our intial base case)
+            => on change, reconstruct all the items preceeding the dropdown
+                ++ need to apply all the input masks and signal event handlers during runtime
+                ++ avoid touching data to the left of the dropdown
+        - button signal
+            => verify every field's data can be properly encoded (wrap in try catch)
+            => pulse the apppropriate color for the fields
+            => possibly send the data over
+        
+        """
         super().__init__()
-
-        self.layout_manager = QtWidgets.QGridLayout(self)
-        self.setLayout(self.layout_manager)
-
         # self.canlib_info = CanlibMetadata("can_sender_data.txt")
         # self.omnibus_sender = Sender()
         # self.channel = "CAN/Commands"
 
-        self.define_variables()
-        self.create_widgets()
-        self.setup_widgets()
-        self.place_widgets()
+        self.initialize_variables()
+        # self.create_widgets()
+        # self.setup_widgets()
+        # self.place_widQCgets()
 
-    def define_variables(self):
+    def initialize_variables(self):
+        self.layout_manager = QGridLayout(self)
+        self.setLayout(self.layout_manager)
+
+        self.numeric_mask = "[A-Fa-f0-9]" # not sure if we want to stick with base 16 or base 10 (how to deal with scaled?)
+        self.ascii_mask = "[[\x00-\x7F]]"
+
+        self.fields = []
+        self.fields_index = {}
+        self.widgets = []
+        self.widget_labels = []
+        self.add_fields([CAN_MSG])
+
+        # TODO: define common alignments (or make a function for them)
+        # TODO: define text field input masks
+
+        # constants
         self.NUM_PULSES = 3 # number of pulses to display when a Field throws an error
-        self.PULSE_PERIOD = 100 # time period (in ms) between each pulse
-        self.MAX_MESSAGE_BYTES = 8
+        self.PULSE_PERIOD = 100 # period (ms) between each pulse
+        # self.MAX_MESSAGE_BYTES = 8
+
+    def add_fields(self, fields: List[pf.Field]):
+        for field in fields:
+            index = len(self.fields) # index of the new parsley field to be added
+            self.fields_index[index] = field # create mapping between parsley field and its index in the can message
+            self.widget_labels.append(field.name) # label for the ith parsley field
+            byte_legnth = field.length // 4
+            match field:
+                case pf.Switch, pf.Enum:
+                    dropdown = QComboBox()
+                    dropdown.setMinimumContentsLength(20) # TODO: I swear this changed the height of row entries but I mgiht be capping
+                    dropdown_items = list(field.map_key_enum.keys())
+                    dropdown.addItems(dropdown_items)
+
+                    self.widgets.append(dropdown)
+                    self.layout_manager.addWidget(self.widget_labels[index], 0, index) # TODO: create dynamic width based on can bit length
+                    self.layout_manager.addWidget(self.widgets[index], 1, index) # TODO: create dynamic width based on can bit length
+
+                    # I cant put the layout manager stuff at the end or else this recursive function ruins the order
+                    if isinstance(field, pf.Switch):
+                        nested_fields = field.get_fields(dropdown_items[0])
+                        self.add_fields(nested_fields)
+                case pf.Numeric:
+                    textfield = QLineEdit()
+                    textfield.setAlignment(Qt.AlignCenter)
+                    textfield.setValidator(byte_legnth * self.numeric_mask)
+                    # textfield.installEventFilter(BackspaceEventFilter())
+                    textfield.setPlaceholderText(byte_legnth * "0")
+
+                    self.widgets.append(textfield)
+                    self.layout_manager.addWidget(self.widget_labels[index], 0, index)
+                    self.layout_manager.addWidget(self.widgets[index], 1, index)
+                case pf.ASCII:
+                    textfield = QLineEdit() # mgiht be able to collapse this with Numeric (and just have a ternary for the validator)
+                    textfield.setAlignment(Qt.AlignCenter)
+                    textfield.setValidator(byte_legnth * self.ascii_mask)
+                    textfield.setPlaceholderText(byte_legnth * "0")
+
+                    self.widgets.append(textfield)
+                    self.layout_manager.addWidget(self.widget_labels[index], 0, index)
+                    self.layout_manager.addWidget(self.widgets[index], 1, index)
 
     def create_widgets(self):
         # CAN message type
-        self.message_type = QtWidgets.QComboBox()
+        self.message_type = QComboBox()
         self.message_type.setPlaceholderText("Message Type")
         # self.message_type.addItems(self.canlib_info.get_msg_type())
 
@@ -59,24 +144,24 @@ class CanSender(DashboardItem):
         self.line_edits = []
         self.line_edits_map = {}
         for i in range(self.MAX_MESSAGE_BYTES):
-            line_edit = QtWidgets.QLineEdit()
+            line_edit = QLineEdit()
             line_edit.setPlaceholderText("00")
-            line_edit.setAlignment(QtCore.Qt.AlignCenter)
+            line_edit.setAlignment(Qt.AlignCenter)
             # assign uuid to obtain line_edit <=> index relationship
             line_edit.setObjectName("QLineEdit #{}".format(i))
             self.line_edits.append(line_edit)
             self.line_edits_map[line_edit.objectName()] = i
-        self.send = QtWidgets.QPushButton("SEND", self)
+        self.send = QPushButton("SEND", self)
 
         # 2d array of labels that remind users what datatype belongs to what column
         # self.labels[i][0] = top row, self.labels[i][1] = bototom row
         self.labels = []
         for i in range(self.MAX_MESSAGE_BYTES):
-            top_label = QtWidgets.QLabel()
-            top_label.setAlignment(QtCore.Qt.AlignBottom | QtCore.Qt.AlignLeft)
+            top_label = QLabel()
+            top_label.setAlignment(Qt.AlignBottom | Qt.AlignLeft)
             top_label.setWordWrap(True)
-            bot_label = QtWidgets.QLabel()
-            bot_label.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+            bot_label = QLabel()
+            bot_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
             bot_label.setWordWrap(True)
             self.labels.append([top_label, bot_label])
             self.labels[i][i%2].setText("None")
@@ -85,10 +170,10 @@ class CanSender(DashboardItem):
         # locks/unlocks input fields based on the updated msg_type
         self.message_type.currentTextChanged.connect(self.refresh_widget_info)
         # input mask for valid msg_data characters, blocks all other characters not in this regex
-        valid_hexes = QtGui.QRegularExpressionValidator("[A-Fa-f0-9][A-Fa-f0-9]")
+        valid_hexes = QRegularExpressionValidator("[A-Fa-f0-9][A-Fa-f0-9]")
         # customizing palette to ensure input fields have that "disabled" look
-        self.palette = QtGui.QPalette()
-        self.palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.Base, QtGui.QColor("darkGrey"))
+        self.palette = QPalette()
+        self.palette.setColor(QPalette.Disabled, QPalette.Base, QColor("darkGrey"))
         # tracks when a backspace has been pressed for UX purposes
         self.backspace_event_filter = BackspaceEventFilter()
         self.backspace_event_filter.valid_backspace.connect(self.move_cursor_backwards)
@@ -132,7 +217,7 @@ class CanSender(DashboardItem):
 #         bad_indexes = self.get_invalid_inputs()
 #         if bad_indexes:
 #             self.pulse_count = 0
-#             self.timer = QtCore.QTimer()
+#             self.timer = QTimer()
 #             self.timer.timeout.connect(lambda: self.pulse(bad_indexes))
 #             self.timer.start(self.PULSE_PERIOD)
 #         return len(bad_indexes) > 0
@@ -213,12 +298,12 @@ class CanSender(DashboardItem):
 
 # # there aren't any event handlers to check whether a certain key has been pressed
 # # I need to know when a backspace has been pressed to potentially move the cursor back
-# class BackspaceEventFilter(QtCore.QObject):
-#     valid_backspace = QtCore.Signal()
+# class BackspaceEventFilter(QObject):
+#     valid_backspace = Signal()
 #     __obj_name = ""
 
 #     def eventFilter(self, obj, event):
-#         if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Backspace:
+#         if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Backspace:
 #             self.__obj_name = obj.objectName()
 #             self.valid_backspace.emit()
 #         return super().eventFilter(obj, event)
