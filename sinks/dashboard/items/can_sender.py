@@ -1,5 +1,5 @@
 from typing import List
-from pyqtgraph.Qt.QtCore import Qt
+from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import (
     QColor,
     QPalette,
@@ -15,6 +15,10 @@ from pyqtgraph.Qt.QtWidgets import (
 
 import parsley.fields as pf
 from parsley.message_definitions import CAN_MSG
+<<<<<<< HEAD
+=======
+from parsley.bitstring import BitString
+>>>>>>> 57645b5 (Should be able to create widgets)
 # from omnibus import Sender
 # from parsers import publisher
 from .registry import Register
@@ -68,9 +72,6 @@ class CanSender(DashboardItem):
         # self.channel = "CAN/Commands"
 
         self.initialize_variables()
-        # self.create_widgets()
-        # self.setup_widgets()
-        # self.place_widQCgets()
 
     def initialize_variables(self):
         self.layout_manager = QGridLayout(self)
@@ -79,14 +80,23 @@ class CanSender(DashboardItem):
         self.numeric_mask = "[A-Fa-f0-9]" # not sure if we want to stick with base 16 or base 10 (how to deal with scaled?)
         self.ascii_mask = "[[\x00-\x7F]]"
 
-        self.fields = []
-        self.fields_index = {}
-        self.widgets = []
-        self.widget_labels = []
-        self.add_fields([CAN_MSG])
+        self.backspace_event_filter = BackspaceEventFilter()
+        self.backspace_event_filter.on_backspace.connect(self.move_cursor_backwards)
 
-        # TODO: define common alignments (or make a function for them)
-        # TODO: define text field input masks
+        # i dont want to constantly create/delete widgets from my arrays, so I'll use the idea
+        # of an array-implemented stack where you 'delete' by moving your index pointer
+        self.fields = [None] * 16
+        self.widgets = [None] * 16
+        self.widget_labels = [None] * 16
+        self.widget_index = -1
+        self.widget_to_index = {}
+
+        self.add_fields([CAN_MSG])
+        self.send_button = QPushButton("SEND")
+        # self.send_button.clicked.connect(self.send_can_message)
+        self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
+
+        # TODO: add the port thing here
 
         # constants
         self.NUM_PULSES = 3 # number of pulses to display when a Field throws an error
@@ -95,9 +105,7 @@ class CanSender(DashboardItem):
 
     def add_fields(self, fields: List[pf.Field]):
         for field in fields:
-            index = len(self.fields) # index of the new parsley field to be added
-            self.fields_index[index] = field # create mapping between parsley field and its index in the can message
-            self.widget_labels.append(field.name) # label for the ith parsley field
+            self.widget_index += 1
             byte_legnth = field.length // 4
             match field:
                 case pf.Switch, pf.Enum:
@@ -105,97 +113,64 @@ class CanSender(DashboardItem):
                     dropdown.setMinimumContentsLength(20) # TODO: I swear this changed the height of row entries but I mgiht be capping
                     dropdown_items = list(field.map_key_enum.keys())
                     dropdown.addItems(dropdown_items)
-
-                    self.widgets.append(dropdown)
-                    self.layout_manager.addWidget(self.widget_labels[index], 0, index) # TODO: create dynamic width based on can bit length
-                    self.layout_manager.addWidget(self.widgets[index], 1, index) # TODO: create dynamic width based on can bit length
-
-                    # I cant put the layout manager stuff at the end or else this recursive function ruins the order
-                    if isinstance(field, pf.Switch):
-                        nested_fields = field.get_fields(dropdown_items[0])
-                        self.add_fields(nested_fields)
-                case pf.Numeric:
+                    self.widgets[self.widget_index] = dropdown
+                case pf.Numeric, pf.ASCII:
+                    mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
                     textfield = QLineEdit()
                     textfield.setAlignment(Qt.AlignCenter)
-                    textfield.setValidator(byte_legnth * self.numeric_mask)
-                    # textfield.installEventFilter(BackspaceEventFilter())
+                    textfield.setValidator(byte_legnth * mask)
                     textfield.setPlaceholderText(byte_legnth * "0")
+                    # textfield.textChanged.connect(self.move_cursor_forwards)
+                    # textfield.installEventFilter(self.backspace_event_filter) # not sure if i can have one event filter or I need multiple
+                    self.widgets[self.widget_index] = textfield
 
-                    self.widgets.append(textfield)
-                    self.layout_manager.addWidget(self.widget_labels[index], 0, index)
-                    self.layout_manager.addWidget(self.widgets[index], 1, index)
-                case pf.ASCII:
-                    textfield = QLineEdit() # mgiht be able to collapse this with Numeric (and just have a ternary for the validator)
-                    textfield.setAlignment(Qt.AlignCenter)
-                    textfield.setValidator(byte_legnth * self.ascii_mask)
-                    textfield.setPlaceholderText(byte_legnth * "0")
+            label = QLabel(field.name)
+            label.setWordWrap(True) # i used to have this, check if still needed
+            label.setAlignment(Qt.AlignLeft) # i think it defaults to this, check TODO
 
-                    self.widgets.append(textfield)
-                    self.layout_manager.addWidget(self.widget_labels[index], 0, index)
-                    self.layout_manager.addWidget(self.widgets[index], 1, index)
+            self.fields[self.widget_index] = field
+            self.widget_labels[self.widget_index] = label
+            self.widget_to_index[self.widgets[self.widget_index]] = self.widget_index # create mapping between widget and its index in the can message
 
-    def create_widgets(self):
-        # CAN message type
-        self.message_type = QComboBox()
-        self.message_type.setPlaceholderText("Message Type")
-        # self.message_type.addItems(self.canlib_info.get_msg_type())
+            self.layout_manager.addWidget(self.widget_labels[self.widget_index], 0, self.widget_index) # TODO: create dynamic widget width based on field bit length
+            self.layout_manager.addWidget(self.widgets[self.widget_index], 1, self.widget_index) # TODO: create dynamic widget width based on fieldbit length
+            if isinstance(field, pf.Switch):
+                self.widgets[self.widget_index].currentTextChanged.connect(self.update_can_msg)
+                nested_fields = field.get_fields(dropdown_items[0]) # display the first Switch row to show something
+                self.add_fields(nested_fields)
 
-        # CAN message data
-        self.line_edits = []
-        self.line_edits_map = {}
-        for i in range(self.MAX_MESSAGE_BYTES):
-            line_edit = QLineEdit()
-            line_edit.setPlaceholderText("00")
-            line_edit.setAlignment(Qt.AlignCenter)
-            # assign uuid to obtain line_edit <=> index relationship
-            line_edit.setObjectName("QLineEdit #{}".format(i))
-            self.line_edits.append(line_edit)
-            self.line_edits_map[line_edit.objectName()] = i
-        self.send = QPushButton("SEND", self)
+    def update_can_msg(self, text):
+        dropdown = self.sender()
+        dropdown_index = self.widget_to_index[dropdown]
 
-        # 2d array of labels that remind users what datatype belongs to what column
-        # self.labels[i][0] = top row, self.labels[i][1] = bototom row
-        self.labels = []
-        for i in range(self.MAX_MESSAGE_BYTES):
-            top_label = QLabel()
-            top_label.setAlignment(Qt.AlignBottom | Qt.AlignLeft)
-            top_label.setWordWrap(True)
-            bot_label = QLabel()
-            bot_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-            bot_label.setWordWrap(True)
-            self.labels.append([top_label, bot_label])
-            self.labels[i][i%2].setText("None")
+        # delete the widgets from [dropdown_index + 1, self.widget_index] from layout manager
+        for index in range(dropdown_index + 1, self.widget_index + 1):
+            widget = self.widgets[index]
+            label = self.widget_label[index]
+            self.layout_manager.remove(widget)
+            self.layout_manager.remove(label)
+            # need to delete widget from memory (i think it works like this or its deleteLater())
+            widget = None
+            label = None
 
-    def setup_widgets(self):
-        # locks/unlocks input fields based on the updated msg_type
-        self.message_type.currentTextChanged.connect(self.refresh_widget_info)
-        # input mask for valid msg_data characters, blocks all other characters not in this regex
-        valid_hexes = QRegularExpressionValidator("[A-Fa-f0-9][A-Fa-f0-9]")
-        # customizing palette to ensure input fields have that "disabled" look
-        self.palette = QPalette()
-        self.palette.setColor(QPalette.Disabled, QPalette.Base, QColor("darkGrey"))
-        # tracks when a backspace has been pressed for UX purposes
-        self.backspace_event_filter = BackspaceEventFilter()
-        self.backspace_event_filter.valid_backspace.connect(self.move_cursor_backwards)
-        for i in range(self.MAX_MESSAGE_BYTES):
-            self.line_edits[i].setValidator(valid_hexes)
-            self.line_edits[i].setPalette(self.palette)
-            self.line_edits[i].installEventFilter(self.backspace_event_filter)
-            self.line_edits[i].textChanged.connect(self.move_cursor_forwards)
-        self.send.clicked.connect(self.send_can_message)
+        # insert the new widgets
+        self.layout_manager.remove(self.send_button) # need to move the send button based on the length of the new can message
+        self.widget_index = dropdown_index
+        switch_field = self.fields[self.widget_index]
+        nested_fields = switch_field.get_fields(text)
+        self.add_fields(nested_fields)
+        self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
+        self.layout_manager.update()
 
-    def place_widgets(self):
-        # format: addWidget(row, col, height, width)
-        self.layout_manager.addWidget(self.message_type, 1, 0, 1, 2)
-        self.layout_manager.addWidget(self.send, 1, self.MAX_MESSAGE_BYTES+3, 1, 1)
-        for i in range(self.MAX_MESSAGE_BYTES):
-            self.layout_manager.addWidget(self.labels[i][0],  0, i+2, 1, 1)
-            self.layout_manager.addWidget(self.line_edits[i], 1, i+2, 1, 1)
-            self.layout_manager.addWidget(self.labels[i][1],  2, i+2, 1, 1)
+    def send_can_message(self):
+        # im not sure what the ideal way of this is, we can:
+        # 1) check for valid fields, then parse fields (but thats a bit redudnant)
+        # 2) data = parse fields, then do a match case check (if its None, then pulse errors) => but I want to collect all the errors to pulse at once instead of castcading
+        bit_str = self.parse_can_msg()
 
-#     def send_can_message(self):
-#         if not self.has_invalid_fields():
-#             self.omnibus_sender.send(self.channel, self.parse_data())
+        if self.has_valid_fields():
+            pass
+            # self.omnibus_sender.send(self.channel, self.parse_data())
         
 #     def parse_data(self):
 #         msg_type = self.message_type.currentText()
@@ -213,53 +188,32 @@ class CanSender(DashboardItem):
 #         formatted_data = {'message': (msg_sid, msg_data)}
 #         return formatted_data
 
-#     def has_invalid_fields(self):
-#         bad_indexes = self.get_invalid_inputs()
-#         if bad_indexes:
-#             self.pulse_count = 0
-#             self.timer = QTimer()
-#             self.timer.timeout.connect(lambda: self.pulse(bad_indexes))
-#             self.timer.start(self.PULSE_PERIOD)
-#         return len(bad_indexes) > 0
+    def parse_can_msg(self):
+        problematic_indexes = []
+        bit_str = BitString()
+        for index in range(0, self.widget_index + 1):
+            field = self.fields[index]
+            text = self.widgets[index].text()
+            try:
+                bit_str.push(*field.encode(text))
+            except:
+                problematic_indexes.append(index)
 
-#     def pulse(self, indexes):
-#         if self.pulse_count < self.NUM_PULSES*2:
-#             for i in indexes:
-#                 widget = self.message_type if i == -1 else self.line_edits[i]
-#                 widget.setDisabled(self.pulse_count%2 == 0)
-#             self.pulse_count += 1
-#         else:
-#             self.timer.stop()
+        if problematic_indexes:
+            self.pulse_count = 0
+            self.timer = QTimer() # i dont think i need to create a new timer every time
+            self.timer.timeout.connect(lambda: self.pulse(bad_indexes))
+            self.timer.start(self.PULSE_PERIOD)
+        return None if problematic_indexes else bit_str
 
-#     def get_invalid_inputs(self):
-#         bad_indexes = []
-#         msg_type = self.message_type.currentText()
-#  #       msg_data_info = self.canlib_info.get_msg_data(msg_type)
-#         if not msg_type:
-#             bad_indexes.append(-1)
-#         for i in range(len(msg_data_info)):
-#             if not self.line_edits[i].text():
-#                 bad_indexes.append(i)
-#         return bad_indexes
-
-#     def refresh_widget_info(self, new_msg_type):
-#  #       msg_data = self.canlib_info.get_msg_data(new_msg_type)
-#         amount_of_data = len(msg_data)
-#         for i in range(self.MAX_MESSAGE_BYTES):
-#             # locks input fields that aren't in use
-#             self.line_edits[i].setEnabled(i < amount_of_data)
-#             # resets labels/input boxes
-#             self.labels[i][0].setText("")
-#             self.labels[i][1].setText("")
-#             # TODO: keep a temporray history of text so that if we go from 8 -> 4 back to 8 bytes,
-#             # then the last 4 bytes of data is restored
-#             self.line_edits[i].setText("")
-#             self.line_edits[i].setPlaceholderText("")
-#             if i < amount_of_data:
-#                 # TODO: add astersik for label if mandatory
-#                 self.labels[i][i%2].setText(msg_data[i])
-#                 # TODO: add placeholder text if mandatory
-#                 self.line_edits[i].setPlaceholderText("00")
+    # def pulse(self, indexes):
+    #     if self.pulse_count < self.NUM_PULSES*2:
+    #         for i in indexes:
+    #             widget = self.message_type if i == -1 else self.line_edits[i]
+    #             widget.setDisabled(self.pulse_count%2 == 0)
+    #         self.pulse_count += 1
+    #     else:
+    #         self.timer.stop()
 
 #     def move_cursor_forwards(self):
 #         obj = self.sender()
@@ -296,17 +250,17 @@ class CanSender(DashboardItem):
 #     def prompt_for_properties(self):
 #         return True
 
-# # there aren't any event handlers to check whether a certain key has been pressed
-# # I need to know when a backspace has been pressed to potentially move the cursor back
-# class BackspaceEventFilter(QObject):
-#     valid_backspace = Signal()
-#     __obj_name = ""
+# there aren't any event handlers to check whether a certain key has been pressed
+# I need to know when a backspace has been pressed to potentially move the cursor back
+class BackspaceEventFilter(QObject):
+    on_backspace = Signal()
+    __obj_name = ""
 
-#     def eventFilter(self, obj, event):
-#         if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Backspace:
-#             self.__obj_name = obj.objectName()
-#             self.valid_backspace.emit()
-#         return super().eventFilter(obj, event)
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Backspace:
+            self.__obj_name = obj.objectName()
+            self.on_backspace.emit()
+        return super().eventFilter(obj, event)
     
-#     def objectName(self):
-#         return self.__obj_name
+    def objectName(self):
+        return self.__obj_name
