@@ -15,8 +15,6 @@ import numpy as np
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
-from utils import prompt_user
-
 
 @Register
 class PlotDashItem(DashboardItem):
@@ -104,30 +102,6 @@ class PlotDashItem(DashboardItem):
         self.warning_line = plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
 
         return plot
-
-    def prompt_for_parameters(self):
-        channel_and_series = prompt_user(
-            self,
-            "Data series",
-            "Select the series you wish to plot. Up to 6 if plotting together.",
-            "checkbox",
-            publisher.get_all_streams(),
-        )
-        if not channel_and_series[0]:
-            return None
-        # if more than 6 series are selected, only plot the first 6
-        if len(channel_and_series) > 6:
-            channel_and_series = channel_and_series[:6]
-
-        if channel_and_series[1]:     # plot separately
-            params = [{"series": [series], "limit": 0} for series in channel_and_series[0]]
-        else:                           # plot together
-            # if more than 6 series are selected, only plot the first 6
-            if len(channel_and_series) > 6:
-                channel_and_series = channel_and_series[:6]
-            params = [{"series": channel_and_series[0], "limit": 0}]
-
-        return params
 
     def on_data_update(self, stream, payload):
         time, point = payload

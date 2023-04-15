@@ -20,7 +20,7 @@ from pyqtgraph.Qt.QtWidgets import (
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
-from utils import prompt_user, ConfirmDialog
+from utils import ConfirmDialog
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
@@ -116,21 +116,17 @@ class Dashboard(QWidget):
         # be a corresponding action to add that item
         add_item_menu = menubar.addMenu("Add Item")
 
-        def prompt_and_add(i):
-            def ret_func():
-                # props for a single item is contained in a dictionary
-                props = registry.get_items()[i].prompt_for_parameters(self)
-                if props:
-                    if isinstance(props, list):
-                        for item in props:
-                            self.add(registry.get_items()[i](item))
-                    else:
-                        self.add(registry.get_items()[i](props))
-            return ret_func
+        # Need to create triggers like this
+        # because of the way python handles
+        def create_registry_trigger(i):
+            def return_fun():
+                if not self.locked:
+                    self.add(registry.get_items()[i]())
+            return return_fun
 
         for i in range(len(registry.get_items())):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
-            new_action.triggered.connect(prompt_and_add(i))
+            new_action.triggered.connect(create_registry_trigger(i))
             self.lockableActions.append(new_action)
 
         # Add an action to the menu bar to save the
@@ -211,8 +207,8 @@ class Dashboard(QWidget):
 
         proxy = self.widgets[items[0]][0]
         item = self.widgets[items[0]][1]
-        width = item.parameters.param('Width').value() + 1
-        height = item.parameters.param('Height').value() + 1
+        width = item.parameters.param('width').value() + 1
+        height = item.parameters.param('height').value() + 1
         proxy.parentItem().setRect(0, 0, width, height)
 
     # Method to add widgets
