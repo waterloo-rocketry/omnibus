@@ -24,6 +24,8 @@ from utils import ConfirmDialog
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
+from items.plot_3D_orientation import Orientation3DDashItem
+from items.plot_3D_position import Position3DDashItem
 from items.can_message_table import CanMsgTableDashItem
 
 
@@ -209,7 +211,8 @@ class Dashboard(QWidget):
         item = self.widgets[items[0]][1]
         width = item.parameters.param('width').value() + 1
         height = item.parameters.param('height').value() + 1
-        proxy.parentItem().setRect(0, 0, width, height)
+        pos = proxy.pos()
+        proxy.parentItem().setRect(pos.x(), pos.y(), width, height)
 
     # Method to add widgets
     def add(self, dashitem, pos=None):

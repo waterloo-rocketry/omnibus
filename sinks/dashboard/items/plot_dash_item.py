@@ -1,15 +1,8 @@
 from publisher import publisher
-from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu
 from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 from pyqtgraph.Qt.QtCore import QEvent
 import pyqtgraph as pg
-from pyqtgraph.console import ConsoleWidget
-
-
-from pyqtgraph.graphicsItems.LabelItem import LabelItem
-from pyqtgraph.graphicsItems.TextItem import TextItem
-
 import numpy as np
 
 from .dashboard_item import DashboardItem

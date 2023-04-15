@@ -81,3 +81,12 @@ def daq_parser(msg_data):
 def can_parser(payload):
     return [("CAN", payload["data"]["time"], payload)]
     # Note, we plan to revist the way that CAN message are handled
+
+
+@Register("StateEstimation")
+def state_est_parser(payload):
+    timestamp = payload["timestamp"]
+    return [
+        ("StateEstimation/Orientation", timestamp, payload["data"]["orientation"]),
+        ("StateEstimation/Position", timestamp, payload["data"]["position"])
+    ]
