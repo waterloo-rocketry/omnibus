@@ -1,5 +1,5 @@
 from typing import List
-from pyqtgraph.Qt.QtCore import Qt, QTimer
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QObject, Signal, QEvent
 from pyqtgraph.Qt.QtGui import (
     QColor,
     QPalette,
@@ -15,10 +15,7 @@ from pyqtgraph.Qt.QtWidgets import (
 
 import parsley.fields as pf
 from parsley.message_definitions import CAN_MSG
-<<<<<<< HEAD
-=======
 from parsley.bitstring import BitString
->>>>>>> 57645b5 (Should be able to create widgets)
 # from omnibus import Sender
 # from parsers import publisher
 from .registry import Register
@@ -47,6 +44,7 @@ class CanSender(DashboardItem):
     - Upon pressing send:
         => for every field that fails to encode its data, pulse the field in quick successions (comfy red)
         => if every field successfully encodes its data, long pulse all of the fields once (comfy green)
+    - Width of CanSender widget scales depending on the CAN message length
     """
 
     def __init__(self):
@@ -78,10 +76,11 @@ class CanSender(DashboardItem):
         self.setLayout(self.layout_manager)
 
         self.numeric_mask = "[A-Fa-f0-9]" # not sure if we want to stick with base 16 or base 10 (how to deal with scaled?)
-        self.ascii_mask = "[[\x00-\x7F]]"
+        self.ascii_mask = "[\x00-\x7F]"
 
-        self.backspace_event_filter = BackspaceEventFilter()
-        self.backspace_event_filter.on_backspace.connect(self.move_cursor_backwards)
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.pulse_invalid_fields)
+        self.invalid_indexes = []
 
         # i dont want to constantly create/delete widgets from my arrays, so I'll use the idea
         # of an array-implemented stack where you 'delete' by moving your index pointer
@@ -106,7 +105,7 @@ class CanSender(DashboardItem):
     def add_fields(self, fields: List[pf.Field]):
         for field in fields:
             self.widget_index += 1
-            byte_legnth = field.length // 4
+            byte_length = field.length // 4
             match field:
                 case pf.Switch, pf.Enum:
                     dropdown = QComboBox()
@@ -118,15 +117,13 @@ class CanSender(DashboardItem):
                     mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
                     textfield = QLineEdit()
                     textfield.setAlignment(Qt.AlignCenter)
-                    textfield.setValidator(byte_legnth * mask)
-                    textfield.setPlaceholderText(byte_legnth * "0")
-                    # textfield.textChanged.connect(self.move_cursor_forwards)
-                    # textfield.installEventFilter(self.backspace_event_filter) # not sure if i can have one event filter or I need multiple
+                    textfield.setValidator(byte_length * mask)
+                    textfield.setPlaceholderText(byte_length * "0")
+                    textfield.installEventFilter(self) # intercept certain key press events for UX enchancements
                     self.widgets[self.widget_index] = textfield
 
             label = QLabel(field.name)
             label.setWordWrap(True) # i used to have this, check if still needed
-            label.setAlignment(Qt.AlignLeft) # i think it defaults to this, check TODO
 
             self.fields[self.widget_index] = field
             self.widget_labels[self.widget_index] = label
@@ -168,28 +165,12 @@ class CanSender(DashboardItem):
         # 2) data = parse fields, then do a match case check (if its None, then pulse errors) => but I want to collect all the errors to pulse at once instead of castcading
         bit_str = self.parse_can_msg()
 
-        if self.has_valid_fields():
-            pass
-            # self.omnibus_sender.send(self.channel, self.parse_data())
-        
-#     def parse_data(self):
-#         msg_type = self.message_type.currentText()
-#         msg_data = b""
-# #        amt_of_data = len(self.canlib_info.get_msg_data(msg_type))
-#         for i in range(amt_of_data):
-#             # pad data with 0s until len = 2
-#             # TODO: check if this is actually necessar, i dont think it is
-#             msg_data += bytes.fromhex(self.line_edits[i].text().zfill(2))
-
-#         msg_type = mt.msg_type_hex[msg_type]
-#         msg_board = 0 # dummby board
-#         msg_sid = msg_type | msg_board
-        
-#         formatted_data = {'message': (msg_sid, msg_data)}
-#         return formatted_data
+        if bit_str == None:
+            return
+        # self.omnibus_sender.send(self.channel, self.parse_data())
 
     def parse_can_msg(self):
-        problematic_indexes = []
+        self.invalid_indexes = []
         bit_str = BitString()
         for index in range(0, self.widget_index + 1):
             field = self.fields[index]
@@ -197,70 +178,105 @@ class CanSender(DashboardItem):
             try:
                 bit_str.push(*field.encode(text))
             except:
-                problematic_indexes.append(index)
+                self.invalid_indexes.append(index)
 
-        if problematic_indexes:
+        if self.invalid_indexes:
             self.pulse_count = 0
-            self.timer = QTimer() # i dont think i need to create a new timer every time
-            self.timer.timeout.connect(lambda: self.pulse(bad_indexes))
             self.timer.start(self.PULSE_PERIOD)
-        return None if problematic_indexes else bit_str
 
-    # def pulse(self, indexes):
-    #     if self.pulse_count < self.NUM_PULSES*2:
-    #         for i in indexes:
-    #             widget = self.message_type if i == -1 else self.line_edits[i]
-    #             widget.setDisabled(self.pulse_count%2 == 0)
-    #         self.pulse_count += 1
-    #     else:
-    #         self.timer.stop()
+        return None if self.invalid_indexes else bit_str
 
-#     def move_cursor_forwards(self):
-#         obj = self.sender()
-#         obj_name = obj.objectName()
-#         cur_idx = self.line_edits_map[obj_name]
-#         cur_len = len(self.line_edits[cur_idx].text())
+    def pulse_invalid_fields(self):
+        if self.pulse_count < self.NUM_PULSES*2:
+            for index in self.invalid_indexes:
+                widget = self.widgets[index]
+                widget.setDisabled(self.pulse_count%2 == 0)
+            self.pulse_count += 1
+        else:
+            self.timer.stop()
 
-#         obj.setText(obj.text().upper())
-#         if cur_len == 2:
-#             nxt_idx = min(self.MAX_MESSAGE_BYTES-1, cur_idx+1)
-#             nxt_obj = self.line_edits[nxt_idx]
-#             nxt_obj.setFocus()
+    def eventFilter(self, widget, event):
+        """
+        Intercept key press events from textfield to enhance UX.
 
-#     def move_cursor_backwards(self):
-#         obj_name = self.sender().objectName()
-#         cur_idx = self.line_edits_map[obj_name]
-#         cur_len = len(self.line_edits[cur_idx].text())
+        If backspace is pressed, we will try to move the cursor to the previous widget
+        If shift + tab is pressed, we will move the cursor to the previous widget
+        If tab is pressed, we will move the cursor to the next widget
+        If any valid textfield characters are inputted, we will try to move the cursor to the next widget
+        """
+        if event.type() != QEvent.KeyPress:
+            return super().eventFilter(widget, event) # we don't need this event, let QLineEdit handle it
+        match event.key():
+            case Qt.Key_Backspace:
+                self.try_move_cursor_backwards()
+            case Qt.Key_Tab:
+                match event.modifiers():
+                    case Qt.ShiftModifier:
+                        self.move_cursor_backwards()
+                    case Qt.NoModifier:
+                        self.move_cursor_forwards()
+            case _:
+                prev_text = widget.text()
+                # let textfield handle the event and check if the character was added to the textfield
+                # remember, we intercept messages, so we dont want to emit a move_cursor_fowards if the
+                # message didn't even pass our input mask
+                handled = super().eventFilter(widget, event)
+                new_text = widget.text()
+                self.capitalize_text()
+                if prev_text != new_text:
+                    self.try_move_cursor_forwards()
+                return handled
+        return super().eventFilter(widget, event) # we've finished intercepting the event, let QLineEdit handle the rest
 
-#         if cur_len == 0:
-#             prv_idx = max(0, cur_idx-1)
-#             prv_obj = self.line_edits[prv_idx]
-#             prv_obj.setFocus()
-#             prv_obj.setText(prv_obj.text()[:-1])
+    def capitalize_text(self):
+        widget = self.sender()
+        index = self.widget_to_index[widget]
+        field = self.fields[index]
 
-#     def get_name():
-#         return "CAN Sender"
+        # keep numeric hexadecimals uppercase by default
+        if isinstance(field, pf.Numeric):
+            widget.setText(widget.text().upper())
 
-#     def get_props(self):
-#         return True
+    def try_move_cursor_forwards(self):
+        widget = self.sender()
+        index = self.widget_to_index[widget]
+        field = self.fields[index]
+        byte_length = field.length // 4
+        text_length = len(widget.text())
 
-#     def on_delete(self):
-#         pass
+        if text_length == byte_length:
+            self.move_cursor_forwards()
 
-#     def prompt_for_properties(self):
-#         return True
+    def move_cursor_forwards(self):
+        widget = self.sender()
+        index = self.widget_to_index[widget]
+        next_index = min(self.widget_index, index + 1)
+        next_widget = self.widgets[next_index]
+        next_widget.setFocus()
 
-# there aren't any event handlers to check whether a certain key has been pressed
-# I need to know when a backspace has been pressed to potentially move the cursor back
-class BackspaceEventFilter(QObject):
-    on_backspace = Signal()
-    __obj_name = ""
+    def try_move_cursor_backwards(self):
+        widget = self.sender()
+        text_length = len(widget.text())
 
-    def eventFilter(self, obj, event):
-        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Backspace:
-            self.__obj_name = obj.objectName()
-            self.on_backspace.emit()
-        return super().eventFilter(obj, event)
-    
-    def objectName(self):
-        return self.__obj_name
+        if text_length == 0:
+            self.move_cursor_backwards()
+
+    def move_cursor_backwards(self):
+        widget = self.sender()
+        index = self.widget_to_index[widget]
+        previous_index = max(0, index - 1)
+        previous_widget = self.widgets[previous_index]
+        previous_widget.setText(previous_widget.text()[:-1])
+        previous_widget.setFocus()
+
+    def get_name():
+        return "CAN Sender"
+
+    def get_props(self):
+        return True
+
+    def on_delete(self):
+        pass
+
+    def prompt_for_properties(self):
+        return True
