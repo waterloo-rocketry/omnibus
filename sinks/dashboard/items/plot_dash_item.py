@@ -9,6 +9,7 @@ from .dashboard_item import DashboardItem
 import config
 from .registry import Register
 
+
 @Register
 class PlotDashItem(DashboardItem):
     def __init__(self, params=None):
