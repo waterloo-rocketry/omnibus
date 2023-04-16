@@ -3,7 +3,7 @@ import sys
 import json
 import signal
 
-from pyqtgraph.Qt.QtCore import Qt, QTimer
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF
 from pyqtgraph.Qt.QtGui import QPainter, QCursor
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
@@ -60,9 +60,12 @@ class MyQGraphicsView(QGraphicsView):
         self.scale(zoomFactor, zoomFactor)
 
     def wheelEvent(self, event):
-        # Zoom if ctrl/cmd is held
-        # Scroll horizontally if shift is held
-        # Scroll vertically otherwise
+        relative_pos = QCursor.pos()
+        absolute_pos = self.mapFromGlobal(relative_pos)
+        hovered_widget = self.itemAt(absolute_pos)
+        if hovered_widget is not None:
+            return super().wheelEvent(event)
+        
         angle = event.angleDelta()
         if event.modifiers() == Qt.ControlModifier:
             self.zoom(angle.y())
@@ -77,7 +80,9 @@ class MyQGraphicsView(QGraphicsView):
                 numDegrees = angle.y() * scroll_sensitivity_factor
                 value = self.verticalScrollBar().value()
                 self.verticalScrollBar().setValue(value + numDegrees)
-        return super().wheelEvent(event)
+                super().wheelEvent(event)
+        else:
+            super().wheelEvent(event)
 
 # Custom Dashboard class derived from QWidget
 
@@ -247,6 +252,7 @@ class Dashboard(QWidget):
         # Add the dash item to the scene and get
         # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
+        # dashitem.layout_changed_singal.connect(lambda: print("CHANGED"))
         height = proxy.size().height()
         width = proxy.size().width()
 
@@ -432,13 +438,8 @@ class Dashboard(QWidget):
 
     # Method to get new data for widgets
     def update(self):
-        try:
-            self.counter.tick()
-            self.callback()
-        except KeyboardInterrupt:
-            print("wtf")
-            # Catch the KeyboardInterrupt exception and exit the application
-            QApplication.quit()
+        self.counter.tick()
+        self.callback()
 
     # Method to center the view
     def reset(self):
@@ -473,15 +474,13 @@ class Dashboard(QWidget):
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
+    signal.signal(signal.SIGINT, lambda *args: QApplication.quit()) # quit applicaiton from terminal
     app = QApplication(sys.argv)
     dash = Dashboard(callback)
 
     timer = QTimer()
     timer.timeout.connect(dash.update)
-    try:
-        timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
-    except KeyboardInterrupt:
-        exit()
+    timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
     dash.update()
     dash.show()
