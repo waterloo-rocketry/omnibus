@@ -3,7 +3,7 @@ import sys
 import json
 import signal
 
-from pyqtgraph.Qt.QtCore import Qt, QTimer
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF
 from pyqtgraph.Qt.QtGui import QPainter, QCursor
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
@@ -234,6 +234,7 @@ class Dashboard(QWidget):
         # Add the dash item to the scene and get
         # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
+        # dashitem.layout_changed_singal.connect(lambda: print("CHANGED"))
         height = proxy.size().height()
         width = proxy.size().width()
 
@@ -416,13 +417,8 @@ class Dashboard(QWidget):
 
     # Method to get new data for widgets
     def update(self):
-        try:
-            self.counter.tick()
-            self.callback()
-        except KeyboardInterrupt:
-            print("wtf")
-            # Catch the KeyboardInterrupt exception and exit the application
-            QApplication.quit()
+        self.counter.tick()
+        self.callback()
 
     # Method to center the view
     def reset_zoom(self):
@@ -451,10 +447,7 @@ def dashboard_driver(callback):
 
     timer = QTimer()
     timer.timeout.connect(dash.update)
-    try:
-        timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
-    except KeyboardInterrupt:
-        exit()
+    timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
     dash.update()
     dash.show()
