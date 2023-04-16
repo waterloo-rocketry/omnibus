@@ -76,6 +76,7 @@ class CanSender(DashboardItem):
 
     def initialize_variables(self):
         self.layout_manager = QGridLayout(self)
+        # self.layout_manager.layoutChanged.connect(lambda: self.layout_changed_singal.emit())
         self.setLayout(self.layout_manager)
 
         self.numeric_mask = "[A-Fa-f0-9]" # not sure if we want to stick with base 16 or base 10 (how to deal with scaled?)
@@ -99,6 +100,9 @@ class CanSender(DashboardItem):
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
 
         # TODO: add the port thing here
+
+
+        self.layout_changed_singal = Signal()
 
         # constants
         self.NUM_PULSES = 3 # number of pulses to display when a Field throws an error
@@ -165,6 +169,7 @@ class CanSender(DashboardItem):
         self.send_button = QPushButton("SEND")
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
         self.layout_manager.update()
+        # self.layout_changed_singal.emit()
 
     def send_can_message(self):
         # im not sure what the ideal way of this is, we can:
@@ -203,9 +208,11 @@ class CanSender(DashboardItem):
             self.timer.stop()
 
     def wheelEvent(self, event):
-        print("item", event)
+        # print("item", event)
+        print("item")
         hovered_widget = QApplication.widgetAt(QCursor.pos())
-        print(type(hovered_widget).__name__)
+        # print(type(hovered_widget).__name__)
+        super().wheelEvent(event)
 
     def eventFilter(self, widget, event):
         """

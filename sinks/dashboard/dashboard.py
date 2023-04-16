@@ -3,7 +3,7 @@ import sys
 import json
 import signal
 
-from pyqtgraph.Qt.QtCore import Qt, QTimer
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF
 from pyqtgraph.Qt.QtGui import QPainter, QCursor
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
@@ -14,7 +14,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QVBoxLayout,
     QGraphicsItem,
     QGraphicsRectItem,
-    QComboBox
+    QComboBox,
+    QAbstractScrollArea
 )
 from items import registry
 from omnibus.util import TickCounter
@@ -89,6 +90,7 @@ class Dashboard(QWidget):
 
         # Create a large scene underneath the view
         self.scene = QGraphicsScene(0, 0, self.width*100, self.height*100)
+        self.scene.changed.connect(self.test)
 
         # Create a layout manager
         self.layout = QVBoxLayout()
@@ -186,6 +188,7 @@ class Dashboard(QWidget):
         # Add the dash item to the scene and get
         # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
+        # dashitem.layout_changed_singal.connect(lambda: print("CHANGED"))
         height = proxy.size().height()
         width = proxy.size().width()
 
@@ -366,13 +369,8 @@ class Dashboard(QWidget):
 
     # Method to get new data for widgets
     def update(self):
-        try:
-            self.counter.tick()
-            self.callback()
-        except KeyboardInterrupt:
-            print("wtf")
-            # Catch the KeyboardInterrupt exception and exit the application
-            QApplication.quit()
+        self.counter.tick()
+        self.callback()
 
     # Method to center the view
     def reset_zoom(self):
@@ -401,10 +399,7 @@ def dashboard_driver(callback):
 
     timer = QTimer()
     timer.timeout.connect(dash.update)
-    try:
-        timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
-    except KeyboardInterrupt:
-        exit()
+    timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
     dash.show()
     dash.load()
