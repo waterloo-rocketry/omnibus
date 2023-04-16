@@ -3,14 +3,17 @@ from pyqtgraph.Qt.QtCore import Qt, QTimer, QObject, Signal, QEvent
 from pyqtgraph.Qt.QtGui import (
     QColor,
     QPalette,
-    QRegularExpressionValidator
+    QRegularExpressionValidator,
+    QCursor
 )
 from pyqtgraph.Qt.QtWidgets import (
     QComboBox,
     QGridLayout,
     QLabel,
     QLineEdit,
-    QPushButton
+    QPushButton,
+    QListView,
+    QApplication
 )
 
 import parsley.fields as pf
@@ -47,7 +50,7 @@ class CanSender(DashboardItem):
     - Width of CanSender widget scales depending on the CAN message length
     """
 
-    def __init__(self):
+    def __init__(self, props):
         """
         Coding checklist:
         - text field signal
@@ -106,21 +109,23 @@ class CanSender(DashboardItem):
         for field in fields:
             self.widget_index += 1
             byte_length = field.length // 4
-            match field:
-                case pf.Switch, pf.Enum:
-                    dropdown = QComboBox()
-                    dropdown.setMinimumContentsLength(20) # TODO: I swear this changed the height of row entries but I mgiht be capping
-                    dropdown_items = list(field.map_key_enum.keys())
-                    dropdown.addItems(dropdown_items)
-                    self.widgets[self.widget_index] = dropdown
-                case pf.Numeric, pf.ASCII:
-                    mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
-                    textfield = QLineEdit()
-                    textfield.setAlignment(Qt.AlignCenter)
-                    textfield.setValidator(byte_length * mask)
-                    textfield.setPlaceholderText(byte_length * "0")
-                    textfield.installEventFilter(self) # intercept certain key press events for UX enchancements
-                    self.widgets[self.widget_index] = textfield
+            if isinstance(field, pf.Switch) or isinstance(field, pf.Enum):
+                dropdown = QComboBox()
+                # dropdown.setMinimumContentsLength(20) # TODO: I swear this changed the height of row entries but I mgiht be capping
+                dropdown_items = list(field.get_keys())
+                dropdown.addItems(dropdown_items)
+                dropdown.view().setViewMode(QListView.ListMode)
+                # dropdown.view().setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+                # dropdown.view().setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+                self.widgets[self.widget_index] = dropdown
+            elif isinstance(field, pf.Numeric) or isinstance(field, pf.ASCII):
+                mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
+                textfield = QLineEdit()
+                textfield.setAlignment(Qt.AlignCenter)
+                textfield.setValidator(QRegularExpressionValidator(byte_length * mask))
+                textfield.setPlaceholderText(byte_length * "0")
+                textfield.installEventFilter(self) # intercept certain key press events for UX enchancements
+                self.widgets[self.widget_index] = textfield
 
             label = QLabel(field.name)
             label.setWordWrap(True) # i used to have this, check if still needed
@@ -143,19 +148,21 @@ class CanSender(DashboardItem):
         # delete the widgets from [dropdown_index + 1, self.widget_index] from layout manager
         for index in range(dropdown_index + 1, self.widget_index + 1):
             widget = self.widgets[index]
-            label = self.widget_label[index]
-            self.layout_manager.remove(widget)
-            self.layout_manager.remove(label)
+            label = self.widget_labels[index]
+            self.layout_manager.removeWidget(widget)
+            self.layout_manager.removeWidget(label)
             # need to delete widget from memory (i think it works like this or its deleteLater())
-            widget = None
-            label = None
+            widget.deleteLater()
+            label.deleteLater()
 
         # insert the new widgets
-        self.layout_manager.remove(self.send_button) # need to move the send button based on the length of the new can message
+        self.layout_manager.removeWidget(self.send_button) # need to move the send button based on the length of the new can message
+        self.send_button.deleteLater()
         self.widget_index = dropdown_index
         switch_field = self.fields[self.widget_index]
         nested_fields = switch_field.get_fields(text)
         self.add_fields(nested_fields)
+        self.send_button = QPushButton("SEND")
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
         self.layout_manager.update()
 
@@ -194,6 +201,11 @@ class CanSender(DashboardItem):
             self.pulse_count += 1
         else:
             self.timer.stop()
+
+    def wheelEvent(self, event):
+        print("item", event)
+        hovered_widget = QApplication.widgetAt(QCursor.pos())
+        print(type(hovered_widget).__name__)
 
     def eventFilter(self, widget, event):
         """
@@ -234,7 +246,7 @@ class CanSender(DashboardItem):
         field = self.fields[index]
 
         # keep numeric hexadecimals uppercase by default
-        if isinstance(field, pf.Numeric):
+        if isinstance(field, Numeric):
             widget.setText(widget.text().upper())
 
     def try_move_cursor_forwards(self):
