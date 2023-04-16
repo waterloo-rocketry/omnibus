@@ -4,7 +4,7 @@ import json
 import signal
 
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.Qt.QtGui import QPainter
+from pyqtgraph.Qt.QtGui import QPainter, QCursor
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -13,7 +13,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QMenuBar,
     QVBoxLayout,
     QGraphicsItem,
-    QGraphicsRectItem
+    QGraphicsRectItem,
+    QComboBox
 )
 from items import registry
 from omnibus.util import TickCounter
@@ -22,7 +23,7 @@ from utils import prompt_user, ConfirmDialog
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
-from items.can_sender.can_sender import CanSender
+from items.can_sender import CanSender
 from omnibus.util import TickCounter
 from utils import prompt_user, EventTracker
 
@@ -70,8 +71,7 @@ class MyQGraphicsView(QGraphicsView):
                 numDegrees = angle.y() * scroll_sensitivity_factor
                 value = self.verticalScrollBar().value()
                 self.verticalScrollBar().setValue(value + numDegrees)
-        else:
-            super(QGraphicsView, self).wheelEvent(event)
+        return super().wheelEvent(event)
 
 # Custom Dashboard class derived from QWidget
 
@@ -374,8 +374,13 @@ class Dashboard(QWidget):
 
     # Method to get new data for widgets
     def update(self):
-        self.counter.tick()
-        self.callback()
+        try:
+            self.counter.tick()
+            self.callback()
+        except KeyboardInterrupt:
+            print("wtf")
+            # Catch the KeyboardInterrupt exception and exit the application
+            QApplication.quit()
 
     # Method to center the view
     def reset(self):
@@ -404,6 +409,8 @@ class Dashboard(QWidget):
                     self.view.zoom(-200)
                 case Qt.Key_0:
                     self.reset()
+        else:
+            super().keyPressEvent(event)
 
 
 # Function to launch the dashboard
@@ -413,7 +420,10 @@ def dashboard_driver(callback):
 
     timer = QTimer()
     timer.timeout.connect(dash.update)
-    timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
+    try:
+        timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
+    except KeyboardInterrupt:
+        exit()
 
     dash.show()
     dash.load()
