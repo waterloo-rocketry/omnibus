@@ -4,7 +4,7 @@ import json
 import signal
 
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.Qt.QtGui import QPainter
+from pyqtgraph.Qt.QtGui import QPainter, QCursor
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -259,12 +259,8 @@ class Dashboard(QWidget):
             xpos = mapped.x() - (width/2)
             ypos = mapped.y() - (height/2)
 
-<<<<<<< HEAD
         proxy.setPos(xpos, ypos)
         proxy.setFocusPolicy(Qt.NoFocus)
-=======
-        proxy.setPos(pos[0], pos[1])
->>>>>>> 1851856 (things pulse if they're incorrect)
 
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
@@ -420,8 +416,13 @@ class Dashboard(QWidget):
 
     # Method to get new data for widgets
     def update(self):
-        self.counter.tick()
-        self.callback()
+        try:
+            self.counter.tick()
+            self.callback()
+        except KeyboardInterrupt:
+            print("wtf")
+            # Catch the KeyboardInterrupt exception and exit the application
+            QApplication.quit()
 
     # Method to center the view
     def reset_zoom(self):
@@ -450,7 +451,10 @@ def dashboard_driver(callback):
 
     timer = QTimer()
     timer.timeout.connect(dash.update)
-    timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
+    try:
+        timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
+    except KeyboardInterrupt:
+        exit()
 
     dash.update()
     dash.show()
