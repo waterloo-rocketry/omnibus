@@ -23,9 +23,7 @@ from parsley.bitstring import BitString
 # from parsers import publisher
 from .registry import Register
 from .dashboard_item import DashboardItem
-# from .can_sender.canlib_metadata import CanlibMetadata
-import sources.parsley.message_types as mt 
-
+from utils import EventTracker
 @Register
 class CanSender(DashboardItem):
     """
@@ -35,8 +33,6 @@ class CanSender(DashboardItem):
     | msg_type | board_id | time             | command |          | <- field names
     |----------|----------|------------------|---------|----------|
     | Dropdown | Dropdown | 24-bit Textfield | Dropdown|   Send   | <- field-dependent widgets to gather input
-    |----------|-----------------------------|---------|----------|
-    |   Port:  |   /dev/tty.usbmodem142201   |         |          | <- TODO: customize which port to send CAN message to
     |-------------------------------------------------------------|
 
     - Dropdowns contain a field's dictionary keys
@@ -47,7 +43,7 @@ class CanSender(DashboardItem):
     - Upon pressing send:
         => for every field that fails to encode its data, pulse the field in quick successions (comfy red)
         => if every field successfully encodes its data, long pulse all of the fields once (comfy green)
-    - Width of CanSender widget scales depending on the CAN message length
+    - Width of CanSender widget scales depending on the CAN message length (TODO)
     """
 
     def __init__(self, props):
@@ -76,8 +72,14 @@ class CanSender(DashboardItem):
 
     def initialize_variables(self):
         self.layout_manager = QGridLayout(self)
-        # self.layout_manager.layoutChanged.connect(lambda: self.layout_changed_singal.emit())
         self.setLayout(self.layout_manager)
+
+        self.field_signals = self.connect_field_signals(EventTracker())
+        self.text_signals = self.connect_text_signals(self.connect_field_signals(EventTracker()))
+
+        self.x = EventTracker()
+        self.x.text_entered.connect(lambda: print("text"))
+        self.installEventFilter(self.x)
 
         self.numeric_mask = "[A-Fa-f0-9]" # not sure if we want to stick with base 16 or base 10 (how to deal with scaled?)
         self.ascii_mask = "[\x00-\x7F]"
@@ -99,15 +101,9 @@ class CanSender(DashboardItem):
         # self.send_button.clicked.connect(self.send_can_message)
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
 
-        # TODO: add the port thing here
-
-
-        self.layout_changed_singal = Signal()
-
         # constants
         self.NUM_PULSES = 3 # number of pulses to display when a Field throws an error
         self.PULSE_PERIOD = 100 # period (ms) between each pulse
-        # self.MAX_MESSAGE_BYTES = 8
 
     def add_fields(self, fields: List[pf.Field]):
         for field in fields:
@@ -115,20 +111,22 @@ class CanSender(DashboardItem):
             byte_length = field.length // 4
             if isinstance(field, pf.Switch) or isinstance(field, pf.Enum):
                 dropdown = QComboBox()
-                # dropdown.setMinimumContentsLength(20) # TODO: I swear this changed the height of row entries but I mgiht be capping
+                dropdown.setMinimumContentsLength(20) # TODO: I swear this changed the height of row entries but I mgiht be capping
                 dropdown_items = list(field.get_keys())
                 dropdown.addItems(dropdown_items)
                 dropdown.view().setViewMode(QListView.ListMode)
-                # dropdown.view().setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
-                # dropdown.view().setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+                # dropdown.installEventFilter(self.field_signals)
                 self.widgets[self.widget_index] = dropdown
             elif isinstance(field, pf.Numeric) or isinstance(field, pf.ASCII):
                 mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
                 textfield = QLineEdit()
                 textfield.setAlignment(Qt.AlignCenter)
-                textfield.setValidator(QRegularExpressionValidator(byte_length * mask))
+                textfield.setFocusPolicy(Qt.StrongFocus)
+                # textfield.setValidator(QRegularExpressionValidator(byte_length * mask))
                 textfield.setPlaceholderText(byte_length * "0")
-                textfield.installEventFilter(self) # intercept certain key press events for UX enchancements
+                ev = EventTracker()
+                ev.text_entered.connect(lambda: print("FUCK"))
+                textfield.installEventFilter(ev)
                 self.widgets[self.widget_index] = textfield
 
             label = QLabel(field.name)
@@ -168,8 +166,6 @@ class CanSender(DashboardItem):
         self.add_fields(nested_fields)
         self.send_button = QPushButton("SEND")
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
-        self.layout_manager.update()
-        # self.layout_changed_singal.emit()
 
     def send_can_message(self):
         # im not sure what the ideal way of this is, we can:
@@ -207,57 +203,24 @@ class CanSender(DashboardItem):
         else:
             self.timer.stop()
 
-    def wheelEvent(self, event):
-        # print("item", event)
-        print("item")
-        hovered_widget = QApplication.widgetAt(QCursor.pos())
-        # print(type(hovered_widget).__name__)
-        super().wheelEvent(event)
-
     def eventFilter(self, widget, event):
-        """
-        Intercept key press events from textfield to enhance UX.
+        print("f", event)
 
-        If backspace is pressed, we will try to move the cursor to the previous widget
-        If shift + tab is pressed, we will move the cursor to the previous widget
-        If tab is pressed, we will move the cursor to the next widget
-        If any valid textfield characters are inputted, we will try to move the cursor to the next widget
-        """
-        if event.type() != QEvent.KeyPress:
-            return super().eventFilter(widget, event) # we don't need this event, let QLineEdit handle it
-        match event.key():
-            case Qt.Key_Backspace:
-                self.try_move_cursor_backwards()
-            case Qt.Key_Tab:
-                match event.modifiers():
-                    case Qt.ShiftModifier:
-                        self.move_cursor_backwards()
-                    case Qt.NoModifier:
-                        self.move_cursor_forwards()
-            case _:
-                prev_text = widget.text()
-                # let textfield handle the event and check if the character was added to the textfield
-                # remember, we intercept messages, so we dont want to emit a move_cursor_fowards if the
-                # message didn't even pass our input mask
-                handled = super().eventFilter(widget, event)
-                new_text = widget.text()
-                self.capitalize_text()
-                if prev_text != new_text:
-                    self.try_move_cursor_forwards()
-                return handled
-        return super().eventFilter(widget, event) # we've finished intercepting the event, let QLineEdit handle the rest
+    def connect_field_signals(self, event_tracker):
+        # event_tracker.tab_pressed.connect(self.move_cursor_forwards)
+        event_tracker.tab_pressed.connect(lambda: print("tab"))
+        # event_tracker.reverse_tab_pressed.connect(self.move_cursor_backwards)
+        event_tracker.reverse_tab_pressed.connect(lambda: print("back tab"))
+        return event_tracker
+    
+    def connect_text_signals(self, event_tracker):
+        # event_tracker.text_entered.connect(self.try_move_cursor_forwards)
+        event_tracker.text_entered.connect(lambda: print("partial"))
+        event_tracker.backspace_pressed.connect(self.try_move_cursor_backwards)
+        return event_tracker
 
-    def capitalize_text(self):
-        widget = self.sender()
-        index = self.widget_to_index[widget]
-        field = self.fields[index]
-
-        # keep numeric hexadecimals uppercase by default
-        if isinstance(field, Numeric):
-            widget.setText(widget.text().upper())
-
-    def try_move_cursor_forwards(self):
-        widget = self.sender()
+    def try_move_cursor_forwards(self, widget):
+        print("text", widget)
         index = self.widget_to_index[widget]
         field = self.fields[index]
         byte_length = field.length // 4
@@ -266,22 +229,19 @@ class CanSender(DashboardItem):
         if text_length == byte_length:
             self.move_cursor_forwards()
 
-    def move_cursor_forwards(self):
-        widget = self.sender()
+    def move_cursor_forwards(self, widget):
         index = self.widget_to_index[widget]
         next_index = min(self.widget_index, index + 1)
         next_widget = self.widgets[next_index]
         next_widget.setFocus()
 
-    def try_move_cursor_backwards(self):
-        widget = self.sender()
+    def try_move_cursor_backwards(self, widget):
         text_length = len(widget.text())
 
         if text_length == 0:
             self.move_cursor_backwards()
 
-    def move_cursor_backwards(self):
-        widget = self.sender()
+    def move_cursor_backwards(self, widget):
         index = self.widget_to_index[widget]
         previous_index = max(0, index - 1)
         previous_widget = self.widgets[previous_index]
