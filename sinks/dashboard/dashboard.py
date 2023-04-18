@@ -3,8 +3,8 @@ import sys
 import json
 import signal
 
-from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF
-from pyqtgraph.Qt.QtGui import QPainter, QCursor
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF, QEvent, Signal
+from pyqtgraph.Qt.QtGui import QPainter, QCursor, QKeyEvent
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -234,7 +234,6 @@ class Dashboard(QWidget):
         # Add the dash item to the scene and get
         # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
-        # dashitem.layout_changed_singal.connect(lambda: print("CHANGED"))
         height = proxy.size().height()
         width = proxy.size().width()
 
