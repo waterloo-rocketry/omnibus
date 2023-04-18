@@ -3,8 +3,8 @@ import sys
 import json
 import signal
 
-from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF
-from pyqtgraph.Qt.QtGui import QPainter, QCursor
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF, QEvent, Signal
+from pyqtgraph.Qt.QtGui import QPainter, QCursor, QKeyEvent
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -15,7 +15,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsItem,
     QGraphicsRectItem,
     QComboBox,
-    QAbstractScrollArea
+    QAbstractScrollArea,
+    QLineEdit
 )
 from items import registry
 from omnibus.util import TickCounter
@@ -26,15 +27,16 @@ from items.plot_dash_item import PlotDashItem
 from items.can_message_table import CanMsgTableDashItem
 from items.can_sender import CanSender
 from omnibus.util import TickCounter
-from utils import prompt_user
+from utils import prompt_user, EventTracker
 
 
 # Custom class derived from QGraphicsView to capture mouse
 # wheel events by overriding the wheelEvent function
 class MyQGraphicsView(QGraphicsView):
-    def __init__(self, parent=None):
+    def __init__(self, scene):
         # Initialize the super class
-        super(MyQGraphicsView, self).__init__(parent)
+        super().__init__(scene)
+
         self.zoomed = 1.0
 
         # Zooms to the position of the mouse
@@ -103,7 +105,6 @@ class Dashboard(QWidget):
 
         # Create a large scene underneath the view
         self.scene = QGraphicsScene(0, 0, self.width*100, self.height*100)
-        self.scene.changed.connect(self.test)
 
         # Create a grid layout
         self.layout = QVBoxLayout()
@@ -186,10 +187,12 @@ class Dashboard(QWidget):
         self.layout.addWidget(self.view)
         self.setLayout(self.layout)
 
-    count = 0
-    def test(self, rect):
-        # print("changed", self.count, rect)
-        self.count += 1
+        self.key_press_signals = EventTracker()
+        self.key_press_signals.zoom_in.connect(lambda: self.view.zoom(200))
+        self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))
+        self.key_press_signals.zoom_reset.connect(self.reset_zoom)
+        self.key_press_signals.backspace_pressed.connect(self.remove_selected)
+        self.installEventFilter(self.key_press_signals)
 
 
     # Method to add widgets
@@ -197,7 +200,6 @@ class Dashboard(QWidget):
         # Add the dash item to the scene and get
         # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
-        # dashitem.layout_changed_singal.connect(lambda: print("CHANGED"))
         height = proxy.size().height()
         width = proxy.size().width()
 
@@ -215,7 +217,6 @@ class Dashboard(QWidget):
             pos = [mapped.x() - (width/2), mapped.y() - (height/2)]
 
         proxy.setPos(pos[0], pos[1])
-        proxy.setFocusPolicy(Qt.NoFocus)
 
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
@@ -386,7 +387,7 @@ class Dashboard(QWidget):
         self.callback()
 
     # Method to center the view
-    def reset(self):
+    def reset_zoom(self):
         # Reset the zoom
         self.view.scale(1/self.view.zoomed, 1/self.view.zoomed)
         self.view.zoomed = 1
@@ -395,25 +396,6 @@ class Dashboard(QWidget):
         scene_width = self.scene.width()
         scene_height = self.scene.height()
         self.view.centerOn(scene_width/2, scene_height/2)
-
-    # Method to capture key presses
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Backspace and not self.locked:
-            # Delete all selected items
-            for item in self.scene.selectedItems():
-                self.remove(item)
-                self.widgets.pop(item)
-        elif event.modifiers() == Qt.ControlModifier:
-            # Forward event to proper handler
-            match event.key():
-                case Qt.Key_Equal:
-                    self.view.zoom(200)
-                case Qt.Key_Minus:
-                    self.view.zoom(-200)
-                case Qt.Key_0:
-                    self.reset()
-        else:
-            super().keyPressEvent(event)
 
 
 # Function to launch the dashboard
