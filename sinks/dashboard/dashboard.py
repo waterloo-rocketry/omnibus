@@ -3,8 +3,8 @@ import sys
 import json
 import signal
 
-from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF
-from pyqtgraph.Qt.QtGui import QPainter, QCursor
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF, QEvent, Signal
+from pyqtgraph.Qt.QtGui import QPainter, QCursor, QKeyEvent
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -15,7 +15,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsItem,
     QGraphicsRectItem,
     QComboBox,
-    QAbstractScrollArea
+    QAbstractScrollArea,
+    QLineEdit
 )
 from items import registry
 from omnibus.util import TickCounter
@@ -90,7 +91,6 @@ class Dashboard(QWidget):
 
         # Create a large scene underneath the view
         self.scene = QGraphicsScene(0, 0, self.width*100, self.height*100)
-        self.scene.changed.connect(self.test)
 
         # Create a layout manager
         self.layout = QVBoxLayout()
@@ -188,7 +188,6 @@ class Dashboard(QWidget):
         # Add the dash item to the scene and get
         # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
-        # dashitem.layout_changed_singal.connect(lambda: print("CHANGED"))
         height = proxy.size().height()
         width = proxy.size().width()
 
