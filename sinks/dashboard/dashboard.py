@@ -3,8 +3,8 @@ import sys
 import json
 import signal
 
-from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF
-from pyqtgraph.Qt.QtGui import QPainter, QCursor
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF, QEvent, Signal
+from pyqtgraph.Qt.QtGui import QPainter, QCursor, QKeyEvent
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -17,7 +17,9 @@ from pyqtgraph.Qt.QtWidgets import (
     QFileDialog,
     QHeaderView,
     QSplitter,
-    QComboBox
+    QComboBox,
+    QAbstractScrollArea,
+    QLineEdit
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
@@ -35,9 +37,10 @@ from items.can_sender import CanSender
 # Custom class derived from QGraphicsView to capture mouse
 # wheel events by overriding the wheelEvent function
 class MyQGraphicsView(QGraphicsView):
-    def __init__(self, parent=None):
+    def __init__(self, scene):
         # Initialize the super class
-        super(MyQGraphicsView, self).__init__(parent)
+        super().__init__(scene)
+
         self.zoomed = 1.0
 
         # Zooms to the position of the mouse
@@ -106,10 +109,13 @@ class Dashboard(QWidget):
         # Create a large scene underneath the view
         self.scene = QGraphicsScene(0, 0, self.width*100, self.height*100)
 <<<<<<< HEAD
+<<<<<<< HEAD
         self.scene.selectionChanged.connect(self.on_selection_changed)
 =======
         self.scene.changed.connect(self.test)
 >>>>>>> b256a80 (Solved dashboard eating wheelEvents)
+=======
+>>>>>>> cc8a1dd (LFG EVENTS NOW PROPOGATE TO DASHBOARD ITEMS)
 
         # Create a grid layout
         self.layout = QVBoxLayout()
@@ -207,6 +213,7 @@ class Dashboard(QWidget):
         self.setLayout(self.layout)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     # Method to open the parameter tree to the selected item
     def on_selection_changed(self):
         items = self.scene.selectedItems()
@@ -239,6 +246,14 @@ class Dashboard(QWidget):
     def test(self, rect):
         # print("changed", self.count, rect)
         self.count += 1
+=======
+        self.key_press_signals = EventTracker()
+        self.key_press_signals.zoom_in.connect(lambda: self.view.zoom(200))
+        self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))
+        self.key_press_signals.zoom_reset.connect(self.reset_zoom)
+        self.key_press_signals.backspace_pressed.connect(self.remove_selected)
+        self.installEventFilter(self.key_press_signals)
+>>>>>>> cc8a1dd (LFG EVENTS NOW PROPOGATE TO DASHBOARD ITEMS)
 
 >>>>>>> b256a80 (Solved dashboard eating wheelEvents)
 
@@ -247,7 +262,6 @@ class Dashboard(QWidget):
         # Add the dash item to the scene and get
         # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
-        # dashitem.layout_changed_singal.connect(lambda: print("CHANGED"))
         height = proxy.size().height()
         width = proxy.size().width()
 
@@ -273,8 +287,12 @@ class Dashboard(QWidget):
             xpos = mapped.x() - (width/2)
             ypos = mapped.y() - (height/2)
 
+<<<<<<< HEAD
         proxy.setPos(xpos, ypos)
         proxy.setFocusPolicy(Qt.NoFocus)
+=======
+        proxy.setPos(pos[0], pos[1])
+>>>>>>> cc8a1dd (LFG EVENTS NOW PROPOGATE TO DASHBOARD ITEMS)
 
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
@@ -437,7 +455,7 @@ class Dashboard(QWidget):
         self.callback()
 
     # Method to center the view
-    def reset(self):
+    def reset_zoom(self):
         # Reset the zoom
         self.view.scale(1/self.view.zoomed, 1/self.view.zoomed)
         self.view.zoomed = 1
@@ -447,6 +465,7 @@ class Dashboard(QWidget):
         scene_height = self.scene.height()
         self.view.centerOn(scene_width/2, scene_height/2)
 
+<<<<<<< HEAD
     # Method to capture key presses
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Backspace and not self.locked:
@@ -466,6 +485,8 @@ class Dashboard(QWidget):
         else:
             super().keyPressEvent(event)
 
+=======
+>>>>>>> cc8a1dd (LFG EVENTS NOW PROPOGATE TO DASHBOARD ITEMS)
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
