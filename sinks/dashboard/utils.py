@@ -19,7 +19,6 @@ class EventTracker(QObject):
     backspace_pressed = Signal(QtWidgets.QWidget)
     tab_pressed = Signal(QtWidgets.QWidget)
     reverse_tab_pressed = Signal(QtWidgets.QWidget)
-    text_entered = Signal()
     zoom_in = Signal()
     zoom_out = Signal()
     zoom_reset = Signal()
@@ -30,16 +29,13 @@ class EventTracker(QObject):
         We can also not handle the event by passing it to the base class.
         """
         if event.type() == QEvent.KeyPress:
-            print("utils", widget, event)
             key_press = KeyEvent(event.key(), event.modifiers(), event.text())
             match key_press:
                 case KeyEvent(Qt.Key_Backspace, _, _):
                     self.backspace_pressed.emit(widget)
                 case KeyEvent(Qt.Key_Backtab, _, _):
-                    print("back tabbing")
                     self.reverse_tab_pressed.emit(widget)
                 case KeyEvent(Qt.Key_Tab, _, _):
-                    print("tabing")
                     self.tab_pressed.emit(widget)
                 case KeyEvent(Qt.Key_Equal, Qt.ControlModifier, _):
                     self.zoom_in.emit()
@@ -47,8 +43,6 @@ class EventTracker(QObject):
                     self.zoom_out.emit()
                 case KeyEvent(Qt.Key_0, Qt.ControlModifier, _):
                     self.zoom_reset.emit()
-                case _:
-                    self.text_entered.emit()
         return super().eventFilter(widget, event)
 
 @dataclass
