@@ -1,4 +1,4 @@
-from math import log2
+from math import ceil, log, log10, log2
 from typing import List
 from pyqtgraph.Qt.QtCore import Qt, QTimer, QObject, Signal, QEvent
 from pyqtgraph.Qt.QtGui import (
@@ -75,14 +75,15 @@ class CanSender(DashboardItem):
         self.layout_manager = QGridLayout(self)
         self.setLayout(self.layout_manager)
 
-        self.text_signals = self.connect_text_signals(EventTracker())
+        self.text_signals = EventTracker()
+        self.text_signals.backspace_pressed.connect(self.try_move_cursor_backwards)
 
         self.numeric_mask = "[\-0-9]" # not sure if we want to stick with base 16 or base 10 (how to deal with scaled?)
         self.ascii_mask = "[\x00-\x7F]"
 
         self.timer = QTimer()
-        self.timer.timeout.connect(self.pulse_invalid_fields)
-        self.invalid_indexes = []
+        self.timer.timeout.connect(self.pulse_fields)
+        self.pulse_indexes = []
 
         # i dont want to constantly create/delete widgets from my arrays, so I'll use the idea
         # of an array-implemented stack where you 'delete' by moving your index pointer
@@ -93,13 +94,14 @@ class CanSender(DashboardItem):
         self.widget_to_index = {}
 
         self.add_fields([CAN_MSG])
-        self.send_button = QPushButton("SEND")
-        # self.send_button.clicked.connect(self.send_can_message)
+        self.send_button = self.create_send_button()
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
 
         # constants
-        self.NUM_PULSES = 3 # number of pulses to display when a Field throws an error
-        self.PULSE_PERIOD = 100 # period (ms) between each pulse
+        self.INVALID_NUM_PULSES = 3 # number of pulses to display when a Field throws an error
+        self.INVALID_PULSE_PERIOD = 100 # period (ms) between each pulse
+        self.VALID_NUM_PULSES = 1
+        self.VALID_PULSE_PERIOD = 500
 
     def add_fields(self, fields: List[pf.Field]):
         for field in fields:
@@ -144,61 +146,69 @@ class CanSender(DashboardItem):
         for index in range(dropdown_index + 1, self.widget_index + 1):
             widget = self.widgets[index]
             label = self.widget_labels[index]
+            # remove widget from layout manager
             self.layout_manager.removeWidget(widget)
             self.layout_manager.removeWidget(label)
-            # need to delete widget from memory (i think it works like this or its deleteLater())
+            # remove widget from memory
             widget.deleteLater()
             label.deleteLater()
+        # remove send button
+        self.layout_manager.removeWidget(self.send_button)
+        self.send_button.deleteLater()
 
         # insert the new widgets
-        self.layout_manager.removeWidget(self.send_button) # need to move the send button based on the length of the new can message
-        self.send_button.deleteLater()
         self.widget_index = dropdown_index
         switch_field = self.fields[self.widget_index]
         nested_fields = switch_field.get_fields(text)
         self.add_fields(nested_fields)
-        self.send_button = QPushButton("SEND")
+        # bring back the send button
+        self.send_button = self.create_send_button()
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
 
     def send_can_message(self):
-        # im not sure what the ideal way of this is, we can:
-        # 1) check for valid fields, then parse fields (but thats a bit redudnant)
-        # 2) data = parse fields, then do a match case check (if its None, then pulse errors) => but I want to collect all the errors to pulse at once instead of castcading
         bit_str = self.parse_can_msg()
 
         if bit_str == None:
             return
+        self.pulse_indexes = [i for i in range(0, self.widget_index + 1)]
+        self.pulse(invalid=False)
         # self.omnibus_sender.send(self.channel, self.parse_data())
 
     def parse_can_msg(self):
-        self.invalid_indexes = []
+        self.pulse_indexes = []
         bit_str = BitString()
         for index in range(0, self.widget_index + 1):
+            widget = self.widgets[index]
             field = self.fields[index]
-            text = self.widgets[index].text()
+            text = widget.text() if isinstance(widget, QLineEdit) else widget.currentText()
             try:
+                if isinstance(field, pf.Numeric):
+                    text = int(text)
                 bit_str.push(*field.encode(text))
-            except:
-                self.invalid_indexes.append(index)
+            except Exception as e:
+                print(f"{field.name} | {e}")
+                self.pulse_indexes.append(index)
 
-        if self.invalid_indexes:
-            self.pulse_count = 0
-            self.timer.start(self.PULSE_PERIOD)
+        if self.pulse_indexes:
+            self.pulse(invalid=True)
 
-        return None if self.invalid_indexes else bit_str
+        return None if self.pulse_indexes else bit_str
 
-    def pulse_invalid_fields(self):
-        if self.pulse_count < self.NUM_PULSES*2:
-            for index in self.invalid_indexes:
+    def pulse(self, invalid):
+        self.pulse_count = 0
+        self.invalid = invalid
+        pulse_period = self.INVALID_PULSE_PERIOD if invalid else self.VALID_PULSE_PERIOD
+        self.timer.start(pulse_period)
+
+    def pulse_fields(self):
+        pulse_frq = self.INVALID_NUM_PULSES if self.invalid else self.VALID_NUM_PULSES
+        if self.pulse_count < 2*pulse_frq:
+            for index in self.pulse_indexes:
                 widget = self.widgets[index]
                 widget.setDisabled(self.pulse_count%2 == 0)
             self.pulse_count += 1
         else:
             self.timer.stop()
-
-    def connect_text_signals(self, event_tracker):
-        event_tracker.backspace_pressed.connect(self.try_move_cursor_backwards)
-        return event_tracker
 
     def get_field_length(self, field: pf.Field) -> int:
         match type(field):
@@ -206,9 +216,14 @@ class CanSender(DashboardItem):
                 return field.length // 8
             case pf.Numeric:
                 minus_sign = 1 if field.signed else 0
-                return minus_sign + int(1 + log2(field.length))
+                return minus_sign + ceil(field.length * log10(2))
             case _:
                 return -1
+
+    def create_send_button(self):
+        button = QPushButton("SEND")
+        button.clicked.connect(self.send_can_message)
+        return button
 
     def try_move_cursor_forwards(self):
         widget = self.sender()
