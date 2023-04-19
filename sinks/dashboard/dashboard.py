@@ -452,6 +452,13 @@ class Dashboard(QWidget):
         scene_height = self.scene.height()
         self.view.centerOn(scene_width/2, scene_height/2)
 
+    def remove_selected(self):
+        if self.locked:
+            return
+        for item in self.scene.selectedItems():
+            self.remove(item)
+            self.widgets.pop(item)
+
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
