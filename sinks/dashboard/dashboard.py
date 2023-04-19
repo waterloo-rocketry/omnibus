@@ -108,14 +108,7 @@ class Dashboard(QWidget):
 
         # Create a large scene underneath the view
         self.scene = QGraphicsScene(0, 0, self.width*100, self.height*100)
-<<<<<<< HEAD
-<<<<<<< HEAD
         self.scene.selectionChanged.connect(self.on_selection_changed)
-=======
-        self.scene.changed.connect(self.test)
->>>>>>> b256a80 (Solved dashboard eating wheelEvents)
-=======
->>>>>>> cc8a1dd (LFG EVENTS NOW PROPOGATE TO DASHBOARD ITEMS)
 
         # Create a grid layout
         self.layout = QVBoxLayout()
@@ -212,8 +205,13 @@ class Dashboard(QWidget):
         self.splitter.setCollapsible(1, False)
         self.setLayout(self.layout)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+        self.key_press_signals = EventTracker()
+        self.key_press_signals.zoom_in.connect(lambda: self.view.zoom(200))
+        self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))
+        self.key_press_signals.zoom_reset.connect(self.reset_zoom)
+        self.key_press_signals.backspace_pressed.connect(self.remove_selected)
+        self.installEventFilter(self.key_press_signals)
+
     # Method to open the parameter tree to the selected item
     def on_selection_changed(self):
         items = self.scene.selectedItems()
@@ -241,21 +239,7 @@ class Dashboard(QWidget):
         height = item.parameters.param('height').value() + 1
         pos = proxy.pos()
         proxy.parentItem().setRect(pos.x(), pos.y(), width, height)
-=======
-    count = 0
-    def test(self, rect):
-        # print("changed", self.count, rect)
-        self.count += 1
-=======
-        self.key_press_signals = EventTracker()
-        self.key_press_signals.zoom_in.connect(lambda: self.view.zoom(200))
-        self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))
-        self.key_press_signals.zoom_reset.connect(self.reset_zoom)
-        self.key_press_signals.backspace_pressed.connect(self.remove_selected)
-        self.installEventFilter(self.key_press_signals)
->>>>>>> cc8a1dd (LFG EVENTS NOW PROPOGATE TO DASHBOARD ITEMS)
 
->>>>>>> b256a80 (Solved dashboard eating wheelEvents)
 
     # Method to add widgets
     def add(self, dashitem, pos=None):
@@ -287,12 +271,8 @@ class Dashboard(QWidget):
             xpos = mapped.x() - (width/2)
             ypos = mapped.y() - (height/2)
 
-<<<<<<< HEAD
         proxy.setPos(xpos, ypos)
         proxy.setFocusPolicy(Qt.NoFocus)
-=======
-        proxy.setPos(pos[0], pos[1])
->>>>>>> cc8a1dd (LFG EVENTS NOW PROPOGATE TO DASHBOARD ITEMS)
 
         # Create a rectangle around the proxy widget
         # to make it movable and selectable
@@ -465,28 +445,13 @@ class Dashboard(QWidget):
         scene_height = self.scene.height()
         self.view.centerOn(scene_width/2, scene_height/2)
 
-<<<<<<< HEAD
-    # Method to capture key presses
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Backspace and not self.locked:
-            # Delete all selected items
-            for item in self.scene.selectedItems():
-                self.remove(item)
-                self.widgets.pop(item)
-        elif event.modifiers() == Qt.ControlModifier:
-            # Forward event to proper handler
-            match event.key():
-                case Qt.Key_Equal:
-                    self.view.zoom(100.0)
-                case Qt.Key_Minus:
-                    self.view.zoom(-100.0)
-                case Qt.Key_0:
-                    self.reset()
-        else:
-            super().keyPressEvent(event)
+    def remove_selected(self):
+        if self.locked:
+            return
+        for item in self.scene.selectedItems():
+            self.remove(item)
+            self.widgets.pop(item)
 
-=======
->>>>>>> cc8a1dd (LFG EVENTS NOW PROPOGATE TO DASHBOARD ITEMS)
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
