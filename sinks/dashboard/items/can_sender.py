@@ -1,3 +1,4 @@
+from math import log2
 from typing import List
 from pyqtgraph.Qt.QtCore import Qt, QTimer, QObject, Signal, QEvent
 from pyqtgraph.Qt.QtGui import (
@@ -74,14 +75,9 @@ class CanSender(DashboardItem):
         self.layout_manager = QGridLayout(self)
         self.setLayout(self.layout_manager)
 
-        self.field_signals = self.connect_field_signals(EventTracker())
-        self.text_signals = self.connect_text_signals(self.connect_field_signals(EventTracker()))
+        self.text_signals = self.connect_text_signals(EventTracker())
 
-        self.x = EventTracker()
-        self.x.text_entered.connect(lambda: print("text"))
-        self.installEventFilter(self.x)
-
-        self.numeric_mask = "[A-Fa-f0-9]" # not sure if we want to stick with base 16 or base 10 (how to deal with scaled?)
+        self.numeric_mask = "[\-0-9]" # not sure if we want to stick with base 16 or base 10 (how to deal with scaled?)
         self.ascii_mask = "[\x00-\x7F]"
 
         self.timer = QTimer()
@@ -108,25 +104,22 @@ class CanSender(DashboardItem):
     def add_fields(self, fields: List[pf.Field]):
         for field in fields:
             self.widget_index += 1
-            byte_length = field.length // 4
             if isinstance(field, pf.Switch) or isinstance(field, pf.Enum):
                 dropdown = QComboBox()
                 dropdown.setMinimumContentsLength(20) # TODO: I swear this changed the height of row entries but I mgiht be capping
                 dropdown_items = list(field.get_keys())
                 dropdown.addItems(dropdown_items)
                 dropdown.view().setViewMode(QListView.ListMode)
-                # dropdown.installEventFilter(self.field_signals)
                 self.widgets[self.widget_index] = dropdown
             elif isinstance(field, pf.Numeric) or isinstance(field, pf.ASCII):
                 mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
+                data_length = self.get_field_length(field)
                 textfield = QLineEdit()
                 textfield.setAlignment(Qt.AlignCenter)
-                textfield.setFocusPolicy(Qt.StrongFocus)
-                # textfield.setValidator(QRegularExpressionValidator(byte_length * mask))
-                textfield.setPlaceholderText(byte_length * "0")
-                ev = EventTracker()
-                ev.text_entered.connect(lambda: print("FUCK"))
-                textfield.installEventFilter(ev)
+                textfield.setValidator(QRegularExpressionValidator(data_length * mask))
+                textfield.setPlaceholderText(data_length * "0")
+                textfield.installEventFilter(self.text_signals)
+                textfield.textChanged.connect(self.try_move_cursor_forwards)
                 self.widgets[self.widget_index] = textfield
 
             label = QLabel(field.name)
@@ -203,50 +196,41 @@ class CanSender(DashboardItem):
         else:
             self.timer.stop()
 
-    def eventFilter(self, widget, event):
-        print("f", event)
-
-    def connect_field_signals(self, event_tracker):
-        # event_tracker.tab_pressed.connect(self.move_cursor_forwards)
-        event_tracker.tab_pressed.connect(lambda: print("tab"))
-        # event_tracker.reverse_tab_pressed.connect(self.move_cursor_backwards)
-        event_tracker.reverse_tab_pressed.connect(lambda: print("back tab"))
-        return event_tracker
-    
     def connect_text_signals(self, event_tracker):
-        # event_tracker.text_entered.connect(self.try_move_cursor_forwards)
-        event_tracker.text_entered.connect(lambda: print("partial"))
         event_tracker.backspace_pressed.connect(self.try_move_cursor_backwards)
         return event_tracker
 
-    def try_move_cursor_forwards(self, widget):
-        print("text", widget)
+    def get_field_length(self, field: pf.Field) -> int:
+        match type(field):
+            case pf.ASCII:
+                return field.length // 8
+            case pf.Numeric:
+                minus_sign = 1 if field.signed else 0
+                return minus_sign + int(1 + log2(field.length))
+            case _:
+                return -1
+
+    def try_move_cursor_forwards(self):
+        widget = self.sender()
         index = self.widget_to_index[widget]
         field = self.fields[index]
-        byte_length = field.length // 4
+        data_length = self.get_field_length(field)
         text_length = len(widget.text())
 
-        if text_length == byte_length:
-            self.move_cursor_forwards()
-
-    def move_cursor_forwards(self, widget):
-        index = self.widget_to_index[widget]
-        next_index = min(self.widget_index, index + 1)
-        next_widget = self.widgets[next_index]
-        next_widget.setFocus()
+        if text_length == data_length:
+            next_index = min(self.widget_index, index + 1)
+            next_widget = self.widgets[next_index]
+            next_widget.setFocus()
 
     def try_move_cursor_backwards(self, widget):
+        index = self.widget_to_index[widget]
         text_length = len(widget.text())
 
         if text_length == 0:
-            self.move_cursor_backwards()
-
-    def move_cursor_backwards(self, widget):
-        index = self.widget_to_index[widget]
-        previous_index = max(0, index - 1)
-        previous_widget = self.widgets[previous_index]
-        previous_widget.setText(previous_widget.text()[:-1])
-        previous_widget.setFocus()
+            previous_index = max(0, index - 1)
+            previous_widget = self.widgets[previous_index]
+            previous_widget.setText(previous_widget.text()[:-1])
+            previous_widget.setFocus()
 
     def get_name():
         return "CAN Sender"
