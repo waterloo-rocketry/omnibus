@@ -1,27 +1,19 @@
-from math import ceil, log, log10, log2
+from math import ceil, log10
 from typing import List
-from pyqtgraph.Qt.QtCore import Qt, QTimer, QObject, Signal, QEvent
-from pyqtgraph.Qt.QtGui import (
-    QColor,
-    QPalette,
-    QRegularExpressionValidator,
-    QCursor
-)
+from pyqtgraph.Qt.QtCore import Qt, QTimer
+from pyqtgraph.Qt.QtGui import QRegularExpressionValidator
 from pyqtgraph.Qt.QtWidgets import (
     QComboBox,
     QGridLayout,
     QLabel,
     QLineEdit,
-    QPushButton,
-    QListView,
-    QApplication
+    QPushButton
 )
 
 import parsley.fields as pf
 from parsley.message_definitions import CAN_MSG
 from parsley.bitstring import BitString
-# from omnibus import Sender
-# from parsers import publisher
+from omnibus import Sender
 from .registry import Register
 from .dashboard_item import DashboardItem
 from utils import EventTracker
@@ -33,69 +25,54 @@ class CanSender(DashboardItem):
     |-------------------------------------------------------------|
     | msg_type | board_id | time             | command |          | <- field names
     |----------|----------|------------------|---------|----------|
-    | Dropdown | Dropdown | 24-bit Textfield | Dropdown|   Send   | <- field-dependent widgets to gather input
+    | Dropdown | Dropdown | 24-bit text_field| Dropdown|   Send   | <- field-dependent widgets to take user input
     |-------------------------------------------------------------|
 
     - Dropdowns contain a field's dictionary keys
         => when a Switch is encountered, populate the first key's fields
     - Text fields contain two different input masks:
-        => Numerics: only hexadecimal values (TODO: I think user-input should be post-scaled but would need a way to communicate that)
+        => Numerics: only numbers
         => ASCII: any string
     - Upon pressing send:
-        => for every field that fails to encode its data, pulse the field in quick successions (comfy red)
-        => if every field successfully encodes its data, long pulse all of the fields once (comfy green)
-    - Width of CanSender widget scales depending on the CAN message length (TODO)
+        => for every field that fails to encode its data, pulse the field in quick succession
+        => if every field successfully encodes its data, long pulse all of the fields once
     """
 
     def __init__(self, props):
-        """
-        Coding checklist:
-        - text field signal
-            => check if after entering this character, the text field is maxed out, then move cursor/highlight the next field
-            => check if backspace, might need to move cursor/highlight the previous field
-        - dropdown signal
-            => TODO: check if you can unselect your option (would be equilvalent to our intial base case)
-            => on change, reconstruct all the items preceeding the dropdown
-                ++ need to apply all the input masks and signal event handlers during runtime
-                ++ avoid touching data to the left of the dropdown
-        - button signal
-            => verify every field's data can be properly encoded (wrap in try catch)
-            => pulse the apppropriate color for the fields
-            => possibly send the data over
-        
-        """
         super().__init__()
-        # self.canlib_info = CanlibMetadata("can_sender_data.txt")
-        # self.omnibus_sender = Sender()
-        # self.channel = "CAN/Commands"
 
-        self.initialize_variables()
-
-    def initialize_variables(self):
+        # use grid layout so that widgets can be placed in a grid
         self.layout_manager = QGridLayout(self)
         self.setLayout(self.layout_manager)
 
+        # track backspace key presses to move the cursor backwards when the current textfield is empty
         self.text_signals = EventTracker()
         self.text_signals.backspace_pressed.connect(self.try_move_cursor_backwards)
 
-        self.numeric_mask = "[\-0-9]" # not sure if we want to stick with base 16 or base 10 (how to deal with scaled?)
-        self.ascii_mask = "[\x00-\x7F]"
+        # text field RegEx input mask
+        self.numeric_mask = "[\.\-0-9]" # allows numbers, periods, minus sign
+        self.ascii_mask = "[\x00-\x7F]" # allows all ASCII characters
 
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.pulse_fields)
-        self.pulse_indexes = []
+        # preallocate the size of the arrays since the length of a CAN message is dynamic
+        self.fields = [None] * 16 # parsley field
+        self.widgets = [None] * 16 # PyQT widget
+        self.widget_labels = [None] * 16 # PyQT label
+        self.widget_index = -1 # index of the right-most widget
+        self.widget_to_index = {} # map to associate widgets to their index
 
-        # i dont want to constantly create/delete widgets from my arrays, so I'll use the idea
-        # of an array-implemented stack where you 'delete' by moving your index pointer
-        self.fields = [None] * 16
-        self.widgets = [None] * 16
-        self.widget_labels = [None] * 16
-        self.widget_index = -1
-        self.widget_to_index = {}
-
-        self.add_fields([CAN_MSG])
+        # display contents onto the dashboard item
+        self.display_can_fields([CAN_MSG])
         self.send_button = self.create_send_button()
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
+
+        # when a button is pressed, pulse widgets for visual feedback
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.pulse_widgets)
+        self.pulse_indexes = []
+
+        # when a button is pressed, try to send the message out
+        self.omnibus_sender = Sender()
+        self.channel = "CAN/Commands"
 
         # constants
         self.INVALID_NUM_PULSES = 3 # number of pulses to display when a Field throws an error
@@ -103,42 +80,49 @@ class CanSender(DashboardItem):
         self.VALID_NUM_PULSES = 1
         self.VALID_PULSE_PERIOD = 500
 
-    def add_fields(self, fields: List[pf.Field]):
+    def display_can_fields(self, fields: List[pf.Field]):
         for field in fields:
             self.widget_index += 1
             if isinstance(field, pf.Switch) or isinstance(field, pf.Enum):
-                dropdown = QComboBox()
-                dropdown.setMinimumContentsLength(20) # TODO: I swear this changed the height of row entries but I mgiht be capping
                 dropdown_items = list(field.get_keys())
+                dropdown_max_length = max(len(item) for item in dropdown_items)
+
+                dropdown = QComboBox()
                 dropdown.addItems(dropdown_items)
-                dropdown.view().setViewMode(QListView.ListMode)
+                dropdown.setMinimumContentsLength(dropdown_max_length)
+                dropdown.setFocusPolicy(Qt.StrongFocus) # display the blue border when widget is focused
                 self.widgets[self.widget_index] = dropdown
             elif isinstance(field, pf.Numeric) or isinstance(field, pf.ASCII):
                 mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
                 data_length = self.get_field_length(field)
-                textfield = QLineEdit()
-                textfield.setAlignment(Qt.AlignCenter)
-                textfield.setValidator(QRegularExpressionValidator(data_length * mask))
-                textfield.setPlaceholderText(data_length * "0")
-                textfield.installEventFilter(self.text_signals)
-                textfield.textChanged.connect(self.try_move_cursor_forwards)
-                self.widgets[self.widget_index] = textfield
 
-            label = QLabel(field.name)
-            label.setWordWrap(True) # i used to have this, check if still needed
+                text_field = QLineEdit()
+                text_field.setAlignment(Qt.AlignCenter)
+                text_field.setValidator(QRegularExpressionValidator(data_length * mask))
+                text_field.setPlaceholderText(data_length * "0")
+                text_field.installEventFilter(self.text_signals)
+                text_field.textChanged.connect(self.try_move_cursor_forwards) # when a textfield is full, move the cursor forwards
+                text_field.setFocusPolicy(Qt.StrongFocus) # display the blue border when widget is focused
+                self.widgets[self.widget_index] = text_field
+
+            # if the field comes with a unit, display it in brackets
+            label_text = f"{field.name} ({field.unit})" if field.unit else field.name
+            label = QLabel(label_text)
+            label.setWordWrap(True)
 
             self.fields[self.widget_index] = field
             self.widget_labels[self.widget_index] = label
-            self.widget_to_index[self.widgets[self.widget_index]] = self.widget_index # create mapping between widget and its index in the can message
+            # create a mapping between widget and its index in the can message
+            self.widget_to_index[self.widgets[self.widget_index]] = self.widget_index
+            self.layout_manager.addWidget(self.widget_labels[self.widget_index], 0, self.widget_index)
+            self.layout_manager.addWidget(self.widgets[self.widget_index], 1, self.widget_index)
 
-            self.layout_manager.addWidget(self.widget_labels[self.widget_index], 0, self.widget_index) # TODO: create dynamic widget width based on field bit length
-            self.layout_manager.addWidget(self.widgets[self.widget_index], 1, self.widget_index) # TODO: create dynamic widget width based on fieldbit length
             if isinstance(field, pf.Switch):
                 self.widgets[self.widget_index].currentTextChanged.connect(self.update_can_msg)
-                nested_fields = field.get_fields(dropdown_items[0]) # display the first Switch row to show something
-                self.add_fields(nested_fields)
+                nested_fields = field.get_fields(dropdown_items[0]) # display first row's contents
+                self.display_can_fields(nested_fields)
 
-    def update_can_msg(self, text):
+    def update_can_msg(self, text: str):
         dropdown = self.sender()
         dropdown_index = self.widget_to_index[dropdown]
 
@@ -160,7 +144,7 @@ class CanSender(DashboardItem):
         self.widget_index = dropdown_index
         switch_field = self.fields[self.widget_index]
         nested_fields = switch_field.get_fields(text)
-        self.add_fields(nested_fields)
+        self.display_can_fields(nested_fields)
         # bring back the send button
         self.send_button = self.create_send_button()
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
@@ -170,9 +154,14 @@ class CanSender(DashboardItem):
 
         if bit_str == None:
             return
+        # if every field successfully encoded its data, long pulse all of the fields once
         self.pulse_indexes = [i for i in range(0, self.widget_index + 1)]
-        self.pulse(invalid=False)
-        # self.omnibus_sender.send(self.channel, self.parse_data())
+        self.pulse(pulse_invalid=False)
+        message = {
+            "data": bit_str.data,
+            "length": bit_str.length
+        }
+        self.omnibus_sender.send(self.channel, message)
 
     def parse_can_msg(self):
         self.pulse_indexes = []
@@ -183,24 +172,24 @@ class CanSender(DashboardItem):
             text = widget.text() if isinstance(widget, QLineEdit) else widget.currentText()
             try:
                 if isinstance(field, pf.Numeric):
-                    text = int(text)
+                    text = float(text)
                 bit_str.push(*field.encode(text))
             except Exception as e:
                 print(f"{field.name} | {e}")
                 self.pulse_indexes.append(index)
 
         if self.pulse_indexes:
-            self.pulse(invalid=True)
+            self.pulse(pulse_invalid=True)
 
         return None if self.pulse_indexes else bit_str
 
-    def pulse(self, invalid):
+    def pulse(self, pulse_invalid: bool):
         self.pulse_count = 0
-        self.invalid = invalid
-        pulse_period = self.INVALID_PULSE_PERIOD if invalid else self.VALID_PULSE_PERIOD
+        self.invalid = pulse_invalid
+        pulse_period = self.INVALID_PULSE_PERIOD if pulse_invalid else self.VALID_PULSE_PERIOD
         self.timer.start(pulse_period)
 
-    def pulse_fields(self):
+    def pulse_widgets(self):
         pulse_frq = self.INVALID_NUM_PULSES if self.invalid else self.VALID_NUM_PULSES
         if self.pulse_count < 2*pulse_frq:
             for index in self.pulse_indexes:
