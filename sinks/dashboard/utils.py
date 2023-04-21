@@ -19,6 +19,7 @@ class EventTracker(QObject):
     backspace_pressed = Signal(QtWidgets.QWidget)
     tab_pressed = Signal(QtWidgets.QWidget)
     reverse_tab_pressed = Signal(QtWidgets.QWidget)
+    enter_pressed = Signal()
     zoom_in = Signal()
     zoom_out = Signal()
     zoom_reset = Signal()
@@ -37,6 +38,8 @@ class EventTracker(QObject):
                     self.reverse_tab_pressed.emit(widget)
                 case KeyEvent(Qt.Key_Tab, _, _):
                     self.tab_pressed.emit(widget)
+                case KeyEvent(Qt.Key_Enter, _, _) | KeyEvent(Qt.Key_Return, _, _):
+                    self.enter_pressed.emit()
                 case KeyEvent(Qt.Key_Equal, Qt.ControlModifier, _):
                     self.zoom_in.emit()
                 case KeyEvent(Qt.Key_Minus, Qt.ControlModifier, _):
