@@ -1,7 +1,7 @@
 from math import ceil, log10
 from typing import List
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.Qt.QtGui import QRegularExpressionValidator
+from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics
 from pyqtgraph.Qt.QtWidgets import (
     QComboBox,
     QGridLayout,
@@ -40,6 +40,12 @@ class CanSender(DashboardItem):
 
     def __init__(self, props):
         super().__init__()
+        # constants
+        self.INVALID_NUM_PULSES = 3 # number of pulses to display when a Field throws an error
+        self.INVALID_PULSE_PERIOD = 100 # period (ms) between each pulse
+        self.VALID_NUM_PULSES = 1
+        self.VALID_PULSE_PERIOD = 500
+        self.WIDGET_TEXT_PADDING = 50 # pixels
 
         # use grid layout so that widgets can be placed in a grid
         self.layout_manager = QGridLayout(self)
@@ -62,8 +68,7 @@ class CanSender(DashboardItem):
 
         # display contents onto the dashboard item
         self.display_can_fields([CAN_MSG])
-        self.send_button = self.create_send_button()
-        self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
+        self.create_send_button()
 
         # when a button is pressed, pulse widgets for visual feedback
         self.timer = QTimer()
@@ -74,12 +79,6 @@ class CanSender(DashboardItem):
         self.omnibus_sender = Sender()
         self.channel = "CAN/Commands"
 
-        # constants
-        self.INVALID_NUM_PULSES = 3 # number of pulses to display when a Field throws an error
-        self.INVALID_PULSE_PERIOD = 100 # period (ms) between each pulse
-        self.VALID_NUM_PULSES = 1
-        self.VALID_PULSE_PERIOD = 500
-
     def display_can_fields(self, fields: List[pf.Field]):
         for field in fields:
             self.widget_index += 1
@@ -89,7 +88,12 @@ class CanSender(DashboardItem):
 
                 dropdown = QComboBox()
                 dropdown.addItems(dropdown_items)
-                dropdown.setMinimumContentsLength(dropdown_max_length)
+                max_width = self.get_widget_text_width(dropdown, dropdown_max_length)
+                dropdown.setFixedWidth(max_width + self.WIDGET_TEXT_PADDING)
+                # unfortuantely on Macs, you aren't able to customize the dropdown, which means
+                # you cant scroll the contents (it'll be one huge list)
+                # see: https://doc.qt.io/qt-5/qcombobox.html#maxVisibleItems-prop
+                dropdown.setMaxVisibleItems(15)
                 dropdown.setFocusPolicy(Qt.StrongFocus) # display the blue border when widget is focused
                 self.widgets[self.widget_index] = dropdown
             elif isinstance(field, pf.Numeric) or isinstance(field, pf.ASCII):
@@ -97,11 +101,14 @@ class CanSender(DashboardItem):
                 data_length = self.get_field_length(field)
 
                 text_field = QLineEdit()
+                max_width = self.get_widget_text_width(text_field, data_length)
+                text_field.setFixedWidth(max_width + self.WIDGET_TEXT_PADDING)
                 text_field.setAlignment(Qt.AlignCenter)
                 text_field.setValidator(QRegularExpressionValidator(data_length * mask))
                 text_field.setPlaceholderText(data_length * "0")
                 text_field.installEventFilter(self.text_signals)
-                text_field.textChanged.connect(self.try_move_cursor_forwards) # when a textfield is full, move the cursor forwards
+                # when a textfield is full, move the cursor forwards to the next widget
+                text_field.textChanged.connect(self.try_move_cursor_forwards)
                 text_field.setFocusPolicy(Qt.StrongFocus) # display the blue border when widget is focused
                 self.widgets[self.widget_index] = text_field
 
@@ -146,8 +153,7 @@ class CanSender(DashboardItem):
         nested_fields = switch_field.get_fields(text)
         self.display_can_fields(nested_fields)
         # bring back the send button
-        self.send_button = self.create_send_button()
-        self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
+        self.create_send_button()
 
     def send_can_message(self):
         bit_str = self.parse_can_msg()
@@ -209,10 +215,18 @@ class CanSender(DashboardItem):
             case _:
                 return -1
 
+    def get_widget_text_width(self, widget, max_chars: int):
+        font_metrics = QFontMetrics(widget.font())
+        text_width = font_metrics.boundingRect('X' * max_chars).width()
+        return text_width
+
     def create_send_button(self):
-        button = QPushButton("SEND")
-        button.clicked.connect(self.send_can_message)
-        return button
+        self.send_button = QPushButton("SEND")
+        max_width = self.get_widget_text_width(self.send_button, 4)
+        self.send_button.setFixedWidth(max_width + self.WIDGET_TEXT_PADDING)
+        self.send_button.setFocusPolicy(Qt.TabFocus)
+        self.send_button.clicked.connect(self.send_can_message)
+        self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
 
     def try_move_cursor_forwards(self):
         widget = self.sender()
@@ -233,8 +247,9 @@ class CanSender(DashboardItem):
         if text_length == 0:
             previous_index = max(0, index - 1)
             previous_widget = self.widgets[previous_index]
-            previous_widget.setText(previous_widget.text()[:-1])
             previous_widget.setFocus()
+            if isinstance(previous_widget, QLineEdit):
+                previous_widget.setText(previous_widget.text()[:-1])
 
     def get_name():
         return "CAN Sender"
