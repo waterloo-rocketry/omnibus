@@ -55,6 +55,13 @@ class CanSender(DashboardItem):
         self.text_signals = EventTracker()
         self.text_signals.backspace_pressed.connect(self.try_move_cursor_backwards)
 
+        # need to add this to the dashboard item widget itself since if you
+        # click on the dashboard widget, only that widget is focused which means
+        # events are only passed to it
+        self.button_signals = EventTracker()
+        self.button_signals.enter_pressed.connect(self.send_can_message)
+        self.installEventFilter(self.button_signals)
+
         # text field RegEx input mask
         self.numeric_mask = "[\.\-0-9]" # allows numbers, periods, minus sign
         self.ascii_mask = "[\x00-\x7F]" # allows all ASCII characters
