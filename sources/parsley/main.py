@@ -7,6 +7,7 @@ import parsley
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
         self.port = port
+        self.serial = None
         if self.port != "-":
             self.serial = serial.Serial(port, baud, timeout)
 
@@ -16,6 +17,9 @@ class SerialCommunicator:
         return self.serial.readline().strip(b'\r\n').decode('utf-8')
 
     def write(self, msg):
+        if self.serial == None:
+            print(msg)
+            return
         self.serial.write(msg)
 
 def main():
