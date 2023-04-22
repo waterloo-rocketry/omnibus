@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from typing import Optional
 from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt.QtCore import Qt, Signal, QEvent, QObject, QPoint
+from pyqtgraph.Qt.QtCore import Qt, Signal, QEvent, QObject
 
 
 class EventTracker(QObject):
@@ -26,25 +25,25 @@ class EventTracker(QObject):
 
     def eventFilter(self, widget, event):
         """
-        If we want the filter the event out ie. stop it from being further handled, return true.
-        We can also not handle the event by passing it to the base class.
+        After we intercept the event, propagate it down the event
+        chain so that we don't disturb any default behaviours.
         """
         if event.type() == QEvent.KeyPress:
-            key_press = KeyEvent(event.key(), event.modifiers(), event.text())
+            key_press = KeyEvent(event.key(), event.modifiers())
             match key_press:
-                case KeyEvent(Qt.Key_Backspace, _, _):
+                case KeyEvent(Qt.Key_Backspace, _):
                     self.backspace_pressed.emit(widget)
-                case KeyEvent(Qt.Key_Backtab, _, _):
+                case KeyEvent(Qt.Key_Backtab, _):
                     self.reverse_tab_pressed.emit(widget)
-                case KeyEvent(Qt.Key_Tab, _, _):
+                case KeyEvent(Qt.Key_Tab, _):
                     self.tab_pressed.emit(widget)
-                case KeyEvent(Qt.Key_Enter, _, _) | KeyEvent(Qt.Key_Return, _, _):
+                case KeyEvent(Qt.Key_Enter, _, _) | KeyEvent(Qt.Key_Return, _):
                     self.enter_pressed.emit()
-                case KeyEvent(Qt.Key_Equal, Qt.ControlModifier, _):
+                case KeyEvent(Qt.Key_Equal, Qt.ControlModifier):
                     self.zoom_in.emit()
-                case KeyEvent(Qt.Key_Minus, Qt.ControlModifier, _):
+                case KeyEvent(Qt.Key_Minus, Qt.ControlModifier):
                     self.zoom_out.emit()
-                case KeyEvent(Qt.Key_0, Qt.ControlModifier, _):
+                case KeyEvent(Qt.Key_0, Qt.ControlModifier):
                     self.zoom_reset.emit()
         return super().eventFilter(widget, event)
 
@@ -52,7 +51,6 @@ class EventTracker(QObject):
 class KeyEvent:
     key_code: int
     modifiers: int
-    text: Optional[str]
 
 
 class ConfirmDialog(QtWidgets.QDialog):
