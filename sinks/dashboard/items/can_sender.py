@@ -1,5 +1,5 @@
 from math import ceil, log10
-from typing import List
+from typing import List, Union
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics
 from pyqtgraph.Qt.QtWidgets import (
@@ -41,9 +41,9 @@ class CanSender(DashboardItem):
     def __init__(self, props):
         super().__init__()
         # constants
-        self.INVALID_NUM_PULSES = 3 # number of pulses to display when a field fails to encode data
+        self.INVALID_PULSES = 3 # number of pulses to display when a field fails to encode data
         self.INVALID_PULSE_PERIOD = 100 # ms
-        self.VALID_NUM_PULSES = 1
+        self.VALID_PULSES = 1
         self.VALID_PULSE_PERIOD = 500
         self.WIDGET_TEXT_PADDING = 50 # pixels
 
@@ -55,22 +55,22 @@ class CanSender(DashboardItem):
         self.text_signals = EventTracker()
         self.text_signals.backspace_pressed.connect(self.try_move_cursor_backwards)
 
-        # track enter/return key presses to send the CAN message (equilvalent to pressing send button)
-        # installing the event filter to the dashboard widget since whenever the widget is under
-        # focus, we want to be able to send the can message
+        # track enter/return key presses to send the CAN message (equilvalent to pressing the send button)
+        # installing the event filter on the dashboard widget since whenever the dashboard widget
+        # is under focus, we want to be able to send the CAN message
         self.send_signals = EventTracker()
         self.send_signals.enter_pressed.connect(self.send_can_message)
         self.installEventFilter(self.send_signals)
 
-        # text field RegEx input mask
-        self.numeric_mask = "[\.\-0-9]" # allows numbers, periods, minus sign
+        # text field regular expression input mask (won't accept characters not defined here)
+        self.numeric_mask = "[\.\-0-9]" # allows numbers, periods, and minus sign
         self.ascii_mask = "[\x00-\x7F]" # allows all ASCII characters
 
         # preallocate the size of the arrays since the length of a CAN message is dynamic
-        self.fields = [None] * 16 # parsley field
-        self.widgets = [None] * 16 # PyQT widget
-        self.widget_labels = [None] * 16 # PyQT label
-        self.widget_index = -1 # index of the right-most widget
+        self.fields = [None] * 16 # stores the parsley fields
+        self.widgets = [None] * 16 # stores the PyQT input widgets
+        self.widget_labels = [None] * 16 # store the PyQT labels describing the parsley field names
+        self.widget_index = -1 # index of the right-most PyQT widget
         self.widget_to_index = {} # map to associate widgets to their index
 
         # display contents onto the dashboard item
@@ -141,8 +141,8 @@ class CanSender(DashboardItem):
         dropdown = self.sender()
         dropdown_index = self.widget_to_index[dropdown]
 
-        # delete the widgets from [dropdown_index + 1, self.widget_index] from layout manager
-        for index in range(dropdown_index + 1, self.widget_index + 1):
+        # delete the widgets from [dropdown_index + 1, self.widget_index) from layout manager
+        for index in range(dropdown_index + 1, self.widget_index):
             widget = self.widgets[index]
             label = self.widget_labels[index]
             # remove widget from layout manager
@@ -169,7 +169,7 @@ class CanSender(DashboardItem):
         if bit_str == None:
             return
         # if every field successfully encoded its data, long pulse all of the fields once
-        self.pulse_indexes = [i for i in range(0, self.widget_index + 1)]
+        self.pulse_indexes = [i for i in range(0, self.widget_index)]
         self.pulse(pulse_invalid=False)
         bit_length = bit_str.length
         bit_data = bit_str.pop(bit_length)
@@ -179,10 +179,10 @@ class CanSender(DashboardItem):
         }
         self.omnibus_sender.send(self.channel, message)
 
-    def parse_can_msg(self):
+    def parse_can_msg(self) -> Union[BitString, None]:
         self.pulse_indexes = []
         bit_str = BitString()
-        for index in range(0, self.widget_index + 1):
+        for index in range(0, self.widget_index):
             widget = self.widgets[index]
             field = self.fields[index]
             text = widget.text() if isinstance(widget, QLineEdit) else widget.currentText()
@@ -206,7 +206,7 @@ class CanSender(DashboardItem):
         self.timer.start(pulse_period)
 
     def pulse_widgets(self):
-        pulse_frq = self.INVALID_NUM_PULSES if self.invalid else self.VALID_NUM_PULSES
+        pulse_frq = self.INVALID_PULSES if self.invalid else self.VALID_PULSES
         if self.pulse_count < 2*pulse_frq:
             for index in self.pulse_indexes:
                 widget = self.widgets[index]
@@ -225,19 +225,21 @@ class CanSender(DashboardItem):
             case _:
                 return -1
 
-    def get_widget_text_width(self, widget, max_chars: int):
+    def get_widget_text_width(self, widget, max_chars: int) -> int:
         font_metrics = QFontMetrics(widget.font())
         text_width = font_metrics.boundingRect('X' * max_chars).width()
         return text_width
 
     def create_send_button(self):
+        self.widget_index += 1
         self.send_button = QPushButton("SEND")
         max_width = self.get_widget_text_width(self.send_button, 4)
         self.send_button.setFixedWidth(max_width + self.WIDGET_TEXT_PADDING)
         self.send_button.setFocusPolicy(Qt.TabFocus)
         self.send_button.clicked.connect(self.send_can_message)
-        self.layout_manager.addWidget(self.send_button, 1, self.widget_index + 1)
+        self.layout_manager.addWidget(self.send_button, 1, self.widget_index)
 
+    # moves the cursor to the next input widget if the current textfield is full
     def try_move_cursor_forwards(self):
         widget = self.sender()
         index = self.widget_to_index[widget]
@@ -246,10 +248,13 @@ class CanSender(DashboardItem):
         text_length = len(widget.text())
 
         if text_length == data_length:
-            next_index = min(self.widget_index, index + 1)
+            # self.widget_index refers to the send button, so the
+            # last focusable widget is the one before it
+            next_index = min(self.widget_index - 1, index + 1)
             next_widget = self.widgets[next_index]
             next_widget.setFocus()
 
+    # moves the cursor to the previous input widget if the current textfield is empty
     def try_move_cursor_backwards(self, widget):
         index = self.widget_to_index[widget]
         text_length = len(widget.text())
@@ -259,6 +264,8 @@ class CanSender(DashboardItem):
             previous_widget = self.widgets[previous_index]
             previous_widget.setFocus()
             if isinstance(previous_widget, QLineEdit):
+                # backspace was pressed and the current textfield is empty, so
+                # remove a character from the previous textfield
                 previous_widget.setText(previous_widget.text()[:-1])
 
     def get_name():
