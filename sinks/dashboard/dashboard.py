@@ -13,7 +13,6 @@ from pyqtgraph.Qt.QtWidgets import (
     QMenuBar,
     QVBoxLayout,
     QGraphicsItem,
-<<<<<<< HEAD
     QGraphicsRectItem,
     QFileDialog,
     QHeaderView,
@@ -21,9 +20,6 @@ from pyqtgraph.Qt.QtWidgets import (
     QComboBox,
     QAbstractScrollArea,
     QLineEdit
-=======
-    QGraphicsRectItem
->>>>>>> a144917 (Given up on cleaning dashboard.py)
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry

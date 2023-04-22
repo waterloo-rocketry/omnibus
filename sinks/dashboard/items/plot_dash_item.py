@@ -1,5 +1,4 @@
 from publisher import publisher
-from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu
 from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 from pyqtgraph.Qt.QtCore import QEvent
