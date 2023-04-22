@@ -46,23 +46,21 @@ from items.can_sender import CanSender
 
 class QGraphicsViewWrapper(QGraphicsView):
     """
-    Creating a QGraphicsView wrapper to intercept wheelEvents before it gets converted
-    into a QGraphicsSceneWheelEvent. We want to customize the UI of the view, which requires
-    overriding the wheelEvent function (we could alternatively extend the slot/signal observer pattern)
+    Creating a QGraphicsView wrapper to intercept wheelEvents for UI enhancements.
+    For example, we want to allow horizontal scrolling with a mouse, which we define
+    as scrolling with a mouse while pressing the shift key.
     """
     def __init__(self, scene):
-        # Initialize the super class
-        super().__init__(scene)
+        super().__init__(scene) # initialize the super class
         self.SCROLL_SENSITIVITY = 1/3 # scale down the scrolling sensitivity
 
     def wheelEvent(self, event):
         angle = event.angleDelta()
         if event.modifiers() == Qt.ControlModifier:
             self.zoom(angle.y())
-        elif event.source() == Qt.MouseEventNotSynthesized: # mouse wheel event
+        elif event.source() == Qt.MouseEventNotSynthesized: # event comes from a mouse
             if event.modifiers() == Qt.ShiftModifier:
                 # determining the scrolling orientation based on the larger x/y component value
-                # operating system difference applies only to horizontal scrolling based on testing
                 absolute_angle = angle.x() if abs(angle.x()) > abs(angle.y()) else angle.y()
                 numDegrees = absolute_angle * self.SCROLL_SENSITIVITY
                 value = self.horizontalScrollBar().value()
