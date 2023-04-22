@@ -45,7 +45,7 @@ class Position3DDashItem (DashboardItem):
         # add it to the layout
         self.layout.addWidget(self.view)
 
-    def addParameters(self):
+    def add_parameters(self):
         series_param = ListParameter(name='series',
                                           type='list',
                                           default="",

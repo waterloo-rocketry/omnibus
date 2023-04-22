@@ -1,5 +1,7 @@
 from pyqtgraph.Qt.QtWidgets import QWidget
 from pyqtgraph.parametertree import Parameter
+from collections import OrderedDict
+import json
 
 
 class DashboardItem(QWidget):
@@ -7,7 +9,7 @@ class DashboardItem(QWidget):
     Abstract superclass of all dashboard items to define the common interface.
     To create a new dashboard item, subclass this class and implement the following methods:
         - get_name()
-        - addParameters()
+        - add_parameters()
 
     """
 
@@ -29,12 +31,11 @@ class DashboardItem(QWidget):
             {"name": "width", "type": "int", "default": 100},
             {"name": "height", "type": "int", "default": 100}
         ])
-        self.parameters.addChildren(self.addParameters())
+        self.parameters.addChildren(self.add_parameters())
 
         if params:
-            for child in self.parameters.children():
-                if child.name() in params:
-                    child.setValue(params[child.name()])
+            state = json.loads(params, object_pairs_hook=OrderedDict)
+            self.parameters.restoreState(state, addChildren=True, blockSignals=True, recursive=True)
 
         self.parameters.child("width").sigValueChanged.connect(lambda _, val:
                                                                self.resize(
@@ -50,18 +51,12 @@ class DashboardItem(QWidget):
             self.parameters.child("width").setValue(self.size().width())
             self.parameters.child("height").setValue(self.size().height())
 
-    def addParameters(self):
+    def add_parameters(self):
         """
         This function is called when a dashitem is added to the screen. It should return a list
         of Parameter that are required to recreate the dashitem except for the dimensions.
         """
         return []
-
-    def prompt_for_parameters(self):
-        """
-        This function is called when a a new dashitem is created and needs initial parameters.
-        """
-        return None
 
     @staticmethod
     def get_name():
@@ -81,10 +76,7 @@ class DashboardItem(QWidget):
         This function is called when a dashitem is saved to the config file. It should return a dictionary of
         properties that are required to recreate the dashitem.
         """
-        params_dict = {}
-        for child in self.parameters.children():
-            params_dict[child.name()] = child.value()
-        return params_dict
+        return json.dumps(self.parameters.saveState(filter='user'))
 
     def on_delete(self):
         """

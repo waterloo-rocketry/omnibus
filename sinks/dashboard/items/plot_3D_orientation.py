@@ -59,7 +59,7 @@ class Orientation3DDashItem (DashboardItem):
         self.series = value
         publisher.subscribe(self.series, self.on_data_update_orientation)
 
-    def addParameters(self):
+    def add_parameters(self):
         series_param = ListParameter(name='series',
                                           type='list',
                                           default="",

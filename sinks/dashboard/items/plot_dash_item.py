@@ -51,7 +51,7 @@ class PlotDashItem(DashboardItem):
         # add it to the layout
         self.layout.addWidget(self.widget, 0, 0)
 
-    def addParameters(self):
+    def add_parameters(self):
         series_param = ChecklistParameter(name='series',
                                           type='list',
                                           value=[],
