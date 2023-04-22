@@ -7,19 +7,12 @@ import parsley
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
         self.port = port
-<<<<<<< HEAD
         self.serial = None
-=======
->>>>>>> 804f9fb (CAN message can be sent over serial port)
         if self.port != "-":
             self.serial = serial.Serial(port, baud, timeout)
 
     def read(self):
-<<<<<<< HEAD
         if self.serial == None:
-=======
-        if self.port == "-":
->>>>>>> 804f9fb (CAN message can be sent over serial port)
             return input
         return self.serial.readline().strip(b'\r\n').decode('utf-8')
 
