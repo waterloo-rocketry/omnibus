@@ -3,8 +3,8 @@ import sys
 import json
 import signal
 
-from pyqtgraph.Qt.QtCore import Qt, QTimer, QRectF, QEvent, Signal
-from pyqtgraph.Qt.QtGui import QPainter, QCursor, QKeyEvent
+from pyqtgraph.Qt.QtCore import Qt, QTimer
+from pyqtgraph.Qt.QtGui import QPainter
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
