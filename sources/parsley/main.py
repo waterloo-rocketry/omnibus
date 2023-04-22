@@ -11,7 +11,7 @@ class SerialCommunicator:
             self.serial = serial.Serial(port, baud, timeout)
 
     def read(self):
-        if self.port == "-":
+        if self.serial == None:
             return input
         return self.serial.readline().strip(b'\r\n').decode('utf-8')
 
