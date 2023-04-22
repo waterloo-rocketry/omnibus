@@ -48,6 +48,7 @@ class QGraphicsViewWrapper(QGraphicsView):
     """
     def __init__(self, scene):
         super().__init__(scene) # initialize the super class
+        self.zoomed = 1
         self.SCROLL_SENSITIVITY = 1/3 # scale down the scrolling sensitivity
 
     def wheelEvent(self, event):
@@ -71,6 +72,7 @@ class QGraphicsViewWrapper(QGraphicsView):
     # we define a function for zooming since keyboard zooming needs a function
     def zoom(self, angle: int):
         zoomFactor = 1 + angle*0.001 # create adjusted zoom factor
+        self.zoomed *= zoomFactor # needed to reset zoom
         self.scale(zoomFactor, zoomFactor) # scale the scene
 
 # Custom Dashboard class derived from QWidget
