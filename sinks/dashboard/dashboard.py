@@ -26,7 +26,6 @@ from items.plot_3D_position import Position3DDashItem
 from items.can_message_table import CanMsgTableDashItem
 from items.can_sender import CanSender
 
-<<<<<<< HEAD
 class QGraphicsViewWrapper(QGraphicsView):
     """
     Creating a QGraphicsView wrapper to intercept wheelEvents for UI enhancements.
@@ -35,33 +34,17 @@ class QGraphicsViewWrapper(QGraphicsView):
     """
     def __init__(self, scene):
         super().__init__(scene) # initialize the super class
-=======
-
-# Custom class derived from QGraphicsView to capture mouse
-# wheel events by overriding the wheelEvent function
-class QGraphicsViewWrapper(QGraphicsView):
-    def __init__(self, scene):
-        # Initialize the super class
-        super().__init__(scene)
-
->>>>>>> 8a5750a (Given up on cleaning dashboard.py)
         self.SCROLL_SENSITIVITY = 1/3 # scale down the scrolling sensitivity
 
     def wheelEvent(self, event):
         angle = event.angleDelta()
         if event.modifiers() == Qt.ControlModifier:
             self.zoom(angle.y())
-<<<<<<< HEAD
         elif event.source() == Qt.MouseEventNotSynthesized: # event comes from a mouse
             if event.modifiers() == Qt.ShiftModifier:
                 # determining the scrolling orientation based on the larger x/y component value
                 absolute_angle = angle.x() if abs(angle.x()) > abs(angle.y()) else angle.y()
                 numDegrees = absolute_angle * self.SCROLL_SENSITIVITY
-=======
-        elif event.source() == Qt.MouseEventNotSynthesized: # mouse wheel event
-            if event.modifiers() == Qt.ShiftModifier:
-                numDegrees = angle.x() * self.SCROLL_SENSITIVITY # TODO: @jack for mac at least, if you hold shift, the QPoint itself changes to be QPoint(120,0)
->>>>>>> 8a5750a (Given up on cleaning dashboard.py)
                 value = self.horizontalScrollBar().value()
                 self.horizontalScrollBar().setValue(value + numDegrees)
             else:
