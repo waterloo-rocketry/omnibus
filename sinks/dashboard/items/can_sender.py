@@ -170,9 +170,11 @@ class CanSender(DashboardItem):
         # if every field successfully encoded its data, long pulse all of the fields once
         self.pulse_indexes = [i for i in range(0, self.widget_index + 1)]
         self.pulse(pulse_invalid=False)
+        bit_length = bit_str.length
+        bit_data = bit_str.pop(bit_length)
         message = {
-            "data": bit_str.data,
-            "length": bit_str.length
+            "data": bit_data,
+            "length": bit_length
         }
         self.omnibus_sender.send(self.channel, message)
 
