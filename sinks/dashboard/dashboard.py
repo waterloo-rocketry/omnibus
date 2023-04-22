@@ -34,13 +34,15 @@ from items.plot_3D_position import Position3DDashItem
 from items.can_message_table import CanMsgTableDashItem
 from items.can_sender import CanSender
 
-# Custom class derived from QGraphicsView to capture mouse
-# wheel events by overriding the wheelEvent function
 class QGraphicsViewWrapper(QGraphicsView):
+    """
+    Creating a QGraphicsView wrapper to intercept wheelEvents before it gets converted
+    into a QGraphicsSceneWheelEvent. We want to customize the UI of the view, which requires
+    overriding the wheelEvent function (we could alternatively extend the slot/signal observer pattern)
+    """
     def __init__(self, scene):
         # Initialize the super class
         super().__init__(scene)
-
         self.SCROLL_SENSITIVITY = 1/3 # scale down the scrolling sensitivity
 
     def wheelEvent(self, event):
@@ -49,7 +51,10 @@ class QGraphicsViewWrapper(QGraphicsView):
             self.zoom(angle.y())
         elif event.source() == Qt.MouseEventNotSynthesized: # mouse wheel event
             if event.modifiers() == Qt.ShiftModifier:
-                numDegrees = angle.x() * self.SCROLL_SENSITIVITY # TODO: @jack for mac at least, if you hold shift, the QPoint itself changes to be QPoint(120,0)
+                # determining the scrolling orientation based on the larger x/y component value
+                # operating system difference applies only to horizontal scrolling based on testing
+                absolute_angle = angle.x() if abs(angle.x()) > abs(angle.y()) else angle.y()
+                numDegrees = absolute_angle * self.SCROLL_SENSITIVITY
                 value = self.horizontalScrollBar().value()
                 self.horizontalScrollBar().setValue(value + numDegrees)
             else:
@@ -75,8 +80,7 @@ class Dashboard(QWidget):
         # Called every frame to get new data
         self.callback = callback
 
-        # Dictionary to map rectitems to widgets
-        # and dashitems
+        # Dictionary to map rectitems to widgets and dashitems
         self.widgets = {}
 
         # Keep track of if editing is allowed
