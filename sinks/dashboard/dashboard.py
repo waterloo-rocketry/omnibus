@@ -172,6 +172,7 @@ class Dashboard(QWidget):
         self.layout.addWidget(self.view)
         self.setLayout(self.layout)
 
+        # enable certain keyboard shortcuts
         self.key_press_signals = EventTracker()
         self.key_press_signals.zoom_in.connect(lambda: self.view.zoom(200))
         self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))
