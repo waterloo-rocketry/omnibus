@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt.QtCore import Qt, Signal, QEvent, QObject
+from pyqtgraph.Qt.QtCore import Qt, Signal, QEvent, QObject, QPoint
 
 
 class EventTracker(QObject):
@@ -53,7 +53,6 @@ class KeyEvent:
     key_code: int
     modifiers: int
     text: Optional[str]
-
 
 class CheckBoxDialog(QtWidgets.QDialog):
     def __init__(self, property_name, description, items, parent=None):
