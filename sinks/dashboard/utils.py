@@ -26,7 +26,8 @@ class EventTracker(QObject):
     def eventFilter(self, widget, event):
         """
         After we intercept the event, propagate it down the event
-        chain so that we don't disturb any default behaviours.
+        chain so that we don't disturb any default behaviours or return True
+        if we don't want any widgets to further handle the event.
         """
         if event.type() == QEvent.KeyPress:
             key_press = KeyEvent(event.key(), event.modifiers())
@@ -37,7 +38,7 @@ class EventTracker(QObject):
                     self.reverse_tab_pressed.emit(widget)
                 case KeyEvent(Qt.Key_Tab, _):
                     self.tab_pressed.emit(widget)
-                case KeyEvent(Qt.Key_Enter, _, _) | KeyEvent(Qt.Key_Return, _):
+                case KeyEvent(Qt.Key_Enter, _) | KeyEvent(Qt.Key_Return, _):
                     self.enter_pressed.emit()
                 case KeyEvent(Qt.Key_Equal, Qt.ControlModifier):
                     self.zoom_in.emit()
