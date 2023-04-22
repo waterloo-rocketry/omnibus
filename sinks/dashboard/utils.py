@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt.QtCore import Qt, Signal, QEvent, QObject
+from pyqtgraph.Qt.QtCore import Qt, Signal, QEvent, QObject, QPoint
 
 
 class EventTracker(QObject):
