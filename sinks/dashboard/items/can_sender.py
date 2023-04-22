@@ -25,7 +25,7 @@ class CanSender(DashboardItem):
     |-------------------------------------------------------------|
     | msg_type | board_id | time             | command |          | <- field names
     |----------|----------|------------------|---------|----------|
-    | Dropdown | Dropdown | 24-bit text_field| Dropdown|   Send   | <- field-dependent widgets to take user input
+    | Dropdown | Dropdown | 24-bit text_field| Dropdown|   Send   | <- field-dependent widgets that take user input
     |-------------------------------------------------------------|
 
     - Dropdowns contain a field's dictionary keys
@@ -41,8 +41,8 @@ class CanSender(DashboardItem):
     def __init__(self, props):
         super().__init__()
         # constants
-        self.INVALID_NUM_PULSES = 3 # number of pulses to display when a Field throws an error
-        self.INVALID_PULSE_PERIOD = 100 # period (ms) between each pulse
+        self.INVALID_NUM_PULSES = 3 # number of pulses to display when a field fails to encode data
+        self.INVALID_PULSE_PERIOD = 100 # ms
         self.VALID_NUM_PULSES = 1
         self.VALID_PULSE_PERIOD = 500
         self.WIDGET_TEXT_PADDING = 50 # pixels
@@ -55,12 +55,12 @@ class CanSender(DashboardItem):
         self.text_signals = EventTracker()
         self.text_signals.backspace_pressed.connect(self.try_move_cursor_backwards)
 
-        # need to add this to the dashboard item widget itself since if you
-        # click on the dashboard widget, only that widget is focused which means
-        # events are only passed to it
-        self.button_signals = EventTracker()
-        self.button_signals.enter_pressed.connect(self.send_can_message)
-        self.installEventFilter(self.button_signals)
+        # track enter/return key presses to send the CAN message (equilvalent to pressing send button)
+        # installing the event filter to the dashboard widget since whenever the widget is under
+        # focus, we want to be able to send the can message
+        self.send_signals = EventTracker()
+        self.send_signals.enter_pressed.connect(self.send_can_message)
+        self.installEventFilter(self.send_signals)
 
         # text field RegEx input mask
         self.numeric_mask = "[\.\-0-9]" # allows numbers, periods, minus sign
@@ -131,9 +131,10 @@ class CanSender(DashboardItem):
             self.layout_manager.addWidget(self.widget_labels[self.widget_index], 0, self.widget_index)
             self.layout_manager.addWidget(self.widgets[self.widget_index], 1, self.widget_index)
 
+            # if the current field is a switch, then display the first row's contents
             if isinstance(field, pf.Switch):
                 self.widgets[self.widget_index].currentTextChanged.connect(self.update_can_msg)
-                nested_fields = field.get_fields(dropdown_items[0]) # display first row's contents
+                nested_fields = field.get_fields(dropdown_items[0])
                 self.display_can_fields(nested_fields)
 
     def update_can_msg(self, text: str):
