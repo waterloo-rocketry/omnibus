@@ -1,13 +1,14 @@
 from math import ceil, log10
 from typing import List, Union
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics
+from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics, QFont
 from pyqtgraph.Qt.QtWidgets import (
     QComboBox,
     QGridLayout,
     QLabel,
     QLineEdit,
-    QPushButton
+    QPushButton,
+    QSizePolicy
 )
 
 import parsley.fields as pf
@@ -26,6 +27,9 @@ class CanSender(DashboardItem):
     | msg_type | board_id | time             | command |          | <- field names
     |----------|----------|------------------|---------|----------|
     | Dropdown | Dropdown | 24-bit text_field| Dropdown|   Send   | <- field-dependent widgets that take user input
+    |----------|----------|------------------|---------|----------|
+    |          |          | could not convert|         |          | <- label to display encoding errors
+    |          |          | string to float  |         |          |
     |-------------------------------------------------------------|
 
     - Dropdowns contain a field's dictionary keys
@@ -70,6 +74,8 @@ class CanSender(DashboardItem):
         self.fields = [None] * 16 # stores the parsley fields
         self.widgets = [None] * 16 # stores the PyQT input widgets
         self.widget_labels = [None] * 16 # store the PyQT labels describing the parsley field names
+        self.widget_error_labels = [None] * 16 # used to convery any field error messages
+        self.widget_widths = [None] * 16 # track the width of each widget
         self.widget_index = -1 # index of the right-most PyQT widget
         self.widget_to_index = {} # map to associate widgets to their index
 
@@ -87,6 +93,7 @@ class CanSender(DashboardItem):
         self.channel = "CAN/Commands"
 
     def display_can_fields(self, fields: List[pf.Field]):
+        self.clear_error_messages()
         for field in fields:
             self.widget_index += 1
             if isinstance(field, pf.Switch) or isinstance(field, pf.Enum):
@@ -96,7 +103,8 @@ class CanSender(DashboardItem):
                 dropdown = QComboBox()
                 dropdown.addItems(dropdown_items)
                 max_width = self.get_widget_text_width(dropdown, dropdown_max_length)
-                dropdown.setFixedWidth(max_width + self.WIDGET_TEXT_PADDING)
+                self.widget_widths[self.widget_index] = max_width + self.WIDGET_TEXT_PADDING
+                dropdown.setFixedWidth(self.widget_widths[self.widget_index])
                 # unfortuantely on Macs, you aren't able to customize the dropdown, which means
                 # you cant scroll the contents (it'll be one huge list)
                 # see: https://doc.qt.io/qt-5/qcombobox.html#maxVisibleItems-prop
@@ -109,7 +117,8 @@ class CanSender(DashboardItem):
 
                 text_field = QLineEdit()
                 max_width = self.get_widget_text_width(text_field, data_length)
-                text_field.setFixedWidth(max_width + self.WIDGET_TEXT_PADDING)
+                self.widget_widths[self.widget_index] = max_width + self.WIDGET_TEXT_PADDING
+                text_field.setFixedWidth(self.widget_widths[self.widget_index])
                 text_field.setAlignment(Qt.AlignCenter)
                 text_field.setValidator(QRegularExpressionValidator(data_length * mask))
                 text_field.setPlaceholderText(data_length * "0")
@@ -123,6 +132,7 @@ class CanSender(DashboardItem):
             label_text = f"{field.name} ({field.unit})" if field.unit else field.name
             label = QLabel(label_text)
             label.setWordWrap(True)
+            label.setFixedWidth(self.widget_widths[self.widget_index])
 
             self.fields[self.widget_index] = field
             self.widget_labels[self.widget_index] = label
@@ -181,6 +191,7 @@ class CanSender(DashboardItem):
 
     def parse_can_msg(self) -> Union[BitString, None]:
         self.pulse_indexes = []
+        self.clear_error_messages()
         bit_str = BitString()
         for index in range(0, self.widget_index):
             widget = self.widgets[index]
@@ -193,6 +204,7 @@ class CanSender(DashboardItem):
             except Exception as e:
                 print(f"{field.name} | {e}")
                 self.pulse_indexes.append(index)
+                self.display_error_message(index, str(e))
 
         if self.pulse_indexes:
             self.pulse(pulse_invalid=True)
@@ -214,6 +226,22 @@ class CanSender(DashboardItem):
             self.pulse_count += 1
         else:
             self.timer.stop()
+
+    def clear_error_messages(self):
+        for label in self.widget_error_labels:
+            if label == None:
+                continue
+            label.setText("")
+
+    def display_error_message(self, index: int, message: str):
+        label = QLabel(message)
+        label.setWordWrap(True) # allow text to wrap around
+        label.setFont(QFont(label.font().family(), 10))
+        label.setFixedWidth(self.widget_widths[index])
+        # allow label to expand vertically as much as needed
+        label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding)
+        self.widget_error_labels[index] = label
+        self.layout_manager.addWidget(self.widget_error_labels[index], 2, index)
 
     def get_field_length(self, field: pf.Field) -> int:
         match type(field):
