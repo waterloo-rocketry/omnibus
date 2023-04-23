@@ -255,7 +255,6 @@ class CanSender(DashboardItem):
                 minus_sign = 1 if field.signed else 0
                 integer = ceil(log10(2**field.length))
                 decimals = 3 if field.scale != 1 else 0
-                print(field.name, minus_sign, integer, decimals)
                 return minus_sign + integer + decimals
             case _:
                 return -1
