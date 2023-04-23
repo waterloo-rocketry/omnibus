@@ -248,8 +248,15 @@ class CanSender(DashboardItem):
             case pf.ASCII:
                 return field.length // 8
             case pf.Numeric:
+                # we want to define an upper bound for the length
+                # but decimals can theortically be very very long
+                # so assume 2 decimal digits + period = 3 characters
+                # if there is a scale multipler (might mean its a float)
                 minus_sign = 1 if field.signed else 0
-                return minus_sign + ceil(field.length * log10(2))
+                integer = ceil(log10(2**field.length))
+                decimals = 3 if field.scale != 1 else 0
+                print(field.name, minus_sign, integer, decimals)
+                return minus_sign + integer + decimals
             case _:
                 return -1
 
