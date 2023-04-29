@@ -59,6 +59,15 @@ class Position3DDashItem (DashboardItem):
 
     def on_data_update_position(self, stream, payload):
         time, point = payload
+
+        # Ensuring point is of the right format.
+        match point:
+            case x, y, z:
+                pass
+            case _:
+                return None
+
+
         self.pos_list.append(tuple(point))
         if len(self.pos_list) < 2:
             return None

@@ -69,6 +69,13 @@ class Orientation3DDashItem (DashboardItem):
     def on_data_update_orientation(self, stream, payload):
         time, orientation = payload
 
+        # Ensuring orientation is of the right format.
+        match orientation:
+            case x, y, z:
+                pass
+            case _:
+                return None
+
         xlist = [(0, 0, 0), self.transform((10, 0, 0), orientation)]
         ylist = [(0, 0, 0), self.transform((0, 10, 0), orientation)]
         zlist = [(0, 0, 0), self.transform((0, 0, 10), orientation)]
