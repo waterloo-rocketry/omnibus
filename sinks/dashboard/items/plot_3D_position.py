@@ -67,7 +67,6 @@ class Position3DDashItem (DashboardItem):
             case _:
                 return None
 
-
         self.pos_list.append(tuple(point))
         if len(self.pos_list) < 2:
             return None
