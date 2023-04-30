@@ -98,10 +98,12 @@ class Dashboard(QWidget):
 
         # Create a large scene underneath the view
         self.scene = QGraphicsScene(0, 0, self.width*100, self.height*100)
-        self.scene.selectionChanged.connect(self.onSelectionChanged)
+        self.scene.selectionChanged.connect(self.on_selection_changed)
 
         # Create a grid layout
         self.layout = QVBoxLayout()
+        # We wrap everything in a splitter view so that
+        # we can resize the peremeter tree
         self.splitter = QSplitter(Qt.Horizontal)
         self.layout.addWidget(self.splitter)
 
@@ -186,22 +188,29 @@ class Dashboard(QWidget):
         self.splitter.addWidget(self.parameter_tree)
         self.parameter_tree.hide()
 
+        # This makes both the scene and the parameter tree
+        # non collapsible. This is important because otherwise
+        # the widgets can go to width 0 and it hard to get them back
         self.splitter.setCollapsible(0, False)
         self.splitter.setCollapsible(1, False)
         self.setLayout(self.layout)
 
-    def onSelectionChanged(self):
+    # Method to open the parameter tree to the selected item
+    def on_selection_changed(self):
         items = self.scene.selectedItems()
         if len(items) != 1:
             self.parameter_tree.hide()
             return
         # Show the tree
         item = self.widgets[items[0]][1]
-        item.get_parameters().sigTreeStateChanged.connect(self.onCheckStateChanged)
+        # add listener for changes. only handles dimensions
+        # others need to be handled inside the item itself
+        item.get_parameters().sigTreeStateChanged.connect(self.on_check_state_changed)
         self.parameter_tree.setParameters(item.get_parameters(), showTop=False)
         self.parameter_tree.show()
 
-    def onCheckStateChanged(self, param, changes):
+    # method to handle dimension changes in parameter tree
+    def on_check_state_changed(self, param, changes):
         items = self.scene.selectedItems()
         if len(items) != 1:
             self.parameter_tree.hide()
@@ -323,7 +332,7 @@ class Dashboard(QWidget):
             proxy = items[0]
             dashitem = items[1]
 
-            # Get the coordinates of the proxy widget on the view not the scene
+            # Get the coordinates of the proxy widget on the view
             scenepos = proxy.scenePos()
             viewpos = self.view.mapFromScene(scenepos)
 
@@ -377,6 +386,11 @@ class Dashboard(QWidget):
         for rect in self.widgets:
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=True)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=True)
+
+    # Method to handle exit
+    def closeEvent(self, event):
+        self.parameter_tree.hide()
+        self.remove_all()
 
     # Method to display help box
     # Yes it's jank deal with it
