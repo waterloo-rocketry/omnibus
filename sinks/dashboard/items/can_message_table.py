@@ -139,10 +139,8 @@ class CanMsgTableDashItem(DashboardItem):
     Display table for CAN messages.
     """
 
-    def __init__(self, props=None):
-        super().__init__()
-        self.props = props
-
+    def __init__(self, params=None):
+        super().__init__(params)
         # 1) Establish a structure of one expanding
         #    widget per board
         # 2) For each of those widgets, add a Display
@@ -178,15 +176,6 @@ class CanMsgTableDashItem(DashboardItem):
 
         self.layout.addWidget(self.scrolling_part)
 
-    def prompt_for_properties(self):
-        """
-        CAN message table does not need props to initialize, so just return True
-        """
-        return True
-
-    def get_props(self):
-        return self.props
-
     def on_data_update(self, stream, canSeries):
         message = canSeries[1]
         if message["board_id"] in self.message_dict:
@@ -198,6 +187,7 @@ class CanMsgTableDashItem(DashboardItem):
             self.layout_widget.layout.addWidget(exp_widget)
             self.message_dict[message["board_id"]].update_with_message(message)
 
+    @staticmethod
     def get_name():
         return "CAN Message Table"
 

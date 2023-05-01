@@ -1,24 +1,23 @@
 from publisher import publisher
 from pyqtgraph.Qt.QtWidgets import QBoxLayout
+from pyqtgraph.parametertree.parameterTypes import ListParameter
 import pyqtgraph.opengl as gl
 from sinks.dashboard.items.dashboard_item import DashboardItem
-from utils import prompt_user
 import numpy as np
 from .registry import Register
 
 
 @Register
 class Orientation3DDashItem (DashboardItem):
-    def __init__(self, props):
+    def __init__(self, params=None):
         # Call this in **every** dash item constructor
-        super().__init__()
+        super().__init__(params)
 
         # Specify the layout
         self.layout = QBoxLayout(QBoxLayout.LeftToRight)
         self.setLayout(self.layout)
 
-        # save props as a field
-        self.props = props
+        self.series = self.parameters.param('series').value()
 
         # initilize 3D environment
         self.view = gl.GLViewWidget()
@@ -37,7 +36,8 @@ class Orientation3DDashItem (DashboardItem):
 
         # subscribe to stream dictated by properties
 
-        publisher.subscribe(self.props, self.on_data_update_orientation)
+        publisher.subscribe(self.series, self.on_data_update_orientation)
+        self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.xaxis = gl.GLLinePlotItem()
         self.view.addItem(self.xaxis)
         self.yaxis = gl.GLLinePlotItem()
@@ -46,25 +46,35 @@ class Orientation3DDashItem (DashboardItem):
         self.view.addItem(self.zaxis)
         self.orientation = (0, 0, 0)  # Euler Angles
 
+        # need to set minimum dimensions because it
+        # defaults to 40 for some reason
+        with self.parameters.treeChangeBlocker():
+            self.parameters.param('width').setValue(600)
+            self.parameters.param('height').setValue(600)
         # add it to the layout
         self.layout.addWidget(self.view)
 
-    def prompt_for_properties(self):
+    def on_series_change(self, param, value):
+        publisher.unsubscribe_from_all(self.on_data_update_orientation)
+        self.series = value
+        publisher.subscribe(self.series, self.on_data_update_orientation)
 
-        series = prompt_user(
-            self,
-            "Data Series",
-            "The series you wish to plot",
-            "items",
-            publisher.get_all_streams(),
-        )
-        if not series:
-            return None
-
-        return series
+    def add_parameters(self):
+        series_param = ListParameter(name='series',
+                                          type='list',
+                                          default="",
+                                          limits=publisher.get_all_streams())
+        return [series_param]
 
     def on_data_update_orientation(self, stream, payload):
         time, orientation = payload
+
+        # Ensuring orientation is of the right format.
+        match orientation:
+            case x, y, z:
+                pass
+            case _:
+                return None
 
         xlist = [(0, 0, 0), self.transform((10, 0, 0), orientation)]
         ylist = [(0, 0, 0), self.transform((0, 10, 0), orientation)]
@@ -123,9 +133,7 @@ class Orientation3DDashItem (DashboardItem):
             np.sin(alpha)*y + np.cos(alpha)*z
         )
 
-    def get_props(self):
-        return self.props
-
+    @staticmethod
     def get_name():
         return "Orientation Plot"
 
