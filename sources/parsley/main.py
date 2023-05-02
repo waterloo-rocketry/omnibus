@@ -4,6 +4,7 @@ import serial
 from omnibus import Sender, Receiver
 import parsley
 
+
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
         self.port = port
@@ -22,24 +23,25 @@ class SerialCommunicator:
             return
         self.serial.write(msg)
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('port', help='the serial port to read from, or - for stdin')
     parser.add_argument('baud', type=int, nargs='?', default=115200,
                         help='the baud rate to use')
-    parser.add_argument('--format', default='telemetry',
+    parser.add_argument('--format', default='usb',
                         help='Options: telemetry, logger, usb. Parse input in RocketCAN Logger or USB format')
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
 
     communicator = SerialCommunicator(args.port, args.baud, 0)
-    if args.format == "usb":
-        parser = parsley.parse_usb_debug
+    if args.format == "telemetry":
+        parser = parsley.parse_live_telemetry
     elif args.format == "logger":
         parser = parsley.parse_logger
     else:
-        parser = parsley.parse_live_telemetry
+        parser = parsley.parse_usb_debug
 
     if not args.solo:
         sender = Sender()
@@ -49,16 +51,25 @@ def main():
 
     while True:
         while msg := receiver.recv_message(0):
-            data = msg.payload['data']
-            length = msg.payload['length']
-            bit_str = parsley.BitString(data, length)
-            msg_sid, msg_data = parsley.parse_bitstring(bit_str)
-            formatted_msg_sid = f"{msg_sid:03X}"
-            byte_length = (length-11 + 7) // 8  # calculate the number of bytes required
-            byte_array = msg_data.to_bytes(byte_length, byteorder='big')  # convert to bytes
-            formatted_msg_data = ','.join([f"{byte:02X}" for byte in byte_array])  # convert to hex with commas
-            formatted_string = f"m{formatted_msg_sid},{formatted_msg_data};"
-            communicator.write(formatted_string)
+            can_msg_data = msg.payload['data']
+            formatted_string = parsley.format_line(can_msg_data)
+
+
+
+            # msg_sid = msg.payload['msg_sid']
+            # msg_data = msg.payload['msg_data']
+            # formatted_string = parsley.parse(msg_sid, msg_data)
+            # data = msg.payload['data']
+            # length = msg.payload['length']
+            # bit_str = parsley.BitString(data, length)
+            # msg_sid, msg_data = parsley.parse_bitstring(bit_str)
+            # formatted_msg_sid = f"{msg_sid:03X}"
+            # byte_length = (length-11 + 7) // 8  # calculate the number of bytes required
+            # byte_array = msg_data.to_bytes(byte_length, byteorder='big')  # convert to bytes
+            # # convert to hex with commas
+            # formatted_msg_data = ','.join([f"{byte:02X}" for byte in byte_array])
+            # formatted_string = f"m{formatted_msg_sid},{formatted_msg_data};"
+            # communicator.write(formatted_string)
 
         line = communicator.read()
         if line is not None or line is input:

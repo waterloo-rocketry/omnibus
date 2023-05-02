@@ -11,89 +11,93 @@ from pyqtgraph.Qt.QtWidgets import (
     QSizePolicy
 )
 
+import parsley
 import parsley.fields as pf
-from parsley.message_definitions import CAN_MSG
+from parsley.message_definitions import CAN_MESSAGE
 from parsley.bitstring import BitString
 from omnibus import Sender
 from .registry import Register
 from .dashboard_item import DashboardItem
 from utils import EventTracker
+
+
 @Register
 class CanSender(DashboardItem):
     """
     Visual blueprint of the CanSender dashboard item:
-                  
-    |-------------------------------------------------------------|
-    | msg_type | board_id | time             | command |          | <- field names
-    |----------|----------|------------------|---------|----------|
-    | Dropdown | Dropdown | 24-bit text_field| Dropdown|   Send   | <- field-dependent widgets that take user input
-    |----------|----------|------------------|---------|----------|
-    |          |          | could not convert|         |          | <- label to display encoding errors
-    |          |          | string to float  |         |          |
-    |-------------------------------------------------------------|
+
+    |---------------------------------------------------------------|
+    | msg_type | board_id | time (seconds)    | command  |          | <- field names (conditional: unit in brackets)
+    |----------|----------|-------------------|----------|----------|
+    | Dropdown | Dropdown | 24-bit text_field | Dropdown |   Send   | <- field-dependent widgets to take input
+    |----------|----------|-------------------|----------|----------|
+    |          |          | Parsley error     |          |          | <- (conditional: parsley encoding error)
+    |---------------------------------------------------------------|
 
     - Dropdowns contain a field's dictionary keys
         => when a Switch is encountered, populate the first key's fields
     - Text fields contain two different input masks:
         => Numerics: only numbers
-        => ASCII: any string
+        => ASCII: all ASCII characters
     - Upon pressing send:
-        => for every field that fails to encode its data, pulse the field in quick succession
-        => if every field successfully encodes its data, long pulse all of the fields once
+        => for every field that fails to encode its data, pulse said field in quick succession and display the parsley error
+        => if every field successfully encodes its data, long pulse all of the fields once and emit the message to CAN/commands
     """
 
     def __init__(self, props):
         super().__init__()
         # constants
-        self.INVALID_PULSES = 3 # number of pulses to display when a field fails to encode data
-        self.INVALID_PULSE_PERIOD = 100 # ms
+        self.INVALID_PULSES = 3  # number of pulses to display when a field fails to encode data
+        self.INVALID_PULSE_PERIOD = 100  # ms
         self.VALID_PULSES = 1
         self.VALID_PULSE_PERIOD = 500
-        self.WIDGET_TEXT_PADDING = 50 # pixels
+        self.WIDGET_TEXT_PADDING = 50  # pixels
 
-        # use grid layout so that widgets can be placed in a grid
+        # using grid layout since widgets are designed in a grid-like format
         self.layout_manager = QGridLayout(self)
         self.setLayout(self.layout_manager)
 
-        # track backspace key presses to move the cursor backwards when the current textfield is empty
+        # tracks backspace presses to move the cursor backwards when the current textfield is empty
         self.text_signals = EventTracker()
         self.text_signals.backspace_pressed.connect(self.try_move_cursor_backwards)
 
-        # track enter/return key presses to send the CAN message (equilvalent to pressing the send button)
-        # installing the event filter on the dashboard widget since whenever the dashboard widget
-        # is under focus, we want to be able to send the CAN message
+        # tracks enter/return presses to send the CAN message (equilvalent to clicking the send button)
+        # need to install the event filter on the dashboard widget since whenever the dashboard widget
+        # is in focus, we want to be able to send the CAN message
         self.send_signals = EventTracker()
         self.send_signals.enter_pressed.connect(self.send_can_message)
         self.installEventFilter(self.send_signals)
 
         # text field regular expression input mask (won't accept characters not defined here)
-        self.numeric_mask = "[\.\-0-9]" # allows numbers, periods, and minus sign
-        self.ascii_mask = "[\x00-\x7F]" # allows all ASCII characters
+        self.numeric_mask = '[\.\-0-9]'  # allows numbers, periods, and minus sign
+        self.ascii_mask = '[\x00-\x7F]'  # allows all ASCII characters
 
-        # preallocate the size of the arrays since the length of a CAN message is dynamic
-        self.fields = [None] * 16 # stores the parsley fields
-        self.widgets = [None] * 16 # stores the PyQT input widgets
-        self.widget_labels = [None] * 16 # store the PyQT labels describing the parsley field names
-        self.widget_error_labels = [None] * 16 # used to convery any field error messages
-        self.widget_widths = [None] * 16 # track the width of each widget
-        self.widget_index = -1 # index of the right-most PyQT widget
-        self.widget_to_index = {} # map to associate widgets to their index
+        # preallocate the arrays since the length of a CAN message is dynamic
+        self.fields = [None] * 16  # stores the parsley fields
+        self.widgets = [None] * 16  # stores the PyQT input widgets
+        self.widget_widths = [None] * 16  # tracks the width of each column
+        # stores the PyQT labels describing the parsley field names
+        self.widget_labels = [None] * 16
+        self.widget_error_labels = [None] * 16  # displays parsley field encoding errors
+        self.widget_index = -1  # index of the right-most PyQT widget
+        self.widget_to_index = {}  # associates widgets to their parsley can message index
 
-        # display contents onto the dashboard item
-        self.display_can_fields([CAN_MSG])
+        # display the first can message
+        self.display_can_fields([CAN_MESSAGE])
         self.create_send_button()
 
         # when a button is pressed, pulse widgets for visual feedback
         self.timer = QTimer()
         self.timer.timeout.connect(self.pulse_widgets)
-        self.pulse_indexes = []
+        self.pulse_indices = []
 
-        # when a button is pressed, try to send the message out
+        # when a button is pressed and everything is valid, send the message out
         self.omnibus_sender = Sender()
-        self.channel = "CAN/Commands"
+        self.channel = 'CAN/Commands'
 
+    # displays PyQT input widgets for a given CAN message
     def display_can_fields(self, fields: List[pf.Field]):
-        self.clear_error_messages()
+        self.clear_error_messages()  # remove any preexisiting error lables
         for field in fields:
             self.widget_index += 1
             if isinstance(field, pf.Switch) or isinstance(field, pf.Enum):
@@ -102,34 +106,36 @@ class CanSender(DashboardItem):
 
                 dropdown = QComboBox()
                 dropdown.addItems(dropdown_items)
-                max_width = self.get_widget_text_width(dropdown, dropdown_max_length)
-                self.widget_widths[self.widget_index] = max_width + self.WIDGET_TEXT_PADDING
-                dropdown.setFixedWidth(self.widget_widths[self.widget_index])
-                # unfortuantely on Macs, you aren't able to customize the dropdown, which means
-                # you cant scroll the contents (it'll be one huge list)
+                # unfortunately on Mac, you aren't able to customize the dropdown which means that
+                # you can't hover and scroll over the contents (it'll be one huge list when expanded)
                 # see: https://doc.qt.io/qt-5/qcombobox.html#maxVisibleItems-prop
                 dropdown.setMaxVisibleItems(15)
-                dropdown.setFocusPolicy(Qt.StrongFocus) # display the blue border when widget is focused
+                dropdown.setFocusPolicy(Qt.StrongFocus)  # allows tabbing between widgets
+                # calculate the width of the widget
+                max_text_width = self.get_widget_text_width(dropdown, dropdown_max_length)
+                self.widget_widths[self.widget_index] = max_text_width + self.WIDGET_TEXT_PADDING
+                dropdown.setFixedWidth(self.widget_widths[self.widget_index])
                 self.widgets[self.widget_index] = dropdown
             elif isinstance(field, pf.Numeric) or isinstance(field, pf.ASCII):
                 mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
                 data_length = self.get_field_length(field)
 
                 text_field = QLineEdit()
-                max_width = self.get_widget_text_width(text_field, data_length)
-                self.widget_widths[self.widget_index] = max_width + self.WIDGET_TEXT_PADDING
-                text_field.setFixedWidth(self.widget_widths[self.widget_index])
                 text_field.setAlignment(Qt.AlignCenter)
                 text_field.setValidator(QRegularExpressionValidator(data_length * mask))
-                text_field.setPlaceholderText(data_length * "0")
+                text_field.setPlaceholderText(data_length * '0')
                 text_field.installEventFilter(self.text_signals)
                 # when a textfield is full, move the cursor forwards to the next widget
                 text_field.textChanged.connect(self.try_move_cursor_forwards)
-                text_field.setFocusPolicy(Qt.StrongFocus) # display the blue border when widget is focused
+                text_field.setFocusPolicy(Qt.StrongFocus)  # allows tabbing between widgets
+                # calculate the width of the widget
+                max_text_width = self.get_widget_text_width(text_field, data_length)
+                self.widget_widths[self.widget_index] = max_text_width + self.WIDGET_TEXT_PADDING
+                text_field.setFixedWidth(self.widget_widths[self.widget_index])
                 self.widgets[self.widget_index] = text_field
 
             # if the field comes with a unit, display it in brackets
-            label_text = f"{field.name} ({field.unit})" if field.unit else field.name
+            label_text = f'{field.name} ({field.unit})' if field.unit else field.name
             label = QLabel(label_text)
             label.setWordWrap(True)
             label.setFixedWidth(self.widget_widths[self.widget_index])
@@ -138,20 +144,24 @@ class CanSender(DashboardItem):
             self.widget_labels[self.widget_index] = label
             # create a mapping between widget and its index in the can message
             self.widget_to_index[self.widgets[self.widget_index]] = self.widget_index
-            self.layout_manager.addWidget(self.widget_labels[self.widget_index], 0, self.widget_index)
-            self.layout_manager.addWidget(self.widgets[self.widget_index], 1, self.widget_index)
+            self.layout_manager.addWidget(
+                self.widget_labels[self.widget_index], 0, self.widget_index)  # add widget to first row
+            self.layout_manager.addWidget(
+                self.widgets[self.widget_index], 1, self.widget_index)  # add widget to second row
 
-            # if the current field is a switch, then display the first row's contents
+            # if the current parsley field is a Switch (aka it contains nested CAN messages),
+            # then display the first row's parsley fields
             if isinstance(field, pf.Switch):
                 self.widgets[self.widget_index].currentTextChanged.connect(self.update_can_msg)
                 nested_fields = field.get_fields(dropdown_items[0])
                 self.display_can_fields(nested_fields)
 
+    # recreates the necessary PyQT input widgets whenever a parsley Switch field changes value
     def update_can_msg(self, text: str):
-        dropdown = self.sender()
+        dropdown = self.sender()  # get the specific dropdown that had it's value changed
         dropdown_index = self.widget_to_index[dropdown]
 
-        # delete the widgets from [dropdown_index + 1, self.widget_index) from layout manager
+        # delete the PyQT widgets from [dropdown_index + 1, self.widget_index) from layout manager
         for index in range(dropdown_index + 1, self.widget_index):
             widget = self.widgets[index]
             label = self.widget_labels[index]
@@ -173,27 +183,38 @@ class CanSender(DashboardItem):
         # bring back the send button
         self.create_send_button()
 
+    # whenever the SEND button (or equilvalent) is activated, pulse PyQT input widgets for visual feedback
+    # and upon a successful CAN message encoding, emit the encoded message
     def send_can_message(self):
-        bit_str = self.parse_can_msg()
+        try:
+            bit_str = self.parse_can_msg()  # contains the message data bits
+            msg_sid, msg_data = parsley.parse_bitstring(bit_str)
+            parsed_data = parsley.parse(msg_sid, msg_data)
+            print(parsed_data)
 
-        if bit_str == None:
-            return
-        # if every field successfully encoded its data, long pulse all of the fields once
-        self.pulse_indexes = [i for i in range(0, self.widget_index)]
-        self.pulse(pulse_invalid=False)
-        bit_length = bit_str.length
-        bit_data = bit_str.pop(bit_length)
-        message = {
-            "data": bit_data,
-            "length": bit_length
-        }
-        self.omnibus_sender.send(self.channel, message)
+            can_message = {
+                'data': parsed_data
+            }
+            self.omnibus_sender.send(self.channel, can_message)
+            self.pulse_indices = list(range(self.widget_index))
+            self.pulse()
+        except ValueError:
+            # ValueError is something that is thrown in parsley encoding, but
+            # its common enough that it might happen elsewhere so just in case
+            # ensure that something is pulsing upon an error
+            if not self.pulse_indices:
+                self.pulse_indices = list(range(self.widget_index))
+            self.pulse(pulse_invalid=True)
 
-    def parse_can_msg(self) -> Union[BitString, None]:
-        self.pulse_indexes = []
+    # attempts to encode the PyQT input widgets and, if the encoding is unsuccessful, raises a ValueError
+    def parse_can_msg(self) -> BitString:
+        # reset any existing information
+        self.pulse_indices = []
         self.clear_error_messages()
+
+        # encode each PyQT input widget based on the Parsley field implementation
         bit_str = BitString()
-        for index in range(0, self.widget_index):
+        for index in range(self.widget_index):
             widget = self.widgets[index]
             field = self.fields[index]
             text = widget.text() if isinstance(widget, QLineEdit) else widget.currentText()
@@ -201,29 +222,32 @@ class CanSender(DashboardItem):
                 if isinstance(field, pf.Numeric):
                     text = float(text)
                 bit_str.push(*field.encode(text))
-            except Exception as e:
-                print(f"{field.name} | {e}")
-                self.pulse_indexes.append(index)
-                self.display_error_message(index, str(e))
+            except (ValueError, IndexError) as error:
+                self.pulse_indices.append(index)
+                self.display_error_message(index, str(error))
 
-        if self.pulse_indexes:
-            self.pulse(pulse_invalid=True)
+        if self.pulse_indices:
+            raise ValueError
+        return bit_str
 
-        return None if self.pulse_indexes else bit_str
-
-    def pulse(self, pulse_invalid: bool):
-        self.pulse_count = 0
-        self.invalid = pulse_invalid
-        pulse_period = self.INVALID_PULSE_PERIOD if pulse_invalid else self.VALID_PULSE_PERIOD
+    # visually pulse the PyQT input widgets whenever the SEND button (or equilvalent) is activated
+    def pulse(self, pulse_invalid=False):
+        if pulse_invalid:
+            pulse_period = self.INVALID_PULSE_PERIOD
+            pulse_frq = self.INVALID_PULSES
+        else:
+            pulse_period = self.VALID_PULSE_PERIOD
+            pulse_frq = self.VALID_PULSES
+        self.pulse_count = 2 * pulse_frq
         self.timer.start(pulse_period)
 
+    # when QTimer starts, this function is periodically called until QTimer stops
     def pulse_widgets(self):
-        pulse_frq = self.INVALID_PULSES if self.invalid else self.VALID_PULSES
-        if self.pulse_count < 2*pulse_frq:
-            for index in self.pulse_indexes:
+        if self.pulse_count > 0:
+            for index in self.pulse_indices:
                 widget = self.widgets[index]
-                widget.setDisabled(self.pulse_count%2 == 0)
-            self.pulse_count += 1
+                widget.setDisabled(self.pulse_count % 2 == 0)
+            self.pulse_count -= 1
         else:
             self.timer.stop()
 
@@ -231,46 +255,52 @@ class CanSender(DashboardItem):
         for label in self.widget_error_labels:
             if label == None:
                 continue
-            label.setText("")
+            label.setText('')
 
+    # creates a label describing the parsley encoding error
     def display_error_message(self, index: int, message: str):
         label = QLabel(message)
-        label.setWordWrap(True) # allow text to wrap around
+        label.setWordWrap(True)  # allow text to wrap around
         label.setFont(QFont(label.font().family(), 10))
         label.setFixedWidth(self.widget_widths[index])
         # allow label to expand vertically as much as needed
         label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding)
         self.widget_error_labels[index] = label
+        # add the widget to the 3rd row
         self.layout_manager.addWidget(self.widget_error_labels[index], 2, index)
 
+    # returns an estimated upperbound on the input-able length of a field as a safety net
     def get_field_length(self, field: pf.Field) -> int:
         match type(field):
             case pf.ASCII:
                 return field.length // 8
             case pf.Numeric:
-                # we want to define an upper bound for the length
-                # but decimals can theortically be very very long
-                # so assume 2 decimal digits + period = 3 characters
-                # if there is a scale multipler (might mean its a float)
+                # we want to define an upper bound for the length but decimals can be
+                # infintely long so assume 3 decimal digits + period = 4 characters only if
+                # there is a defined scale multipler, which probably indicates a floating point
                 minus_sign = 1 if field.signed else 0
+                # number of digits to contain a binary lengthed number
                 integer = ceil(log10(2**field.length))
-                decimals = 3 if field.scale != 1 else 0
+                decimals = 4 if field.scale != 1 else 0
                 return minus_sign + integer + decimals
             case _:
                 return -1
 
+    # calculate the text width of max_char characters given a widget's choice of font
     def get_widget_text_width(self, widget, max_chars: int) -> int:
         font_metrics = QFontMetrics(widget.font())
         text_width = font_metrics.boundingRect('X' * max_chars).width()
         return text_width
 
+    # its hard to move a widget in a layout manager, so remove and recreate the SEND button
     def create_send_button(self):
         self.widget_index += 1
-        self.send_button = QPushButton("SEND")
-        max_width = self.get_widget_text_width(self.send_button, 4)
-        self.send_button.setFixedWidth(max_width + self.WIDGET_TEXT_PADDING)
+        self.send_button = QPushButton('SEND')
+        max_text_width = self.get_widget_text_width(self.send_button, max_chars=4)
+        self.send_button.setFixedWidth(max_text_width + self.WIDGET_TEXT_PADDING)
         self.send_button.setFocusPolicy(Qt.TabFocus)
         self.send_button.clicked.connect(self.send_can_message)
+        # add the button to the 2nd row
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index)
 
     # moves the cursor to the next input widget if the current textfield is full
@@ -303,7 +333,7 @@ class CanSender(DashboardItem):
                 previous_widget.setText(previous_widget.text()[:-1])
 
     def get_name():
-        return "CAN Sender"
+        return 'CAN Sender'
 
     def get_props(self):
         return True

@@ -48,6 +48,7 @@ class EventTracker(QObject):
                     self.zoom_reset.emit()
         return super().eventFilter(widget, event)
 
+
 @dataclass
 class KeyEvent:
     key_code: int

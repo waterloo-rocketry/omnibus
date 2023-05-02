@@ -24,14 +24,7 @@ from pyqtgraph.Qt.QtWidgets import (
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
-from utils import ConfirmDialog
-
-# These need to be imported to be added to the registry
-from items.plot_dash_item import PlotDashItem
-from items.can_message_table import CanMsgTableDashItem
-from items.can_sender import CanSender
-from omnibus.util import TickCounter
-from utils import prompt_user, EventTracker
+from utils import prompt_user, ConfirmDialog, EventTracker
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
@@ -40,22 +33,24 @@ from items.plot_3D_position import Position3DDashItem
 from items.can_message_table import CanMsgTableDashItem
 from items.can_sender import CanSender
 
+
 class QGraphicsViewWrapper(QGraphicsView):
     """
     Creating a QGraphicsView wrapper to intercept wheelEvents for UI enhancements.
     For example, we want to allow horizontal scrolling with a mouse, which we define
     as scrolling with a mouse while pressing the shift key.
     """
+
     def __init__(self, scene):
-        super().__init__(scene) # initialize the super class
+        super().__init__(scene)  # initialize the super class
         self.zoomed = 1
-        self.SCROLL_SENSITIVITY = 1/3 # scale down the scrolling sensitivity
+        self.SCROLL_SENSITIVITY = 1/3  # scale down the scrolling sensitivity
 
     def wheelEvent(self, event):
         angle = event.angleDelta()
         if event.modifiers() == Qt.ControlModifier:
             self.zoom(angle.y())
-        elif event.source() == Qt.MouseEventNotSynthesized: # event comes from a mouse
+        elif event.source() == Qt.MouseEventNotSynthesized:  # event comes from a mouse
             if event.modifiers() == Qt.ShiftModifier:
                 # determining the scrolling orientation based on the larger x/y component value
                 absolute_angle = angle.x() if abs(angle.x()) > abs(angle.y()) else angle.y()
@@ -66,14 +61,14 @@ class QGraphicsViewWrapper(QGraphicsView):
                 numDegrees = angle.y() * self.SCROLL_SENSITIVITY
                 value = self.verticalScrollBar().value()
                 self.verticalScrollBar().setValue(value + numDegrees)
-        else: # let the default implementation occur for everything else
+        else:  # let the default implementation occur for everything else
             super().wheelEvent(event)
 
     # we define a function for zooming since keyboard zooming needs a function
     def zoom(self, angle: int):
-        zoomFactor = 1 + angle*0.001 # create adjusted zoom factor
-        self.zoomed *= zoomFactor # needed to reset zoom
-        self.scale(zoomFactor, zoomFactor) # scale the scene
+        zoomFactor = 1 + angle*0.001  # create adjusted zoom factor
+        self.zoomed *= zoomFactor  # needed to reset zoom
+        self.scale(zoomFactor, zoomFactor)  # scale the scene
 
 # Custom Dashboard class derived from QWidget
 
@@ -182,7 +177,8 @@ class Dashboard(QWidget):
         self.view = QGraphicsViewWrapper(self.scene)
         self.view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.view.setRenderHints(QPainter.Antialiasing)
-        self.view.setTransformationAnchor(QGraphicsView.AnchorUnderMouse) # zooms to the position of mouse
+        # zooms to the position of mouse
+        self.view.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
         self.splitter.addWidget(self.view)
 
@@ -239,6 +235,7 @@ class Dashboard(QWidget):
 
 
     # Method to add widgets
+
     def add(self, dashitem, pos=None):
         # Add the dash item to the scene and get
         # its proxy widget and dimension
@@ -449,7 +446,8 @@ class Dashboard(QWidget):
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
-    signal.signal(signal.SIGINT, lambda *args: QApplication.quit()) # quit applicaiton from terminal
+    # quit applicaiton from terminal
+    signal.signal(signal.SIGINT, lambda *args: QApplication.quit())
     app = QApplication(sys.argv)
     dash = Dashboard(callback)
 
