@@ -35,7 +35,7 @@ def setup():
     """
     Sensor Configs, will change from test to test
     """
-    
+
     # Standard TDL35 and TDM51 transducers: 4-20mA 0-3000 psi
     Sensor("PT-2 Ox Tank", ports[7], 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
@@ -43,11 +43,11 @@ def setup():
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
     Sensor("PT-5 Nitrogen", ports[9], 10, Connection.SINGLE,
            LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-           
+
     # PSE540-R06 pneumatic transducer. 1-5V output for 0-1 MPa
     Sensor("PT-6 Pneumatics", ports[4], 10, Connection.SINGLE,
            LinearCalibration(145 / (5 - 1), -145 / (5 - 1), "psi"))
-           
+
     # BSP008Z transducer with display
     Sensor("PT-1 Ox Fill", ports[6], 10, Connection.SINGLE,
            LinearCalibration(5800 / 10, 0, "psi"))
@@ -59,7 +59,7 @@ def setup():
     # Honeywell S-type, 1000 N (divide by 9.81 to kg) an 2.002 mv/V at 12V
     Sensor("Honeywell S-type - Ox Tank", ports[1], 0.2, Connection.DIFFERENTIAL,
            LinearCalibration((1000/9.81)/(2.002/1000*12), -0.7, "kg"))
-    
+
     # Omega S-type (LC-103B), 200 lb (divide by 2.2 to kg), 3 mV/V at 12V
     # Sensor("Omega S-Type - Fuel Tank", ports[2], 0.2, Connection.DIFFERENTIAL,
     #        LinearCalibration((200/2.205) / (3/1000*12), -1.9, "kg"))
@@ -75,15 +75,15 @@ def setup():
     # Vent Thermistor with a 10k resistor divider between it and ground
     Sensor("Vent Thermistor", ports[12], 10, Connection.SINGLE,
            ThermistorCalibration(5, 10000, 3434, 0.099524))  # Calibration pulled from LabVIEW
-    
+
     # +12V Sense through a 7.5k / 100R resistor divider.
     Sensor("GSPD +12V", ports[11], 2, Connection.SINGLE,
            LinearCalibration((7500+100)/100, 0, "V"))
-    
+
     # GSPD's INA180 across a 0.0016 ohm resistor
     Sensor("GSPD Current", ports[5], 10, Connection.SINGLE,
            LinearCalibration(1/(100*0.0016), 0, "A"))
-           
+
     Sensor("Injector Valve", "ai6", 5, Connection.SINGLE,
            LinearCalibration(1, 0, "V"))
 
@@ -96,7 +96,7 @@ def setup():
            LinearCalibration(1200/5, -100 + (23.4 - -24), "C"))
     Sensor("Thermocouple 4", thermo_ports[4], 5, Connection.SINGLE,
            LinearCalibration(1200/5, -100, "C"))
-    
+
     # Thermocouples using the blue 4-20mA converters.
     Sensor("Thermocouple 5", thermo_ports[5], 5, Connection.SINGLE,
            LinearCalibration(1/220*1300/0.016, -0.004*1300/0.016, "C"))
