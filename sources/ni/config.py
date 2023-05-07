@@ -80,9 +80,15 @@ def setup():
     Sensor("GSPD +12V", ports[11], 2, Connection.SINGLE,
            LinearCalibration((7500+100)/100, 0, "V"))
 
-    # GSPD's INA180 across a 0.0016 ohm resistor
-    Sensor("GSPD Current", ports[5], 10, Connection.SINGLE,
+    # GSPD's current and temperature sensing
+    Sensor("GSPD Total Current", "ai4", 10, Connection.SINGLE,
            LinearCalibration(1/(100*0.0016), 0, "A"))
+    Sensor("GSPD +5V Current", "ai12", 10, Connection.SINGLE,
+           LinearCalibration(1/(100*0.01), 0, "A"))
+    Sensor("GSPD +24V Current", "ai11", 10, Connection.SINGLE,
+           LinearCalibration(1/(100*0.04), 0, "A"))
+    Sensor("GSPD Temperature", "ai3", 10, Connection.SINGLE,
+           LinearCalibration(1, 0, "V"))
 
     Sensor("Injector Valve", "ai6", 5, Connection.SINGLE,
            LinearCalibration(1, 0, "V"))
