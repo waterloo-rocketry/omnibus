@@ -16,15 +16,12 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsRectItem,
     QFileDialog,
     QHeaderView,
-    QSplitter,
-    QComboBox,
-    QAbstractScrollArea,
-    QLineEdit
+    QSplitter
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
-from utils import prompt_user, ConfirmDialog, EventTracker
+from utils import ConfirmDialog, EventTracker
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
@@ -233,9 +230,7 @@ class Dashboard(QWidget):
         pos = proxy.pos()
         proxy.parentItem().setRect(pos.x(), pos.y(), width, height)
 
-
     # Method to add widgets
-
     def add(self, dashitem, pos=None):
         # Add the dash item to the scene and get
         # its proxy widget and dimension
@@ -266,7 +261,6 @@ class Dashboard(QWidget):
             ypos = mapped.y() - (height/2)
 
         proxy.setPos(xpos, ypos)
-        proxy.setFocusPolicy(Qt.NoFocus)
 
         # Create a rectangle around the proxy widget
         # to make it movable and selectable

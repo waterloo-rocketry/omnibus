@@ -1,5 +1,5 @@
 from math import ceil, log10
-from typing import List, Union
+from typing import List
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics, QFont
 from pyqtgraph.Qt.QtWidgets import (
@@ -44,8 +44,8 @@ class CanSender(DashboardItem):
         => if every field successfully encodes its data, long pulse all of the fields once and emit the message to CAN/commands
     """
 
-    def __init__(self, props):
-        super().__init__()
+    def __init__(self, params=None):
+        super().__init__(params)
         # constants
         self.INVALID_PULSES = 3  # number of pulses to display when a field fails to encode data
         self.INVALID_PULSE_PERIOD = 100  # ms
@@ -165,12 +165,11 @@ class CanSender(DashboardItem):
         for index in range(dropdown_index + 1, self.widget_index):
             widget = self.widgets[index]
             label = self.widget_labels[index]
+            label.setText('')
             # remove widget from layout manager
             self.layout_manager.removeWidget(widget)
-            self.layout_manager.removeWidget(label)
             # remove widget from memory
             widget.deleteLater()
-            label.deleteLater()
         # remove send button
         self.layout_manager.removeWidget(self.send_button)
         self.send_button.deleteLater()
@@ -190,7 +189,6 @@ class CanSender(DashboardItem):
             bit_str = self.parse_can_msg()  # contains the message data bits
             msg_sid, msg_data = parsley.parse_bitstring(bit_str)
             parsed_data = parsley.parse(msg_sid, msg_data)
-            print(parsed_data)
 
             can_message = {
                 'data': parsed_data
@@ -332,14 +330,6 @@ class CanSender(DashboardItem):
                 # remove a character from the previous textfield
                 previous_widget.setText(previous_widget.text()[:-1])
 
+    @staticmethod
     def get_name():
         return 'CAN Sender'
-
-    def get_props(self):
-        return True
-
-    def on_delete(self):
-        pass
-
-    def prompt_for_properties(self):
-        return True
