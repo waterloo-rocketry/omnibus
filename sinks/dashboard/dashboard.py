@@ -40,10 +40,15 @@ class QGraphicsViewWrapper(QGraphicsView):
 
     def __init__(self, scene):
         super().__init__(scene)  # initialize the super class
-        self.zoomed = 1
+        self.zoomed = 1.0
         self.SCROLL_SENSITIVITY = 1/3  # scale down the scrolling sensitivity
 
     def wheelEvent(self, event):
+        """
+        Zoom in/out if ctrl/cmd is held
+        Scroll horizontally if shift is held
+        Scroll vertically otherwise
+        """
         angle = event.angleDelta()
         if event.modifiers() == Qt.ControlModifier:
             self.zoom(angle.y())
