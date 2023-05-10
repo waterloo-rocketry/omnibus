@@ -1,3 +1,4 @@
+import time
 from math import ceil, log10
 from typing import List
 from pyqtgraph.Qt.QtCore import Qt, QTimer
@@ -191,7 +192,10 @@ class CanSender(DashboardItem):
             parsed_data = parsley.parse(msg_sid, msg_data)
 
             can_message = {
-                'data': parsed_data
+                'data': {
+                    'time': time.time(),
+                    'can': parsed_data
+                }
             }
             self.omnibus_sender.send(self.channel, can_message)
             self.pulse_indices = list(range(self.widget_index))

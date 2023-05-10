@@ -44,12 +44,12 @@ def main():
 
     while True:
         while msg := receiver.recv_message(0):
-            can_msg_data = msg.payload['data']
+            can_msg_data = msg.payload['data']['can']
             msg_sid, msg_data = parsley.encode_usb_debug(can_msg_data)
 
             formatted_msg_sid = f"{msg_sid:03X}"
             formatted_msg_data = ','.join([f"{byte:02X}" for byte in msg_data])
-            formatted_string = f"m{formatted_msg_sid},{formatted_msg_data};"
+            formatted_string = str.encode(f"m{formatted_msg_sid},{formatted_msg_data};")
             if args.solo:
                 print(formatted_string)
             else:
