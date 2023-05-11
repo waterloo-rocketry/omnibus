@@ -24,6 +24,10 @@ ping -n 1 %ip% | find "TTL"
 if errorlevel 1 echo no response from router, trying again... && goto :network_connection_check
 echo router response good... connected to ethernet!
 
+for /f "tokens=*" %%g in ('"wmic path win32_serialport get DeviceID | find "COM" "') do set com=%%g
+echo found USB debug at %com%
+
 start python -m omnibus
 timeout /nobreak /t 5
 start python sources\ni\main.py
+start python sources\parsley\main.py --format usb %com%
