@@ -18,6 +18,8 @@ class TextDashItem(DashboardItem):
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
 
+        # need to wrap the label in a scroll area to
+        # avoid problems by qt widget resizing on text change
         self.widget = QLabel()
         self.frame = QScrollArea()
         self.frame = QScrollArea()
@@ -37,7 +39,8 @@ class TextDashItem(DashboardItem):
 
     def setFontSize(self, fsize):
         self.fsize = fsize
-        self.widget.setStyleSheet("font-size: {}px; color: blue; background-color: white".format(self.fsize))
+        self.widget.setStyleSheet(
+            "font-size: {}px; color: blue; background-color: white".format(self.fsize))
 
     def add_parameters(self):
         text_param = {'name': 'text', 'type': 'str', 'value': ''}
