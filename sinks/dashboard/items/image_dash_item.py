@@ -35,8 +35,9 @@ class ImageDashItem(DashboardItem):
         self.offset = 40
 
         if self.image_path:
-            width = self.parameters.child("width").value() - self.offset # subtracting here to account
-            height = self.parameters.child("height").value() - self.offset # for the new "border"
+            width = self.parameters.child("width").value(
+            ) - self.offset  # subtracting here to account
+            height = self.parameters.child("height").value() - self.offset  # for the new "border"
             self.widget.setPixmap(QPixmap(self.image_path).scaled(width, height))
 
         self.parameters.sigTreeStateChanged.connect(self.on_file_change)
