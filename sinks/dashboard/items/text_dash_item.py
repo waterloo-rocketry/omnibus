@@ -21,7 +21,10 @@ class TextDashItem(DashboardItem):
         # need to wrap the label in a scroll area to
         # avoid problems by qt widget resizing on text change
         self.widget = QLabel()
+<<<<<<< HEAD
         self.widget.setAlignment(Qt.AlignCenter)
+=======
+>>>>>>> 2399007 (add new widgets)
         self.frame = QScrollArea()
         self.frame = QScrollArea()
         self.frame.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -40,19 +43,31 @@ class TextDashItem(DashboardItem):
 
     def setFontSize(self, fsize):
         self.fsize = fsize
+<<<<<<< HEAD
         self.widget.setStyleSheet(
             "font-size: {}px; color: blue; background-color: white".format(self.fsize))
+=======
+        self.widget.setStyleSheet("font-size: {}px; color: blue; background-color: white".format(self.fsize))
+>>>>>>> 2399007 (add new widgets)
 
     def add_parameters(self):
         text_param = {'name': 'text', 'type': 'str', 'value': ''}
         fsize_param = {'name': 'fsize', 'type': 'int', 'value': 30}
         return [text_param, fsize_param]
 
+<<<<<<< HEAD
     def on_text_change(self, param, value):
         self.text = value
         self.widget.setText(self.text)
 
     def on_fsize_change(self, param, value):
+=======
+    def on_text_change(self, _, value):
+        self.text = value
+        self.widget.setText(self.text)
+
+    def on_fsize_change(self, _, value):
+>>>>>>> 2399007 (add new widgets)
         self.setFontSize(value)
 
     @staticmethod
