@@ -31,7 +31,7 @@ from items.can_message_table import CanMsgTableDashItem
 from items.image_dash_item import ImageDashItem
 from items.text_dash_item import TextDashItem
 from items.can_sender import CanSender
-
+from items.periodic_can_sender import PeriodicCanSender
 
 class QGraphicsViewWrapper(QGraphicsView):
     """
