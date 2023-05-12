@@ -36,8 +36,12 @@ class DashboardItem(QWidget):
 
         # add listeners before restoring state so that the
         # dimensions are set correctly from the saved state
-        self.parameters.child("width").sigValueChanged.connect(self.handle_dimensions_changed)
-        self.parameters.child("height").sigValueChanged.connect(self.handle_dimensions_changed)
+        self.parameters.child("width").sigValueChanged.connect(lambda _, val:
+            self.resize(val, self.size().height())
+        )
+        self.parameters.child("height").sigValueChanged.connect(lambda _, val:
+            self.resize(self.size().width(), val)
+        )
 
         # restore state is params are provided
         if params:
@@ -45,17 +49,9 @@ class DashboardItem(QWidget):
             self.parameters.restoreState(state, addChildren=True, blockSignals=True, recursive=True)
 
     def resizeEvent(self, _):
-        with self.parameters.treeChangeBlocker():
-            self.parameters.child("width").setValue(self.size().width())
-            self.parameters.child("height").setValue(self.size().height())
-
-    def handle_dimensions_changed(self):
-        """
-        This is to resize widget when the dimension value in parameter_tree is changed
-        """
-        width = self.parameters.child("width").value()
-        height = self.parameters.child("height").value()
-        self.resize(width, height)
+        # These will trigger our lambdas above, but that's not an issue.
+        self.parameters.child("width").setValue(self.size().width())
+        self.parameters.child("height").setValue(self.size().height())
 
     def add_parameters(self) -> list[Parameter]:
         """

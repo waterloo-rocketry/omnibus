@@ -187,10 +187,6 @@ class Dashboard(QWidget):
         self.splitter.addWidget(self.view)
 
         self.parameter_tree = ParameterTree(showHeader=True)
-        header = self.parameter_tree.header()
-        # maybe this is bad for small window sizes, but it's a decent start
-        header.setMinimumSectionSize(100)
-        header.setSectionResizeMode(QHeaderView.Interactive)
         self.splitter.addWidget(self.parameter_tree)
         self.parameter_tree.hide()
 
@@ -222,6 +218,11 @@ class Dashboard(QWidget):
         item.get_parameters().sigTreeStateChanged.connect(self.on_check_state_changed)
         self.parameter_tree.setParameters(item.get_parameters(), showTop=False)
         self.parameter_tree.show()
+
+        # subtract 100 for some padding, these sizes are relative
+        total_width = self.splitter.size().width() - 100
+        tree_width = self.parameter_tree.sizeHint().width()
+        self.splitter.setSizes([total_width - tree_width, tree_width])
 
     # method to handle dimension changes in parameter tree
     def on_check_state_changed(self, param, changes):
