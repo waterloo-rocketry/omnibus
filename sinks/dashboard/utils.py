@@ -32,7 +32,7 @@ class EventTracker(QObject):
         if event.type() == QEvent.KeyPress:
             key_press = KeyEvent(event.key(), event.modifiers())
             match key_press:
-                case KeyEvent(Qt.Key_Backspace, _):
+                case KeyEvent(Qt.Key_Backspace, _) | KeyEvent(Qt.Key_Delete, _):
                     self.backspace_pressed.emit(widget)
                 case KeyEvent(Qt.Key_Backtab, _):
                     self.reverse_tab_pressed.emit(widget)
