@@ -92,8 +92,8 @@ splits = {
     "SENSOR_TEMP": "sensor_id",
     "SENSOR_ANALOG": "sensor_id",
 }
-last_timestamp = {} # Last timestamp seen from each BOARD_ID
-offset_timestamp = {} # per-board offset to account for time rollovers
+last_timestamp = {} # Last timestamp seen for each board + message type
+offset_timestamp = {} # per-board-and-message offset to account for time rollovers
 @Register("CAN/Parsley")
 def can_parser(payload):
     # Payload is a dictionary representing the parsed CAN message. We need to break
@@ -115,13 +115,14 @@ def can_parser(payload):
         prefix += f"/{split}"
 
     timestamp = data.pop("time", time.time()) # default back to system time
-    if board_id not in last_timestamp:
-        last_timestamp[board_id] = 0
-        offset_timestamp[board_id] = 0
-    if timestamp < last_timestamp[board_id]: # detect rollover
-        offset_timestamp[board_id] += last_timestamp[board_id]
-    last_timestamp[board_id] = timestamp
-    timestamp += offset_timestamp[board_id]
+    time_key = board_id + message_type
+    if time_key not in last_timestamp:
+        last_timestamp[time_key] = 0
+        offset_timestamp[time_key] = 0
+    if timestamp < last_timestamp[time_key]: # detect rollover
+        offset_timestamp[time_key] += last_timestamp[time_key]
+    last_timestamp[time_key] = timestamp
+    timestamp += offset_timestamp[time_key]
 
     if len(data) == 1:
         return [(prefix, timestamp, value) for value in data.values()]

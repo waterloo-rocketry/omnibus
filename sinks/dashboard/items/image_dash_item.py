@@ -9,9 +9,9 @@ from .registry import Register
 
 @Register
 class ImageDashItem(DashboardItem):
-    def __init__(self, params=None):
+    def __init__(self, *args):
         # Call this in **every** dash item constructor
-        super().__init__(params)
+        super().__init__(*args)
 
         # Specify the layout
         self.layout = QHBoxLayout()
