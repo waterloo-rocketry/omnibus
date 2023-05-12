@@ -28,6 +28,8 @@ from items.plot_dash_item import PlotDashItem
 from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.can_message_table import CanMsgTableDashItem
+from items.image_dash_item import ImageDashItem
+from items.text_dash_item import TextDashItem
 from items.can_sender import CanSender
 
 
