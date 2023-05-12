@@ -1,0 +1,3 @@
+[submodule "parsley"]
+	path = parsley
+	url = https://github.com/waterloo-rocketry/parsley.git

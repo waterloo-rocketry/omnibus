@@ -77,7 +77,7 @@ def daq_parser(msg_data):
     return parsed_messages
 
 
-@Register("CAN")
+@Register("CAN/Parsley")
 def can_parser(payload):
     return [("CAN", payload["data"]["time"], payload)]
     # Note, we plan to revist the way that CAN message are handled
