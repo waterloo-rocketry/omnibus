@@ -43,15 +43,16 @@ def main():
     receiver = Receiver("CAN/Commands")
 
     while True:
-        while msg := receiver.recv_message(0):
+        while msg := receiver.recv_message(0):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']
-            msg_sid, msg_data = parsley.encode_usb_debug(can_msg_data)
+            msg_sid, msg_data = parsley.encode_data(can_msg_data)
 
             formatted_msg_sid = f"{msg_sid:03X}"
             formatted_msg_data = ','.join([f"{byte:02X}" for byte in msg_data])
             formatted_string = str.encode(f"m{formatted_msg_sid},{formatted_msg_data};")
+            print(formatted_string)  # always print the usb debug style can message
             if not args.solo:
-                communicator.write(formatted_string)
+                communicator.write(formatted_string)  # send the can message over the specified port
 
         line = communicator.read()
         if not line:
@@ -63,7 +64,7 @@ def main():
 
             print(parsley.format_line(parsed_data))
             if not args.solo:
-                sender.send(CHANNEL, parsed_data)
+                sender.send(CHANNEL, parsed_data)  # send the CAN message over the channel
         except Exception:
             print(line)
 

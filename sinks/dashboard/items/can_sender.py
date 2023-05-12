@@ -12,10 +12,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QSizePolicy
 )
 
-import parsley
 import parsley.fields as pf
 from parsley.message_definitions import CAN_MESSAGE
-from parsley.bitstring import BitString
 from omnibus import Sender
 from .registry import Register
 from .dashboard_item import DashboardItem
