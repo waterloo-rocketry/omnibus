@@ -26,6 +26,7 @@ The Omnibus library is required to run any of the sources or sinks. To install i
 6. Run `pip install wheel`, which will help install the rest of the packages more quickly.
 7. Install Python dependencies with `pip install -r requirements.txt`. If you get a permissions error, try `pip install --user -r requirements.txt` instead.
 8. Install the Omnibus library locally with `pip install -e .`. Don't forget the `.`! This allows the sources and sinks (and you) to import Omnibus.
+9. Initialize the `Parsley` submodule with `git submodule update --init --recursive` and install the library locally with `pip install -e ./parsley`
 
 #### Usage
 
