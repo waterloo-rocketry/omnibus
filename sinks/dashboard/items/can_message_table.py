@@ -20,9 +20,9 @@ class DisplayCANTable(QtWidgets.QWidget):
     CAN message. Makes use of a QTable.
     """
 
-    def __init__(self):
+    def __init__(self, *args):
         # Super Class Init
-        super().__init__()
+        super().__init__(*args)
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
 
@@ -139,8 +139,8 @@ class CanMsgTableDashItem(DashboardItem):
     Display table for CAN messages.
     """
 
-    def __init__(self, params=None):
-        super().__init__(params)
+    def __init__(self, *args):
+        super().__init__(*args)
         # 1) Establish a structure of one expanding
         #    widget per board
         # 2) For each of those widgets, add a Display

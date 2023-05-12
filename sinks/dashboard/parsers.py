@@ -1,5 +1,7 @@
 from publisher import publisher
 
+import time
+
 # decorator for parse functions to save a massive if chain
 # https://peps.python.org/pep-0318/#current-syntax
 
@@ -78,9 +80,52 @@ def daq_parser(msg_data):
 
 
 @Register("CAN/Parsley")
-def can_parser(payload):
+def global_can_parser(payload):
     return [("CAN", payload["data"]["time"], payload)]
-    # Note, we plan to revist the way that CAN message are handled
+
+# map between message types and fields that we need to split data based on
+splits = {
+    "ACTUATOR_CMD": "actuator",
+    "ALT_ARM_CMD": "altimeter",
+    "ACTUATOR_STATUS": "actuator",
+    "ALT_ARM_STATUS": "altimeter",
+    "SENSOR_TEMP": "sensor_id",
+    "SENSOR_ANALOG": "sensor_id",
+}
+last_timestamp = {} # Last timestamp seen from each BOARD_ID
+offset_timestamp = {} # per-board offset to account for time rollovers
+@Register("CAN/Parsley")
+def can_parser(payload):
+    # Payload is a dictionary representing the parsed CAN message. We need to break
+    # it into individual streams of data so we can plot / display / etc.
+    # The main complication is that we need to split those streams in a message-
+    # specific way, eg SENSOR_ANALOG messages need a different stream for each
+    # value of SENSOR_ID.
+
+    # Example payload: {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {'time': 37.595, 'sensor_id': 'SENSOR_GROUND_VOLT', 'value': 13104}}
+
+    message_type = payload["msg_type"]
+    board_id = payload["board_id"]
+    data = payload["data"]
+
+    # Build up the common prefix for all data streams, split based on a field if needed.
+    prefix = f"{board_id}/{message_type}"
+    if message_type in splits:
+        split = data.pop(splits[message_type])
+        prefix += f"/{split}"
+
+    timestamp = data.pop("time", time.time()) # default back to system time
+    if board_id not in last_timestamp:
+        last_timestamp[board_id] = 0
+        offset_timestamp[board_id] = 0
+    if timestamp < last_timestamp[board_id]: # detect rollover
+        offset_timestamp[board_id] += last_timestamp[board_id]
+    last_timestamp[board_id] = timestamp
+    timestamp += offset_timestamp[board_id]
+
+    if len(data) == 1:
+        return [(prefix, timestamp, value) for value in data.values()]
+    return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()]
 
 
 @Register("StateEstimation")

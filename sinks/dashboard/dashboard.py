@@ -32,6 +32,7 @@ from items.image_dash_item import ImageDashItem
 from items.text_dash_item import TextDashItem
 from items.can_sender import CanSender
 from items.periodic_can_sender import PeriodicCanSender
+from items.dynamic_text import DynamicTextItem
 
 class QGraphicsViewWrapper(QGraphicsView):
     """
@@ -129,7 +130,7 @@ class Dashboard(QWidget):
         def create_registry_trigger(i):
             def return_fun():
                 if not self.locked:
-                    self.add(registry.get_items()[i]())
+                    self.add(registry.get_items()[i](self.on_item_resize))
             return return_fun
 
         for i in range(len(registry.get_items())):
@@ -185,10 +186,9 @@ class Dashboard(QWidget):
         self.view.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
         self.splitter.addWidget(self.view)
-
-        self.parameter_tree = ParameterTree(showHeader=True)
-        self.splitter.addWidget(self.parameter_tree)
-        self.parameter_tree.hide()
+        self.parameter_tree_placeholder = ParameterTree()
+        self.parameter_tree_placeholder.hide()
+        self.splitter.addWidget(self.parameter_tree_placeholder)
 
         # This makes both the scene and the parameter tree
         # non collapsible. This is important because otherwise
@@ -209,34 +209,29 @@ class Dashboard(QWidget):
     def on_selection_changed(self):
         items = self.scene.selectedItems()
         if len(items) != 1:
-            self.parameter_tree.hide()
+            self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
+            self.parameter_tree_placeholder.hide()
             return
         # Show the tree
         item = self.widgets[items[0]][1]
-        # add listener for changes. only handles dimensions
-        # others need to be handled inside the item itself
-        item.get_parameters().sigTreeStateChanged.connect(self.on_check_state_changed)
-        self.parameter_tree.setParameters(item.get_parameters(), showTop=False)
-        self.parameter_tree.show()
+        if self.splitter.widget(1) is not item.parameter_tree:
+            self.splitter.replaceWidget(1, item.parameter_tree)
+        item.parameter_tree.show()
 
         # subtract 100 for some padding, these sizes are relative
         total_width = self.splitter.size().width() - 100
-        tree_width = self.parameter_tree.sizeHint().width()
+        tree_width = item.parameter_tree.sizeHint().width()
         self.splitter.setSizes([total_width - tree_width, tree_width])
 
     # method to handle dimension changes in parameter tree
-    def on_check_state_changed(self, param, changes):
-        items = self.scene.selectedItems()
-        if len(items) != 1:
-            self.parameter_tree.hide()
-            return
-
-        proxy = self.widgets[items[0]][0]
-        item = self.widgets[items[0]][1]
+    def on_item_resize(self, item):
         width = item.parameters.param('width').value() + 1
         height = item.parameters.param('height').value() + 1
-        pos = proxy.pos()
-        proxy.parentItem().setRect(pos.x(), pos.y(), width, height)
+        for proxy, candidate in self.widgets.values():
+            if candidate is item:
+                pos = proxy.pos()
+                proxy.parentItem().setRect(pos.x(), pos.y(), width, height)
+                return
 
     # Method to add widgets
     def add(self, dashitem, pos=None):
@@ -329,7 +324,7 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    self.add(item_type(widget["params"]), widget["pos"])
+                    self.add(item_type(self.on_item_resize, widget["params"]), widget["pos"])
                     break
 
     # Method to save current layout to file
@@ -403,7 +398,6 @@ class Dashboard(QWidget):
 
     # Method to handle exit
     def closeEvent(self, event):
-        self.parameter_tree.hide()
         self.remove_all()
 
     # Method to display help box

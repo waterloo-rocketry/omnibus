@@ -12,9 +12,9 @@ from .registry import Register
 
 @Register
 class PlotDashItem(DashboardItem):
-    def __init__(self, params=None):
+    def __init__(self, *args):
         # Call this in **every** dash item constructor
-        super().__init__(params)
+        super().__init__(*args)
 
         self.length = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
         self.avgSize = config.GRAPH_RESOLUTION * config.RUNNING_AVG_DURATION

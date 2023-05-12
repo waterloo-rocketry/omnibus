@@ -1,5 +1,5 @@
 from pyqtgraph.Qt.QtWidgets import QWidget
-from pyqtgraph.parametertree import Parameter
+from pyqtgraph.parametertree import Parameter, ParameterTree
 from collections import OrderedDict
 import json
 
@@ -12,8 +12,10 @@ class DashboardItem(QWidget):
         - add_parameters() ; return a list of pyqtgraph Parameter objects specific to the widget
     """
 
-    def __init__(self, params=None):
+    def __init__(self, resize_callback, params=None):
         super().__init__()
+
+        self.resize_callback = resize_callback
         """
         We use pyqtgraph's ParameterTree functionality to make an easy interface for setting
         parameters. Subclasses should add their own parameters in their __init__ as follows:
@@ -34,6 +36,9 @@ class DashboardItem(QWidget):
         # add widget specific parameters
         self.parameters.addChildren(self.add_parameters())
 
+        self.parameter_tree = ParameterTree(showHeader=True)
+        self.parameter_tree.setParameters(self.parameters, showTop=False)
+
         # add listeners before restoring state so that the
         # dimensions are set correctly from the saved state
         self.parameters.child("width").sigValueChanged.connect(lambda _, val:
@@ -52,6 +57,7 @@ class DashboardItem(QWidget):
         # These will trigger our lambdas above, but that's not an issue.
         self.parameters.child("width").setValue(self.size().width())
         self.parameters.child("height").setValue(self.size().height())
+        self.resize_callback(self)
 
     def add_parameters(self) -> list[Parameter]:
         """

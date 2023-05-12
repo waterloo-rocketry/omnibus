@@ -43,8 +43,8 @@ class CanSender(DashboardItem):
         => if every field successfully encodes its data, long pulse all of the fields once and emit the message to CAN/commands
     """
 
-    def __init__(self, params=None):
-        super().__init__(params)
+    def __init__(self, *args):
+        super().__init__(*args)
         # constants
         self.INVALID_PULSES = 3  # number of pulses to display when a field fails to encode data
         self.INVALID_PULSE_PERIOD = 100  # ms
