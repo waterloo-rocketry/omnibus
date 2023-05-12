@@ -29,7 +29,7 @@ from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.can_message_table import CanMsgTableDashItem
 from items.can_sender import CanSender
-
+from items.periodic_can_sender import PeriodicCanSender
 
 class QGraphicsViewWrapper(QGraphicsView):
     """
