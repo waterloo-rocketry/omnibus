@@ -187,14 +187,10 @@ class CanSender(DashboardItem):
     # and upon a successful CAN message encoding, emit the encoded message
     def send_can_message(self):
         try:
-            bit_str = self.parse_can_msg()  # contains the message data bits
-            msg_sid, msg_data = parsley.parse_bitstring(bit_str)
-            parsed_data = parsley.parse(msg_sid, msg_data)
-
             can_message = {
                 'data': {
                     'time': time.time(),
-                    'can': parsed_data
+                    'can_msg': self.parse_can_msg()  # contains the message data bits
                 }
             }
             self.omnibus_sender.send(self.channel, can_message)
@@ -209,13 +205,12 @@ class CanSender(DashboardItem):
             self.pulse(pulse_invalid=True)
 
     # attempts to encode the PyQT input widgets and, if the encoding is unsuccessful, raises a ValueError
-    def parse_can_msg(self) -> BitString:
+    def parse_can_msg(self) -> dict:
         # reset any existing information
         self.pulse_indices = []
         self.clear_error_messages()
 
-        # encode each PyQT input widget based on the Parsley field implementation
-        bit_str = BitString()
+        parsed_data = {}
         for index in range(self.widget_index):
             widget = self.widgets[index]
             field = self.fields[index]
@@ -223,14 +218,15 @@ class CanSender(DashboardItem):
             try:
                 if isinstance(field, pf.Numeric):
                     text = float(text)
-                bit_str.push(*field.encode(text))
+                field.encode(text)  # if there is an encoding error, the error will be caught
+                parsed_data[field.name] = text
             except (ValueError, IndexError) as error:
                 self.pulse_indices.append(index)
                 self.display_error_message(index, str(error))
 
         if self.pulse_indices:
             raise ValueError
-        return bit_str
+        return parsed_data
 
     # visually pulse the PyQT input widgets whenever the SEND button (or equilvalent) is activated
     def pulse(self, pulse_invalid=False):
