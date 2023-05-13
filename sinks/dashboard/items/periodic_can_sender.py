@@ -11,9 +11,9 @@ import parsley.message_types as mt
 
 @Register
 class PeriodicCanSender(DashboardItem):
-    def __init__(self, params=None):
+    def __init__(self, *args):
         # Call this in **every** dash item constructor
-        super().__init__(params)
+        super().__init__(*args)
 
         self.period = self.parameters.param('period').value()
 

@@ -163,6 +163,8 @@ class PlotDashItem(DashboardItem):
             title += "    "
         # data series name
         title += "/".join(self.series)
+        if len(title) > 50:
+            title = title[:50]
 
         self.plot.setTitle(title)
 
