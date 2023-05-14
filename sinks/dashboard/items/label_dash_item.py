@@ -44,17 +44,16 @@ class LabelDashItem(DashboardItem):
                                           itemClass=ChecklistParameter,
                                           limits=publisher.get_all_streams())
 
-        # Auto-resize as data comes in?
-        autoResize_param = {'name':'AutoResize', 'type':'bool', 'value':True}
+        # What msg should be displayed?
+        msgType_param = {'name':'MsgType', 'type': 'str', 'value': ''}
+        boardId_param = {'name':'BoardID', 'type': 'str', 'value': ''}
 
-        self.parameters.addChildren([autoResize_param, series_param])
-
-        # boolean of whether or not to resize
-        self.auto_resize = self.parameters.param('AutoResize').value()
+        self.parameters.addChildren([series_param, msgType_param, boardId_param])
 
         if params:
             self.parameters.param('Series').setValue(params['Series'])
-            self.parameters.param('AutoResize').setValue(params['Series'])
+            self.parameters.param('MsgType').setValue(params['MsgType'])
+            self.parameters.param('BoardID').setValue(params['BoardID'])
             self.parameters.param('Width').setValue(params['Width'])
             self.parameters.param('Height').setValue(params['Height'])
 
@@ -62,6 +61,13 @@ class LabelDashItem(DashboardItem):
         self.parameters.param('Series').sigValueChanged.connect(self.on_series_change)
         # a list of series names to be displayed
         self.series = self.parameters.param('Series').value()
+
+        # What msg should be display?
+        self.parameters.param('MsgType').sigValueChanged.connect(self.on_msg_type_change)
+        self.msg_type = self.parameters.param('MsgType').value()
+
+        self.parameters.param('BoardID').sigValueChanged.connect(self.on_board_id_change)
+        self.board_id = self.parameters.param('BoardID').value()
 
         # storing the data to be displayed of a series,
         # with series names as keys and the data as value
@@ -100,12 +106,22 @@ class LabelDashItem(DashboardItem):
             publisher.subscribe(series, self.on_data_update)
         self.data = {}
 
+    def on_msg_type_change(self, param, value):
+        self.msg_type = self.parameters.param('MsgType').value()
+        self.data = {}
+
+    def on_board_id_change(self, param, value):
+        self.board_id = self.parameters.param('BoardID').value()
+        self.data = {}
+
     def on_data_update(self, stream, payload):
         time, data = payload
 
         self.title = ""
 
-        self.data[stream] = data
+        if data['msg_type'] == self.msg_type or self.msg_type == '':
+            if data['board_id'] == self.board_id or self.board_id == '':
+                self.data[stream] = data
 
         # i cant believe, and i dont want to believe, that the syntax
         # for styling qlabel text is,,
@@ -121,8 +137,7 @@ class LabelDashItem(DashboardItem):
 
         self.widget.setText(self.title)
 
-        if self.auto_resize:
-            self.widget.adjustSize()
+        self.widget.adjustSize()
 
     @staticmethod
     def get_name():
