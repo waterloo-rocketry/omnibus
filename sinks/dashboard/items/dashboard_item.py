@@ -51,7 +51,7 @@ class DashboardItem(QWidget):
         # restore state is params are provided
         if params:
             state = json.loads(params, object_pairs_hook=OrderedDict)
-            self.parameters.restoreState(state, addChildren=True, blockSignals=True, recursive=True)
+            self.parameters.restoreState(state, addChildren=False, removeChildren=False)
 
     def resizeEvent(self, _):
         # These will trigger our lambdas above, but that's not an issue.

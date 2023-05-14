@@ -31,8 +31,11 @@ class PlotDashItem(DashboardItem):
         self.setLayout(self.layout)
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
+        self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
 
         self.series = self.parameters.param('series').value()
+        # just a single global offset for now
+        self.offset = self.parameters.param('offset').value()
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -57,7 +60,8 @@ class PlotDashItem(DashboardItem):
                                           value=[],
                                           limits=publisher.get_all_streams())
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
-        return [series_param, limit_param]
+        offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
+        return [series_param, limit_param, offset_param]
 
     def on_series_change(self, param, value):
         if len(value) > 6:
@@ -71,6 +75,9 @@ class PlotDashItem(DashboardItem):
         self.plot = self.create_plot()
         self.widget = pg.PlotWidget(plotItem=self.plot)
         self.layout.addWidget(self.widget, 0, 0)
+
+    def on_offset_change(self, _, offset):
+        self.offset = offset
 
     # Create the plot item
     def create_plot(self):
@@ -99,6 +106,8 @@ class PlotDashItem(DashboardItem):
 
     def on_data_update(self, stream, payload):
         time, point = payload
+
+        point += self.offset
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:

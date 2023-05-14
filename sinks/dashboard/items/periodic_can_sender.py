@@ -17,6 +17,8 @@ class PeriodicCanSender(DashboardItem):
         # Call this in **every** dash item constructor
         super().__init__(*args)
 
+        self.parameters.param('period').setValue(0)
+
         self.period = self.parameters.param('period').value()
         self.actuator = self.parameters.param('actuator').value()
 
@@ -89,3 +91,6 @@ class PeriodicCanSender(DashboardItem):
     @staticmethod
     def get_name():
         return "Periodic Can Sender"
+    
+    def on_delete(self):
+        publisher.unsubscribe_from_all(self.on_data_update)
