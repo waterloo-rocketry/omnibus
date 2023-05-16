@@ -30,9 +30,11 @@ def replay(log_buffer, replay_speed):
     real_start = time.time()
     log_start = None
     sender = Sender()
+    print("Replaying...")
     for channel, timestamp, payload in unpacker:
         if log_start == None:
             log_start = timestamp
         wait_for_logtime(timestamp, real_start, log_start, replay_speed)
         # send_message(...) instead of send(...) keeps old timestamp
         sender.send_message(Message(channel, timestamp, payload))
+        print(f"\r{timestamp:.0f}               ", end='')
