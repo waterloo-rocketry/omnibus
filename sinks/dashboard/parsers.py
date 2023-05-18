@@ -78,11 +78,6 @@ def daq_parser(msg_data):
 
     return parsed_messages
 
-
-@Register("CAN/Parsley")
-def global_can_parser(payload):
-    return [("CAN", payload["data"]["time"], payload)]
-
 # map between message types and fields that we need to split data based on
 splits = {
     "ACTUATOR_CMD": "actuator",
@@ -124,8 +119,6 @@ def can_parser(payload):
     last_timestamp[time_key] = timestamp
     timestamp += offset_timestamp[time_key]
 
-    if len(data) == 1:
-        return [(prefix, timestamp, value) for value in data.values()]
     return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()]
 
 

@@ -25,14 +25,13 @@ from utils import ConfirmDialog, EventTracker
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
-from items.plot_3D_orientation import Orientation3DDashItem
-from items.plot_3D_position import Position3DDashItem
-from items.can_message_table import CanMsgTableDashItem
+from items.dynamic_text import DynamicTextItem
+from items.periodic_can_sender import PeriodicCanSender
 from items.image_dash_item import ImageDashItem
 from items.text_dash_item import TextDashItem
 from items.can_sender import CanSender
-from items.periodic_can_sender import PeriodicCanSender
-from items.dynamic_text import DynamicTextItem
+from items.plot_3D_orientation import Orientation3DDashItem
+from items.plot_3D_position import Position3DDashItem
 
 class QGraphicsViewWrapper(QGraphicsView):
     """

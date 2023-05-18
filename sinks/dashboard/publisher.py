@@ -1,4 +1,3 @@
-
 class Publisher:
     """
     The core data bus of the dashboard. 
