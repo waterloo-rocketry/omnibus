@@ -57,7 +57,7 @@ def setup():
            LinearCalibration(1500 / (0.075 / 10 * 12), 0, "psi"))
 
     # Honeywell S-type, 1000 N (divide by 9.81 to kg) an 2.002 mv/V at 12V
-    #Sensor("Honeywell S-type - Ox Tank", ports[1], 0.2, Connection.DIFFERENTIAL,
+    # Sensor("Honeywell S-type - Ox Tank", ports[1], 0.2, Connection.DIFFERENTIAL,
     #       LinearCalibration((1000/9.81)/(2.002/1000*12), -0.7, "kg"))
 
     # Omega S-type (LC-103B), 200 lb (divide by 2.2 to kg), 3 mV/V at 12V
@@ -67,7 +67,7 @@ def setup():
     # Omega LC501 2000 lbf (divide by 2.2 to kg), 3 mv/v, 12v excitation
     # Sensor("Thrust", ports[3], 0.2, Connection.DIFFERENTIAL,
     #        LinearCalibration((2000/2.205) / (3/1000*12), -7.4, "kg"))
-    
+
     # Omega LCEC-250lb smol tower load cell (divide by 2.2 to kg), 3 mv/v, 12v excitation
     Sensor("Rocket Mass", ports[1], 0.2, Connection.DIFFERENTIAL,
            LinearCalibration((250 / 2.205) / (3/1000*12), 0, "kg"))

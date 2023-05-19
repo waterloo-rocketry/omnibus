@@ -43,11 +43,13 @@ class DashboardItem(QWidget):
         # add listeners before restoring state so that the
         # dimensions are set correctly from the saved state
         self.parameters.child("width").sigValueChanged.connect(lambda _, val:
-            self.resize(val, self.size().height())
-        )
+                                                               self.resize(
+                                                                   val, self.size().height())
+                                                               )
         self.parameters.child("height").sigValueChanged.connect(lambda _, val:
-            self.resize(self.size().width(), val)
-        )
+                                                                self.resize(
+                                                                    self.size().width(), val)
+                                                                )
 
         # restore state is params are provided
         if params:

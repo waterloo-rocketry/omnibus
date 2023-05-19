@@ -67,10 +67,11 @@ class PeriodicCanSender(DashboardItem):
 
     def add_parameters(self):
         actuator_ids = list(mt.actuator_id.keys())
-        series_param = ListParameter(name='actuator', type='list', default=actuator_ids[0], limits=actuator_ids)
+        series_param = ListParameter(name='actuator', type='list',
+                                     default=actuator_ids[0], limits=actuator_ids)
         period_param = {'name': 'period', 'type': 'int', 'value': 0}
         return [series_param, period_param]
-          
+
     def pulse_widgets(self):
         if self.pulse_count > 0:
             if self.pulse_count % 2 == 0:
@@ -90,6 +91,6 @@ class PeriodicCanSender(DashboardItem):
     @staticmethod
     def get_name():
         return "Periodic Can Sender"
-    
+
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)

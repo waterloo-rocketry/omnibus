@@ -43,7 +43,7 @@ class TextDashItem(DashboardItem):
     def on_text_change(self, param, value):
         self.text = value
         self.widget.setText(self.text)
-        self.resize(10, 10) # update size
+        self.resize(10, 10)  # update size
 
     def on_fsize_change(self, param, value):
         self.setFontSize(value)

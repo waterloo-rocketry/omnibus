@@ -32,6 +32,7 @@ from items.can_sender import CanSender
 from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 
+
 class QGraphicsViewWrapper(QGraphicsView):
     """
     Creating a QGraphicsView wrapper to intercept wheelEvents for UI enhancements.
@@ -322,11 +323,11 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    #try:
-                        self.add(item_type(self.on_item_resize, widget["params"]), widget["pos"])
-                    #except Exception as e:
+                    # try:
+                    self.add(item_type(self.on_item_resize, widget["params"]), widget["pos"])
+                    # except Exception as e:
                     #    print(e)
-                        break
+                    break
 
     # Method to save current layout to file
     def save(self):

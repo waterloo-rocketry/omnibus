@@ -8,6 +8,7 @@ import parsley
 SEND_CHANNEL = "CAN/Parsley"
 RECEIVE_CHANNEL = "CAN/Commands"
 
+
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
         self.port = port
@@ -70,7 +71,7 @@ def main():
             if args.solo:
                 print(parsley.format_line(parsed_data))
             else:
-                sender.send(CHANNEL, parsed_data)  # send the CAN message over the channel
+                sender.send(SEND_CHANNEL, parsed_data)  # send the CAN message over the channel
         except Exception:
             print(line)
             pass

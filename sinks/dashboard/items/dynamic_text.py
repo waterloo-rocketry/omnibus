@@ -6,7 +6,7 @@ from publisher import publisher
 from .dashboard_item import DashboardItem
 from .registry import Register
 
-EXPIRED_TIME = 1 # time in seconds after which data "expires"
+EXPIRED_TIME = 1  # time in seconds after which data "expires"
 
 
 @Register
@@ -14,7 +14,7 @@ class DynamicTextItem(DashboardItem):
     def __init__(self, *args):
         # Call this in **every** dash item constructor
         super().__init__(*args)
-        
+
         # Specify the layout
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
@@ -39,12 +39,12 @@ class DynamicTextItem(DashboardItem):
         self.on_font_change(None, self.parameters.param("font size").value())
 
     def add_parameters(self):
-        font_param =  {'name': 'font size', 'type': 'int', 'value': 12}
+        font_param = {'name': 'font size', 'type': 'int', 'value': 12}
         series_param = ListParameter(name='series',
                                           type='list',
                                           default="",
                                           limits=publisher.get_all_streams())
-        offset_param =  {'name': 'offset', 'type': 'float', 'value': 0}
+        offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         return [font_param, series_param, offset_param]
 
     def on_series_change(self, _, value):
@@ -62,7 +62,7 @@ class DynamicTextItem(DashboardItem):
         self.setStyleSheet("")
         self.expired_timeout.stop()
         self.expired_timeout.start(EXPIRED_TIME * 1000)
-        self.resize(10, 10) # trigger size update
+        self.resize(10, 10)  # trigger size update
 
     def expire(self):
         self.setStyleSheet("color: gray")
