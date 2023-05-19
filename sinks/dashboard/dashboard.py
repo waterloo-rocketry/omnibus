@@ -15,7 +15,6 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsItem,
     QGraphicsRectItem,
     QFileDialog,
-    QHeaderView,
     QSplitter
 )
 from pyqtgraph.parametertree import ParameterTree

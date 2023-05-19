@@ -68,7 +68,7 @@ class DynamicTextItem(DashboardItem):
         self.setStyleSheet("color: gray")
 
     def on_font_change(self, _, fsize):
-        self.widget.setStyleSheet("font-size: {}px".format(fsize))
+        self.widget.setStyleSheet(f"font-size: {fsize}px")
 
     def on_offset_change(self, _, offset):
         self.offset = offset

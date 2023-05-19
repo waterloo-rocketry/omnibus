@@ -33,7 +33,7 @@ class TextDashItem(DashboardItem):
 
     def setFontSize(self, fsize):
         self.fsize = fsize
-        self.widget.setStyleSheet("font-size: {}px".format(self.fsize))
+        self.widget.setStyleSheet(f"font-size: {self.fsize}px")
 
     def add_parameters(self):
         text_param = {'name': 'text', 'type': 'str', 'value': ''}

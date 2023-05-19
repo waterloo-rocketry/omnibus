@@ -1,4 +1,4 @@
-from pyqtgraph.Qt.QtWidgets import QWidget
+from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
 from pyqtgraph.parametertree import Parameter, ParameterTree
 from collections import OrderedDict
 import json
@@ -38,6 +38,7 @@ class DashboardItem(QWidget):
 
         self.parameter_tree = ParameterTree(showHeader=True)
         self.parameter_tree.setParameters(self.parameters, showTop=False)
+        self.parameter_tree.header().setSectionResizeMode(QHeaderView.ResizeToContents)
 
         # add listeners before restoring state so that the
         # dimensions are set correctly from the saved state
