@@ -5,6 +5,8 @@ import serial
 from omnibus import Sender, Receiver
 import parsley
 
+SEND_CHANNEL = "CAN/Parsley"
+RECEIVE_CHANNEL = "CAN/Commands"
 
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
@@ -37,14 +39,14 @@ def main():
     else:
         parser = parsley.parse_usb_debug
 
+    sender = None
+    receiver = None
     if not args.solo:
         sender = Sender()
-        CHANNEL = "CAN/Parsley"
-
-    receiver = Receiver("CAN/Commands")
+        receiver = Receiver(RECEIVE_CHANNEL)
 
     while True:
-        if msg := receiver.recv_message(0):  # non-blocking
+        if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
 
@@ -57,7 +59,7 @@ def main():
             time.sleep(0.01)
 
         line = communicator.read()
-        if not line:
+        if not line.strip():
             time.sleep(0.01)
             continue
 
@@ -65,11 +67,12 @@ def main():
             msg_sid, msg_data = parser(line)
             parsed_data = parsley.parse(msg_sid, msg_data)
 
-            #print(parsley.format_line(parsed_data))
-            if not args.solo:
+            if args.solo:
+                print(parsley.format_line(parsed_data))
+            else:
                 sender.send(CHANNEL, parsed_data)  # send the CAN message over the channel
         except Exception:
-            #print(line)
+            print(line)
             pass
 
 

@@ -60,7 +60,6 @@ class PeriodicCanSender(DashboardItem):
                     }
                 }
             }
-            print(can_message)
             self.sender.send(self.channel, can_message)
             self.pulse_count = 2
             self.pulse_timer.start(self.pulse_period)
