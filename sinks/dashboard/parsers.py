@@ -124,6 +124,11 @@ def can_parser(payload):
 
     return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()]
 
+@Register("RLCS")
+def rlcs_parser(payload):
+    timestamp = time.time()
+    return [(f"RLCS/{k}", timestamp, v) for k, v in payload.items()]
+
 
 @Register("StateEstimation")
 def state_est_parser(payload):
