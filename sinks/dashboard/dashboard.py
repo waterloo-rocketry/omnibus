@@ -166,6 +166,14 @@ class Dashboard(QWidget):
         unlock_action = add_lock_menu.addAction("Unlock Dashboard")
         unlock_action.triggered.connect(self.unlock)
 
+        # An action to the to the menu bar to duplicate
+        # the selected item
+        duplicate_item_menu = menubar.addMenu("Duplicate")
+        duplicate_action = duplicate_item_menu.addAction("Duplicate Item")
+        duplicate_action.triggered.connect(self.on_duplicate)
+        self.lockableActions.append(duplicate_action)
+
+
         # Add an action to the menu bar to display a
         # help box
         add_help_menu = menubar.addMenu("Help")
@@ -221,6 +229,27 @@ class Dashboard(QWidget):
         total_width = self.splitter.size().width() - 100
         tree_width = item.parameter_tree.sizeHint().width()
         self.splitter.setSizes([total_width - tree_width, tree_width])
+
+    def on_duplicate(self):
+        selected_items = self.scene.selectedItems()
+
+        if len(selected_items) != 1:
+            pass # maybe do something better
+
+        rect = selected_items[0]
+
+        for candidate, (proxy, item) in self.widgets.items():
+            if rect is candidate:
+                scenepos = proxy.scenePos()
+                viewpos = self.view.mapFromScene(scenepos)
+
+                params = item.get_serialized_parameters()
+
+                self.add(type(item)(self.on_item_resize, params), (viewpos.x() + 20, viewpos.y() + 20))
+
+                break
+
+
 
     # method to handle dimension changes in parameter tree
     def on_item_resize(self, item):

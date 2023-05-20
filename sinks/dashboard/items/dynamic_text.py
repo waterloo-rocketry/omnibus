@@ -22,6 +22,7 @@ class DynamicTextItem(DashboardItem):
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('font size').sigValueChanged.connect(self.on_font_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
+        self.parameters.param('buffer size').sigValueChanged.connect(self.on_buffer_size_change)
 
         self.expired_timeout = QTimer()
         self.expired_timeout.setSingleShot(True)
@@ -38,6 +39,9 @@ class DynamicTextItem(DashboardItem):
         # Apply initial stylesheet
         self.on_font_change(None, self.parameters.param("font size").value())
 
+        self.buffer_size = self.parameters.param('buffer size').value()
+        self.buffer = []
+
     def add_parameters(self):
         font_param = {'name': 'font size', 'type': 'int', 'value': 12}
         series_param = ListParameter(name='series',
@@ -45,7 +49,8 @@ class DynamicTextItem(DashboardItem):
                                           default="",
                                           limits=publisher.get_all_streams())
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
-        return [font_param, series_param, offset_param]
+        buffer_size_param = {'name': 'buffer size', 'type': 'int', 'value': 1}
+        return [font_param, series_param, offset_param, buffer_size_param]
 
     def on_series_change(self, _, value):
         publisher.unsubscribe_from_all(self.on_data_update)
@@ -53,10 +58,17 @@ class DynamicTextItem(DashboardItem):
 
     def on_data_update(self, _, payload):
         time, data = payload
+
+        self.buffer.append(data)
+        if len(self.buffer) > self.buffer_size:
+            self.buffer.pop(0)
+
         if isinstance(data, int):
-            self.widget.setText(f"{data + self.offset:.0f}")
+            value = sum(self.buffer)/len(self.buffer)
+            self.widget.setText(f"{value + self.offset:.0f}")
         elif isinstance(data, float):
-            self.widget.setText(f"{data + self.offset:.3f}")
+            value = sum(self.buffer)/len(self.buffer)
+            self.widget.setText(f"{value + self.offset:.3f}")
         else:
             self.widget.setText(str(data))
         self.setStyleSheet("")
@@ -72,6 +84,11 @@ class DynamicTextItem(DashboardItem):
 
     def on_offset_change(self, _, offset):
         self.offset = offset
+
+    def on_buffer_size_change(self, _, bufsize):
+        self.buffer_size = bufsize
+        self.buffer = []
+
 
     @staticmethod
     def get_name():

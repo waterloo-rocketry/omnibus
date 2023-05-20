@@ -12,7 +12,9 @@ class Publisher:
         self.streams = {}
 
     def get_all_streams(self):
-        return self.streams.keys()
+        ret_val = list(self.streams.keys())
+        ret_val.sort()
+        return ret_val
 
     def subscribe(self, stream, callback):
         if stream not in self.streams:
