@@ -41,7 +41,7 @@ class PeriodicCanSender(DashboardItem):
         self.parameters.param('actuator').sigValueChanged.connect(self.on_actuator_change)
 
         self.last_time = time.time()
-        publisher.subscribe("CAN", self.on_data_update)
+        publisher.subscribe("ALL", self.on_data_update)
 
     def on_data_update(self, _, __):
         self.cur_time = time.time()

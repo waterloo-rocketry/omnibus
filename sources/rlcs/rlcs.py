@@ -1,8 +1,31 @@
-import struct
+import parsley
 
-from config import MESSAGE_FORMAT
+VALVE_COMMAND = {"CLOSED": 0, "OPEN": 1}
+BOOLEAN = {"FALSE": 0, "TRUE": 1}
+LIMIT_SWITCHES = {"UNKNOWN": 0, "OPEN": 1, "CLOSED": 2, "ERROR": 3}
 
-STRUCT_FMT = "<" + ''.join(k[1] for k in MESSAGE_FORMAT)
+MESSAGE_FORMAT = [
+    parsley.fields.Enum("VA1 Command", 8, VALVE_COMMAND),
+    parsley.fields.Enum("VA2 Command", 8, VALVE_COMMAND),
+    parsley.fields.Enum("VA3 Command", 8, VALVE_COMMAND),
+    parsley.fields.Enum("VA4 Command", 8, VALVE_COMMAND),
+    parsley.fields.Enum("Ignition Primary Command", 8, VALVE_COMMAND),
+    parsley.fields.Enum("Ignition Secondary Command", 8, VALVE_COMMAND),
+    parsley.fields.Enum("Rocket Power Command", 8, VALVE_COMMAND),
+    parsley.fields.Enum("Fill Disconnect Command", 8, VALVE_COMMAND),
+    parsley.fields.Numeric("Towerside Main Batt", 16, scale=1/1000, big_endian=False),
+    parsley.fields.Numeric("Towerside Actuator Batt", 16, scale=1/1000, big_endian=False),
+    parsley.fields.Numeric("Error Code", 16, big_endian=False),
+    parsley.fields.Enum("Towerside Armed", 8, BOOLEAN),
+    parsley.fields.Enum("Towerside Has Contact", 8, BOOLEAN),
+    parsley.fields.Numeric("Ignition Primary Current", 16, scale=1/1000, big_endian=False),
+    parsley.fields.Numeric("Ignition Secondary Current", 16, scale=1/1000, big_endian=False),
+    parsley.fields.Enum("VA1 Lims", 8, LIMIT_SWITCHES),
+    parsley.fields.Enum("VA2 Lims", 8, LIMIT_SWITCHES),
+    parsley.fields.Enum("VA3 Lims", 8, LIMIT_SWITCHES),
+    parsley.fields.Enum("VA4 Lims", 8, LIMIT_SWITCHES),
+    parsley.fields.Enum("Fill Disconnect Lims", 8, LIMIT_SWITCHES),
+]
 
 def print_data(parsed):
     for k, v in parsed.items():
@@ -15,13 +38,12 @@ def parse_rlcs(line):
     if not check_data_is_valid(line):
         return None
 
-    line = line[1:len(line)-1]
-    fields = struct.unpack(STRUCT_FMT, line)
-    res = {}
-    # items
-    for (name, _), value in zip(MESSAGE_FORMAT, fields):
-        res[name] = value
-    return res
+    bit_str = parsley.BitString(data=line[1:-1])
+    try:
+        return parsley.parse_fields(bit_str, MESSAGE_FORMAT)
+    except ValueError as e:
+        print("Invalid data: " + str(e))
+        return None
 
 
 def check_data_is_valid(line):
@@ -32,9 +54,10 @@ def check_data_is_valid(line):
     The line must also begin with W and end with R. 
     '''
 
-    if len(line) != 2 + struct.calcsize(STRUCT_FMT):
+    expected_size = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
+    if len(line) != expected_size:
         print("Warning: Format of data {} is wrong. Expected {} characters, got {}".format(
-            line, struct.calcsize(STRUCT_FMT), len(line)))
+            line, expected_size, len(line)))
         return False
         # In the future, we may want to extract information from the message despite poor formatting
 

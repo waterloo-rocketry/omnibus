@@ -137,3 +137,7 @@ def state_est_parser(payload):
         ("StateEstimation/Orientation", timestamp, payload["data"]["orientation"]),
         ("StateEstimation/Position", timestamp, payload["data"]["position"])
     ]
+
+@Register("")
+def all_parser(_):
+    return [("ALL", 0, -1)]

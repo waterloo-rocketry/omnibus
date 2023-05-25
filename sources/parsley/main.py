@@ -60,7 +60,7 @@ def main():
             time.sleep(0.01)
 
         line = communicator.read()
-        if not line.strip():
+        if not line or line.encode() == b'\x00':
             time.sleep(0.01)
             continue
 
@@ -68,12 +68,11 @@ def main():
             msg_sid, msg_data = parser(line)
             parsed_data = parsley.parse(msg_sid, msg_data)
 
-            if args.solo:
-                print(parsley.format_line(parsed_data))
-            else:
+            print(parsley.format_line(parsed_data))
+            if not args.solo:
                 sender.send(SEND_CHANNEL, parsed_data)  # send the CAN message over the channel
         except Exception:
-            print(line)
+            print(line.encode())
             pass
 
 
