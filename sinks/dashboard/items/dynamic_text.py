@@ -1,6 +1,6 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel
 from pyqtgraph.Qt.QtCore import QTimer
-from pyqtgraph.parametertree.parameterTypes import ListParameter
+from pyqtgraph.parametertree.parameterTypes import ListParameter, ActionParameter
 
 from publisher import publisher
 from .dashboard_item import DashboardItem
@@ -22,6 +22,7 @@ class DynamicTextItem(DashboardItem):
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('font size').sigValueChanged.connect(self.on_font_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
+        self.parameters.param('add_new').sigActivated.connect(self.on_add_new_change)
 
         self.expired_timeout = QTimer()
         self.expired_timeout.setSingleShot(True)
@@ -39,13 +40,15 @@ class DynamicTextItem(DashboardItem):
         self.on_font_change(None, self.parameters.param("font size").value())
 
     def add_parameters(self):
-        font_param =  {'name': 'font size', 'type': 'int', 'value': 12}
+        font_param = {'name': 'font size', 'type': 'int', 'value': 12}
         series_param = ListParameter(name='series',
                                           type='list',
                                           default="",
                                           limits=publisher.get_all_streams())
         offset_param =  {'name': 'offset', 'type': 'float', 'value': 0}
-        return [font_param, series_param, offset_param]
+        new_param_button = ActionParameter(name='add_new', 
+                                                title="Add New")
+        return [font_param, series_param, offset_param, new_param_button]
 
     def on_series_change(self, _, value):
         publisher.unsubscribe_from_all(self.on_data_update)
@@ -72,6 +75,13 @@ class DynamicTextItem(DashboardItem):
 
     def on_offset_change(self, _, offset):
         self.offset = offset
+
+    def on_add_new_change(self, _):
+        self.parameters.insertChild(pos=(len(self.parameters.childs)-1),
+                                    child={'name': 'Blank',
+                                            'type': 'int',
+                                            'value': 20})
+        
 
     @staticmethod
     def get_name():
