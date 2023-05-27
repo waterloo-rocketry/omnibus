@@ -15,7 +15,7 @@ class SerialCommunicator:
         self.serial = serial.Serial(port, baud, timeout=timeout)
 
     def read(self):
-        return self.serial.readline().strip(b'\r\n').decode('utf-8')
+        return self.serial.read(4096).decode('utf-8')
 
     def write(self, msg):
         self.serial.write(msg)
@@ -46,6 +46,8 @@ def main():
         sender = Sender()
         receiver = Receiver(RECEIVE_CHANNEL)
 
+    # invariant - buffer starts with the start of a message
+    buffer = ""
     while True:
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']
@@ -64,16 +66,26 @@ def main():
             time.sleep(0.01)
             continue
 
-        try:
-            msg_sid, msg_data = parser(line)
-            parsed_data = parsley.parse(msg_sid, msg_data)
+        while '\n' in line:
+            i = line.find('\n')
+            msg = buffer + line[:i]
+            buffer = ""
+            line = line[i+1:]
 
-            print(parsley.format_line(parsed_data))
-            if not args.solo:
-                sender.send(SEND_CHANNEL, parsed_data)  # send the CAN message over the channel
-        except Exception:
-            print(line.encode())
-            pass
+            msg = msg.strip('\x00\r')
+
+            try:
+                msg_sid, msg_data = parser(msg)
+                parsed_data = parsley.parse(msg_sid, msg_data)
+
+                print(parsley.format_line(parsed_data))
+                if not args.solo:
+                    sender.send(SEND_CHANNEL, parsed_data)  # send the CAN message over the channel
+            except Exception:
+                print(msg.encode())
+                pass
+
+        buffer += line
 
 
 if __name__ == '__main__':
