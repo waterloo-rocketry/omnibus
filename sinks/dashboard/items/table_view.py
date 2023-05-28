@@ -247,6 +247,8 @@ class TableViewItem(DashboardItem):
 
         # delete cells
         if event.key() == Qt.Key.Key_Delete:
+            if not indexes: return False
+
             if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
                 # allow ctrl-delete to remove widget
                 return False
