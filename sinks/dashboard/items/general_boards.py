@@ -19,8 +19,16 @@ def get_boards():
 
 def get_paths(board):
     if not board: return []
+
+    def filter(s):
+        if s.count('/') == 0:
+            return '/'
+        if s.startswith(board + '/'):
+            return s.split('/', 1)[1]
+        return None
+
     series = publisher.get_all_streams()
-    paths = sorted(set(s.split('/', 1)[1] for s in series if s.startswith(board + '/')))
+    paths = sorted(set(t for t in (filter(s) for s in series) if t))
     return paths or ['/']
 
 # proper way is to use QTableView and setModel(), but this is easier
@@ -75,7 +83,7 @@ class GBTableWidgetItem(QTableWidgetItem):
             else:
                 # treat data as series path under board
                 self.path = data
-                self.value = ''
+                self.value = 'None'
                 self.resubscribe()
 
     def data(self, role):
@@ -127,10 +135,8 @@ class GBTableWidgetItem(QTableWidgetItem):
         return clone
 
 class GBItemDelegate(QItemDelegate):
-    def __init__(self, isboard, onchange=None):
+    def __init__(self, onchange=None):
         super().__init__()
-
-        self.isboard = isboard
         self.onchange = onchange
 
     def createEditor(self, parent, option, index):
@@ -142,13 +148,14 @@ class GBItemDelegate(QItemDelegate):
         editor.setMaxVisibleItems(100)
         editor.view().setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred);
 
-        if index.column() == 0: # select board
+        if index.column() == 0: # first column, select board
             boards = get_boards()
             editor.addItems(boards)
         else:
             model = index.model()
-            board = model.data(model.index(index.row(), 0), Qt.EditRole)
-            editor.addItems(get_paths(board))
+            board = model.index(index.row(), 0).data(Qt.EditRole)
+            paths = get_paths(board)
+            editor.addItems(paths)
 
         if self.onchange:
             row = index.row()
@@ -189,7 +196,7 @@ class GeneralBoardsItem(DashboardItem):
         self.widget.setSelectionMode(QAbstractItemView.ContiguousSelection)
         self.widget.setItemPrototype(GBTableWidgetItem())
         self.widget.setItemDelegate(GBItemDelegate(False))
-        self.widget.setItemDelegateForColumn(0, GBItemDelegate(True, self.change_row_board))
+        self.widget.setItemDelegateForColumn(0, GBItemDelegate(self.change_row_board))
 
         header = self.widget.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Interactive)
