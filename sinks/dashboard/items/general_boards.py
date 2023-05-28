@@ -1,6 +1,8 @@
 import math
+import json
 
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QApplication, QHeaderView, QItemDelegate, QAbstractItemView
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QTableWidget, QTableWidgetItem, \
+        QComboBox, QApplication, QHeaderView, QItemDelegate, QAbstractItemView, QSizePolicy
 from pyqtgraph.Qt.QtCore import Qt, QTimer, QEvent
 from pyqtgraph.Qt.QtGui import QColorConstants
 from pyqtgraph.parametertree.parameterTypes import ListParameter
@@ -11,6 +13,16 @@ from .registry import Register
 
 EXPIRED_TIME = 1  # time in seconds after which data "expires"
 
+def get_boards():
+    series = publisher.get_all_streams()
+    return sorted(set(s.split('/', 1)[0] for s in series))
+
+def get_paths(board):
+    if not board: return []
+    series = publisher.get_all_streams()
+    paths = sorted(set(s.split('/', 1)[1] for s in series if s.startswith(board + '/')))
+    return paths or ['/']
+
 # proper way is to use QTableView and setModel(), but this is easier
 class GBTableWidgetItem(QTableWidgetItem):
     def __init__(self):
@@ -19,11 +31,28 @@ class GBTableWidgetItem(QTableWidgetItem):
         self.board = None
         self.path = None
         self.value = ''
+        self.first_col = True
 
         self.expired_timeout = QTimer()
         self.expired_timeout.setSingleShot(True)
         self.expired_timeout.timeout.connect(self.expire)
         self.expired_timeout.start(EXPIRED_TIME * 1000)
+
+        # run post_init after the widget is added
+        QTimer.singleShot(0, self.post_init)
+
+    def post_init(self):
+        tableWidget = self.tableWidget()
+        if not tableWidget: return
+        index = tableWidget.indexFromItem(self)
+        if index and index.column() > 0:
+            model = index.model()
+            self.first_col = False
+            self.board = model.data(model.index(index.row(), 0), Qt.EditRole)
+            # rerun setData logic with updated values
+            self.setData(Qt.EditRole, self.value)
+        else:
+            self.first_col = True
 
     def setData(self, role, data):
         super().setData(role, data)
@@ -31,8 +60,14 @@ class GBTableWidgetItem(QTableWidgetItem):
             if not data:
                 self.path = None
                 self.value = ''
+            elif self.first_col:
+                # first column, display as is
+                self.path = None
+                self.value = data
+                self.setForeground(QColorConstants.Black)
+                self.expired_timeout.stop()
             elif data[0] == '=':
-                # text starting with =, display text as is
+                # display text as is
                 self.path = None
                 self.value = data[1:]
                 self.setForeground(QColorConstants.Black)
@@ -50,7 +85,6 @@ class GBTableWidgetItem(QTableWidgetItem):
 
     def expire(self):
         self.setForeground(QColorConstants.Gray)
-        pass
 
     def set_board(self, board):
         self.board = board
@@ -62,7 +96,7 @@ class GBTableWidgetItem(QTableWidgetItem):
             if self.path == '/':
                 serie = self.board
             else:
-                serie = f'{self.board}/{self.path}'
+                serie = f'{self.board}/{self.path.strip("/")}'
             publisher.subscribe(serie, self.on_data_update)
 
     def on_data_update(self, _, payload):
@@ -82,9 +116,10 @@ class GBTableWidgetItem(QTableWidgetItem):
 
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)
+        self.expired_timeout.stop()
 
-    # workaround for pyqt bug where reference is GC'd
-    # introduces memory leak but should be fine as lone as it is triggered manually
+    # workaround for pyqt bug where reference ownership is not transferred and gets gc
+    # this adds memory leak but should be fine as lone as it is triggered manually
     clones = []
     def clone(self):
         clone = GBTableWidgetItem()
@@ -104,7 +139,16 @@ class GBItemDelegate(QItemDelegate):
 
         editor = QComboBox(parent)
         editor.setEditable(True)
-        editor.addItems(["test", "items"])
+        editor.setMaxVisibleItems(100)
+        editor.view().setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred);
+
+        if index.column() == 0: # select board
+            boards = get_boards()
+            editor.addItems(boards)
+        else:
+            model = index.model()
+            board = model.data(model.index(index.row(), 0), Qt.EditRole)
+            editor.addItems(get_paths(board))
 
         if self.onchange:
             row = index.row()
@@ -129,9 +173,9 @@ class GBItemDelegate(QItemDelegate):
 
 @Register
 class GeneralBoardsItem(DashboardItem):
-    def __init__(self, *args):
+    def __init__(self, on_item_resize, params):
         # Call this in **every** dash item constructor
-        super().__init__(*args)
+        super().__init__(on_item_resize, params)
 
         # Specify the layout
         self.layout = QHBoxLayout()
@@ -141,17 +185,30 @@ class GeneralBoardsItem(DashboardItem):
         self.parameters.param('cols').sigValueChanged.connect(self.on_cols_change)
 
         self.widget = QTableWidget()
-        self.widget.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
         self.widget.setSelectionMode(QAbstractItemView.ContiguousSelection)
         self.widget.setItemPrototype(GBTableWidgetItem())
         self.widget.setItemDelegate(GBItemDelegate(False))
-        self.widget.setItemDelegateForColumn(0, GBItemDelegate(True))
+        self.widget.setItemDelegateForColumn(0, GBItemDelegate(True, self.change_row_board))
+
+        header = self.widget.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        header.sectionResized.connect(self.update_size)
+
         self.layout.addWidget(self.widget)
 
         self.installEventFilter(self)
 
-        self.update_size(self.parameters.param('rows').value(),
-                         self.parameters.param('cols').value())
+        self.on_rows_change(None, self.parameters.param('rows').value())
+        self.on_cols_change(None, self.parameters.param('cols').value())
+
+        if params:
+            state = json.loads(params)
+            if 'cells' in state:
+                self.deserialize_range(state['cells'],
+                    0, self.widget.rowCount(),
+                    0, self.widget.columnCount())
+
 
     def eventFilter(self, widget, event):
         if event.type() != QEvent.KeyPress:
@@ -170,39 +227,14 @@ class GeneralBoardsItem(DashboardItem):
         # copy cells
         if event.key() == Qt.Key.Key_C and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
             if not indexes: return True
-
-            copy = '\n'.join(
-                '\t'.join(
-                    self.widget.item(i, j).data(Qt.EditRole) or ''
-                    for j in range(mincol, maxcol+1)
-                )
-                for i in range(minrow, maxrow+1)
-            )
-            QApplication.clipboard().setText(copy)
-
+            QApplication.clipboard().setText(self.serialize_range(minrow, maxrow, mincol, maxcol))
             return True
 
         # paste cells
         if event.key() == Qt.Key.Key_V and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
-            lines = QApplication.clipboard().text().split('\n')
-
-            for h in range(math.ceil((maxrow - minrow + 1) / len(lines))):
-                for i, line in enumerate(lines):
-                    row = minrow + h * len(lines) + i
-                    if row > self.widget.rowCount(): break
-
-                    cells = line.split('\t')
-                    for j in range(math.ceil((maxcol - mincol + 1) / len(cells))):
-                        for k, cell in enumerate(cells):
-                            col = mincol + j * len(cells) + k
-                            if col > self.widget.columnCount(): break
-
-                            item = self.widget.item(row, col)
-                            if not item:
-                                item = GBTableWidgetItem()
-                                self.widget.setItem(row, col, item)
-                            item.setData(Qt.EditRole, cell)
-
+            self.deserialize_range(
+                QApplication.clipboard().text(),
+                minrow, maxrow, mincol, maxcol)
             return True
 
         # delete cells
@@ -220,20 +252,50 @@ class GeneralBoardsItem(DashboardItem):
 
         return False
 
-    def update_size(self, row, col):
-        oldrow = self.widget.rowCount()
+    def serialize_range(self, minrow, maxrow, mincol, maxcol):
 
-        self.widget.setRowCount(row)
-        self.widget.setColumnCount(col)
+        def get_item_data(row, col):
+            item = self.widget.item(row, col)
+            return item and item.data(Qt.EditRole) or ''
 
-        # use default item for the first column instead of custom one
-        for r in range(oldrow, row):
-            self.widget.setItem(r, 0, QTableWidgetItem())
+        return '\n'.join(
+            '\t'.join(
+                get_item_data(i, j)
+                for j in range(mincol, maxcol+1))
+            for i in range(minrow, maxrow+1))
 
-        self.resize(
-            sum(self.widget.columnWidth(i) for i in range(col)) + 45,
-            sum(self.widget.rowHeight(j) for j in range(row)) + 45
-        )
+    def deserialize_range(self, data, minrow, maxrow, mincol, maxcol):
+        lines = data.split('\n')
+
+        for h in range(math.ceil((maxrow - minrow + 1) / len(lines))):
+            for i, line in enumerate(lines):
+
+                row = minrow + h * len(lines) + i
+                if row > self.widget.rowCount(): break
+
+                cells = line.split('\t')
+                for j in range(math.ceil((maxcol - mincol + 1) / len(cells))):
+                    for k, cell in enumerate(cells):
+                        col = mincol + j * len(cells) + k
+                        if col > self.widget.columnCount(): break
+
+                        item = self.widget.item(row, col)
+                        if not item:
+                            item = GBTableWidgetItem()
+                            self.widget.setItem(row, col, item)
+                        item.setData(Qt.EditRole, cell)
+
+    def update_size(self):
+        row = self.widget.rowCount()
+        col = self.widget.columnCount()
+
+        width = sum(self.widget.columnWidth(i) for i in range(col)) + 45
+        height = sum(self.widget.rowHeight(j) for j in range(row)) + 45
+
+        self.parameters.param('width').setValue(width)
+        self.parameters.param('height').setValue(height)
+
+        self.resize(width, height)
 
     def add_parameters(self):
         return [
@@ -241,17 +303,32 @@ class GeneralBoardsItem(DashboardItem):
             {'name': 'cols', 'type': 'int', 'value': 5},
         ]
 
+    def change_row_board(self, row, col, text):
+        for i in range(1, self.widget.columnCount()):
+            item = self.widget.item(row, i)
+            if item: item.set_board(text)
+
     def on_rows_change(self, _, rows):
-        self.update_size(rows, self.widget.columnCount())
+        oldrow = self.widget.rowCount()
+        self.widget.setRowCount(rows)
+        self.update_size()
 
     def on_cols_change(self, _, cols):
-        self.update_size(self.widget.rowCount(), cols)
+        self.widget.setColumnCount(cols)
+        self.update_size()
 
     def on_delete(self):
         for i in range(self.widget.rowCount()):
             for j in range(1, self.widget.columnCount()):
                 widget = self.widget.item(i, j)
                 if widget: widget.on_delete()
+
+    def get_serialized_parameters(self):
+        params = self.parameters.saveState(filter='user')
+        params['cells'] = self.serialize_range(
+            0, self.widget.rowCount(),
+            0, self.widget.columnCount())
+        return json.dumps(params)
 
     @staticmethod
     def get_name():
