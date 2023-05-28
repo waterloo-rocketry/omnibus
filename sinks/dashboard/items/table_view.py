@@ -32,7 +32,7 @@ def get_paths(board):
     return paths or ['/']
 
 # proper way is to use QTableView and setModel(), but this is easier
-class GBTableWidgetItem(QTableWidgetItem):
+class TVTableWidgetItem(QTableWidgetItem):
     def __init__(self):
         super().__init__()
 
@@ -130,11 +130,11 @@ class GBTableWidgetItem(QTableWidgetItem):
     # this adds memory leak but should be fine as lone as it is triggered manually
     clones = []
     def clone(self):
-        clone = GBTableWidgetItem()
-        GBTableWidgetItem.clones.append(clone)
+        clone = TVTableWidgetItem()
+        TVTableWidgetItem.clones.append(clone)
         return clone
 
-class GBItemDelegate(QItemDelegate):
+class TVItemDelegate(QItemDelegate):
     def __init__(self, onchange=None):
         super().__init__()
         self.onchange = onchange
@@ -179,8 +179,8 @@ class GBItemDelegate(QItemDelegate):
         model.setData(index, editor.currentText(), Qt.EditRole);
 
 @Register
-class GeneralBoardsItem(DashboardItem):
-    def __init__(self, on_item_resize, params):
+class TableViewItem(DashboardItem):
+    def __init__(self, on_item_resize, params=None):
         # Call this in **every** dash item constructor
         super().__init__(on_item_resize, params)
 
@@ -194,9 +194,9 @@ class GeneralBoardsItem(DashboardItem):
         self.widget = QTableWidget()
 
         self.widget.setSelectionMode(QAbstractItemView.ContiguousSelection)
-        self.widget.setItemPrototype(GBTableWidgetItem())
-        self.widget.setItemDelegate(GBItemDelegate(False))
-        self.widget.setItemDelegateForColumn(0, GBItemDelegate(self.change_row_board))
+        self.widget.setItemPrototype(TVTableWidgetItem())
+        self.widget.setItemDelegate(TVItemDelegate(False))
+        self.widget.setItemDelegateForColumn(0, TVItemDelegate(self.change_row_board))
         self.widget.verticalHeader().setSectionsMovable(True)
 
         hheader = self.widget.horizontalHeader()
@@ -289,7 +289,7 @@ class GeneralBoardsItem(DashboardItem):
 
                         item = self.widget.item(row, col)
                         if not item:
-                            item = GBTableWidgetItem()
+                            item = TVTableWidgetItem()
                             self.widget.setItem(row, col, item)
                         item.setData(Qt.EditRole, cell)
 
@@ -340,4 +340,4 @@ class GeneralBoardsItem(DashboardItem):
 
     @staticmethod
     def get_name():
-        return "General Boards"
+        return "Table View"

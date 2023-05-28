@@ -31,7 +31,7 @@ from items.text_dash_item import TextDashItem
 from items.can_sender import CanSender
 from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
-from items.general_boards import GeneralBoardsItem
+from items.table_view import TableViewItem
 
 
 class QGraphicsViewWrapper(QGraphicsView):
