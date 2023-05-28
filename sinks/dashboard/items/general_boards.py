@@ -197,10 +197,11 @@ class GeneralBoardsItem(DashboardItem):
         self.widget.setItemPrototype(GBTableWidgetItem())
         self.widget.setItemDelegate(GBItemDelegate(False))
         self.widget.setItemDelegateForColumn(0, GBItemDelegate(self.change_row_board))
+        self.widget.verticalHeader().setSectionsMovable(True)
 
-        header = self.widget.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Interactive)
-        header.sectionResized.connect(self.update_size)
+        hheader = self.widget.horizontalHeader()
+        hheader.setSectionResizeMode(QHeaderView.Interactive)
+        hheader.sectionResized.connect(self.update_size)
 
         self.layout.addWidget(self.widget)
 
