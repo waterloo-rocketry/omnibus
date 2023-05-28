@@ -1,4 +1,4 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QApplication, QHeaderView
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QApplication, QHeaderView, QItemDelegate, QAbstractItemView
 from pyqtgraph.Qt.QtCore import Qt, QTimer, QEvent
 from pyqtgraph.Qt.QtGui import QColorConstants
 from pyqtgraph.parametertree.parameterTypes import ListParameter
@@ -9,6 +9,7 @@ from .registry import Register
 
 EXPIRED_TIME = 1  # time in seconds after which data "expires"
 
+# proper way is to use QTableView and setModel(), but this is easier
 class GBTableWidgetItem(QTableWidgetItem):
     def __init__(self):
         super().__init__()
@@ -29,9 +30,13 @@ class GBTableWidgetItem(QTableWidgetItem):
                 self.path = None
                 self.value = ''
             elif data[0] == '=':
+                # text starting with =, display text as is
                 self.path = None
                 self.value = data[1:]
+                self.setForeground(QColorConstants.Black)
+                self.expired_timeout.stop()
             else:
+                # treat data as series path under board
                 self.path = data
                 self.value = ''
                 self.resubscribe()
@@ -76,6 +81,50 @@ class GBTableWidgetItem(QTableWidgetItem):
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)
 
+    # workaround for pyqt bug where reference is GC'd
+    # introduces memory leak but should be fine as lone as it is triggered manually
+    clones = []
+    def clone(self):
+        clone = GBTableWidgetItem()
+        GBTableWidgetItem.clones.append(clone)
+        return clone
+
+class GBItemDelegate(QItemDelegate):
+    def __init__(self, isboard, onchange=None):
+        super().__init__()
+
+        self.isboard = isboard
+        self.onchange = onchange
+
+    def createEditor(self, parent, option, index):
+
+        items = sorted(set(s.split('/')[0] for s in publisher.get_all_streams()))
+
+        editor = QComboBox(parent)
+        editor.setEditable(True)
+        editor.addItems(["test", "items"])
+
+        if self.onchange:
+            row = index.row()
+            col = index.column()
+            editor.currentTextChanged.connect(lambda text: self.onchange(row, col, text))
+
+        return editor
+
+    def eventFilter(self, editor, event):
+        if (
+            event.type() == QEvent.FocusOut and
+            event.reason() in (Qt.PopupFocusReason, Qt.ActiveWindowFocusReason)
+        ):
+            return False
+        return super().eventFilter(editor, event)
+
+    def setEditorData(self, editor, index):
+        editor.setCurrentText(index.data(Qt.EditRole))
+
+    def setModelData(self, editor, model, index):
+        model.setData(index, editor.currentText(), Qt.EditRole);
+
 @Register
 class GeneralBoardsItem(DashboardItem):
     def __init__(self, *args):
@@ -91,6 +140,10 @@ class GeneralBoardsItem(DashboardItem):
 
         self.widget = QTableWidget()
         self.widget.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.widget.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self.widget.setItemPrototype(GBTableWidgetItem())
+        self.widget.setItemDelegate(GBItemDelegate(False))
+        self.widget.setItemDelegateForColumn(0, GBItemDelegate(True))
         self.layout.addWidget(self.widget)
 
         self.installEventFilter(self)
@@ -143,29 +196,6 @@ class GeneralBoardsItem(DashboardItem):
         self.widget.setRowCount(row)
         self.widget.setColumnCount(col)
 
-        def add_dropdown(r):
-            def onchange(board):
-                for j in range(1, self.widget.columnCount()):
-                    self.widget.item(r, j).set_board(board)
-
-            dropdown = QComboBox()
-            dropdown.currentTextChanged.connect(onchange)
-            dropdown.addItems([''] + sorted(set(s.split('/')[0] for s in publisher.get_all_streams())))
-            self.widget.setCellWidget(r, 0, dropdown)
-
-        if row > old[0]:
-            for i in range(old[0], row):
-                for j in range(1, col):
-                    self.widget.setItem(i, j, GBTableWidgetItem())
-                add_dropdown(i)
-
-        if col > old[1]:
-            for i in range(row):
-                for j in range(max(old[1], 1), col):
-                    self.widget.setItem(i, j, GBTableWidgetItem())
-                if old[1] < 1:
-                    add_dropdown(i)
-
         self.resize(col * 107, row * 44)
 
     def add_parameters(self):
@@ -183,7 +213,8 @@ class GeneralBoardsItem(DashboardItem):
     def on_delete(self):
         for i in range(self.widget.rowCount()):
             for j in range(1, self.widget.columnCount()):
-                self.widget.item(i, j).on_delete()
+                widget = self.widget.item(i, j)
+                if widget: widget.on_delete()
 
     @staticmethod
     def get_name():
