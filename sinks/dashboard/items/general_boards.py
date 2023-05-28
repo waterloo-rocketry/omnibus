@@ -1,3 +1,5 @@
+import math
+
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QTableWidget, QTableWidgetItem, QComboBox, QApplication, QHeaderView, QItemDelegate, QAbstractItemView
 from pyqtgraph.Qt.QtCore import Qt, QTimer, QEvent
 from pyqtgraph.Qt.QtGui import QColorConstants
@@ -152,51 +154,86 @@ class GeneralBoardsItem(DashboardItem):
                          self.parameters.param('cols').value())
 
     def eventFilter(self, widget, event):
-        if event.type() != QEvent.KeyPress or not (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+        if event.type() != QEvent.KeyPress:
             return False
 
-        if event.key() == Qt.Key.Key_C:
-            indexes = self.widget.selectedIndexes()
+        indexes = self.widget.selectedIndexes()
 
+        if indexes:
             minrow = min(i.row() for i in indexes)
             maxrow = max(i.row() for i in indexes)
             mincol = min(i.column() for i in indexes)
             maxcol = max(i.column() for i in indexes)
+        else:
+            minrow = maxrow = mincol = maxcol = 0
 
-            copy = ''
-            for i in range(minrow, maxrow+1):
-                for j in range(mincol, maxcol+1):
-                    copy += self.widget.item(i, j).data(Qt.EditRole) or ''
-                    if j < maxcol: copy += '\t'
-                if i < maxrow: copy += '\n'
+        # copy cells
+        if event.key() == Qt.Key.Key_C and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+            if not indexes: return True
+
+            copy = '\n'.join(
+                '\t'.join(
+                    self.widget.item(i, j).data(Qt.EditRole) or ''
+                    for j in range(mincol, maxcol+1)
+                )
+                for i in range(minrow, maxrow+1)
+            )
             QApplication.clipboard().setText(copy)
 
             return True
 
-        if event.key() == Qt.Key.Key_V:
-            indexes = self.widget.selectedIndexes()
-            if not indexes:
-                minrow = mincol = 0
-            else:
-                minrow = min(i.row() for i in indexes)
-                mincol = min(i.column() for i in indexes)
+        # paste cells
+        if event.key() == Qt.Key.Key_V and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+            lines = QApplication.clipboard().text().split('\n')
 
-            paste = QApplication.clipboard().text()
-            for i, row in enumerate(paste.split('\n')):
-                for j, col in enumerate(row.split('\t')):
-                    item = self.widget.item(minrow + i, mincol + j)
-                    if item: item.setData(Qt.EditRole, col)
+            for h in range(math.ceil((maxrow - minrow + 1) / len(lines))):
+                for i, line in enumerate(lines):
+                    row = minrow + h * len(lines) + i
+                    if row > self.widget.rowCount(): break
+
+                    cells = line.split('\t')
+                    for j in range(math.ceil((maxcol - mincol + 1) / len(cells))):
+                        for k, cell in enumerate(cells):
+                            col = mincol + j * len(cells) + k
+                            if col > self.widget.columnCount(): break
+
+                            item = self.widget.item(row, col)
+                            if not item:
+                                item = GBTableWidgetItem()
+                                self.widget.setItem(row, col, item)
+                            item.setData(Qt.EditRole, cell)
+
+            return True
+
+        # delete cells
+        if event.key() == Qt.Key.Key_Delete:
+            if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+                # allow ctrl-delete to remove widget
+                return False
+
+            for i in range(minrow, maxrow+1):
+                for j in range(mincol, maxcol+1):
+                    item = self.widget.item(i, j)
+                    if item: item.setData(Qt.EditRole, None)
 
             return True
 
         return False
 
     def update_size(self, row, col):
-        old = (self.widget.rowCount(), self.widget.columnCount())
+        oldrow = self.widget.rowCount()
+
         self.widget.setRowCount(row)
         self.widget.setColumnCount(col)
 
-        self.resize(col * 107, row * 44)
+        # use default item for the first column instead of custom one
+        for r in range(oldrow, row):
+            self.widget.setItem(r, 0, QTableWidgetItem())
+
+        self.resize(
+            sum(self.widget.columnWidth(i) for i in range(col)) + 45,
+            sum(self.widget.rowHeight(j) for j in range(row)) + 45
+        )
 
     def add_parameters(self):
         return [
