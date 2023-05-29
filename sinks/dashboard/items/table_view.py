@@ -3,7 +3,7 @@ import json
 
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QTableWidget, QTableWidgetItem, \
         QComboBox, QApplication, QHeaderView, QItemDelegate, QAbstractItemView, QSizePolicy
-from pyqtgraph.Qt.QtCore import Qt, QTimer, QEvent
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QEvent, QByteArray
 from pyqtgraph.Qt.QtGui import QColorConstants
 from pyqtgraph.parametertree.parameterTypes import ListParameter
 
@@ -44,13 +44,17 @@ class TVTableWidgetItem(QTableWidgetItem):
         self.expired_timeout = QTimer()
         self.expired_timeout.setSingleShot(True)
         self.expired_timeout.timeout.connect(self.expire)
-        self.expired_timeout.start(EXPIRED_TIME * 1000)
 
         # run post_init after the widget is added
         QTimer.singleShot(0, self.post_init)
 
     def post_init(self):
-        tableWidget = self.tableWidget()
+        try:
+            tableWidget = self.tableWidget()
+        except RuntimeError:
+            self.on_delete()
+            return
+
         if not tableWidget: return
         index = tableWidget.indexFromItem(self)
         if index and index.column() > 0:
@@ -68,16 +72,10 @@ class TVTableWidgetItem(QTableWidgetItem):
             if not data:
                 self.path = None
                 self.value = ''
-            elif self.first_col:
-                # first column, display as is
-                self.path = None
-                self.value = data
-                self.setForeground(QColorConstants.Black)
-                self.expired_timeout.stop()
-            elif data[0] == '=':
+            elif data[0] == '=' or self.first_col:
                 # display text as is
                 self.path = None
-                self.value = data[1:]
+                self.value = data
                 self.setForeground(QColorConstants.Black)
                 self.expired_timeout.stop()
             else:
@@ -85,10 +83,11 @@ class TVTableWidgetItem(QTableWidgetItem):
                 self.path = data
                 self.value = 'None'
                 self.resubscribe()
+                self.expired_timeout.start(EXPIRED_TIME * 1000)
 
     def data(self, role):
         if role == Qt.DisplayRole:
-            return self.value
+            return self.value.removeprefix('=')
         return super().data(role)
 
     def expire(self):
@@ -118,7 +117,6 @@ class TVTableWidgetItem(QTableWidgetItem):
             self.value = data
 
         self.setForeground(QColorConstants.Black)
-        self.expired_timeout.stop()
         self.expired_timeout.start(EXPIRED_TIME * 1000)
         self.tableWidget().viewport().update()
 
@@ -211,11 +209,12 @@ class TableViewItem(DashboardItem):
         self.on_cols_change(None, self.parameters.param('cols').value())
 
         if params:
-            state = json.loads(params)
-            if 'cells' in state:
-                self.deserialize_range(state['cells'],
-                    0, self.widget.rowCount(),
-                    0, self.widget.columnCount())
+            state = json.loads(params).get('table_view', {})
+            hheader.restoreState(QByteArray.fromBase64(state.get('header_state').encode()))
+            self.deserialize_range(state.get('cells'),
+                0, self.widget.rowCount(),
+                0, self.widget.columnCount())
+            self.update_size()
 
 
     def eventFilter(self, widget, event):
@@ -243,6 +242,19 @@ class TableViewItem(DashboardItem):
             self.deserialize_range(
                 QApplication.clipboard().text(),
                 minrow, maxrow, mincol, maxcol)
+            return True
+
+        # cut cells
+        if event.key() == Qt.Key.Key_X and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+            if not indexes: return True
+
+            QApplication.clipboard().setText(self.serialize_range(minrow, maxrow, mincol, maxcol))
+
+            for i in range(minrow, maxrow+1):
+                for j in range(mincol, maxcol+1):
+                    item = self.widget.item(i, j)
+                    if item: item.setData(Qt.EditRole, None)
+
             return True
 
         # delete cells
@@ -275,6 +287,8 @@ class TableViewItem(DashboardItem):
             for i in range(minrow, maxrow+1))
 
     def deserialize_range(self, data, minrow, maxrow, mincol, maxcol):
+        if not data: return
+
         lines = data.split('\n')
 
         for h in range(math.ceil((maxrow - minrow + 1) / len(lines))):
@@ -335,9 +349,12 @@ class TableViewItem(DashboardItem):
 
     def get_serialized_parameters(self):
         params = self.parameters.saveState(filter='user')
-        params['cells'] = self.serialize_range(
-            0, self.widget.rowCount(),
-            0, self.widget.columnCount())
+        params['table_view'] = {
+            'cells': self.serialize_range(
+                0, self.widget.rowCount(),
+                0, self.widget.columnCount()),
+            'header_state': self.widget.horizontalHeader().saveState().toBase64().data().decode(),
+        }
         return json.dumps(params)
 
     @staticmethod
