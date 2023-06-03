@@ -91,7 +91,6 @@ splits = {
 last_timestamp = {}  # Last timestamp seen for each board + message type
 offset_timestamp = {}  # per-board-and-message offset to account for time rollovers
 
-
 @Register("CAN/Parsley")
 def can_parser(payload):
     # Payload is a dictionary representing the parsed CAN message. We need to break
@@ -112,23 +111,35 @@ def can_parser(payload):
         split = data.pop(splits[message_type])
         prefix += f"/{split}"
 
+    error_series = [] # additional series to publish to on error
+
     timestamp = data.pop("time", time.time())  # default back to system time
     time_key = board_id + message_type
     if time_key not in last_timestamp:
         last_timestamp[time_key] = 0
         offset_timestamp[time_key] = 0
-    if timestamp < last_timestamp[time_key] - 5:  # detect rollover, with protection against out of order messages
+        publisher.inform(f"{board_id}/RESET")
+        publisher.inform(f"{board_id}/ERROR")
+    if timestamp < last_timestamp[time_key] - 5 and timestamp < 10:  # detect rollover
         offset_timestamp[time_key] += last_timestamp[time_key]
+        if message_type == "GENERAL_BOARD_STATUS":
+            error_series.append((f"{board_id}/RESET", time.time(), time.strftime("%I:%M:%S")))
     last_timestamp[time_key] = timestamp
     timestamp += offset_timestamp[time_key]
 
-    return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()]
+    if message_type == "GENERAL_BOARD_STATUS" and data['status'] != "E_NOMINAL":
+        error_series.append((f"{board_id}/ERROR", timestamp, payload))
+
+    return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()] + error_series
 
 @Register("RLCS")
 def rlcs_parser(payload):
     timestamp = time.time()
     return [(f"RLCS/{k}", timestamp, v) for k, v in payload.items()]
 
+@Register("Parsley/Health")
+def parsley_health(payload):
+    return [(f"Parsley {payload['id']} health", time.time(), payload["healthy"])]
 
 @Register("StateEstimation")
 def state_est_parser(payload):

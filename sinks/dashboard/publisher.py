@@ -31,6 +31,10 @@ class Publisher:
             self.streams[stream] = []
         for callback in self.streams[stream]:
             callback(stream, payload)
+    
+    def inform(self, stream):
+        if stream not in self.streams:
+            self.streams[stream] = []
 
 
 publisher = Publisher()

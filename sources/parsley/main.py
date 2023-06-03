@@ -1,12 +1,14 @@
 import argparse
 import time
 import serial
+from socket import gethostname
 
 from omnibus import Sender, Receiver
 import parsley
 
 SEND_CHANNEL = "CAN/Parsley"
 RECEIVE_CHANNEL = "CAN/Commands"
+HEARTBEAT_CHANNEL = "Parsley/Health"
 
 
 class SerialCommunicator:
@@ -46,9 +48,17 @@ def main():
         sender = Sender()
         receiver = Receiver(RECEIVE_CHANNEL)
 
+    last_valid_message_time = 0
+    last_heartbeat_time = time.time()
+
     # invariant - buffer starts with the start of a message
     buffer = ""
     while True:
+        if sender and time.time() - last_heartbeat_time > 1:
+            last_heartbeat_time = time.time()
+            healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
+            sender.send(HEARTBEAT_CHANNEL, {"id": f"{gethostname()}/{args.format}", "healthy": healthy})
+
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
@@ -78,8 +88,10 @@ def main():
                 msg_sid, msg_data = parser(msg)
                 parsed_data = parsley.parse(msg_sid, msg_data)
 
+                last_valid_message_time = time.time()
+
                 print(parsley.format_line(parsed_data))
-                if not args.solo:
+                if sender:
                     sender.send(SEND_CHANNEL, parsed_data)  # send the CAN message over the channel
             except Exception:
                 print(msg.encode())
