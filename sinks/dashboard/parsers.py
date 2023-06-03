@@ -117,7 +117,7 @@ def can_parser(payload):
     if time_key not in last_timestamp:
         last_timestamp[time_key] = 0
         offset_timestamp[time_key] = 0
-    if timestamp < last_timestamp[time_key]:  # detect rollover
+    if timestamp < last_timestamp[time_key] - 5:  # detect rollover, with protection against out of order messages
         offset_timestamp[time_key] += last_timestamp[time_key]
     last_timestamp[time_key] = timestamp
     timestamp += offset_timestamp[time_key]

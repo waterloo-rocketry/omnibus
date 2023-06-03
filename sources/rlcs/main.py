@@ -4,6 +4,7 @@ import serial
 from omnibus import Sender
 
 import rlcs
+import commander
 
 
 def reader(port):
@@ -39,6 +40,8 @@ def main():
 
         if not parsed_data:
             continue
+
+        commander.command(parsed_data)
 
         if not args.solo:  # if connect to omnibus
             sender.send(CHANNEL, parsed_data)

@@ -1,30 +1,33 @@
 import parsley
+from parsley.fields import Enum, Numeric
 
 VALVE_COMMAND = {"CLOSED": 0, "OPEN": 1}
 BOOLEAN = {"FALSE": 0, "TRUE": 1}
 LIMIT_SWITCHES = {"UNKNOWN": 0, "OPEN": 1, "CLOSED": 2, "ERROR": 3}
 
 MESSAGE_FORMAT = [
-    parsley.fields.Enum("VA1 Command", 8, VALVE_COMMAND),
-    parsley.fields.Enum("VA2 Command", 8, VALVE_COMMAND),
-    parsley.fields.Enum("VA3 Command", 8, VALVE_COMMAND),
-    parsley.fields.Enum("VA4 Command", 8, VALVE_COMMAND),
-    parsley.fields.Enum("Ignition Primary Command", 8, VALVE_COMMAND),
-    parsley.fields.Enum("Ignition Secondary Command", 8, VALVE_COMMAND),
-    parsley.fields.Enum("Rocket Power Command", 8, VALVE_COMMAND),
-    parsley.fields.Enum("Fill Disconnect Command", 8, VALVE_COMMAND),
-    parsley.fields.Numeric("Towerside Main Batt", 16, scale=1/1000, big_endian=False),
-    parsley.fields.Numeric("Towerside Actuator Batt", 16, scale=1/1000, big_endian=False),
-    parsley.fields.Numeric("Error Code", 16, big_endian=False),
-    parsley.fields.Enum("Towerside Armed", 8, BOOLEAN),
-    parsley.fields.Enum("Towerside Has Contact", 8, BOOLEAN),
-    parsley.fields.Numeric("Ignition Primary Current", 16, scale=1/1000, big_endian=False),
-    parsley.fields.Numeric("Ignition Secondary Current", 16, scale=1/1000, big_endian=False),
-    parsley.fields.Enum("VA1 Lims", 8, LIMIT_SWITCHES),
-    parsley.fields.Enum("VA2 Lims", 8, LIMIT_SWITCHES),
-    parsley.fields.Enum("VA3 Lims", 8, LIMIT_SWITCHES),
-    parsley.fields.Enum("VA4 Lims", 8, LIMIT_SWITCHES),
-    parsley.fields.Enum("Fill Disconnect Lims", 8, LIMIT_SWITCHES),
+    Enum("VA1 Command", 8, VALVE_COMMAND),
+    Enum("VA2 Command", 8, VALVE_COMMAND),
+    Enum("VA3 Command", 8, VALVE_COMMAND),
+    Enum("VA4 Command", 8, VALVE_COMMAND),
+    Enum("Vent Valve Command", 8, VALVE_COMMAND),
+    Enum("Injector Valve Command", 8, VALVE_COMMAND),
+    Enum("Ignition Primary Command", 8, VALVE_COMMAND),
+    Enum("Ignition Secondary Command", 8, VALVE_COMMAND),
+    Enum("Rocket Power Command", 8, VALVE_COMMAND),
+    Enum("Fill Disconnect Command", 8, VALVE_COMMAND),
+    Numeric("Towerside Main Batt", 16, scale=1/1000, big_endian=False),
+    Numeric("Towerside Actuator Batt", 16, scale=1/1000, big_endian=False),
+    Numeric("Error Code", 16, big_endian=False),
+    Enum("Towerside Armed", 8, BOOLEAN),
+    Enum("Towerside Has Contact", 8, BOOLEAN),
+    Numeric("Ignition Primary Current", 16, scale=1/1000, big_endian=False),
+    Numeric("Ignition Secondary Current", 16, scale=1/1000, big_endian=False),
+    Enum("VA1 Lims", 8, LIMIT_SWITCHES),
+    Enum("VA2 Lims", 8, LIMIT_SWITCHES),
+    Enum("VA3 Lims", 8, LIMIT_SWITCHES),
+    Enum("VA4 Lims", 8, LIMIT_SWITCHES),
+    Enum("Fill Disconnect Lims", 8, LIMIT_SWITCHES),
 ]
 
 def print_data(parsed):
