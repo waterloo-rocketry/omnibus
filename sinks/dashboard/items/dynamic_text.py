@@ -1,6 +1,7 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel
 from pyqtgraph.Qt.QtCore import QTimer
-from pyqtgraph.parametertree.parameterTypes import ListParameter, ActionParameter
+import pyqtgraph.Qt.QtCore as qtcore
+from pyqtgraph.parametertree.parameterTypes import ListParameter, ActionParameter, GroupParameter, ColorParameter
 
 from publisher import publisher
 from .dashboard_item import DashboardItem
@@ -8,13 +9,17 @@ from .registry import Register
 
 EXPIRED_TIME = 1 # time in seconds after which data "expires"
 
-
 @Register
 class DynamicTextItem(DashboardItem):
     def __init__(self, *args):
         # Call this in **every** dash item constructor
         super().__init__(*args)
         
+        self.condition_count = 0
+        self.default_color = '#008000'
+        self.setAttribute(qtcore.Qt.WidgetAttribute.WA_StyledBackground, True)
+        
+
         # Specify the layout
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
@@ -62,11 +67,43 @@ class DynamicTextItem(DashboardItem):
             self.widget.setText(f"{data + self.offset:.3f}")
         else:
             self.widget.setText(str(data))
-        self.setStyleSheet("")
+
+        # If there are conditions, change colour based on them
+        #   else, set background to the default color
+        if self.condition_count > 0:
+            for i in range(self.condition_count):
+                condition_reference = self.parameters.param('condition_label' + str(i + 1))
+                if self.condition_true(condition_reference):
+                    background_color = condition_reference.childs[2].value().name()
+                    self.setStyleSheet('background: ' + background_color)
+                    break
+        else:
+            self.setStyleSheet('background: ' + self.default_color)
+
         self.expired_timeout.stop()
         self.expired_timeout.start(EXPIRED_TIME * 1000)
         self.resize(10, 10) # trigger size update
 
+    def condition_true(self, condition: GroupParameter):
+        comparison = condition.childs[0].value()
+        condition_value = condition.childs[1].value()
+        data = float(self.widget.text())
+        match comparison:
+            case '==':
+                return data == condition_value
+            case '<':
+                return data < condition_value
+            case '>':
+                return data > condition_value
+            case '<=':
+                return data <= condition_value
+            case '>=':
+                return data >= condition_value
+            case '!=':
+                return data != condition_value
+            case _:
+                return False
+    
     def expire(self):
         self.setStyleSheet("color: gray")
 
@@ -77,11 +114,29 @@ class DynamicTextItem(DashboardItem):
         self.offset = offset
 
     def on_add_new_change(self, _):
+        # Increment number of conditions and get string representation
+        self.condition_count += 1
+        cond_count_str = str(self.condition_count)
+
+        # Insert a new GroupParameter into the ParameterTree
+        #   with 3 children: a condition (</>, <=/>=, =/!=),
+        #                    a value,
+        #                    a ColorParameter
+        condition_label = 'Condition ' + cond_count_str
         self.parameters.insertChild(pos=(len(self.parameters.childs)-1),
-                                    child={'name': 'Blank',
-                                            'type': 'int',
-                                            'value': 20})
+                                    child=GroupParameter(name='condition_label' + cond_count_str,
+                                                         title=condition_label))
         
+        condition_reference = self.parameters.param('condition_label' + cond_count_str)
+        list_of_comparisons = ['>', '<', '>=', '<=', '==', '!=']
+        condition_reference.addChild(child=ListParameter(name='condition',
+                                                         type='list',
+                                                         default='==',
+                                                         limits=list_of_comparisons))
+        condition_reference.addChild(child={'name': 'value',
+                                            'type': 'float',
+                                            'value': 0})
+        condition_reference.addChild(child=ColorParameter(name='color'))
 
     @staticmethod
     def get_name():
