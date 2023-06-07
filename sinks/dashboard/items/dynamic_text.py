@@ -1,13 +1,29 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel
-from pyqtgraph.Qt.QtCore import QTimer
-from pyqtgraph.parametertree.parameterTypes import ListParameter
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter
+from pyqtgraph.Qt.QtCore import QTimer, Qt
+from pyqtgraph.parametertree.parameterTypes import SimpleParameter, StrParameterItem
 
 from publisher import publisher
 from .dashboard_item import DashboardItem
 from .registry import Register
 
-EXPIRED_TIME = 1  # time in seconds after which data "expires"
+EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
 
+
+class AutocompleteParameterItem(StrParameterItem):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        publisher.register_stream_callback(self.update_completions)
+
+    def makeWidget(self):
+        w = super().makeWidget()
+        self.completer = QCompleter(publisher.get_all_streams())
+        self.completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        w.setCompleter(self.completer)
+        return w
+
+    def update_completions(self, streams):
+        self.completer.model().setStringList(streams)
 
 @Register
 class DynamicTextItem(DashboardItem):
@@ -44,10 +60,12 @@ class DynamicTextItem(DashboardItem):
 
     def add_parameters(self):
         font_param = {'name': 'font size', 'type': 'int', 'value': 12}
-        series_param = ListParameter(name='series',
-                                          type='list',
-                                          default="",
-                                          limits=publisher.get_all_streams())
+        #series_param = ListParameter(name='series',
+        #                                  type='list',
+        #                                  default="",
+        #                                  limits=publisher.get_all_streams())
+        series_param = SimpleParameter(name='series', type='str', default="")
+        series_param.itemClass = AutocompleteParameterItem
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         buffer_size_param = {'name': 'buffer size', 'type': 'int', 'value': 1}
         return [font_param, series_param, offset_param, buffer_size_param]

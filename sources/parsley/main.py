@@ -64,11 +64,14 @@ def main():
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
 
             formatted_msg_sid = f"{msg_sid:03X}"
-            formatted_msg_data = ','.join([f"{byte:02X}" for byte in msg_data])
-            formatted_string = str.encode(f"m{formatted_msg_sid},{formatted_msg_data};  \n")
+            formatted_msg_data = ','.join([f"{byte:02X}" for byte in msg_data]) + ";"
+            if args.format == "telemetry":
+                formatted_msg_data += parsley.calculate_checksum(msg_sid, msg_data)
+            formatted_string = str.encode(f"m{formatted_msg_sid},{formatted_msg_data}  \n")
             print(formatted_string)  # always print the usb debug style can message
             if not args.solo:
-                communicator.write(formatted_string)  # send the can message over the specified port
+                communicator.write(b"a")
+            #    communicator.write(formatted_string)  # send the can message over the specified port
             time.sleep(0.01)
 
         line = communicator.read()

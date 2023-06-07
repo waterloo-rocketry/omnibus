@@ -118,8 +118,8 @@ def can_parser(payload):
     if time_key not in last_timestamp:
         last_timestamp[time_key] = 0
         offset_timestamp[time_key] = 0
-        publisher.inform(f"{board_id}/RESET")
-        publisher.inform(f"{board_id}/ERROR")
+        publisher.ensure_exists(f"{board_id}/RESET")
+        publisher.ensure_exists(f"{board_id}/ERROR")
     if timestamp < last_timestamp[time_key] - 5 and timestamp < 10:  # detect rollover
         offset_timestamp[time_key] += last_timestamp[time_key]
         if message_type == "GENERAL_BOARD_STATUS":
@@ -128,7 +128,7 @@ def can_parser(payload):
     timestamp += offset_timestamp[time_key]
 
     if message_type == "GENERAL_BOARD_STATUS" and data['status'] != "E_NOMINAL":
-        error_series.append((f"{board_id}/ERROR", timestamp, payload))
+        error_series.append((f"{board_id}/ERROR", timestamp, payload["data"]))
 
     return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()] + error_series
 
