@@ -1,6 +1,5 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel
-from pyqtgraph.Qt.QtCore import QTimer
-import pyqtgraph.Qt.QtCore as qtcore
+from pyqtgraph.Qt.QtCore import QTimer, Qt
 from pyqtgraph.parametertree.parameterTypes import ListParameter, ActionParameter, GroupParameter, ColorParameter
 
 from publisher import publisher
@@ -16,8 +15,7 @@ class DynamicTextItem(DashboardItem):
         super().__init__(*args)
         
         self.condition_count = 0
-        self.default_color = '#008000'
-        self.setAttribute(qtcore.Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         
 
         # Specify the layout
@@ -70,15 +68,14 @@ class DynamicTextItem(DashboardItem):
 
         # If there are conditions, change colour based on them
         #   else, set background to the default color
-        if self.condition_count > 0:
-            for i in range(self.condition_count):
-                condition_reference = self.parameters.param('condition_label' + str(i + 1))
-                if self.condition_true(condition_reference):
-                    background_color = condition_reference.childs[2].value().name()
-                    self.setStyleSheet('background: ' + background_color)
-                    break
+        for i in range(self.condition_count):
+            condition_reference = self.parameters.param('condition_label' + str(i + 1))
+            if self.condition_true(condition_reference):
+                background_color = condition_reference.childs[2].value().name()
+                self.setStyleSheet('background: ' + background_color)
+                break
         else:
-            self.setStyleSheet('background: ' + self.default_color)
+            self.setStyleSheet('')
 
         self.expired_timeout.stop()
         self.expired_timeout.start(EXPIRED_TIME * 1000)
