@@ -17,7 +17,7 @@ class SerialCommunicator:
         self.serial = serial.Serial(port, baud, timeout=timeout)
 
     def read(self):
-        return self.serial.read(4096).decode('utf-8')
+        return self.serial.read(4096)
 
     def write(self, msg):
         self.serial.write(msg)
@@ -37,10 +37,13 @@ def main():
     communicator = SerialCommunicator(args.port, args.baud, 0)
     if args.format == "telemetry":
         parser = parsley.parse_live_telemetry
+        binary = True
     elif args.format == "logger":
         parser = parsley.parse_logger
+        binary = False
     else:
         parser = parsley.parse_usb_debug
+        binary = False
 
     sender = None
     receiver = None
@@ -52,7 +55,7 @@ def main():
     last_heartbeat_time = time.time()
 
     # invariant - buffer starts with the start of a message
-    buffer = ""
+    buffer = b''
     while True:
         if sender and time.time() - last_heartbeat_time > 1:
             last_heartbeat_time = time.time()
@@ -76,20 +79,33 @@ def main():
             time.sleep(0.01)
 
         line = communicator.read()
-        if not line or line.encode() == b'\x00':
+
+        if not line:
             time.sleep(0.01)
             continue
 
-        while '\n' in line:
-            i = line.find('\n')
-            msg = buffer + line[:i]
-            buffer = ""
-            line = line[i+1:]
+        buffer += line
 
-            msg = msg.strip('\x00\r')
+        while True:
+            if binary:
+                head = next((i for i,b in enumerate(buffer) if b & 0xC0 == 0x80), -1)
+                end  = next((i for i,b in enumerate(buffer) if i > head and b & 0xC0 == 0xC0), -1)
+                if head < 0 or end < 0: break
+                msg = buffer[head:end+1]
+                buffer = buffer[end+1:]
+            else:
+                text_buff = buffer.decode('utf-8', errors='ignore')
+                i = text_buff.find('\n')
+                if i < 0: break
+                msg = text_buff[:i]
+                buffer = buffer[i+1:]
 
             try:
                 msg_sid, msg_data = parser(msg)
+                if not msg_sid or not msg_data:
+                    print(msg.hex() if binary else msg.encode())
+                    continue
+
                 parsed_data = parsley.parse(msg_sid, msg_data)
 
                 last_valid_message_time = time.time()
@@ -97,11 +113,8 @@ def main():
                 print(parsley.format_line(parsed_data))
                 if sender:
                     sender.send(SEND_CHANNEL, parsed_data)  # send the CAN message over the channel
-            except Exception:
-                print(msg.encode())
-                pass
-
-        buffer += line
+            except Exception as e:
+                print(e)
 
 
 if __name__ == '__main__':
