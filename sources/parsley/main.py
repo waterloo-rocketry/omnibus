@@ -88,33 +88,40 @@ def main():
 
         while True:
             if binary:
-                head = next((i for i,b in enumerate(buffer) if b & 0xC0 == 0x80), -1)
-                end  = next((i for i,b in enumerate(buffer) if i > head and b & 0xC0 == 0xC0), -1)
-                if head < 0 or end < 0: break
-                msg = buffer[head:end+1]
-                buffer = buffer[end+1:]
+                i = next((i for i,b in enumerate(buffer) if b == 0x02), -1)
+                if i < 0 or i >= len(buffer): break
+                msg_len = buffer[i+1] >> 4
+                if i + msg_len > len(buffer): break
+                msg = buffer[i:i+msg_len]
+                try:
+                    msg_sid, msg_data = parser(msg)
+                    buffer = buffer[i+msg_len:]
+                except:
+                    buffer = buffer[i+1:]
+                    continue
             else:
-                text_buff = buffer.decode('utf-8', errors='ignore')
+                text_buff = buffer.decode('utf-8', errors='backslashreplace')
                 i = text_buff.find('\n')
                 if i < 0: break
                 msg = text_buff[:i]
                 buffer = buffer[i+1:]
 
-            try:
-                msg_sid, msg_data = parser(msg)
-                if not msg_sid or not msg_data:
-                    print(msg.hex() if binary else msg.encode())
+                try:
+                    msg_sid, msg_data = parser(msg)
+                except Exception as e:
+                    print(e)
                     continue
 
+            try:
                 parsed_data = parsley.parse(msg_sid, msg_data)
-
                 last_valid_message_time = time.time()
-
                 print(parsley.format_line(parsed_data))
+
                 if sender:
                     sender.send(SEND_CHANNEL, parsed_data)  # send the CAN message over the channel
-            except Exception as e:
-                print(e)
+
+            except:
+                print(msg.hex() if binary else msg)
 
 
 if __name__ == '__main__':
