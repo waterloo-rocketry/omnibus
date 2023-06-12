@@ -84,7 +84,7 @@ class DynamicTextItem(DashboardItem):
     def condition_true(self, condition: GroupParameter):
         comparison = condition.childs[0].value()
         condition_value = condition.childs[1].value()
-        data = float(self.widget.text())
+        data = self.widget.text()
         match comparison:
             case '==':
                 return data == condition_value
