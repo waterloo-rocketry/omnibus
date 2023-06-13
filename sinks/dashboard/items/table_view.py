@@ -2,7 +2,7 @@ import math
 import json
 
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QTableWidget, QTableWidgetItem, \
-        QComboBox, QApplication, QHeaderView, QItemDelegate, QAbstractItemView, QSizePolicy
+    QComboBox, QApplication, QHeaderView, QItemDelegate, QAbstractItemView, QSizePolicy
 from pyqtgraph.Qt.QtCore import Qt, QTimer, QEvent, QByteArray
 from pyqtgraph.Qt.QtGui import QColorConstants
 from pyqtgraph.parametertree.parameterTypes import ListParameter
@@ -13,12 +13,15 @@ from .registry import Register
 
 EXPIRED_TIME = 1  # time in seconds after which data "expires"
 
+
 def get_boards():
     series = publisher.get_all_streams()
     return sorted(set(s.split('/', 1)[0] for s in series))
 
+
 def get_paths(board):
-    if not board: return []
+    if not board:
+        return []
 
     def filter(s):
         if s.count('/') == 0:
@@ -32,6 +35,8 @@ def get_paths(board):
     return paths or ['/']
 
 # proper way is to use QTableView and setModel(), but this is easier
+
+
 class TVTableWidgetItem(QTableWidgetItem):
     def __init__(self):
         super().__init__()
@@ -55,7 +60,8 @@ class TVTableWidgetItem(QTableWidgetItem):
             self.on_delete()
             return
 
-        if not tableWidget: return
+        if not tableWidget:
+            return
         index = tableWidget.indexFromItem(self)
         if index and index.column() > 0:
             model = index.model()
@@ -127,10 +133,12 @@ class TVTableWidgetItem(QTableWidgetItem):
     # workaround for pyqt bug where reference ownership is not transferred and gets gc
     # this adds memory leak but should be fine as lone as it is triggered manually
     clones = []
+
     def clone(self):
         clone = TVTableWidgetItem()
         TVTableWidgetItem.clones.append(clone)
         return clone
+
 
 class TVItemDelegate(QItemDelegate):
     def __init__(self, onchange=None):
@@ -144,9 +152,9 @@ class TVItemDelegate(QItemDelegate):
         editor = QComboBox(parent)
         editor.setEditable(True)
         editor.setMaxVisibleItems(100)
-        editor.view().setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred);
+        editor.view().setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
 
-        if index.column() == 0: # first column, select board
+        if index.column() == 0:  # first column, select board
             boards = get_boards()
             editor.addItems(boards)
         else:
@@ -174,7 +182,8 @@ class TVItemDelegate(QItemDelegate):
         editor.setCurrentText(index.data(Qt.EditRole))
 
     def setModelData(self, editor, model, index):
-        model.setData(index, editor.currentText(), Qt.EditRole);
+        model.setData(index, editor.currentText(), Qt.EditRole)
+
 
 @Register
 class TableViewItem(DashboardItem):
@@ -212,10 +221,9 @@ class TableViewItem(DashboardItem):
             state = json.loads(params).get('table_view', {})
             hheader.restoreState(QByteArray.fromBase64(state.get('header_state').encode()))
             self.deserialize_range(state.get('cells'),
-                0, self.widget.rowCount(),
-                0, self.widget.columnCount())
+                                   0, self.widget.rowCount(),
+                                   0, self.widget.columnCount())
             self.update_size()
-
 
     def eventFilter(self, widget, event):
         if event.type() != QEvent.KeyPress:
@@ -233,7 +241,8 @@ class TableViewItem(DashboardItem):
 
         # copy cells
         if event.key() == Qt.Key.Key_C and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
-            if not indexes: return True
+            if not indexes:
+                return True
             QApplication.clipboard().setText(self.serialize_range(minrow, maxrow, mincol, maxcol))
             return True
 
@@ -246,20 +255,23 @@ class TableViewItem(DashboardItem):
 
         # cut cells
         if event.key() == Qt.Key.Key_X and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
-            if not indexes: return True
+            if not indexes:
+                return True
 
             QApplication.clipboard().setText(self.serialize_range(minrow, maxrow, mincol, maxcol))
 
             for i in range(minrow, maxrow+1):
                 for j in range(mincol, maxcol+1):
                     item = self.widget.item(i, j)
-                    if item: item.setData(Qt.EditRole, None)
+                    if item:
+                        item.setData(Qt.EditRole, None)
 
             return True
 
         # delete cells
         if event.key() == Qt.Key.Key_Delete:
-            if not indexes: return False
+            if not indexes:
+                return False
 
             if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
                 # allow ctrl-delete to remove widget
@@ -268,7 +280,8 @@ class TableViewItem(DashboardItem):
             for i in range(minrow, maxrow+1):
                 for j in range(mincol, maxcol+1):
                     item = self.widget.item(i, j)
-                    if item: item.setData(Qt.EditRole, None)
+                    if item:
+                        item.setData(Qt.EditRole, None)
 
             return True
 
@@ -287,7 +300,8 @@ class TableViewItem(DashboardItem):
             for i in range(minrow, maxrow+1))
 
     def deserialize_range(self, data, minrow, maxrow, mincol, maxcol):
-        if not data: return
+        if not data:
+            return
 
         lines = data.split('\n')
 
@@ -295,13 +309,15 @@ class TableViewItem(DashboardItem):
             for i, line in enumerate(lines):
 
                 row = minrow + h * len(lines) + i
-                if row > self.widget.rowCount(): break
+                if row > self.widget.rowCount():
+                    break
 
                 cells = line.split('\t')
                 for j in range(math.ceil((maxcol - mincol + 1) / len(cells))):
                     for k, cell in enumerate(cells):
                         col = mincol + j * len(cells) + k
-                        if col > self.widget.columnCount(): break
+                        if col > self.widget.columnCount():
+                            break
 
                         item = self.widget.item(row, col)
                         if not item:
@@ -330,7 +346,8 @@ class TableViewItem(DashboardItem):
     def change_row_board(self, row, col, text):
         for i in range(1, self.widget.columnCount()):
             item = self.widget.item(row, i)
-            if item: item.set_board(text)
+            if item:
+                item.set_board(text)
 
     def on_rows_change(self, _, rows):
         oldrow = self.widget.rowCount()
@@ -345,7 +362,8 @@ class TableViewItem(DashboardItem):
         for i in range(self.widget.rowCount()):
             for j in range(1, self.widget.columnCount()):
                 widget = self.widget.item(i, j)
-                if widget: widget.on_delete()
+                if widget:
+                    widget.on_delete()
 
     def get_serialized_parameters(self):
         params = self.parameters.saveState(filter='user')

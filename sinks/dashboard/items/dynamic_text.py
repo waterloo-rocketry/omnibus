@@ -1,12 +1,12 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter
 from pyqtgraph.Qt.QtCore import QTimer, Qt
 from pyqtgraph.parametertree.parameterTypes import (
-  SimpleParameter,
-  StrParameterItem,
-  ListParameter,
-  ActionParameter,
-  GroupParameter,
-  ColorParameter
+    SimpleParameter,
+    StrParameterItem,
+    ListParameter,
+    ActionParameter,
+    GroupParameter,
+    ColorParameter
 )
 
 from publisher import publisher
@@ -14,6 +14,7 @@ from .dashboard_item import DashboardItem
 from .registry import Register
 
 EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
+
 
 class AutocompleteParameterItem(StrParameterItem):
     def __init__(self, *args, **kwargs):
@@ -37,7 +38,7 @@ class DynamicTextItem(DashboardItem):
     def __init__(self, *args):
         # Call this in **every** dash item constructor
         super().__init__(*args)
-        
+
         self.condition_count = 0
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
@@ -75,7 +76,7 @@ class DynamicTextItem(DashboardItem):
         series_param.itemClass = AutocompleteParameterItem
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         buffer_size_param = {'name': 'buffer size', 'type': 'int', 'value': 1}
-        new_param_button = ActionParameter(name='add_new', 
+        new_param_button = ActionParameter(name='add_new',
                                                 title="Add New")
         return [font_param, series_param, offset_param, buffer_size_param, new_param_button]
 
@@ -133,7 +134,7 @@ class DynamicTextItem(DashboardItem):
                 return data != condition_value
             case _:
                 return False
-    
+
     def expire(self):
         self.setStyleSheet("color: gray")
 
@@ -156,7 +157,7 @@ class DynamicTextItem(DashboardItem):
         self.parameters.insertChild(pos=(len(self.parameters.childs)-1),
                                     child=GroupParameter(name='condition_label' + cond_count_str,
                                                          title=condition_label))
-        
+
         condition_reference = self.parameters.param('condition_label' + cond_count_str)
         list_of_comparisons = ['>', '<', '>=', '<=', '==', '!=']
         condition_reference.addChild(child=ListParameter(name='condition',

@@ -16,7 +16,8 @@ def avg(data):
 def get_data(infile):
     can_last = {"ox tank": [0], "pneumatics for real": [0],
                 "vent temp for real": [0], "vv": [0], "ij": [0], "ij hall": [0]}
-    can_last.update({b: [0] for b in ["CHARGING", "ARMING", "ACTUATOR_INJ", "ACTUATOR_VENT", "SENSOR_INJ", "SENSOR_VENT", "GPS", "LOGGER", "TELEMETRY"]})
+    can_last.update({b: [0] for b in ["CHARGING", "ARMING", "ACTUATOR_INJ",
+                    "ACTUATOR_VENT", "SENSOR_INJ", "SENSOR_VENT", "GPS", "LOGGER", "TELEMETRY"]})
     start = None
     for data in msgpack.Unpacker(infile):
         # check if this was a file from the NI source (raw data) or the global log (has msgpack channels too)
