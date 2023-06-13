@@ -33,7 +33,7 @@ class TextDashItem(DashboardItem):
 
     def setFontSize(self, fsize):
         self.fsize = fsize
-        self.widget.setStyleSheet("font-size: {}px".format(self.fsize))
+        self.widget.setStyleSheet(f"font-size: {self.fsize}px")
 
     def add_parameters(self):
         text_param = {'name': 'text', 'type': 'str', 'value': ''}
@@ -43,7 +43,7 @@ class TextDashItem(DashboardItem):
     def on_text_change(self, param, value):
         self.text = value
         self.widget.setText(self.text)
-        self.resize(10, 10) # update size
+        self.resize(10, 10)  # update size
 
     def on_fsize_change(self, param, value):
         self.setFontSize(value)

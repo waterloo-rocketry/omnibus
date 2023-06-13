@@ -1,12 +1,36 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter
 from pyqtgraph.Qt.QtCore import QTimer, Qt
-from pyqtgraph.parametertree.parameterTypes import ListParameter, ActionParameter, GroupParameter, ColorParameter
+from pyqtgraph.parametertree.parameterTypes import (
+  SimpleParameter,
+  StrParameterItem,
+  ListParameter,
+  ActionParameter,
+  GroupParameter,
+  ColorParameter
+)
 
 from publisher import publisher
 from .dashboard_item import DashboardItem
 from .registry import Register
 
-EXPIRED_TIME = 1 # time in seconds after which data "expires"
+EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
+
+class AutocompleteParameterItem(StrParameterItem):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        publisher.register_stream_callback(self.update_completions)
+
+    def makeWidget(self):
+        w = super().makeWidget()
+        self.completer = QCompleter(publisher.get_all_streams())
+        self.completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        w.setCompleter(self.completer)
+        return w
+
+    def update_completions(self, streams):
+        self.completer.model().setStringList(streams)
+
 
 @Register
 class DynamicTextItem(DashboardItem):
@@ -16,7 +40,6 @@ class DynamicTextItem(DashboardItem):
         
         self.condition_count = 0
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        
 
         # Specify the layout
         self.layout = QHBoxLayout()
@@ -26,6 +49,7 @@ class DynamicTextItem(DashboardItem):
         self.parameters.param('font size').sigValueChanged.connect(self.on_font_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
         self.parameters.param('add_new').sigActivated.connect(self.on_add_new_change)
+        self.parameters.param('buffer size').sigValueChanged.connect(self.on_buffer_size_change)
 
         self.expired_timeout = QTimer()
         self.expired_timeout.setSingleShot(True)
@@ -42,16 +66,18 @@ class DynamicTextItem(DashboardItem):
         # Apply initial stylesheet
         self.on_font_change(None, self.parameters.param("font size").value())
 
+        self.buffer_size = self.parameters.param('buffer size').value()
+        self.buffer = []
+
     def add_parameters(self):
         font_param = {'name': 'font size', 'type': 'int', 'value': 12}
-        series_param = ListParameter(name='series',
-                                          type='list',
-                                          default="",
-                                          limits=publisher.get_all_streams())
-        offset_param =  {'name': 'offset', 'type': 'float', 'value': 0}
+        series_param = SimpleParameter(name='series', type='str', default="")
+        series_param.itemClass = AutocompleteParameterItem
+        offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
+        buffer_size_param = {'name': 'buffer size', 'type': 'int', 'value': 1}
         new_param_button = ActionParameter(name='add_new', 
                                                 title="Add New")
-        return [font_param, series_param, offset_param, new_param_button]
+        return [font_param, series_param, offset_param, buffer_size_param, new_param_butto]
 
     def on_series_change(self, _, value):
         publisher.unsubscribe_from_all(self.on_data_update)
@@ -59,10 +85,17 @@ class DynamicTextItem(DashboardItem):
 
     def on_data_update(self, _, payload):
         time, data = payload
+
+        self.buffer.append(data)
+        if len(self.buffer) > self.buffer_size:
+            self.buffer.pop(0)
+
         if isinstance(data, int):
-            self.widget.setText(f"{data + self.offset:.0f}")
+            value = sum(self.buffer)/len(self.buffer)
+            self.widget.setText(f"{value + self.offset:.0f}")
         elif isinstance(data, float):
-            self.widget.setText(f"{data + self.offset:.3f}")
+            value = sum(self.buffer)/len(self.buffer)
+            self.widget.setText(f"{value + self.offset:.3f}")
         else:
             self.widget.setText(str(data))
 
@@ -79,7 +112,7 @@ class DynamicTextItem(DashboardItem):
 
         self.expired_timeout.stop()
         self.expired_timeout.start(EXPIRED_TIME * 1000)
-        self.resize(10, 10) # trigger size update
+        self.resize(10, 10)  # trigger size update
 
     def condition_true(self, condition: GroupParameter):
         comparison = condition.childs[0].value()
@@ -105,7 +138,7 @@ class DynamicTextItem(DashboardItem):
         self.setStyleSheet("color: gray")
 
     def on_font_change(self, _, fsize):
-        self.widget.setStyleSheet("font-size: {}px".format(fsize))
+        self.widget.setStyleSheet(f"font-size: {fsize}px")
 
     def on_offset_change(self, _, offset):
         self.offset = offset
@@ -134,6 +167,10 @@ class DynamicTextItem(DashboardItem):
                                             'type': 'float',
                                             'value': 0})
         condition_reference.addChild(child=ColorParameter(name='color'))
+
+    def on_buffer_size_change(self, _, bufsize):
+        self.buffer_size = bufsize
+        self.buffer = []
 
     @staticmethod
     def get_name():

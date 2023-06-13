@@ -41,7 +41,7 @@ class PeriodicCanSender(DashboardItem):
         self.parameters.param('actuator').sigValueChanged.connect(self.on_actuator_change)
 
         self.last_time = time.time()
-        publisher.subscribe("CAN", self.on_data_update)
+        publisher.subscribe("ALL", self.on_data_update)
 
     def on_data_update(self, _, __):
         self.cur_time = time.time()
@@ -60,7 +60,6 @@ class PeriodicCanSender(DashboardItem):
                     }
                 }
             }
-            print(can_message)
             self.sender.send(self.channel, can_message)
             self.pulse_count = 2
             self.pulse_timer.start(self.pulse_period)
@@ -68,10 +67,11 @@ class PeriodicCanSender(DashboardItem):
 
     def add_parameters(self):
         actuator_ids = list(mt.actuator_id.keys())
-        series_param = ListParameter(name='actuator', type='list', default=actuator_ids[0], limits=actuator_ids)
+        series_param = ListParameter(name='actuator', type='list',
+                                     default=actuator_ids[0], limits=actuator_ids)
         period_param = {'name': 'period', 'type': 'int', 'value': 0}
         return [series_param, period_param]
-          
+
     def pulse_widgets(self):
         if self.pulse_count > 0:
             if self.pulse_count % 2 == 0:
@@ -91,6 +91,6 @@ class PeriodicCanSender(DashboardItem):
     @staticmethod
     def get_name():
         return "Periodic Can Sender"
-    
+
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)

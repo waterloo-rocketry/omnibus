@@ -79,10 +79,6 @@ def daq_parser(msg_data):
     return parsed_messages
 
 
-@Register("CAN/Parsley")
-def global_can_parser(payload):
-    return [("CAN", payload["data"]["time"], payload)]
-
 # map between message types and fields that we need to split data based on
 splits = {
     "ACTUATOR_CMD": "actuator",
@@ -92,8 +88,9 @@ splits = {
     "SENSOR_TEMP": "sensor_id",
     "SENSOR_ANALOG": "sensor_id",
 }
-last_timestamp = {} # Last timestamp seen for each board + message type
-offset_timestamp = {} # per-board-and-message offset to account for time rollovers
+last_timestamp = {}  # Last timestamp seen for each board + message type
+offset_timestamp = {}  # per-board-and-message offset to account for time rollovers
+
 @Register("CAN/Parsley")
 def can_parser(payload):
     # Payload is a dictionary representing the parsed CAN message. We need to break
@@ -114,20 +111,35 @@ def can_parser(payload):
         split = data.pop(splits[message_type])
         prefix += f"/{split}"
 
-    timestamp = data.pop("time", time.time()) # default back to system time
+    error_series = [] # additional series to publish to on error
+
+    timestamp = data.pop("time", time.time())  # default back to system time
     time_key = board_id + message_type
     if time_key not in last_timestamp:
         last_timestamp[time_key] = 0
         offset_timestamp[time_key] = 0
-    if timestamp < last_timestamp[time_key]: # detect rollover
+        publisher.ensure_exists(f"{board_id}/RESET")
+        publisher.ensure_exists(f"{board_id}/ERROR")
+    if timestamp < last_timestamp[time_key] - 5 and timestamp < 10:  # detect rollover
         offset_timestamp[time_key] += last_timestamp[time_key]
+        if message_type == "GENERAL_BOARD_STATUS":
+            error_series.append((f"{board_id}/RESET", time.time(), time.strftime("%I:%M:%S")))
     last_timestamp[time_key] = timestamp
     timestamp += offset_timestamp[time_key]
 
-    if len(data) == 1:
-        return [(prefix, timestamp, value) for value in data.values()]
-    return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()]
+    if message_type == "GENERAL_BOARD_STATUS" and data['status'] != "E_NOMINAL":
+        error_series.append((f"{board_id}/ERROR", timestamp, payload["data"]))
 
+    return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()] + error_series
+
+@Register("RLCS")
+def rlcs_parser(payload):
+    timestamp = time.time()
+    return [(f"RLCS/{k}", timestamp, v) for k, v in payload.items()]
+
+@Register("Parsley/Health")
+def parsley_health(payload):
+    return [(f"Parsley {payload['id']} health", time.time(), payload["healthy"])]
 
 @Register("StateEstimation")
 def state_est_parser(payload):
@@ -136,3 +148,7 @@ def state_est_parser(payload):
         ("StateEstimation/Orientation", timestamp, payload["data"]["orientation"]),
         ("StateEstimation/Position", timestamp, payload["data"]["position"])
     ]
+
+@Register("")
+def all_parser(_):
+    return [("ALL", 0, -1)]

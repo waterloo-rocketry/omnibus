@@ -15,7 +15,6 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsItem,
     QGraphicsRectItem,
     QFileDialog,
-    QHeaderView,
     QSplitter
 )
 from pyqtgraph.parametertree import ParameterTree
@@ -25,14 +24,15 @@ from utils import ConfirmDialog, EventTracker
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
-from items.plot_3D_orientation import Orientation3DDashItem
-from items.plot_3D_position import Position3DDashItem
-from items.can_message_table import CanMsgTableDashItem
+from items.dynamic_text import DynamicTextItem
+from items.periodic_can_sender import PeriodicCanSender
 from items.image_dash_item import ImageDashItem
 from items.text_dash_item import TextDashItem
 from items.can_sender import CanSender
-from items.periodic_can_sender import PeriodicCanSender
-from items.dynamic_text import DynamicTextItem
+from items.plot_3D_orientation import Orientation3DDashItem
+from items.plot_3D_position import Position3DDashItem
+from items.table_view import TableViewItem
+
 
 class QGraphicsViewWrapper(QGraphicsView):
     """
@@ -167,6 +167,14 @@ class Dashboard(QWidget):
         unlock_action = add_lock_menu.addAction("Unlock Dashboard")
         unlock_action.triggered.connect(self.unlock)
 
+        # An action to the to the menu bar to duplicate
+        # the selected item
+        duplicate_item_menu = menubar.addMenu("Duplicate")
+        duplicate_action = duplicate_item_menu.addAction("Duplicate Item")
+        duplicate_action.triggered.connect(self.on_duplicate)
+        self.lockableActions.append(duplicate_action)
+
+
         # Add an action to the menu bar to display a
         # help box
         add_help_menu = menubar.addMenu("Help")
@@ -222,6 +230,27 @@ class Dashboard(QWidget):
         total_width = self.splitter.size().width() - 100
         tree_width = item.parameter_tree.sizeHint().width()
         self.splitter.setSizes([total_width - tree_width, tree_width])
+
+    def on_duplicate(self):
+        selected_items = self.scene.selectedItems()
+
+        if len(selected_items) != 1:
+            pass # maybe do something better
+
+        rect = selected_items[0]
+
+        for candidate, (proxy, item) in self.widgets.items():
+            if rect is candidate:
+                scenepos = proxy.scenePos()
+                viewpos = self.view.mapFromScene(scenepos)
+
+                params = item.get_serialized_parameters()
+
+                self.add(type(item)(self.on_item_resize, params), (viewpos.x() + 20, viewpos.y() + 20))
+
+                break
+
+
 
     # method to handle dimension changes in parameter tree
     def on_item_resize(self, item):
@@ -324,11 +353,11 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    #try:
-                        self.add(item_type(self.on_item_resize, widget["params"]), widget["pos"])
-                    #except Exception as e:
+                    # try:
+                    self.add(item_type(self.on_item_resize, widget["params"]), widget["pos"])
+                    # except Exception as e:
                     #    print(e)
-                        break
+                    break
 
     # Method to save current layout to file
     def save(self):
