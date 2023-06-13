@@ -77,7 +77,7 @@ class DynamicTextItem(DashboardItem):
         buffer_size_param = {'name': 'buffer size', 'type': 'int', 'value': 1}
         new_param_button = ActionParameter(name='add_new', 
                                                 title="Add New")
-        return [font_param, series_param, offset_param, buffer_size_param, new_param_butto]
+        return [font_param, series_param, offset_param, buffer_size_param, new_param_button]
 
     def on_series_change(self, _, value):
         publisher.unsubscribe_from_all(self.on_data_update)
