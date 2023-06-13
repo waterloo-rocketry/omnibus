@@ -30,9 +30,11 @@ MESSAGE_FORMAT = [
     Enum("Fill Disconnect Lims", 8, LIMIT_SWITCHES),
 ]
 
+
 def print_data(parsed):
     for k, v in parsed.items():
         print(f"{k}:\t{v}")
+
 
 def parse_rlcs(line):
     '''parses data as well as checks for data validity 

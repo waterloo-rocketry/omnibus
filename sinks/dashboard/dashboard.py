@@ -174,7 +174,6 @@ class Dashboard(QWidget):
         duplicate_action.triggered.connect(self.on_duplicate)
         self.lockableActions.append(duplicate_action)
 
-
         # Add an action to the menu bar to display a
         # help box
         add_help_menu = menubar.addMenu("Help")
@@ -235,7 +234,7 @@ class Dashboard(QWidget):
         selected_items = self.scene.selectedItems()
 
         if len(selected_items) != 1:
-            pass # maybe do something better
+            pass  # maybe do something better
 
         rect = selected_items[0]
 
@@ -246,13 +245,13 @@ class Dashboard(QWidget):
 
                 params = item.get_serialized_parameters()
 
-                self.add(type(item)(self.on_item_resize, params), (viewpos.x() + 20, viewpos.y() + 20))
+                self.add(type(item)(self.on_item_resize, params),
+                         (viewpos.x() + 20, viewpos.y() + 20))
 
                 break
 
-
-
     # method to handle dimension changes in parameter tree
+
     def on_item_resize(self, item):
         width = item.parameters.param('width').value() + 1
         height = item.parameters.param('height').value() + 1

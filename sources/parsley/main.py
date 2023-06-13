@@ -57,7 +57,8 @@ def main():
         if sender and time.time() - last_heartbeat_time > 1:
             last_heartbeat_time = time.time()
             healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
-            sender.send(HEARTBEAT_CHANNEL, {"id": f"{gethostname()}/{args.format}", "healthy": healthy})
+            sender.send(HEARTBEAT_CHANNEL, {
+                        "id": f"{gethostname()}/{args.format}", "healthy": healthy})
 
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']

@@ -4,6 +4,7 @@ from omnibus import Sender
 
 sender = Sender()
 
+
 def send_actuator(actuator, state: bool):
     message = {"data": {
         "time": time.time(),
@@ -16,6 +17,7 @@ def send_actuator(actuator, state: bool):
         }
     }}
     sender.send("CAN/Commands", message)
+
 
 def command(state):
     if "Injector Valve Command" in state:

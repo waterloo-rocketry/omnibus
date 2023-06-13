@@ -33,7 +33,7 @@ class Publisher:
         self.ensure_exists(stream)
         for callback in self.streams[stream]:
             callback(stream, payload)
-    
+
     def ensure_exists(self, stream):
         if stream not in self.streams:
             self.streams[stream] = []
@@ -41,5 +41,6 @@ class Publisher:
             streams.sort()
             for cb in self.stream_update_callbacks:
                 cb(streams)
+
 
 publisher = Publisher()
