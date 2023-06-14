@@ -67,7 +67,7 @@ def main():
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
 
             formatted_msg = f"m{msg_sid:03X}";
-            if msg_data: formatted_msg += ','.join(f"{byte:02X}" for byte in msg_data)
+            if msg_data: formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
             formatted_msg += ";" + crc8.crc8(
                 msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
             ).hexdigest().upper()
