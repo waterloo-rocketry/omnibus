@@ -11,7 +11,7 @@ from publisher import publisher
 from .dashboard_item import DashboardItem
 from .registry import Register
 
-EXPIRED_TIME = 1  # time in seconds after which data "expires"
+EXPIRED_TIME = 2  # time in seconds after which data "expires"
 
 
 def get_boards():
@@ -90,6 +90,7 @@ class TVTableWidgetItem(QTableWidgetItem):
                 self.value = 'None'
                 self.resubscribe()
                 self.expired_timeout.start(EXPIRED_TIME * 1000)
+            self.resubscribe()
 
     def data(self, role):
         if role == Qt.DisplayRole:
@@ -120,7 +121,7 @@ class TVTableWidgetItem(QTableWidgetItem):
         elif isinstance(data, float):
             self.value = f"{data:.3f}"
         else:
-            self.value = data
+            self.value = str(data)
 
         self.setForeground(QColorConstants.Black)
         self.expired_timeout.start(EXPIRED_TIME * 1000)
