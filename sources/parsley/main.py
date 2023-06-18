@@ -53,28 +53,48 @@ def main():
     last_valid_message_time = 0
     last_heartbeat_time = time.time()
 
+    Enabled = True
+
     # invariant - buffer starts with the start of a message
     buffer = b''
     while True:
         if sender and time.time() - last_heartbeat_time > 1:
             last_heartbeat_time = time.time()
-            healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
+            healthy = ""
+            if time.time() - last_valid_message_time >= 1:
+                healthy = "Dead"
+            elif not Enabled:
+                healthy = "Disabled"
+            else:
+                healthy = "Healthy"
+
             sender.send(HEARTBEAT_CHANNEL, {
-                        "id": f"{gethostname()}/{args.format}", "healthy": healthy})
+                        "id": f"{gethostname()}/{args.port}", "healthy": healthy})
 
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
-            can_msg_data = msg.payload['data']['can_msg']
-            msg_sid, msg_data = parsley.encode_data(can_msg_data)
+            if Enabled and 'data' in msg.payload:
+                # if we recieve a CAN message
+                can_msg_data = msg.payload['data']['can_msg']
+                msg_sid, msg_data = parsley.encode_data(can_msg_data)
 
-            formatted_msg = f"m{msg_sid:03X}";
-            if msg_data: formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
-            formatted_msg += ";" + crc8.crc8(
-                msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
-            ).hexdigest().upper()
-            print(formatted_msg) # always print the usb debug style can message
-            if not args.solo:
-                communicator.write(formatted_msg.encode())  # send the can message over the specified port
-            time.sleep(0.01)
+                formatted_msg = f"m{msg_sid:03X}";
+                if msg_data: formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
+                formatted_msg += ";" + crc8.crc8(
+                    msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
+                ).hexdigest().upper()
+                print(formatted_msg) # always print the usb debug style can message
+                if (not args.solo):
+                    communicator.write(formatted_msg.encode())  # send the can message over the specified port
+                time.sleep(0.01)
+            elif 'id' in msg.payload:
+                # if we recieve a disabling command
+                active_parsley_id = msg.payload['id']
+                if active_parsley_id == 'ALL':
+                    Enabled = True
+                else:
+                    Enabled = (f"{gethostname()}/{args.port}" == active_parsley_id)
+
+
 
         line = communicator.read()
 
