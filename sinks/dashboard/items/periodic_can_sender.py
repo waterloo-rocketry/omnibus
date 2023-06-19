@@ -4,8 +4,8 @@ from pyqtgraph.parametertree.parameterTypes import ListParameter
 
 from .dashboard_item import DashboardItem
 from .registry import Register
+from .command_selector import send_can_message
 
-from omnibus import Sender, Receiver
 import time
 import parsley.message_types as mt
 from parsers import publisher
@@ -34,9 +34,6 @@ class PeriodicCanSender(DashboardItem):
         self.pulse_count = 0
         self.pulse_period = 300  # ms
 
-        self.sender = Sender()
-        self.channel = 'CAN/Commands'
-
         self.parameters.param('period').sigValueChanged.connect(self.on_period_change)
         self.parameters.param('actuator').sigValueChanged.connect(self.on_actuator_change)
 
@@ -60,7 +57,7 @@ class PeriodicCanSender(DashboardItem):
                     }
                 }
             }
-            self.sender.send(self.channel, can_message)
+            send_can_message(can_message)
             self.pulse_count = 2
             self.pulse_timer.start(self.pulse_period)
             self.last_time = self.cur_time

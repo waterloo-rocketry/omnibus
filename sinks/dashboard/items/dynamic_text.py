@@ -17,6 +17,7 @@ EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
 
 
 class AutocompleteParameterItem(StrParameterItem):
+    completer = QCompleter(publisher.get_all_streams())
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         publisher.register_stream_callback(self.update_completions)
@@ -26,12 +27,14 @@ class AutocompleteParameterItem(StrParameterItem):
         self.completer = QCompleter(publisher.get_all_streams())
         self.completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
         self.completer.setCaseSensitivity(Qt.CaseInsensitive)
-        w.setCompleter(self.completer)
+        w.setCompleter(AutocompleteParameterItem.completer)
         return w
 
-    def update_completions(self, streams):
-        self.completer.model().setStringList(streams)
+    @staticmethod
+    def update_completions(streams):
+        AutocompleteParameterItem.completer.model().setStringList(streams)
 
+publisher.register_stream_callback(AutocompleteParameterItem.update_completions)
 
 @Register
 class DynamicTextItem(DashboardItem):
@@ -136,7 +139,7 @@ class DynamicTextItem(DashboardItem):
                 return False
 
     def expire(self):
-        self.setStyleSheet("color: gray")
+        self.setStyleSheet("color: red")
 
     def on_font_change(self, _, fsize):
         self.widget.setStyleSheet(f"font-size: {fsize}px")

@@ -14,14 +14,6 @@ import msgpack
 from omnibus import Sender, Message
 
 
-def wait_for_logtime(msg_timestamp, real_start, log_start, replay_speed):
-    r_delta = 0
-    l_delta = msg_timestamp - log_start
-    # wait for real time to catch-up to log time
-    while r_delta < l_delta:
-        r_delta = (time.time() - real_start) * replay_speed
-
-
 def replay(log_buffer, replay_speed):
     """
     Replays the contents of a log_buffer
@@ -34,7 +26,8 @@ def replay(log_buffer, replay_speed):
     for channel, timestamp, payload in unpacker:
         if log_start == None:
             log_start = timestamp
-        wait_for_logtime(timestamp, real_start, log_start, replay_speed)
+        while timestamp - log_start > (time.time() - real_start) * replay_speed:
+            time.sleep(0.1)
         # send_message(...) instead of send(...) keeps old timestamp
         sender.send_message(Message(channel, timestamp, payload))
-        print(f"\r{timestamp:.0f}               ", end='')
+        print(f"\r{timestamp - log_start:.0f}               ", end='')

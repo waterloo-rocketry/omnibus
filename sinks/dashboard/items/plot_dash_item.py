@@ -9,6 +9,8 @@ from .dashboard_item import DashboardItem
 import config
 from .registry import Register
 
+pg.setConfigOption('background', 'w')
+pg.setConfigOption('foreground', 'k')
 
 @Register
 class PlotDashItem(DashboardItem):
@@ -16,9 +18,6 @@ class PlotDashItem(DashboardItem):
         # Call this in **every** dash item constructor
         super().__init__(*args)
 
-        self.length = config.GRAPH_RESOLUTION * config.GRAPH_DURATION
-        self.avgSize = config.GRAPH_RESOLUTION * config.RUNNING_AVG_DURATION
-        self.sum = {}
         self.last = {}
 
         # storing the series name as key, its time and points as value
@@ -43,7 +42,7 @@ class PlotDashItem(DashboardItem):
 
         # a default color list for plotting multiple curves
         # yellow green cyan white blue magenta
-        self.color = ['y', 'g', 'c', 'w', 'b', 'm']
+        self.color = ['k', 'g', 'c', 'w', 'b', 'm']
 
         # create the plot
         self.plot = self.create_plot()
@@ -75,6 +74,8 @@ class PlotDashItem(DashboardItem):
         self.plot = self.create_plot()
         self.widget = pg.PlotWidget(plotItem=self.plot)
         self.layout.addWidget(self.widget, 0, 0)
+        self.resize(self.parameters.param('width').value(),
+            self.parameters.param('height').value())
 
     def on_offset_change(self, _, offset):
         self.offset = offset
@@ -85,6 +86,7 @@ class PlotDashItem(DashboardItem):
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
         plot.setMouseEnabled(x=False, y=False)
         plot.hideButtons()
+        plot.setMinimumSize(300, 200)
         if (len(self.series) > 1):
             plot.addLegend()
         # draw the curves
@@ -94,9 +96,8 @@ class PlotDashItem(DashboardItem):
         for i, series in enumerate(self.series):
             curve = plot.plot([], [], pen=self.color[i], name=series)
             self.curves[series] = curve
-            self.times[series] = np.zeros(self.length)
-            self.points[series] = np.zeros(self.length)
-            self.sum[series] = 0
+            self.times[series] = []
+            self.points[series] = []
             self.last[series] = 0
 
         # initialize the threshold line, but do not plot it unless a limit is specified
@@ -113,26 +114,18 @@ class PlotDashItem(DashboardItem):
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
 
-        if self.last[stream] == 0:  # is this the first point we're plotting?
-            # prevent a rogue datapoint at (0, 0)
-            self.times[stream].fill(time)
-            self.points[stream].fill(point)
-            self.sum[stream] = self.avgSize * point
-
         self.last[stream] = time
 
-        self.sum[stream] -= self.points[stream][self.length - self.avgSize]
-        self.sum[stream] += point
+        self.times[stream].append(time)
+        self.points[stream].append(point)
 
-        # add the new datapoint to the end of the corresponding stream array, shuffle everything else back
-        self.times[stream][:-1] = self.times[stream][1:]
-        self.times[stream][-1] = time
-        self.points[stream][:-1] = self.points[stream][1:]
-        self.points[stream][-1] = point
+        while self.times[stream][0] < time - config.GRAPH_DURATION:
+            self.times[stream].pop(0)
+            self.points[stream].pop(0)
 
         # get the min/max point in the whole data set
-        min_point = min(min(v) for v in self.points.values())
-        max_point = max(max(v) for v in self.points.values())
+        min_point = min(min(v or [0]) for v in self.points.values())
+        max_point = max(max(v or [0]) for v in self.points.values())
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
@@ -160,11 +153,6 @@ class PlotDashItem(DashboardItem):
         title = ""
         if len(self.series) <= 2:
             # avg values
-            avg_values = [self.sum[item]/self.avgSize for item in self.series]
-            title += "avg: "
-            for v in avg_values:
-                title += f"[{v: < 4.4f}]"
-            # current values
             title += "    current: "
             last_values = [self.points[item][-1] for item in self.series]
             for v in last_values:

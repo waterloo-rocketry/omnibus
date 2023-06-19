@@ -34,6 +34,8 @@ def main():
                         help='Options: telemetry, logger, usb. Parse input in RocketCAN Logger or USB format')
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
+    parser.add_argument('--name', default='',
+                        help="Name for this instance of parsley.")
     args = parser.parse_args()
 
     communicator = SerialCommunicator(args.port, args.baud, 0)
@@ -43,6 +45,9 @@ def main():
         parser = parsley.parse_logger
     else:
         parser = parsley.parse_usb_debug
+
+    if args.name:
+        RECEIVE_CHANNEL += f"/{args.name}"
 
     sender = None
     receiver = None
@@ -60,14 +65,15 @@ def main():
             last_heartbeat_time = time.time()
             healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
             sender.send(HEARTBEAT_CHANNEL, {
-                        "id": f"{gethostname()}/{args.format}", "healthy": healthy})
+                        "id": args.name, "healthy": healthy})
 
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
 
-            formatted_msg = f"m{msg_sid:03X}";
-            if msg_data: formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
+            formatted_msg = f"m{msg_sid:03X}"
+            if msg_data:
+                formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
             formatted_msg += ";" + crc8.crc8(
                 msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
             ).hexdigest().upper()
@@ -88,9 +94,11 @@ def main():
             try:
                 if args.format == "telemetry":
                     i = next((i for i,b in enumerate(buffer) if b == 0x02), -1)
-                    if i < 0 or i + 1 >= len(buffer): break
+                    if i < 0 or i + 1 >= len(buffer):
+                        break
                     msg_len = buffer[i+1] >> 4
-                    if i + msg_len > len(buffer): break
+                    if i + msg_len > len(buffer):
+                        break
                     msg = buffer[i:i+msg_len]
                     try:
                         msg_sid, msg_data = parser(msg)
@@ -101,7 +109,8 @@ def main():
                 else:
                     text_buff = buffer.decode('utf-8', errors='backslashreplace')
                     i = text_buff.find('\n')
-                    if i < 0: break
+                    if i < 0:
+                        break
                     msg = text_buff[:i]
                     buffer = buffer[i+1:]
                     msg_sid, msg_data = parser(msg)
