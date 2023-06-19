@@ -142,7 +142,7 @@ def rlcs_parser(payload):
 
 @Register("Parsley/Health")
 def parsley_health(payload):
-    return [(f"Parsley health - {payload['id']}", time.time(), payload["healthy"])]
+    return [(f"Parsley {payload['id']} health", time.time(), payload["healthy"])]
 
 
 @Register("StateEstimation")

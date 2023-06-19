@@ -22,9 +22,6 @@ from items import registry
 from omnibus.util import TickCounter
 from utils import ConfirmDialog, EventTracker
 
-from publisher import publisher
-from omnibus import Sender
-
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
 from items.dynamic_text import DynamicTextItem
@@ -176,21 +173,6 @@ class Dashboard(QWidget):
         duplicate_action = duplicate_item_menu.addAction("Duplicate Item")
         duplicate_action.triggered.connect(self.on_duplicate)
         self.lockableActions.append(duplicate_action)
-
-
-        # Add an action to the menu bar to send a 
-        # command to running instances of parsley
-        # to activate and deactivate
-        self.omnibus_sender = Sender()
-        self.CAN_channel = 'CAN/Commands'
-
-        self.active_parsley = "ALL"
-
-        switch_enabled_parsley_menu = menubar.addMenu("Switch Parsley")
-        switch_enabled_parsley_action = switch_enabled_parsley_menu.addAction("Switch enabled parsley")
-        switch_enabled_parsley_action.triggered.connect(self.on_switch_parsley)
-        self.lockableActions.append(switch_enabled_parsley_action)
-
 
         # Add an action to the menu bar to display a
         # help box
@@ -464,35 +446,6 @@ class Dashboard(QWidget):
         """
         help_box = ConfirmDialog("Omnibus Help", message)
         help_box.exec()
-
-    def on_switch_parsley(self):
-        streams_filtered = [
-                stream for stream in publisher.get_all_streams()
-                if stream.startswith("Parsley health - ")
-                ] + ["ALL", "NONE"]
-        for ind, stream in enumerate(streams_filtered):
-            print(f"{ind}: {stream}")
-
-        try:
-            i = int(input("Select the index of the stream you want to listen to: "))
-            if i < len(streams_filtered):
-                if streams_filtered[i] == "ALL" or streams_filtered[i] == "NONE":
-                    self.omnibus_sender.send(
-                        self.CAN_channel,
-                        {
-                            "id": streams_filtered[i]
-                        }
-                    )
-                else:
-                    self.omnibus_sender.send(
-                        self.CAN_channel,
-                        {
-                            "id": streams_filtered[i][17:] # remove the "Parsley health - "
-                        }
-                    )
-
-        except:
-            pass
 
     # Method to get new data for widgets
     def update(self):
