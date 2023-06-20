@@ -47,13 +47,15 @@ def main():
         parser = parsley.parse_usb_debug
 
     if args.name:
-        RECEIVE_CHANNEL += f"/{args.name}"
+        channel = f"{args.name}/" + RECEIVE_CHANNEL 
+    else:
+        channel = RECEIVE_CHANNEL
 
     sender = None
     receiver = None
     if not args.solo:
         sender = Sender()
-        receiver = Receiver(RECEIVE_CHANNEL)
+        receiver = Receiver(channel)
 
     last_valid_message_time = 0
     last_heartbeat_time = time.time()

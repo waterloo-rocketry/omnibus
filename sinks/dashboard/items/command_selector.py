@@ -14,12 +14,12 @@ sender = Sender()
 
 DESTINATIONS = {
         "Umbillical": "",
-        "Helical": "/helical",
-        "Yagi": "/yagi"
+        "Helical": "helical/",
+        "Yagi": "yagi/"
 }
 
 def send_can_message(message):
-    sender.send(CHANNEL_ROOT + COMMAND_DESTINATION, message)
+    sender.send(COMMAND_DESTINATION + CHANNEL_ROOT, message)
 
 @Register
 class CommandSelector(DashboardItem):
