@@ -12,6 +12,8 @@ SEND_CHANNEL = "CAN/Parsley"
 RECEIVE_CHANNEL = "CAN/Commands"
 HEARTBEAT_CHANNEL = "Parsley/Health"
 
+HEARTBEAT_TIME = 1
+KEEPALIVE_TIME = 10
 
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
@@ -34,8 +36,6 @@ def main():
                         help='Options: telemetry, logger, usb. Parse input in RocketCAN Logger or USB format')
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
-    parser.add_argument('--name', default='',
-                        help="Name for this instance of parsley.")
     args = parser.parse_args()
 
     communicator = SerialCommunicator(args.port, args.baud, 0)
@@ -46,8 +46,8 @@ def main():
     else:
         parser = parsley.parse_usb_debug
 
-    if args.name:
-        channel = f"{args.name}/" + RECEIVE_CHANNEL 
+    if args.format == "telemetry":
+        channel = "telemetry/" + RECEIVE_CHANNEL
     else:
         channel = RECEIVE_CHANNEL
 
@@ -59,15 +59,22 @@ def main():
 
     last_valid_message_time = 0
     last_heartbeat_time = time.time()
+    last_keepalive_time = 0
 
     # invariant - buffer starts with the start of a message
     buffer = b''
     while True:
-        if sender and time.time() - last_heartbeat_time > 1:
-            last_heartbeat_time = time.time()
+        now = time.time()
+
+        if sender and now - last_heartbeat_time > HEARTBEAT_TIME:
+            last_heartbeat_time = now
             healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
             sender.send(HEARTBEAT_CHANNEL, {
-                        "id": args.name, "healthy": healthy})
+                "id": f"{gethostname()}/{args.format}", "healthy": healthy})
+
+        if args.format == "telemetry" and time.time() - last_keepalive_time > KEEPALIVE_TIME:
+            communicator.write(b'.')
+            last_keepalive_time = now
 
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']
@@ -80,8 +87,8 @@ def main():
                 msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
             ).hexdigest().upper()
             print(formatted_msg) # always print the usb debug style can message
-            if not args.solo:
-                communicator.write(formatted_msg.encode())  # send the can message over the specified port
+            communicator.write(formatted_msg.encode())  # send the can message over the specified port
+            last_keepalive_time = now
             time.sleep(0.01)
 
         line = communicator.read()

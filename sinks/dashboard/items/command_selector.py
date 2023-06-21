@@ -14,8 +14,7 @@ sender = Sender()
 
 DESTINATIONS = {
         "Umbillical": "",
-        "Helical": "helical/",
-        "Yagi": "yagi/"
+        "Telemetry": "telemetry/",
 }
 
 def send_can_message(message):
