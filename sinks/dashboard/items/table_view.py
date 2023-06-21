@@ -330,8 +330,8 @@ class TableViewItem(DashboardItem):
         row = self.widget.rowCount()
         col = self.widget.columnCount()
 
-        width = sum(self.widget.columnWidth(i) for i in range(col)) + 45
-        height = sum(self.widget.rowHeight(j) for j in range(row)) + 45
+        width = sum(self.widget.columnWidth(i) for i in range(col)) + 50
+        height = sum(self.widget.rowHeight(j) for j in range(row)) + 50
 
         self.parameters.param('width').setValue(width)
         self.parameters.param('height').setValue(height)
