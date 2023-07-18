@@ -26,6 +26,7 @@ from utils import ConfirmDialog, EventTracker
 from items.plot_dash_item import PlotDashItem
 from items.dynamic_text import DynamicTextItem
 from items.periodic_can_sender import PeriodicCanSender
+from items.generic_periodic_can_sender import GenericPeriodicCanSender
 from items.image_dash_item import ImageDashItem
 from items.text_dash_item import TextDashItem
 from items.can_sender import CanSender
