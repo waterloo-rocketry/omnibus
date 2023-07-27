@@ -67,7 +67,6 @@ app.layout = html.Div(children=[
     Input('graph-update', 'n_intervals'))
 def update_figure(n): 
 
-    #sent = time.time() + 1
     while receiver.poll(1): # Timeout of 1 ms checking for new data
         sent, new = msgpack.unpackb(receiver.recv())
         for i in range (16):
@@ -79,15 +78,7 @@ def update_figure(n):
         for c in range (1,5):
             fig.update_traces(go.Line(x=np.array(t), y=np.array(dt[graph_number])), row=r, col=c)
             graph_number += 1
-
-    #fig.update_layout(transition_duration=500) #Adjusts frame
-
-    #fig.update_layout(
-    #    title="Test Layout",
-    #    xaxis_title="Time",
-    #    yaxis_title="Data"
-    #)
-
+    # can run fig.update_layout here if needed
     return fig
 
 

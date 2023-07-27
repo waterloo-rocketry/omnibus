@@ -104,8 +104,6 @@ def write_csv(infile, outfile, start, stop):
         if timestamp < t:
             t = timestamp
             continue
-        # for i in range(len(data[channels[0]])):
-        #    t += 1/1000
         writer.writerow([f"{timestamp}"] +
                         [f"{avg(data[c]):.6f}" for c in channels])
 
