@@ -352,10 +352,7 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    # try:
                     self.add(item_type(self.on_item_resize, widget["params"]), widget["pos"])
-                    # except Exception as e:
-                    #    print(e)
                     break
 
     # Method to save current layout to file
