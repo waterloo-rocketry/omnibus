@@ -154,7 +154,7 @@ class PlotDashItem(DashboardItem):
         if len(self.series) <= 2:
             # avg values
             title += "    current: "
-            last_values = [self.points[item][-1] for item in self.series]
+            last_values = [self.points[item][-1] if self.points[item] else 0 for item in self.series]
             for v in last_values:
                 title += f"[{v: < 4.4f}]"
             title += "    "
