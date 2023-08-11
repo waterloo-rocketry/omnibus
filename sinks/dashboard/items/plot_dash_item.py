@@ -124,8 +124,19 @@ class PlotDashItem(DashboardItem):
             self.points[stream].pop(0)
 
         # get the min/max point in the whole data set
-        min_point = min(min(v or [0]) for v in self.points.values())
-        max_point = max(max(v or [0]) for v in self.points.values())
+      
+        values = list(self.points.values())
+    
+        if not any(values):
+            min_point = 0
+            max_point = 0
+        else:
+            min_point = min(min(v) for v in values if v)
+            max_point = max(max(v) for v in values if v)
+            
+            
+        
+        
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
