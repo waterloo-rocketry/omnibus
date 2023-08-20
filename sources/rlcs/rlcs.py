@@ -51,6 +51,7 @@ def parse_rlcs(line):
         return None
 
 
+
 def check_data_is_valid(line):
     '''
     Checks whether or not line is valid RLCS data. 
