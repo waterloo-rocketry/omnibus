@@ -13,12 +13,14 @@ COMMAND_DESTINATION = ""
 sender = Sender()
 
 DESTINATIONS = {
-        "Umbillical": "",
-        "Telemetry": "telemetry/",
+    "Umbillical": "",
+    "Telemetry": "telemetry/",
 }
+
 
 def send_can_message(message):
     sender.send(COMMAND_DESTINATION + CHANNEL_ROOT, message)
+
 
 @Register
 class CommandSelector(DashboardItem):
@@ -40,7 +42,6 @@ class CommandSelector(DashboardItem):
             self.group.addButton(b, i)
             self.layout.addWidget(b)
         self.group.buttonClicked.connect(self.clicked)
-
 
     def clicked(self, button):
         global COMMAND_DESTINATION

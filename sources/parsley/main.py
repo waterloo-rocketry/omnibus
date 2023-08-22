@@ -15,6 +15,7 @@ HEARTBEAT_CHANNEL = "Parsley/Health"
 HEARTBEAT_TIME = 1
 KEEPALIVE_TIME = 10
 
+
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
         self.port = port
@@ -86,8 +87,9 @@ def main():
             formatted_msg += ";" + crc8.crc8(
                 msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
             ).hexdigest().upper()
-            print(formatted_msg) # always print the usb debug style can message
-            communicator.write(formatted_msg.encode())  # send the can message over the specified port
+            print(formatted_msg)  # always print the usb debug style can message
+            # send the can message over the specified port
+            communicator.write(formatted_msg.encode())
             last_keepalive_time = now
             time.sleep(0.01)
 
@@ -102,7 +104,7 @@ def main():
         while True:
             try:
                 if args.format == "telemetry":
-                    i = next((i for i,b in enumerate(buffer) if b == 0x02), -1)
+                    i = next((i for i, b in enumerate(buffer) if b == 0x02), -1)
                     if i < 0 or i + 1 >= len(buffer):
                         break
                     msg_len = buffer[i+1] >> 4

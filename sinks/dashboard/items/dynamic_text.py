@@ -18,6 +18,7 @@ EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
 
 class AutocompleteParameterItem(StrParameterItem):
     completer = QCompleter(publisher.get_all_streams())
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         publisher.register_stream_callback(self.update_completions)
@@ -34,7 +35,9 @@ class AutocompleteParameterItem(StrParameterItem):
     def update_completions(streams):
         AutocompleteParameterItem.completer.model().setStringList(streams)
 
+
 publisher.register_stream_callback(AutocompleteParameterItem.update_completions)
+
 
 @Register
 class DynamicTextItem(DashboardItem):

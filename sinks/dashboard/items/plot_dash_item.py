@@ -12,6 +12,7 @@ from .registry import Register
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
 
+
 @Register
 class PlotDashItem(DashboardItem):
     def __init__(self, *args):
@@ -75,7 +76,7 @@ class PlotDashItem(DashboardItem):
         self.widget = pg.PlotWidget(plotItem=self.plot)
         self.layout.addWidget(self.widget, 0, 0)
         self.resize(self.parameters.param('width').value(),
-            self.parameters.param('height').value())
+                    self.parameters.param('height').value())
 
     def on_offset_change(self, _, offset):
         self.offset = offset
@@ -124,19 +125,15 @@ class PlotDashItem(DashboardItem):
             self.points[stream].pop(0)
 
         # get the min/max point in the whole data set
-      
+
         values = list(self.points.values())
-    
+
         if not any(values):
             min_point = 0
             max_point = 0
         else:
             min_point = min(min(v) for v in values if v)
             max_point = max(max(v) for v in values if v)
-            
-            
-        
-        
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
@@ -165,7 +162,8 @@ class PlotDashItem(DashboardItem):
         if len(self.series) <= 2:
             # avg values
             title += "    current: "
-            last_values = [self.points[item][-1] if self.points[item] else 0 for item in self.series]
+            last_values = [self.points[item][-1]
+                           if self.points[item] else 0 for item in self.series]
             for v in last_values:
                 title += f"[{v: < 4.4f}]"
             title += "    "

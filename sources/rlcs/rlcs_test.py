@@ -6,6 +6,5 @@ import random
 import rlcs
 
 
-
 class TestRLCS:
     pass
