@@ -90,8 +90,8 @@ class CanSender(DashboardItem):
         self.timer.timeout.connect(self.pulse_widgets)
         self.pulse_indices = []
 
-
     # displays PyQT input widgets for a given CAN message
+
     def display_can_fields(self, fields: List[pf.Field]):
         self.clear_error_messages()  # remove any preexisiting error lables
         for field in fields:
