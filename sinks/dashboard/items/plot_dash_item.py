@@ -4,6 +4,7 @@ from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 from pyqtgraph.Qt.QtCore import QEvent
 import pyqtgraph as pg
 import numpy as np
+from scipy.interpolate import make_interp_spline
 
 from .dashboard_item import DashboardItem
 import config
@@ -32,10 +33,21 @@ class PlotDashItem(DashboardItem):
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
+        self.parameters.param('average').sigValueChanged.connect(self.on_average_change)
+        self.parameters.param('buffer size').sigValueChanged.connect(self.on_buffer_size_change)
 
         self.series = self.parameters.param('series').value()
         # just a single global offset for now
         self.offset = self.parameters.param('offset').value()
+
+        self.average = self.parameters.param('average').value()
+
+        # adjustable buffer size for different levels of smoothing
+        self.Buffer_size = self.parameters.param('buffer size').value()
+
+        # buffer to calculate local average 
+        self.pointsBuffer = []
+        #self.timesBuffer = []
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -61,7 +73,9 @@ class PlotDashItem(DashboardItem):
                                           limits=publisher.get_all_streams())
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
-        return [series_param, limit_param, offset_param]
+        average_param = {'name': 'average', 'type': 'bool', 'value': False}
+        buffer_size_param = {'name': 'buffer size', 'type': 'float', 'value': 20}
+        return [series_param, limit_param, offset_param, average_param, buffer_size_param]
 
     def on_series_change(self, param, value):
         if len(value) > 6:
@@ -81,6 +95,12 @@ class PlotDashItem(DashboardItem):
     def on_offset_change(self, _, offset):
         self.offset = offset
 
+    def on_average_change(self, _, average):
+        self.average = average
+
+    def on_buffer_size_change(self, _, buffer):
+        self.Buffer_size = buffer
+        
     # Create the plot item
     def create_plot(self):
         plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
@@ -115,10 +135,36 @@ class PlotDashItem(DashboardItem):
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
 
+        # placing points in the buffer for smoothing
+        self.pointsBuffer.append(point)
+        while len(self.pointsBuffer) > self.Buffer_size:
+            self.pointsBuffer.pop(0)
+ 
+        # self.timesBuffer.append(time)
+        # if len(self.timesBuffer) > self.Buffer_size:
+        #     self.timesBuffer.pop(0)
+
         self.last[stream] = time
 
-        self.times[stream].append(time)
-        self.points[stream].append(point)
+        if self.average == True and len(self.pointsBuffer) == self.Buffer_size:
+            #commenting out for now in case needed later
+            """
+            pg.setConfigOptions(antialias = True)
+            xnew = np.linspace(min(self.timesBuffer), max(self.timesBuffer), 100)
+            spl = make_interp_spline(self.timesBuffer, self.pointsBuffer, 3)
+            ynew = spl(xnew)
+            self.curves[stream].setData(xnew, ynew)
+            self.times[stream].append(xnew[50])
+            self.points[stream].append(ynew[50]) 
+            print(self.timesBuffer)
+            print(self.pointsBuffer)
+            """
+            avgY = sum(self.pointsBuffer) / self.Buffer_size
+            self.times[stream].append(time)
+            self.points[stream].append(avgY)
+        else:
+            self.times[stream].append(time)
+            self.points[stream].append(point)
 
         while self.times[stream][0] < time - config.GRAPH_DURATION:
             self.times[stream].pop(0)
