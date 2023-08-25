@@ -137,6 +137,13 @@ class Dashboard(QWidget):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
             new_action.triggered.connect(create_registry_trigger(i))
             self.lockableActions.append(new_action)
+            
+            
+        #adding a button to the dashboard that removes all dashitems on the screen
+        remove_dashitems = menubar.addMenu("Clear")
+        remove_dashitems_action = remove_dashitems.addAction("Remove all the dashitems")
+        remove_dashitems_action.triggered.connect(self.remove_all)
+        self.lockableActions.append(remove_dashitems_action)
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
