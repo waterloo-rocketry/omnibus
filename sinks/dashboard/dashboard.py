@@ -140,7 +140,7 @@ class Dashboard(QWidget):
             
             
         #adding a button to the dashboard that removes all dashitems on the screen
-        remove_dashitems = menubar.addMenu("Remove dashitems")
+        remove_dashitems = menubar.addMenu("Clear")
         remove_dashitems_action = remove_dashitems.addAction("Remove all the dashitems")
         remove_dashitems_action.triggered.connect(self.remove_all)
         self.lockableActions.append(remove_dashitems_action)
