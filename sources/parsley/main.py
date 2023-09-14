@@ -1,3 +1,4 @@
+import os
 import argparse
 import time
 import serial
@@ -15,20 +16,19 @@ HEARTBEAT_CHANNEL = "Parsley/Health"
 HEARTBEAT_TIME = 1
 KEEPALIVE_TIME = 10
 
-import os
 
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
         self.port = port
-        #self.serial = serial.Serial(port, baud, timeout=timeout)
-        pass 
+        # self.serial = serial.Serial(port, baud, timeout=timeout)
+        pass
 
     def read(self):
-        #return self.serial.read(4096)
+        # return self.serial.read(4096)
         return b''
 
     def write(self, msg):
-        #self.serial.write(msg)
+        # self.serial.write(msg)
         pass
 
 
@@ -85,7 +85,7 @@ def main():
             can_msg_data = msg.payload['data']['can_msg']
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
             print(msg)
-            #checking parsley instance
+            # checking parsley instance
             parsley_instance = msg.payload['parsley']
             print(parsley_instance)
             print(f"{gethostname()}/{args.format}/{os.getpid()}")

@@ -40,14 +40,13 @@ from omnibus import Sender
 
 sender = Sender()
 
+
 class QGraphicsViewWrapper(QGraphicsView):
     """
     Creating a QGraphicsView wrapper to intercept wheelEvents for UI enhancements.
     For example, we want to allow horizontal scrolling with a mouse, which we define
     as scrolling with a mouse while pressing the shift key.
     """
-    
-    
 
     def __init__(self, scene):
         super().__init__(scene)  # initialize the super class
@@ -91,7 +90,7 @@ class Dashboard(QWidget):
     def __init__(self, callback):
         # Initialize the super class
         super().__init__()
-        
+
         # Stores the selected parsley instance
         self.parsley_instance = ''
         publisher.subscribe('outgoing_can_messages', self.send_can_message)
@@ -148,17 +147,16 @@ class Dashboard(QWidget):
 
         for i in range(len(registry.get_items())):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
-            new_action.triggered.connect(create_registry_trigger(i)) #5
+            new_action.triggered.connect(create_registry_trigger(i))  # 5
             self.lockableActions.append(new_action)
-            
-            
-        #adding a button to the dashboard that removes all dashitems on the screen
+
+        # adding a button to the dashboard that removes all dashitems on the screen
         remove_dashitems = menubar.addMenu("Clear")
         remove_dashitems_action = remove_dashitems.addAction("Remove all the dashitems")
         remove_dashitems_action.triggered.connect(self.remove_all)
         self.lockableActions.append(remove_dashitems_action)
-        
-        #adding a button to switch instances of parsley
+
+        # adding a button to switch instances of parsley
         can_selector = menubar.addMenu("CAN")
         can_selector_action = can_selector.addAction("Select instance of parsley")
         can_selector_action.triggered.connect(self.on_can_select)
@@ -237,15 +235,13 @@ class Dashboard(QWidget):
         self.key_press_signals.zoom_reset.connect(self.reset_zoom)
         self.key_press_signals.backspace_pressed.connect(self.remove_selected)
         self.installEventFilter(self.key_press_signals)
-        
-        
+
     def send_can_message(self, stream, payload):
         payload['parsley'] = self.parsley_instance
         sender.send("CAN/Commands", payload)
-        
-        
 
     # Method to open the parameter tree to the selected item
+
     def on_selection_changed(self):
         items = self.scene.selectedItems()
         if len(items) != 1:
@@ -359,26 +355,24 @@ class Dashboard(QWidget):
         # because it changes the length and causes
         # a RunTime Error
         self.widgets = {}
-        
-    
-        
+
     def on_can_select(self):
         lst = [e[15:] for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
+
         def update_parsley_instance(x):
             self.parsley_instance = x
-       
+
         app = QtWidgets.QApplication(sys.argv)
-    
+
         MainWindow = QtWidgets.QMainWindow()
         ui = CanSelectorWindow(lst, update_parsley_instance)
         ui.setupUi(MainWindow)
         MainWindow.show()
         if app.exec_():
             MainWindow.close()
-      
-        
 
     # Method to load layout from file
+
     def load(self):
         # First remove all the current widgets
         self.remove_all()

@@ -11,6 +11,7 @@ import parsley.message_types as mt
 
 from publisher import publisher
 
+
 @Register
 class PeriodicCanSender(DashboardItem):
     def __init__(self, *args):
@@ -55,7 +56,7 @@ class PeriodicCanSender(DashboardItem):
                         'actuator': self.actuator,
                         'req_state': 'ACTUATOR_ON' if self.check.isChecked() else 'ACTUATOR_OFF'
                     },
-                    
+
                 }
             }
             publisher.update('outgoing_can_messages', can_message)

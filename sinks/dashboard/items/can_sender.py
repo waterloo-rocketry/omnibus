@@ -22,8 +22,6 @@ from omnibus import Sender
 from publisher import publisher
 
 
-
-
 @Register
 class CanSender(DashboardItem):
     """
@@ -55,8 +53,8 @@ class CanSender(DashboardItem):
         self.VALID_PULSES = 1
         self.VALID_PULSE_PERIOD = 500
         self.WIDGET_TEXT_PADDING = 50  # pixels
-        
-        #sender
+
+        # sender
         self.can_sender = Sender()
 
         # using grid layout since widgets are designed in a grid-like format
@@ -192,7 +190,7 @@ class CanSender(DashboardItem):
             can_message = {
                 'data': {
                     'time': time.time(),
-                    'can_msg': self.parse_can_msg(),  # contains the message data bits  
+                    'can_msg': self.parse_can_msg(),  # contains the message data bits
                 }
             }
             print(can_message)
