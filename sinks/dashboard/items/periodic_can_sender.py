@@ -4,12 +4,12 @@ from pyqtgraph.parametertree.parameterTypes import ListParameter
 
 from .dashboard_item import DashboardItem
 from .registry import Register
-from .command_selector import send_can_message
+
 
 import time
 import parsley.message_types as mt
-from parsers import publisher
 
+from publisher import publisher
 
 @Register
 class PeriodicCanSender(DashboardItem):
@@ -54,10 +54,11 @@ class PeriodicCanSender(DashboardItem):
                         'time': 0,
                         'actuator': self.actuator,
                         'req_state': 'ACTUATOR_ON' if self.check.isChecked() else 'ACTUATOR_OFF'
-                    }
+                    },
+                    
                 }
             }
-            send_can_message(can_message)
+            publisher.update('outgoing_can_messages', can_message)
             self.pulse_count = 2
             self.pulse_timer.start(self.pulse_period)
             self.last_time = self.cur_time
