@@ -19,16 +19,12 @@ KEEPALIVE_TIME = 10
 
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
-        self.port = port
-        # self.serial = serial.Serial(port, baud, timeout=timeout)
         pass
 
     def read(self):
-        # return self.serial.read(4096)
         return b''
 
     def write(self, msg):
-        # self.serial.write(msg)
         pass
 
 
@@ -70,12 +66,14 @@ def main():
     buffer = b''
     while True:
         now = time.time()
+        
+        sender_id = f"{gethostname()}/{args.format}/{os.getpid()}"
 
         if sender and now - last_heartbeat_time > HEARTBEAT_TIME:
             last_heartbeat_time = now
             healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
             sender.send(HEARTBEAT_CHANNEL, {
-                "id": f"{gethostname()}/{args.format}/{os.getpid()}", "healthy": healthy})
+                "id": sender_id, "healthy": healthy})
 
         if args.format == "telemetry" and time.time() - last_keepalive_time > KEEPALIVE_TIME:
             communicator.write(b'.')
@@ -87,9 +85,8 @@ def main():
             print(msg)
             # checking parsley instance
             parsley_instance = msg.payload['parsley']
-            print(parsley_instance)
-            print(f"{gethostname()}/{args.format}/{os.getpid()}")
-            if parsley_instance == f"{gethostname()}/{args.format}/{os.getpid()}":
+            
+            if parsley_instance == sender_id:
                 formatted_msg = f"m{msg_sid:03X}"
                 if msg_data:
                     formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
