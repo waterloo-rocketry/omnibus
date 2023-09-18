@@ -20,15 +20,12 @@ KEEPALIVE_TIME = 10
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
         self.serial = serial.Serial(port, baud, timeout=timeout)
-        #pass
 
     def read(self):
         return self.serial.read(4096)
-        #return b''
 
     def write(self, msg):
-         self.serial.write(msg)
-        #pass
+        self.serial.write(msg)
 
 
 def main():
@@ -41,6 +38,8 @@ def main():
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
+    
+    sender_id = f"{gethostname()}/{args.format}/{args.port}"
 
     communicator = SerialCommunicator(args.port, args.baud, 0)
     if args.format == "telemetry":
@@ -70,7 +69,7 @@ def main():
     while True:
         now = time.time()
         
-        sender_id = f"{gethostname()}/{args.format}/{os.getpid()}"
+        
 
         if sender and now - last_heartbeat_time > HEARTBEAT_TIME:
             last_heartbeat_time = now
