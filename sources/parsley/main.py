@@ -19,13 +19,16 @@ KEEPALIVE_TIME = 10
 
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
-        self.serial = serial.Serial(port, baud, timeout=timeout)
+        #self.serial = serial.Serial(port, baud, timeout=timeout)
+        pass
 
     def read(self):
-        return self.serial.read(4096)
+        #return self.serial.read(4096)
+        return b''
 
     def write(self, msg):
-        self.serial.write(msg)
+        #self.serial.write(msg)
+        pass
 
 
 def main():

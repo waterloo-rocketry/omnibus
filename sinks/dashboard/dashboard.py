@@ -38,6 +38,8 @@ from can_selector import CanSelectorWindow
 
 from omnibus import Sender
 
+import time
+
 sender = Sender()
 
 
@@ -53,6 +55,7 @@ class QGraphicsViewWrapper(QGraphicsView):
         self.zoomed = 1.0
         self.SCROLL_SENSITIVITY = 1/3  # scale down the scrolling sensitivity
         self.ui_window = None
+        
 
     def wheelEvent(self, event):
         """
@@ -90,6 +93,13 @@ class Dashboard(QWidget):
     def __init__(self, callback):
         # Initialize the super class
         super().__init__()
+
+        self.current_parsley_instances = []        
+                
+        self.last_received = time.time()
+        
+        publisher.subscribe("ALL", self.every_second)
+
 
         # Stores the selected parsley instance
         self.parsley_instance = ''
@@ -130,6 +140,7 @@ class Dashboard(QWidget):
         # List to keep track of menu bar action that
         # can be disabled when dashboard is locked
         self.lockableActions = []
+        
 
         # Create a sub menu which will be used
         # to add items to our dash board.
@@ -157,10 +168,11 @@ class Dashboard(QWidget):
         self.lockableActions.append(remove_dashitems_action)
 
         # adding a button to switch instances of parsley
-        can_selector = menubar.addMenu("CAN")
-        can_selector_action = can_selector.addAction("Select instance of parsley")
-        can_selector_action.triggered.connect(self.on_can_select)
-        self.lockableActions.append(can_selector_action)
+        self.can_selector = menubar.addMenu("CAN")
+        
+    
+        
+      
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
@@ -235,6 +247,35 @@ class Dashboard(QWidget):
         self.key_press_signals.zoom_reset.connect(self.reset_zoom)
         self.key_press_signals.backspace_pressed.connect(self.remove_selected)
         self.installEventFilter(self.key_press_signals)
+        
+    def select_instance(self, name):
+        self.parsley_instance = name
+        
+    def every_second(self, payload, stream):
+        def on_select(string):
+            def retval():
+                self.select_instance(string)
+            return retval
+        
+        
+        if (time.time() - self.last_received) > 1:  
+            our_lst = [e[15:] for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
+            if self.current_parsley_instances!= our_lst:
+                self.can_selector.clear()
+                self.last_recieved = time.time()
+                
+                self.current_parsley_instances = our_lst
+                
+                
+                for inst in range(len(our_lst)):
+                    new_action = self.can_selector.addAction(our_lst[inst])
+                    new_action.triggered.connect(on_select(our_lst[inst])) #just using on_can_select as placeholder
+                    self.lockableActions.append(new_action)
+                    if inst == len(our_lst) - 1:
+                        none_action = self.can_selector.addAction("None")
+                        none_action.triggered.connect(self.on_can_select)  #just using on_can_select as placeholder
+                        self.lockableActions.append(none_action)
+                
 
     def send_can_message(self, stream, payload):
         payload['parsley'] = self.parsley_instance
