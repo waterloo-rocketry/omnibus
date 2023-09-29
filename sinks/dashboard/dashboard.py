@@ -34,8 +34,6 @@ from items.plot_3D_position import Position3DDashItem
 from items.table_view import TableViewItem
 from publisher import publisher
 
-from can_selector import CanSelectorWindow
-
 from omnibus import Sender
 
 import time
