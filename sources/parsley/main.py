@@ -19,15 +19,15 @@ KEEPALIVE_TIME = 10
 
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
-        #self.serial = serial.Serial(port, baud, timeout=timeout)
+        # self.serial = serial.Serial(port, baud, timeout=timeout)
         pass
 
     def read(self):
-        #return self.serial.read(4096)
+        # return self.serial.read(4096)
         return b''
 
     def write(self, msg):
-        #self.serial.write(msg)
+        # self.serial.write(msg)
         pass
 
 
@@ -41,7 +41,7 @@ def main():
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
-    
+
     sender_id = f"{gethostname()}/{args.format}/{args.port}"
 
     communicator = SerialCommunicator(args.port, args.baud, 0)
@@ -71,8 +71,6 @@ def main():
     buffer = b''
     while True:
         now = time.time()
-        
-        
 
         if sender and now - last_heartbeat_time > HEARTBEAT_TIME:
             last_heartbeat_time = now
@@ -90,7 +88,7 @@ def main():
             print(msg)
             # checking parsley instance
             parsley_instance = msg.payload['parsley']
-            
+
             if parsley_instance == sender_id:
                 formatted_msg = f"m{msg_sid:03X}"
                 if msg_data:

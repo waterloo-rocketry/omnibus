@@ -54,7 +54,6 @@ class CanSender(DashboardItem):
         self.VALID_PULSE_PERIOD = 500
         self.WIDGET_TEXT_PADDING = 50  # pixels
 
-
         # using grid layout since widgets are designed in a grid-like format
         self.layout_manager = QGridLayout(self)
         self.setLayout(self.layout_manager)
