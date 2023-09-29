@@ -190,7 +190,6 @@ class CanSender(DashboardItem):
                     'can_msg': self.parse_can_msg(),  # contains the message data bits
                 }
             }
-            print(can_message)
             publisher.update('outgoing_can_messages', can_message)
             self.pulse_indices = list(range(self.widget_index))
             self.pulse()
