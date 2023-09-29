@@ -82,7 +82,6 @@ def main():
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
-            print(msg)
             # checking parsley instance
             parsley_instance = msg.payload['parsley']
 
