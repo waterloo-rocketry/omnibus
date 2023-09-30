@@ -61,11 +61,11 @@ class QGraphicsViewWrapper(QGraphicsView):
                 absolute_angle = angle.x() if abs(angle.x()) > abs(angle.y()) else angle.y()
                 numDegrees = absolute_angle * self.SCROLL_SENSITIVITY
                 value = self.horizontalScrollBar().value()
-                self.horizontalScrollBar().setValue(value + numDegrees)
+                self.horizontalScrollBar().setValue(int(value + numDegrees))
             else:
                 numDegrees = angle.y() * self.SCROLL_SENSITIVITY
                 value = self.verticalScrollBar().value()
-                self.verticalScrollBar().setValue(value + numDegrees)
+                self.verticalScrollBar().setValue(int(value + numDegrees))
         else:  # let the default implementation occur for everything else
             super().wheelEvent(event)
 
@@ -368,7 +368,7 @@ class Dashboard(QWidget):
         data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
 
         # Save the coordinates of the center of the view on the scene
-        scene_center = self.view.mapToScene(self.view.width()/2, self.view.height()/2)
+        scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
         data["center"] = [scene_center.x(), scene_center.y()]
 
         for items in self.widgets.values():
