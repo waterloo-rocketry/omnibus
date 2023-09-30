@@ -30,7 +30,8 @@ print("Launching... ", end="")
 # Execute commands as subprocesses
 for command in commands:
     if sys.platform == "win32":
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=CREATE_NEW_PROCESS_GROUP)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
+                                   creationflags=CREATE_NEW_PROCESS_GROUP)
         time.sleep(0.5)
     else:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -57,6 +58,8 @@ except (Finished, KeyboardInterrupt, Exception):
         else:
             process.send_signal(signal.SIGINT)
 
+        # Dump output and error (if exists) from every
+        # process to the shell 
         output, err = process.communicate()
         output, err = output.decode(), err.decode()
         print(f"\nOutput from {process.args}:")
