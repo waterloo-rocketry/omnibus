@@ -17,7 +17,6 @@ from parsley.message_definitions import CAN_MESSAGE
 from .registry import Register
 from .dashboard_item import DashboardItem
 from utils import EventTracker
-from omnibus import Sender
 
 from publisher import publisher
 

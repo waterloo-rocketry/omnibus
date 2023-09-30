@@ -21,7 +21,6 @@ from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
 from utils import ConfirmDialog, EventTracker
-from PyQt5 import QtWidgets
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
 from items.dynamic_text import DynamicTextItem
@@ -93,7 +92,7 @@ class Dashboard(QWidget):
 
         self.current_parsley_instances = []
 
-        self.last_received = time.time()
+        self.last_received = time.monotonic()
 
         publisher.subscribe("ALL", self.every_second)
 
@@ -241,6 +240,9 @@ class Dashboard(QWidget):
 
     def select_instance(self, name):
         self.parsley_instance = name
+        
+    def set_parsley_to_none(self):
+        self.parsley_instance = ''
 
     def every_second(self, payload, stream):
         def on_select(string):
@@ -253,19 +255,17 @@ class Dashboard(QWidget):
                        for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
             if self.current_parsley_instances != our_lst:
                 self.can_selector.clear()
-                self.last_recieved = time.time()
+                self.last_received = time.monotonic()
 
                 self.current_parsley_instances = our_lst
 
                 for inst in range(len(our_lst)):
                     new_action = self.can_selector.addAction(our_lst[inst])
-                    # just using on_can_select as placeholder
                     new_action.triggered.connect(on_select(our_lst[inst]))
                     self.lockableActions.append(new_action)
                     if inst == len(our_lst) - 1:
                         none_action = self.can_selector.addAction("None")
-                        # just using on_can_select as placeholder
-                        none_action.triggered.connect(self.on_can_select)
+                        none_action.triggered.connect(self.set_parsley_to_none)
                         self.lockableActions.append(none_action)
 
     def send_can_message(self, stream, payload):
@@ -388,20 +388,6 @@ class Dashboard(QWidget):
         # a RunTime Error
         self.widgets = {}
 
-    def on_can_select(self):
-        lst = [e[15:] for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
-
-        def update_parsley_instance(x):
-            self.parsley_instance = x
-
-        app = QtWidgets.QApplication(sys.argv)
-
-        MainWindow = QtWidgets.QMainWindow()
-        ui = CanSelectorWindow(lst, update_parsley_instance)
-        ui.setupUi(MainWindow)
-        MainWindow.show()
-        if app.exec_():
-            MainWindow.close()
 
     # Method to load layout from file
 
