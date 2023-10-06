@@ -61,7 +61,7 @@ class DynamicTextItem(DashboardItem):
         self.expired_timeout = QTimer()
         self.expired_timeout.setSingleShot(True)
         self.expired_timeout.timeout.connect(self.expire)
-        self.expired_timeout.start(EXPIRED_TIME * 1000)
+        self.expired_timeout.start(int(EXPIRED_TIME * 1000))
 
         series = self.parameters.param('series').value()
         self.offset = self.parameters.param('offset').value()
@@ -118,7 +118,7 @@ class DynamicTextItem(DashboardItem):
             self.setStyleSheet('')
 
         self.expired_timeout.stop()
-        self.expired_timeout.start(EXPIRED_TIME * 1000)
+        self.expired_timeout.start(int(EXPIRED_TIME * 1000))
         self.resize(10, 10)  # trigger size update
 
     def condition_true(self, condition: GroupParameter):
