@@ -343,7 +343,7 @@ class Dashboard(QWidget):
             view_xpos = viewport.width()/2
             view_ypos = viewport.height()/2
 
-            mapped = self.view.mapToScene(view_xpos, view_ypos)
+            mapped = self.view.mapToScene(int(view_xpos), int(view_ypos))
 
             # Center the widget in the view. Qt sets position
             # based on the upper left corner, so subtract
