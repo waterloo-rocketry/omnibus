@@ -1,4 +1,3 @@
-import os
 import argparse
 import time
 import serial
@@ -28,7 +27,7 @@ class SerialCommunicator:
     def write(self, msg):
         self.serial.write(msg)
 
-
+        
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('port', help='the serial port to read from')

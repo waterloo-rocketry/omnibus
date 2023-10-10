@@ -92,8 +92,6 @@ class Dashboard(QWidget):
 
         self.current_parsley_instances = []
 
-        self.last_received = time.monotonic()
-
         publisher.subscribe("ALL", self.every_second)
 
         # Stores the selected parsley instance
@@ -249,24 +247,25 @@ class Dashboard(QWidget):
             def retval():
                 self.select_instance(string)
             return retval
+   
+        
+        our_lst = [e[15:]
+                    for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
 
-        if (time.time() - self.last_received) > 1:
-            our_lst = [e[15:]
-                       for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
-            if self.current_parsley_instances != our_lst:
-                self.can_selector.clear()
-                self.last_received = time.monotonic()
+        if self.current_parsley_instances != our_lst:
+            self.can_selector.clear()
+        
 
-                self.current_parsley_instances = our_lst
+            self.current_parsley_instances = our_lst
 
-                for inst in range(len(our_lst)):
-                    new_action = self.can_selector.addAction(our_lst[inst])
-                    new_action.triggered.connect(on_select(our_lst[inst]))
-                    self.lockableActions.append(new_action)
-                    if inst == len(our_lst) - 1:
-                        none_action = self.can_selector.addAction("None")
-                        none_action.triggered.connect(self.set_parsley_to_none)
-                        self.lockableActions.append(none_action)
+            for inst in range(len(our_lst)):
+                new_action = self.can_selector.addAction(our_lst[inst])
+                new_action.triggered.connect(on_select(our_lst[inst]))
+                self.lockableActions.append(new_action)
+                if inst == len(our_lst) - 1:
+                    none_action = self.can_selector.addAction("None")
+                    none_action.triggered.connect(self.set_parsley_to_none)
+                    self.lockableActions.append(none_action)
 
     def send_can_message(self, stream, payload):
         payload['parsley'] = self.parsley_instance
