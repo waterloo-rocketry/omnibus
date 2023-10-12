@@ -35,8 +35,6 @@ from publisher import publisher
 
 from omnibus import Sender
 
-import time
-
 sender = Sender()
 
 
@@ -51,7 +49,6 @@ class QGraphicsViewWrapper(QGraphicsView):
         super().__init__(scene)  # initialize the super class
         self.zoomed = 1.0
         self.SCROLL_SENSITIVITY = 1/3  # scale down the scrolling sensitivity
-        self.ui_window = None
 
     def wheelEvent(self, event):
         """
@@ -150,7 +147,7 @@ class Dashboard(QWidget):
 
         for i in range(len(registry.get_items())):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
-            new_action.triggered.connect(create_registry_trigger(i))  # 5
+            new_action.triggered.connect(create_registry_trigger(i))
             self.lockableActions.append(new_action)
 
         # adding a button to the dashboard that removes all dashitems on the screen
