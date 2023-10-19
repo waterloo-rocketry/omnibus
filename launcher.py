@@ -68,3 +68,9 @@ except (Finished, KeyboardInterrupt, Exception):
         if err and "KeyboardInterrupt" not in err:
             print(f"\nError from {process.args}:")
             print(err)
+finally:
+    for process in processes:
+        if sys.platform == "win32":
+            os.kill(process.pid, signal.CTRL_C_EVENT)
+        else:
+            process.send_signal(signal.SIGINT)
