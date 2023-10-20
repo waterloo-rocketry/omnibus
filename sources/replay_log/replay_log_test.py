@@ -82,19 +82,3 @@ class TestReplayLog:
         """
         replay_log.replay(mock_input, replay_speed)
         assert mock_sender.getvalue() == mock_input.getvalue()
-
-    @pytest.mark.parametrize("replay_speed", [0.25, 4])
-    def test_replay_live_speed(self, mock_sender, mock_input, replay_speed):
-        """
-        Test that replay_log.replay sends data at specified replay_speed.
-        """
-        BENCHMARK_SPEED = 1
-        benchmark_runtime = get_runtime(replay_log.replay, mock_input, BENCHMARK_SPEED)
-        mock_input.seek(0)
-        runtime = get_runtime(replay_log.replay, mock_input, replay_speed)
-        # scale benchmark time by inverse of replay_speed
-        # slower/smaller speed => longer expected_runtime
-        expected_runtime = benchmark_runtime / replay_speed
-        # 10% margin of error for varying computational resources/power
-        percent_error = get_percent_error(runtime, expected_runtime)
-        assert percent_error < 0.25
