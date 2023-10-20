@@ -19,9 +19,14 @@ class TestParser:
 
     def test_can_parser(self):
         can_message = {
-            "data": {
-                "time": 4
+            'board_id': 'CHARGING',
+            'msg_type': 'SENSOR_ANALOG',
+            'data': {
+                'time': 37.595,
+                'sensor_id': 'SENSOR_GROUND_VOLT',
+                'value': 13104
             }
         }
 
-        assert can_parser(can_message) == [("CAN", 4, {"data": {"time": 4}})]
+        assert can_parser(can_message) == [
+            ("CHARGING/SENSOR_ANALOG/SENSOR_GROUND_VOLT/value", 37.595, 13104)]

@@ -14,9 +14,9 @@ from pyqtgraph.Qt.QtWidgets import (
 
 import parsley.fields as pf
 from parsley.message_definitions import CAN_MESSAGE
-from omnibus import Sender
 from .registry import Register
 from .dashboard_item import DashboardItem
+from .command_selector import send_can_message
 from utils import EventTracker
 
 
@@ -43,8 +43,8 @@ class CanSender(DashboardItem):
         => if every field successfully encodes its data, long pulse all of the fields once and emit the message to CAN/commands
     """
 
-    def __init__(self, params=None):
-        super().__init__(params)
+    def __init__(self, *args):
+        super().__init__(*args)
         # constants
         self.INVALID_PULSES = 3  # number of pulses to display when a field fails to encode data
         self.INVALID_PULSE_PERIOD = 100  # ms
@@ -90,11 +90,8 @@ class CanSender(DashboardItem):
         self.timer.timeout.connect(self.pulse_widgets)
         self.pulse_indices = []
 
-        # when a button is pressed and everything is valid, send the message out
-        self.omnibus_sender = Sender()
-        self.channel = 'CAN/Commands'
-
     # displays PyQT input widgets for a given CAN message
+
     def display_can_fields(self, fields: List[pf.Field]):
         self.clear_error_messages()  # remove any preexisiting error lables
         for field in fields:
@@ -191,7 +188,7 @@ class CanSender(DashboardItem):
                     'can_msg': self.parse_can_msg()  # contains the message data bits
                 }
             }
-            self.omnibus_sender.send(self.channel, can_message)
+            send_can_message(can_message)
             self.pulse_indices = list(range(self.widget_index))
             self.pulse()
         except ValueError:

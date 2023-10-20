@@ -1,8 +1,19 @@
 import argparse
+import time
 import serial
+import crc8
+from socket import gethostname
+import traceback
 
 from omnibus import Sender, Receiver
 import parsley
+
+SEND_CHANNEL = "CAN/Parsley"
+RECEIVE_CHANNEL = "CAN/Commands"
+HEARTBEAT_CHANNEL = "Parsley/Health"
+
+HEARTBEAT_TIME = 1
+KEEPALIVE_TIME = 10
 
 
 class SerialCommunicator:
@@ -11,7 +22,7 @@ class SerialCommunicator:
         self.serial = serial.Serial(port, baud, timeout=timeout)
 
     def read(self):
-        return self.serial.readline().strip(b'\r\n').decode('utf-8')
+        return self.serial.read(4096)
 
     def write(self, msg):
         self.serial.write(msg)
@@ -36,37 +47,97 @@ def main():
     else:
         parser = parsley.parse_usb_debug
 
+    if args.format == "telemetry":
+        channel = "telemetry/" + RECEIVE_CHANNEL
+    else:
+        channel = RECEIVE_CHANNEL
+
+    sender = None
+    receiver = None
     if not args.solo:
         sender = Sender()
-        CHANNEL = "CAN/Parsley"
+        receiver = Receiver(channel)
 
-    receiver = Receiver("CAN/Commands")
+    last_valid_message_time = 0
+    last_heartbeat_time = time.time()
+    last_keepalive_time = 0
 
+    # invariant - buffer starts with the start of a message
+    buffer = b''
     while True:
-        while msg := receiver.recv_message(0):  # non-blocking
+        now = time.time()
+
+        if sender and now - last_heartbeat_time > HEARTBEAT_TIME:
+            last_heartbeat_time = now
+            healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
+            sender.send(HEARTBEAT_CHANNEL, {
+                "id": f"{gethostname()}/{args.format}", "healthy": healthy})
+
+        if args.format == "telemetry" and time.time() - last_keepalive_time > KEEPALIVE_TIME:
+            communicator.write(b'.')
+            last_keepalive_time = now
+
+        if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
 
-            formatted_msg_sid = f"{msg_sid:03X}"
-            formatted_msg_data = ','.join([f"{byte:02X}" for byte in msg_data])
-            formatted_string = str.encode(f"m{formatted_msg_sid},{formatted_msg_data};")
-            print(formatted_string)  # always print the usb debug style can message
-            if not args.solo:
-                communicator.write(formatted_string)  # send the can message over the specified port
+            formatted_msg = f"m{msg_sid:03X}"
+            if msg_data:
+                formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
+            formatted_msg += ";" + crc8.crc8(
+                msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
+            ).hexdigest().upper()
+            print(formatted_msg)  # always print the usb debug style can message
+            # send the can message over the specified port
+            communicator.write(formatted_msg.encode())
+            last_keepalive_time = now
+            time.sleep(0.01)
 
         line = communicator.read()
+
         if not line:
+            time.sleep(0.01)
             continue
 
-        try:
-            msg_sid, msg_data = parser(line)
-            parsed_data = parsley.parse(msg_sid, msg_data)
+        buffer += line
 
-            print(parsley.format_line(parsed_data))
-            if not args.solo:
-                sender.send(CHANNEL, parsed_data)  # send the CAN message over the channel
-        except Exception:
-            print(line)
+        while True:
+            try:
+                if args.format == "telemetry":
+                    i = next((i for i, b in enumerate(buffer) if b == 0x02), -1)
+                    if i < 0 or i + 1 >= len(buffer):
+                        break
+                    msg_len = buffer[i+1] >> 4
+                    if i + msg_len > len(buffer):
+                        break
+                    msg = buffer[i:i+msg_len]
+                    try:
+                        msg_sid, msg_data = parser(msg)
+                        buffer = buffer[i+msg_len:]
+                    except ValueError as e:
+                        buffer = buffer[i+1:]
+                        raise e
+                else:
+                    text_buff = buffer.decode('utf-8', errors='backslashreplace')
+                    i = text_buff.find('\n')
+                    if i < 0:
+                        break
+                    msg = text_buff[:i]
+                    buffer = buffer[i+1:]
+                    msg_sid, msg_data = parser(msg)
+
+                parsed_data = parsley.parse(msg_sid, msg_data)
+                last_valid_message_time = time.time()
+                print(parsley.format_line(parsed_data))
+
+                if sender:
+                    sender.send(SEND_CHANNEL, parsed_data)  # send the CAN message over the channel
+
+            except ValueError as e:
+                print(e)
+                print(msg.hex() if args.format == "telemetry" else msg)
+            except Exception:
+                print(traceback.format_exc())
 
 
 if __name__ == '__main__':

@@ -7,14 +7,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import msgpack
 
-# These are the series which are initially plotted in order to determine the range of full data to export
-TIME_IDENTIFICATION_SENSORS = [
-    "PNew3 (PT-3) - Fuel Tank",
-    "PNew4 (PT-2) - Ox Tanks",
-    "PNew (PT-5) - Ox Injector",
-    "PNew2 - Fuel Injector"
-]
-
 
 def avg(data):
     return sum(data) / len(data)
@@ -22,15 +14,43 @@ def avg(data):
 
 # iterator to yield the data from file-link infile
 def get_data(infile):
+    can_last = {"ox tank": [0], "pneumatics for real": [0],
+                "vent temp for real": [0], "vv": [0], "ij": [0], "ij hall": [0]}
+    can_last.update({b: [0] for b in ["CHARGING", "ARMING", "ACTUATOR_INJ",
+                    "ACTUATOR_VENT", "SENSOR_INJ", "SENSOR_VENT", "GPS", "LOGGER", "TELEMETRY"]})
     start = None
     for data in msgpack.Unpacker(infile):
         # check if this was a file from the NI source (raw data) or the global log (has msgpack channels too)
         if isinstance(data, list):
             # global log format is a 3-tuple of (channel, timestamp, data)
             # ignore all non-DAQ data
-            if not data[0].startswith("DAQ"):
+            if data[0].startswith("DAQ"):
+                data = data[2]
+                data["data"].update(can_last)
+            elif data[0].startswith("CAN/Parsley"):
+                data = data[2]
+                if data["msg_type"] == "SENSOR_ANALOG":
+                    if data["data"]["sensor_id"] == "SENSOR_PRESSURE_OX":
+                        can_last["ox tank"] = [data["data"]["value"]]
+                    if data["data"]["sensor_id"] == "SENSOR_PRESSURE_PNEUMATICS":
+                        can_last["pneumatics for real"] = [data["data"]["value"]]
+                    if data["data"]["sensor_id"] == "SENSOR_VENT_TEMP":
+                        can_last["vent temp for real"] = [data["data"]["value"]]
+                elif data["msg_type"] == "ACTUATOR_STATUS":
+                    data = data["data"]
+                    if data["actuator"] == "ACTUATOR_VENT_VALVE":
+                        can_last["vv"] = [0 if data["req_state"] == "ACTUATOR_OFF" else 100]
+                    if data["actuator"] == "ACTUATOR_INJECTOR_VALVE":
+                        can_last["ij"] = [0 if data["req_state"] == "ACTUATOR_OFF" else 100]
+                        can_last["ij hall"] = [0 if data["cur_state"] == "ACTUATOR_OFF" else 100]
+                elif data["msg_type"] == "GENERAL_BOARD_STATUS":
+                    can_last[data["board_id"]] = [data["data"]["time"]]
                 continue
-            data = data[2]
+            elif data[0].startswith("CAN"):
+                data = data[2]["data"]["can_msg"]
+                continue
+            else:
+                continue
         # the data format is the same from here on out
         data, timestamp = data["data"], data["timestamp"]
         if start is None:
@@ -45,16 +65,25 @@ def get_data(infile):
 def get_range(infile):
     datapoints = []
     times = []
+    series = []
     last = 0
     for data, timestamp in get_data(infile):
+        if not series:
+            print("Please select from the following series:")
+            keys = list(data.keys())
+            for i, k in enumerate(keys):
+                print(f"{i+1}: {k}")
+            selection = input("Enter comma-separated indices to view: ")
+            series = [keys[int(i) - 1] for i in selection.split(",")]
         # plot one data point every 0.1 seconds
         if timestamp - last < 0.1:
             continue
         last = timestamp
         times.append(timestamp)
-        datapoints.append([avg(data[k]) for k in TIME_IDENTIFICATION_SENSORS])
-    for k in range(len(TIME_IDENTIFICATION_SENSORS)):
-        plt.plot(times, [d[k] for d in datapoints])
+        datapoints.append([avg(data[k]) for k in series])
+    for k in range(len(series)):
+        plt.plot(times, [d[k] for d in datapoints], label=series[k])
+    plt.legend(loc='upper right')
     plt.show()
     start = int(input("Enter timestamp (seconds) to start export: "))
     stop = int(input("Enter timestamp (seconds) to stop export: "))
@@ -65,13 +94,17 @@ def get_range(infile):
 def write_csv(infile, outfile, start, stop):
     writer = csv.writer(outfile)
     channels = None  # columns of CSV file
+    t = 0
     for data, timestamp in get_data(infile):
         if timestamp < start or timestamp > stop:
             continue
         if not channels:  # first time through, set the order of the channels
             channels = sorted(data.keys())
             writer.writerow(["Timestamp"] + channels)  # write header
-        writer.writerow([f"{timestamp - start:.6f}"] +
+        if timestamp < t:
+            t = timestamp
+            continue
+        writer.writerow([f"{timestamp}"] +
                         [f"{avg(data[c]):.6f}" for c in channels])
 
 

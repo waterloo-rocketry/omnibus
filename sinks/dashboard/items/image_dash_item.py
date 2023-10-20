@@ -9,9 +9,9 @@ from .registry import Register
 
 @Register
 class ImageDashItem(DashboardItem):
-    def __init__(self, params=None):
+    def __init__(self, *args):
         # Call this in **every** dash item constructor
-        super().__init__(params)
+        super().__init__(*args)
 
         # Specify the layout
         self.layout = QHBoxLayout()
@@ -35,20 +35,19 @@ class ImageDashItem(DashboardItem):
         self.offset = 40
 
         if self.image_path:
-            width = self.parameters.child("width").value(
-            ) - self.offset  # subtracting here to account
-            height = self.parameters.child("height").value() - self.offset  # for the new "border"
-            self.widget.setPixmap(QPixmap(self.image_path).scaled(width, height))
+            self.on_file_change()
 
         self.parameters.sigTreeStateChanged.connect(self.on_file_change)
 
         self.layout.addWidget(self.frame)
 
     def add_parameters(self):
-        file_param = FileParameter(name="file", value="")
+        # list of supported file formats: https://doc.qt.io/qtforpython-5/PySide2/QtGui/QImageReader.html#PySide2.QtGui.PySide2.QtGui.QImageReader.supportedImageFormats
+        file_param = FileParameter(name="file", value="", nameFilter="*.jpg;*.png;*.svg")
         return [file_param]
 
     def on_file_change(self):
+        # subtracting to account for the new 'border'
         width = self.parameters.child("width").value() - self.offset
         height = self.parameters.child("height").value() - self.offset
         self.image_path = self.parameters.child("file").value()

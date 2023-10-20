@@ -15,7 +15,6 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsItem,
     QGraphicsRectItem,
     QFileDialog,
-    QHeaderView,
     QSplitter
 )
 from pyqtgraph.parametertree import ParameterTree
@@ -25,12 +24,14 @@ from utils import ConfirmDialog, EventTracker
 
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
-from items.plot_3D_orientation import Orientation3DDashItem
-from items.plot_3D_position import Position3DDashItem
-from items.can_message_table import CanMsgTableDashItem
+from items.dynamic_text import DynamicTextItem
+from items.periodic_can_sender import PeriodicCanSender
 from items.image_dash_item import ImageDashItem
 from items.text_dash_item import TextDashItem
 from items.can_sender import CanSender
+from items.plot_3D_orientation import Orientation3DDashItem
+from items.plot_3D_position import Position3DDashItem
+from items.table_view import TableViewItem
 
 
 class QGraphicsViewWrapper(QGraphicsView):
@@ -60,11 +61,11 @@ class QGraphicsViewWrapper(QGraphicsView):
                 absolute_angle = angle.x() if abs(angle.x()) > abs(angle.y()) else angle.y()
                 numDegrees = absolute_angle * self.SCROLL_SENSITIVITY
                 value = self.horizontalScrollBar().value()
-                self.horizontalScrollBar().setValue(value + numDegrees)
+                self.horizontalScrollBar().setValue(int(value + numDegrees))
             else:
                 numDegrees = angle.y() * self.SCROLL_SENSITIVITY
                 value = self.verticalScrollBar().value()
-                self.verticalScrollBar().setValue(value + numDegrees)
+                self.verticalScrollBar().setValue(int(value + numDegrees))
         else:  # let the default implementation occur for everything else
             super().wheelEvent(event)
 
@@ -129,13 +130,19 @@ class Dashboard(QWidget):
         def create_registry_trigger(i):
             def return_fun():
                 if not self.locked:
-                    self.add(registry.get_items()[i]())
+                    self.add(registry.get_items()[i](self.on_item_resize))
             return return_fun
 
         for i in range(len(registry.get_items())):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
             new_action.triggered.connect(create_registry_trigger(i))
             self.lockableActions.append(new_action)
+
+        # adding a button to the dashboard that removes all dashitems on the screen
+        remove_dashitems = menubar.addMenu("Clear")
+        remove_dashitems_action = remove_dashitems.addAction("Remove all the dashitems")
+        remove_dashitems_action.triggered.connect(self.remove_all)
+        self.lockableActions.append(remove_dashitems_action)
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
@@ -166,6 +173,13 @@ class Dashboard(QWidget):
         unlock_action = add_lock_menu.addAction("Unlock Dashboard")
         unlock_action.triggered.connect(self.unlock)
 
+        # An action to the to the menu bar to duplicate
+        # the selected item
+        duplicate_item_menu = menubar.addMenu("Duplicate")
+        duplicate_action = duplicate_item_menu.addAction("Duplicate Item")
+        duplicate_action.triggered.connect(self.on_duplicate)
+        self.lockableActions.append(duplicate_action)
+
         # Add an action to the menu bar to display a
         # help box
         add_help_menu = menubar.addMenu("Help")
@@ -185,14 +199,9 @@ class Dashboard(QWidget):
         self.view.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
         self.splitter.addWidget(self.view)
-
-        self.parameter_tree = ParameterTree(showHeader=True)
-        header = self.parameter_tree.header()
-        # maybe this is bad for small window sizes, but it's a decent start
-        header.setMinimumSectionSize(100)
-        header.setSectionResizeMode(QHeaderView.Interactive)
-        self.splitter.addWidget(self.parameter_tree)
-        self.parameter_tree.hide()
+        self.parameter_tree_placeholder = ParameterTree()
+        self.parameter_tree_placeholder.hide()
+        self.splitter.addWidget(self.parameter_tree_placeholder)
 
         # This makes both the scene and the parameter tree
         # non collapsible. This is important because otherwise
@@ -213,29 +222,50 @@ class Dashboard(QWidget):
     def on_selection_changed(self):
         items = self.scene.selectedItems()
         if len(items) != 1:
-            self.parameter_tree.hide()
+            self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
+            self.parameter_tree_placeholder.hide()
             return
         # Show the tree
         item = self.widgets[items[0]][1]
-        # add listener for changes. only handles dimensions
-        # others need to be handled inside the item itself
-        item.get_parameters().sigTreeStateChanged.connect(self.on_check_state_changed)
-        self.parameter_tree.setParameters(item.get_parameters(), showTop=False)
-        self.parameter_tree.show()
+        if self.splitter.widget(1) is not item.parameter_tree:
+            self.splitter.replaceWidget(1, item.parameter_tree)
+        item.parameter_tree.show()
+
+        # subtract 100 for some padding, these sizes are relative
+        total_width = self.splitter.size().width() - 100
+        tree_width = item.parameter_tree.sizeHint().width()
+        self.splitter.setSizes([total_width - tree_width, tree_width])
+
+    def on_duplicate(self):
+        selected_items = self.scene.selectedItems()
+
+        if len(selected_items) != 1:
+            pass  # maybe do something better
+
+        rect = selected_items[0]
+
+        for candidate, (proxy, item) in self.widgets.items():
+            if rect is candidate:
+                scenepos = proxy.scenePos()
+                viewpos = self.view.mapFromScene(scenepos)
+
+                params = item.get_serialized_parameters()
+
+                self.add(type(item)(self.on_item_resize, params),
+                         (viewpos.x() + 20, viewpos.y() + 20))
+
+                break
 
     # method to handle dimension changes in parameter tree
-    def on_check_state_changed(self, param, changes):
-        items = self.scene.selectedItems()
-        if len(items) != 1:
-            self.parameter_tree.hide()
-            return
 
-        proxy = self.widgets[items[0]][0]
-        item = self.widgets[items[0]][1]
+    def on_item_resize(self, item):
         width = item.parameters.param('width').value() + 1
         height = item.parameters.param('height').value() + 1
-        pos = proxy.pos()
-        proxy.parentItem().setRect(pos.x(), pos.y(), width, height)
+        for proxy, candidate in self.widgets.values():
+            if candidate is item:
+                pos = proxy.pos()
+                proxy.parentItem().setRect(pos.x(), pos.y(), width, height)
+                return
 
     # Method to add widgets
     def add(self, dashitem, pos=None):
@@ -258,7 +288,7 @@ class Dashboard(QWidget):
             view_xpos = viewport.width()/2
             view_ypos = viewport.height()/2
 
-            mapped = self.view.mapToScene(view_xpos, view_ypos)
+            mapped = self.view.mapToScene(int(view_xpos), int(view_ypos))
 
             # Center the widget in the view. Qt sets position
             # based on the upper left corner, so subtract
@@ -328,7 +358,7 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    self.add(item_type(widget["params"]), widget["pos"])
+                    self.add(item_type(self.on_item_resize, widget["params"]), widget["pos"])
                     break
 
     # Method to save current layout to file
@@ -337,7 +367,7 @@ class Dashboard(QWidget):
         data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
 
         # Save the coordinates of the center of the view on the scene
-        scene_center = self.view.mapToScene(self.view.width()/2, self.view.height()/2)
+        scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
         data["center"] = [scene_center.x(), scene_center.y()]
 
         for items in self.widgets.values():
@@ -402,7 +432,6 @@ class Dashboard(QWidget):
 
     # Method to handle exit
     def closeEvent(self, event):
-        self.parameter_tree.hide()
         self.remove_all()
 
     # Method to display help box

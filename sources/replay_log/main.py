@@ -6,7 +6,7 @@ import sys
 
 import replay_log
 
-GLOBAL_LOGS = Path("../../sinks/globallog/")
+GLOBAL_LOGS = Path("../..")
 
 
 def parse_arguments():

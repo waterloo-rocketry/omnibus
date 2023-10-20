@@ -31,3 +31,6 @@ htmlcov
 
 *.json
 *.log
+*.csv
+*.png
+*.jpg

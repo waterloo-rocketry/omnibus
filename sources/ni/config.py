@@ -56,17 +56,9 @@ def setup():
     Sensor("PT-4 Perseus", ports[3], 0.2, Connection.DIFFERENTIAL,
            LinearCalibration(1500 / (0.075 / 10 * 12), 0, "psi"))
 
-    # Honeywell S-type, 1000 N (divide by 9.81 to kg) an 2.002 mv/V at 12V
-    Sensor("Honeywell S-type - Ox Tank", ports[1], 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration((1000/9.81)/(2.002/1000*12), -0.7, "kg"))
-
-    # Omega S-type (LC-103B), 200 lb (divide by 2.2 to kg), 3 mV/V at 12V
-    # Sensor("Omega S-Type - Fuel Tank", ports[2], 0.2, Connection.DIFFERENTIAL,
-    #        LinearCalibration((200/2.205) / (3/1000*12), -1.9, "kg"))
-
-    # Omega LC501 2000 lbf (divide by 2.2 to kg), 3 mv/v, 12v excitation
-    # Sensor("Thrust", ports[3], 0.2, Connection.DIFFERENTIAL,
-    #        LinearCalibration((2000/2.205) / (3/1000*12), -7.4, "kg"))
+    # Omega LCEC-250lb smol tower load cell (divide by 2.2 to kg), 3 mv/v, 12v excitation
+    Sensor("Rocket Mass", ports[1], 0.2, Connection.DIFFERENTIAL,
+           LinearCalibration((250 / 2.205) / (3/1000*12), 0, "kg"))
 
     # CAS BSA-5KLB 5000 lbf (divide by 2.2 to kg), 3 mv/v, 12v excitation
     Sensor("Thrust", ports[2], 0.2, Connection.DIFFERENTIAL,
@@ -148,3 +140,15 @@ def setup():
     #        LinearCalibration(35.3, -34.2, "psi"))  # Calibrated 13/7/2021
     # Sensor("T8 - Tank Heating", "ai23", 10, Connection.SINGLE,
     #        ThermistorCalibration(10000, 3434, 0.099524))  # Calibration pulled from LabVIEW
+
+    # Honeywell S-type, 1000 N (divide by 9.81 to kg) an 2.002 mv/V at 12V
+    # Sensor("Honeywell S-type - Ox Tank", ports[1], 0.2, Connection.DIFFERENTIAL,
+    #       LinearCalibration((1000/9.81)/(2.002/1000*12), -0.7, "kg"))
+
+    # Omega S-type (LC-103B), 200 lb (divide by 2.2 to kg), 3 mV/V at 12V
+    # Sensor("Omega S-Type - Fuel Tank", ports[2], 0.2, Connection.DIFFERENTIAL,
+    #        LinearCalibration((200/2.205) / (3/1000*12), -1.9, "kg"))
+
+    # Omega LC501 2000 lbf (divide by 2.2 to kg), 3 mv/v, 12v excitation
+    # Sensor("Thrust", ports[3], 0.2, Connection.DIFFERENTIAL,
+    #        LinearCalibration((2000/2.205) / (3/1000*12), -7.4, "kg"))

@@ -4,6 +4,7 @@ import serial
 from omnibus import Sender
 
 import rlcs
+import commander
 
 
 def reader(port):
@@ -12,7 +13,7 @@ def reader(port):
     s = serial.Serial(port, 115200)  # listen on the RLCS port
 
     def _reader():
-        return s.readline().strip(b'\r\n').decode('utf-8')
+        return s.readline().strip(b'\r\n')
     return _reader
 
 
@@ -27,23 +28,25 @@ def main():
 
     if not args.solo:
         sender = Sender()
-        CHANNEL = "CAN/RLCS"
+        CHANNEL = "RLCS"
 
     while True:
         line = readline()
 
         if not line:
-            break
+            continue
 
         parsed_data = rlcs.parse_rlcs(line)
 
         if not parsed_data:
             continue
 
+        commander.command(parsed_data)
+
         if not args.solo:  # if connect to omnibus
             sender.send(CHANNEL, parsed_data)
 
-        print(rlcs.fmt_line(parsed_data))
+        rlcs.print_data(parsed_data)
 
 
 if __name__ == '__main__':

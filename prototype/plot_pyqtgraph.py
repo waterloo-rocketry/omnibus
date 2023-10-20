@@ -22,7 +22,7 @@ win.setWindowTitle('pyqtgraph: Random Data Example')
 
 pg.setConfigOptions(antialias=True)
 
-plots =  [] #[win.addPlot(title=("Updating plot" + i))
+plots =  []
 for i in range(0,4):
 	for j in range(4*i,4*i + 4):
 		plots.append(win.addPlot(title=("Updating plot" + str(j))))
