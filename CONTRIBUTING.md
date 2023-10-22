@@ -1,31 +1,39 @@
-# Contributing
-Welcome to Omnibus! To get started, follow these steps:
+# Contributing to Omnibus
 
-1. Clone this repo.
-    * If you have git configured with SSH, run `git clone git@github.com:waterloo-rocketry/omnibus.git`
-    * If you don't have git configured with SSH (or you're not sure what that means), run `git clone https://github.com/waterloo-rocketry/omnibus.git`
-2. Enter the newly-cloned repo with `cd omnibus`
-3. Run `pip install wheel`, which will help install the rest of the packages more quickly.
-4. Install Python dependencies with `pip install -r requirements.txt`. If you get a permissions error, try `pip install --user -r requirements.txt` instead.
-5. Install the Omnibus library locally with `pip install -e .`. Don't forget the `.`! This allows the sources and sinks (and you) to import Omnibus.
+## Setting Up Your Environment
 
-You should now be ready to start developing!
+### Cloning the Repo and Installing Dependencies
 
-* To run unit tests: `pytest`
-* To launch the Omnibus server: `python -m omnibus`
-* To run a source/sink: `python sources/name/main.py`
+Please follow the steps listed in the [README](https://github.com/waterloo-rocketry/omnibus/blob/master/README.md#installation).
 
-# Style guide
-If you'd like to contribute to Omnibus, please take a moment to read through this style guide. Otherwise, happy devving :)
+## Contributing Code
 
-### Python
-We generally conform to [PEP8](https://pep8.org/) guidelines for how we format our Python code. The repository contains a custom formatting script (`tools/format.sh`) - you should run this optionally before commits, and definitely before creating pull requests and/or merging to master.
+### Taking Issues
 
-When adding code, make sure to add unit tests to match! It's generally a good idea to run the full suite of unit tests before creating a PR (which can be done with the `pytest` command). If you don't, CI will run it for you, but it'll take much longer. We'll get a Slack notification if a failing build makes it to master (but this is fairly unlikely), so don't be too scared of breaking things. They're always fixable :).
+The best way to get started on contributing to Minerva is to take on an issue. Simply go to the [Software Master Project](https://github.com/orgs/waterloo-rocketry/projects/2), expand the Omnibus section and find an unassigned issue that interests you. Some issues may be lacking context or background info so feel free to DM the current Software Lead or whoever opened the issue for some more info. Once you've found an issue that you would like to work on, then set yourself as the issue's assignee and once ready, change the status of the issue from "Todo" to "In Progress".
 
-### Git
-Generally, commit messages should follow guidelines laid out by Chris Beams [here](https://chris.beams.io/posts/git-commit/). Additionally,
-* Pull requests should be squashed and merged to be added as commits to master. If the PR pertains to code inside the `omnibus/`, `sources/` or `sinks/` directories (_not_ the main repo), the commit message should be of the form `<subsystem>: <Commit message> (#XX)`, where `<subsystem>` is the folder that the code is relevant to and `XX` is the PR number. `<Commit message>` is the commit message as normal, following regular message guidelines (capital first letter, no period, etc).
+### Creating Branches
 
-    An example commit message could be `plotter: Add custom dashboards (#42)`, for a PR that affects code inside the `sinks/plotter/` directory.
-    Commit messages for code outside the `omnibus/`, `sources/` or `sinks/` directories don't need to follow this format. This is mainly to ensure that changes are immediately recognizable reading commit messages from the top level of the repository.
+The repo follows the branch naming convention of `{name}/{issue_num}-{description}`, e.g. `oraazi/157-update-readme-contributing`
+
+- `{name}` is the part of the branch name that identifies its author. Please use your **WatIAM username** (the combination of your first intial, possibly some numbers, and the first few letters of your last name that comes before `@uwaterloo.ca` in your email).
+- `{issue_num}` is the issue number of the issue that you are trying to fix or implement. If this branch is not associated with an issue, then you do not need to specify anything for this (e.g., just `oraazi/update-readme-contributing` is fine)
+- `{description}` is a short description of what this branch is fixing/implementing. Be sure to keep it short, as good practice is to keep the entire branch name under 30-40 characters.
+
+### Formatting and Linting Your Code
+
+This repo conforms to [PEP8](https://pep8.org) guidelines for Python code. We have a script to automatically enforce these guidelines (`tools/format.sh`). It is **mandatory** to run this before pushing your branch or opening a PR, and *recommended* before every commit.
+
+### Publishing PRs
+
+When you have written up your code and are ready to get it revieweda and merged to `master`, then you can [open a PR for your branch](https://github.com/waterloo-rocketry/omnibus/compare). Here's a few things that you should make sure to do when creating your PR:
+
+- All branches being merged to `master` must pass all their unit tests (they are run automatically when you open a PR).
+- Assign yourself as the assignee for the PR.
+- Assign the `omnibus-reviewers` team as a reviewer for your PR. This will assign the people in charge of Omnibus as reviewers. Additionally, if desired, assign others as reviewers to the PR if you want them specifically to review it or if the reviewer is not in the `omnibus-reviewers` team.
+- Make sure to link the PR to the relevant issue, if possible. The easiest way is [by using keywords in the PR description](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword), e.g. you can link the PR to Issue 157 by writing "closes #157" somewhere in the description.
+- Since your task is now in a review state, make sure to move the project status of the issue that this PR is linked to from "In Progress" to "Needs Review". If this project is not linked to an issue, add the PR to the "Software Master Project" Project under Omnibus and set its status accordingly.
+
+### Merging PRs
+
+Once your PR has passed all unit tests, and has been reviewed and approved, you can merge it to `master`. Merge using the "Squash and Merge" option so that all the commits from your branch are "squashed" into one commit containing all the changes. Congrats, you're now free to take on another issue and continue to make Omnibus better! 
