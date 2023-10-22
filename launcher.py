@@ -36,7 +36,7 @@ print("Launching... ", end="")
 for command in commands:
     if sys.platform == "win32":
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
-                                   creationflags=CREATE_NEW_PROCESS_GROUP, shell=True)
+                                   creationflags=CREATE_NEW_PROCESS_GROUP)
         time.sleep(0.5)
     else:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -72,15 +72,15 @@ except (Finished, KeyboardInterrupt, Exception):
             print(f"\nOutput from {process.args} logged")  
         except IndexError:
             print(f"\nOutput from {process.args} logged in misc.log")
-            loggers["misc"].info(f"From{process.args}:{output}")
+            loggers["other"].info(f"From{process.args}:{output}")
 
         if err and "KeyboardInterrupt" not in err:
             try:
                 loggers[process.args[-1].split("/")[1]].error(f"From {process.args}:{err}")
                 print(f"\nError from {process.args} logged")
             except IndexError:
-                print(f"\nError from {process.args} logged in misc.log")
-                loggers["misc"].error(f"From{process.args}:{err}")
+                print(f"\nError from {process.args} logged in other.log")
+                loggers["other"].error(f"From{process.args}:{err}")
     logging.shutdown()
 finally:
     for process in processes:

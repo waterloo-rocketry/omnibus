@@ -9,11 +9,11 @@ def init_loggers():
 
     #generates logger objects and log files for each source
     for filename in os.listdir("sources"): 
-        os.makedirs(os.path.dirname(f'logs/{filename}.log'), exist_ok=True) 
+        os.makedirs(os.path.dirname(f'logs/sources/{filename}.log'), exist_ok=True) 
         logger = logging.getLogger(filename)
         logger.setLevel("INFO")
 
-        handler = logging.FileHandler(f"logs/{filename}.log", mode='w') 
+        handler = logging.FileHandler(f"logs/sources/{filename}.log", mode='w') 
         formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
         handler.setFormatter(formatter)
 
@@ -22,11 +22,11 @@ def init_loggers():
 
     #generates logger objects and log files for each sink
     for filename in os.listdir("sinks"): 
-        os.makedirs(os.path.dirname(f'logs/{filename}.log'), exist_ok=True) 
+        os.makedirs(os.path.dirname(f'logs/sinks/{filename}.log'), exist_ok=True) 
         logger = logging.getLogger(filename)
         logger.setLevel("INFO")
 
-        handler = logging.FileHandler(f"logs/{filename}.log", mode='w')
+        handler = logging.FileHandler(f"logs/sinks/{filename}.log", mode='w')
         formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
         handler.setFormatter(formatter)
 
@@ -34,15 +34,15 @@ def init_loggers():
         loggers.update({filename: logger})
 
     #generates a misc logger and log file in case there is an output or error from neither a sink nor a source
-    os.makedirs(os.path.dirname(f'logs/misc.log'), exist_ok=True) 
-    logger = logging.getLogger("misc")
+    os.makedirs(os.path.dirname(f'logs/other.log'), exist_ok=True) 
+    logger = logging.getLogger("other")
     logger.setLevel("INFO")
 
-    handler = logging.FileHandler(f"logs/misc.log", mode='w')
+    handler = logging.FileHandler(f"logs/other.log", mode='w')
     formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
     handler.setFormatter(formatter)
 
     logger.addHandler(handler)
-    loggers.update({"misc": logger})
+    loggers.update({"other": logger})
     
     return loggers
