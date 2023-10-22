@@ -19,11 +19,11 @@ for module in modules.keys():
         print(f"\t{i+1}. {item.capitalize()}")
 
 # Construct CLI commands to start Omnibus
-omnibus = ["python", "-m", "omnibus"]
+omnibus = ["venv/Scripts/python", "-m", "omnibus"]
 source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
-sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
-source = ["python", f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
-sink = ["python", f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+sink_selection = input(f"\nPlease enter your Sink choice [1-{len(modules['sinks'])}]: ")
+source = ["venv/Scripts/python", f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
+sink = ["venv/Scripts/python", f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
 
 loggers = init_loggers()
 print("Loggers Initiated")
@@ -36,7 +36,7 @@ print("Launching... ", end="")
 for command in commands:
     if sys.platform == "win32":
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
-                                   creationflags=CREATE_NEW_PROCESS_GROUP)
+                                   creationflags=CREATE_NEW_PROCESS_GROUP, shell=True)
         time.sleep(0.5)
     else:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -59,7 +59,7 @@ try:
 except (Finished, KeyboardInterrupt, Exception):
     for process in processes:
         if sys.platform == "win32":
-            os.kill(process.pid, signal.CTRL_C_EVENT)
+            os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
             process.send_signal(signal.SIGINT)
 
@@ -85,6 +85,6 @@ except (Finished, KeyboardInterrupt, Exception):
 finally:
     for process in processes:
         if sys.platform == "win32":
-            os.kill(process.pid, signal.CTRL_C_EVENT)
+            os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
             process.send_signal(signal.SIGINT)
