@@ -29,7 +29,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add omnibus/release_info.py
           git commit -m "Increment major version to $NEW_VERSION"
-          git push
+          git push origin HEAD:${{ github.head_ref }}
         env:
           NEW_VERSION: ${{ env.NEW_VERSION }}
       
