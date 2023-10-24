@@ -7,9 +7,18 @@ import time
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
     from subprocess import CREATE_NEW_PROCESS_GROUP
+    python_executable = "venv/Scripts/python"
+else:
+    python_executable = "python"
 
 # Parse folders for sources and sinks
 modules = {"sources" : os.listdir('sources'), "sinks" : os.listdir('sinks')}
+
+# Remove dot files
+for module in modules.keys():
+    for item in modules[module]:
+        if item.startswith("."):
+            modules[module].remove(item)
 
 for module in modules.keys():
     print(f"{module.capitalize()}:")
@@ -17,11 +26,11 @@ for module in modules.keys():
         print(f"\t{i+1}. {item.capitalize()}")
 
 # Construct CLI commands to start Omnibus
-omnibus = ["python", "-m", "omnibus"]
 source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
 sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
-source = ["python", f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
-sink = ["python", f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+omnibus = [python_executable, "-m", "omnibus"]
+source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
+sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
 
 commands = [omnibus, source, sink]
 processes = []
@@ -32,10 +41,10 @@ for command in commands:
     if sys.platform == "win32":
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
                                    creationflags=CREATE_NEW_PROCESS_GROUP)
-        time.sleep(0.5)
     else:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(0.5)
+
+    time.sleep(0.5)
     processes.append(process)
 
 print("Done!")
@@ -54,7 +63,7 @@ try:
 except (Finished, KeyboardInterrupt, Exception):
     for process in processes:
         if sys.platform == "win32":
-            os.kill(process.pid, signal.CTRL_C_EVENT)
+            os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
             process.send_signal(signal.SIGINT)
 
@@ -71,6 +80,6 @@ except (Finished, KeyboardInterrupt, Exception):
 finally:
     for process in processes:
         if sys.platform == "win32":
-            os.kill(process.pid, signal.CTRL_C_EVENT)
+            os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
             process.send_signal(signal.SIGINT)
