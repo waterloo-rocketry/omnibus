@@ -5,7 +5,8 @@ on:
     paths:
       - 'omnibus/**'
     branches:
-      - main
+      - master
+      - shirleyfyx/134-major-version-increment
 
 jobs:
   increment-version:
