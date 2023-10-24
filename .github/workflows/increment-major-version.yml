@@ -27,6 +27,11 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+
+          git fetch origin ${{ github.head_ref }}
+          git checkout ${{ github.head_ref }}
+          git merge origin/${{ github.head_ref }} --ff-only
+          
           git add omnibus/release_info.py
           git commit -m "Increment major version to $NEW_VERSION"
           git push origin HEAD:${{ github.head_ref }}
