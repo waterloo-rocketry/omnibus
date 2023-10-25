@@ -10,7 +10,7 @@ Please follow the steps listed in the [README](https://github.com/waterloo-rocke
 
 ### Taking Issues
 
-The best way to get started on contributing to Minerva is to take on an issue. Simply go to the [Software Master Project](https://github.com/orgs/waterloo-rocketry/projects/2), expand the Omnibus section and find an unassigned issue that interests you. Some issues may be lacking context or background info so feel free to DM the current Software Lead or whoever opened the issue for some more info. Once you've found an issue that you would like to work on, then set yourself as the issue's assignee and once ready, change the status of the issue from "Todo" to "In Progress".
+The best way to get started on contributing to Omnibus is to take on an issue. Simply go to the [Software Master Project](https://github.com/orgs/waterloo-rocketry/projects/2), expand the Omnibus section and find an unassigned issue that interests you. Some issues may be lacking context or background info so feel free to DM the current Software Lead or whoever opened the issue for some more info. Once you've found an issue that you would like to work on, then set yourself as the issue's assignee and once ready, change the status of the issue from "Todo" to "In Progress".
 
 ### Creating Branches
 
