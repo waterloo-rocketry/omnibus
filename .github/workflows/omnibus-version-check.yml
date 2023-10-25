@@ -1,0 +1,30 @@
+name: Version Check
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'omnibus/**'
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Check for version change
+      run: |
+        VERSION_FILE="omnibus/release_info.py"
+        git fetch origin master:refs/remotes/origin/master
+        PREVIOUS_VERSION=$(git show origin/master:$VERSION_FILE)
+        CURRENT_VERSION=$(cat $VERSION_FILE)
+        
+        if [ "$PREVIOUS_VERSION" != "$CURRENT_VERSION" ]; then
+          echo "Version changed: $PREVIOUS_VERSION -> $CURRENT_VERSION"
+        else
+          echo "This Action detected that the Omnibus core library code was changed, but its version number was not updated. 
+          Please increment the minor or major version number according to the severity of this change."
+          exit 1
+        fi
