@@ -41,7 +41,7 @@ jobs:
         if [ "$PREVIOUS_VERSION" != "$CURRENT_VERSION" ]; then
           echo "Version changed: $PREVIOUS_VERSION -> $CURRENT_VERSION"
         else
-          echo "Action detected changes in Omnibus core library without a version update.
+          echo "Action detected changes in Omnibus core library without a version update. \
           Please increment the minor or major version number to reflect these changes."
           exit 1
         fi
