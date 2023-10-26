@@ -23,8 +23,12 @@ jobs:
       run: |
         VERSION_FILE="omnibus/release_info.py"
 
+        # Add the 'omnibus' directory to the Python path
+        PYTHONPATH="$PYTHONPATH:$(pwd)/omnibus"
+        export PYTHONPATH
+
         # Extract current version
-        CURRENT_VERSION=$(python -c "from $VERSION_FILE import version; print(version)")
+        CURRENT_VERSION=$(python -c "from release_info import version; print(version)")
         echo "Current version: $CURRENT_VERSION"
 
         # Fetch the file content from the master branch
