@@ -13,18 +13,31 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with: 
+        python-version: '3.x'
 
     - name: Check for version change
       run: |
         VERSION_FILE="omnibus/release_info.py"
+
+        # Extract current version
+        CURRENT_VERSION=$(python -c "from $VERSION_FILE import version; print(version)")
+        echo "Current version: $CURRENT_VERSION"
+
+        # Fetch the file content from the master branch
         git fetch origin master:refs/remotes/origin/master
-        PREVIOUS_VERSION=$(git show origin/master:$VERSION_FILE)
-        CURRENT_VERSION=$(cat $VERSION_FILE)
+
+        # Extract previous version
+        PREVIOUS_VERSION=$(git show origin/master:$VERSION_FILE | python -c "import sys; exec(sys.stdin.read()); print(version)")
+        echo "Previous version: $PREVIOUS_VERSION"
         
         if [ "$PREVIOUS_VERSION" != "$CURRENT_VERSION" ]; then
           echo "Version changed: $PREVIOUS_VERSION -> $CURRENT_VERSION"
         else
-          echo "This Action detected that the Omnibus core library code was changed, but its version number was not updated. 
-          Please increment the minor or major version number according to the severity of this change."
+          echo "Action detected changes in Omnibus core library without a version update.
+          Please increment the minor or major version number to reflect these changes."
           exit 1
         fi
