@@ -3,6 +3,8 @@ import signal
 import subprocess
 import sys
 import time
+import logging
+from logtool import init_loggers
 
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
@@ -31,6 +33,9 @@ sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])
 omnibus = [python_executable, "-m", "omnibus"]
 source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
 sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+
+loggers = init_loggers()
+print("Loggers Initiated")
 
 commands = [omnibus, source, sink]
 processes = []
@@ -68,15 +73,24 @@ except (Finished, KeyboardInterrupt, Exception):
             process.send_signal(signal.SIGINT)
 
         # Dump output and error (if exists) from every
-        # process to the shell 
+        # process to the coresponding log file
         output, err = process.communicate()
         output, err = output.decode(), err.decode()
-        print(f"\nOutput from {process.args}:")
-        print(output)
+        try:          
+            loggers[process.args[-1].split("/")[1]].info(f"From {process.args}:{output}")
+            print(f"\nOutput from {process.args} logged")  
+        except IndexError:
+            print(f"\nOutput from {process.args} logged in other.log")
+            loggers["other"].info(f"From{process.args}:{output}")
 
         if err and "KeyboardInterrupt" not in err:
-            print(f"\nError from {process.args}:")
-            print(err)
+            try:
+                loggers[process.args[-1].split("/")[1]].error(f"From {process.args}:{err}")
+                print(f"\nError from {process.args} logged")
+            except IndexError:
+                print(f"\nError from {process.args} logged in other.log")
+                loggers["other"].error(f"From{process.args}:{err}")
+    logging.shutdown()
 finally:
     for process in processes:
         if sys.platform == "win32":
