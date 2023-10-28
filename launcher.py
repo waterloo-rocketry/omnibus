@@ -79,7 +79,7 @@ except (Finished, KeyboardInterrupt, Exception):
         try:          
             loggers[process.args[-1].split("/")[1]].info(f"From {process.args}:{output}")
             print(f"\nOutput from {process.args} logged")  
-        except IndexError:
+        except (IndexError, KeyError):
             print(f"\nOutput from {process.args} logged in other.log")
             loggers["other"].info(f"From{process.args}:{output}")
 
@@ -87,7 +87,7 @@ except (Finished, KeyboardInterrupt, Exception):
             try:
                 loggers[process.args[-1].split("/")[1]].error(f"From {process.args}:{err}")
                 print(f"\nError from {process.args} logged")
-            except IndexError:
+            except (IndexError, KeyError):
                 print(f"\nError from {process.args} logged in other.log")
                 loggers["other"].error(f"From{process.args}:{err}")
     logging.shutdown()
