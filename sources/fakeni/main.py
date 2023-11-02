@@ -65,4 +65,3 @@ finally:
 
     # Shows cursor
     print('\033[?25h', end="")
-
