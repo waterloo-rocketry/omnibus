@@ -14,7 +14,7 @@ else:
     python_executable = "python"
 
 # Parse folders for sources and sinks
-modules = {"sources" : os.listdir('sources'), "sinks" : os.listdir('sinks')}
+modules = {"sources": os.listdir('sources'), "sinks": os.listdir('sinks')}
 
 # Remove dot files
 for module in modules.keys():
@@ -44,7 +44,7 @@ print("Launching... ", end="")
 # Execute commands as subprocesses
 for command in commands:
     if sys.platform == "win32":
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                    creationflags=CREATE_NEW_PROCESS_GROUP)
     else:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -54,9 +54,11 @@ for command in commands:
 
 print("Done!")
 
+
 # Blank exception just for processes to throw
 class Finished(Exception):
     pass
+
 
 # If any file exits or the user presses control + c,
 # terminate all other files that are running
@@ -76,9 +78,9 @@ except (Finished, KeyboardInterrupt, Exception):
         # process to the coresponding log file
         output, err = process.communicate()
         output, err = output.decode(), err.decode()
-        try:          
+        try:
             loggers[process.args[-1].split("/")[1]].info(f"From {process.args}:{output}")
-            print(f"\nOutput from {process.args} logged")  
+            print(f"\nOutput from {process.args} logged")
         except (IndexError, KeyError):
             print(f"\nOutput from {process.args} logged in other.log")
             loggers["other"].info(f"From{process.args}:{output}")
