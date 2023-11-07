@@ -56,6 +56,7 @@ for command in commands:
 
 print("Done!")
 
+
 # Blank exception just for processes to throw
 
 
@@ -101,5 +102,4 @@ finally:
         if sys.platform == "win32":
             os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
-            process.send_signal(signal.SIGINT)
-            
+            process.send_signal(signal.SIGINT)        
