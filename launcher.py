@@ -4,7 +4,7 @@ import subprocess
 import sys
 import time
 import logging
-from logtool import init_loggers
+from logtool import Logger
 
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
@@ -35,8 +35,9 @@ source = [python_executable, f"sources/{modules['sources'][int(source_selection)
 sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
 
 # Create loggers
-loggers = init_loggers(f"sources/{modules['sources'][int(source_selection) - 1]}",
-                       f"sinks/{modules['sinks'][int(sink_selection) - 1]}")
+logger = Logger()
+logger.add_logger(f"sources/{modules['sources'][int(source_selection) - 1]}")
+logger.add_logger(f"sinks/{modules['sinks'][int(sink_selection) - 1]}")
 print("\nLoggers Initiated")
 
 commands = [omnibus, source, sink]
@@ -82,20 +83,14 @@ except (Finished, KeyboardInterrupt, Exception):
         # process to the coresponding log file
         output, err = process.communicate()
         output, err = output.decode(), err.decode()
-        try:
-            loggers[process.args[-1].split("/")[1]].info(f"From {process.args}:{output}")
-            print(f"\nOutput from {process.args} logged")
-        except (IndexError, KeyError):
-            print(f"\nOutput from {process.args} logged in core-library.log")
-            loggers["core"].info(f"From{process.args}:{output}")
+        
+        # Log outputs
+        logger.log_output(process, output)
 
+        # Log errors
         if err and "KeyboardInterrupt" not in err:
-            try:
-                loggers[process.args[-1].split("/")[1]].error(f"From {process.args}:{err}")
-                print(f"\nError from {process.args} logged")
-            except (IndexError, KeyError):
-                print(f"\nError from {process.args} logged in core-library.log")
-                loggers["core"].error(f"From{process.args}:{err}")
+            logger.log_error(process, err)
+            
     logging.shutdown()
 finally:
     for process in processes:
