@@ -1,15 +1,13 @@
-from pyqtgraph.Qt import QtWidgets, QtGui
-from pyqtgraph.Qt.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QDialogButtonBox
-
+from pyqtgraph.Qt import QtGui
+from pyqtgraph.Qt.QtWidgets import QApplication, QDialog, QLabel, QComboBox, QDialogButtonBox, QVBoxLayout
 
 import sys
 
-
-class MyWindow(QMainWindow):
+class Launcher(QDialog):
     def __init__(self):
         super().__init__()
 
-        self.setGeometry(300, 300, 500, 250)
+        self.setGeometry(300, 300, 400, 220)
         self.setWindowTitle("Omnibus Launcher")
 
         # Description / Title
@@ -40,11 +38,11 @@ class MyWindow(QMainWindow):
         # Create a sink label
         sink = QLabel(self)
         sink.setText("Sink:")
-        sink.setGeometry(20, 80, 150, 20)
+        sink.setGeometry(20, 90, 150, 20)
 
         # Create a dropdown for sink
         self.sink_dropdown = QComboBox(self)
-        self.sink_dropdown.setGeometry(90, 82, 150, 20)
+        self.sink_dropdown.setGeometry(90, 92, 150, 20)
 
         # Add items to the sources dropdown
         self.sink_dropdown.addItem("Txtconsole")
@@ -53,18 +51,15 @@ class MyWindow(QMainWindow):
         self.sink_dropdown.addItem("Gpsd")
         self.sink_dropdown.addItem("Globallog")
 
-        # Enter selections button (THIS NEEDS TO BE FIXED)
-        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
-        self.buttonBox.setGeometry(20, 200, 150, 30)
-        # self.buttonBox =  QDialogButtonBox(QDialogButtonBox.Ok)
-        # self.buttonBox.setGeometry(20, 200, 150, 30)
-        # self.buttonBox.accepted.connect(self.enter_selections)
-        # b2.clicked.connect(self.enter_selections)
-        # b1 = QtWidgets.QPushButton(self)
-        # b1.setText("Enter selections")
-        # b1.setGeometry(20, 150, 150, 30)  
-        # b1.setFixedSize(150, 50) 
-        # b1.clicked.connect(self.enter_selections)
+        # Enter selections button
+        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        self.button_box.accepted.connect(self.enter_selections)
+
+        # Add button to layout
+        self.layout = QVBoxLayout()
+        self.layout.addStretch(1)
+        self.layout.addWidget(self.button_box)
+        self.setLayout(self.layout)
     
     def enter_selections(self):
         selected_source = self.source_dropdown.currentText()
@@ -79,7 +74,7 @@ class MyWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    window = MyWindow()
+    window = Launcher()
     window.show()
     sys.exit(app.exec())
 
