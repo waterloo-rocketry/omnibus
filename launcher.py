@@ -38,7 +38,7 @@ sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/m
 logger = Logger()
 logger.add_logger(f"sources/{modules['sources'][int(source_selection) - 1]}")
 logger.add_logger(f"sinks/{modules['sinks'][int(sink_selection) - 1]}")
-print("\nLoggers Initiated")
+print("Loggers Initiated")
 
 commands = [omnibus, source, sink]
 processes = []
@@ -57,13 +57,9 @@ for command in commands:
 
 print("Done!")
 
-
 # Blank exception just for processes to throw
-
-
 class Finished(Exception):
     pass
-
 
 # If any file exits or the user presses control + c,
 # terminate all other files that are running
