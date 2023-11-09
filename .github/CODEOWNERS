@@ -1,0 +1,5 @@
+# This is a CODEOWNERS file to indicate which people are responsible for this repository
+# These people will also be automatically requested for review on PRs
+
+* @waterloo-rocketry/default-reviewers @Darth-Raazi @BluCodeGH @KavinSatheeskumar
+
