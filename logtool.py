@@ -32,17 +32,15 @@ class Logger():
     # Logs output from a process with its respective logger, or core if it is from core-library
     def log_output(self, process, output):
         if process.args[-1] == "omnibus":
-            print(f"Output from {process.args} logged in core_library.log")
             self.loggers["core_library"].info(f"From{process.args}:{output}")
         else:
             self.loggers[process.args[-1].split("/")[1]].info(f"From {process.args}:{output}")
-            print(f"Output from {process.args} logged")
+        print(f"Output from {process.args} logged")
     
     # Logs output from a process with its respective logger, or core if it is from core-library
     def log_error(self, process, err):
         if process.args[-1] == "omnibus":
-            print(f"Error from {process.args} logged in core_library.log")
             self.loggers["core_library"].error(f"From{process.args}:{err}")
         else:
             self.loggers[process.args[-1].split("/")[1]].error(f"From {process.args}:{err}")
-            print(f"Error from {process.args} logged")
+        print(f"Error from {process.args} logged")
