@@ -3,6 +3,8 @@ import signal
 import subprocess
 import sys
 import time
+import logging
+from logtool import Logger
 
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
@@ -12,7 +14,7 @@ else:
     python_executable = "python"
 
 # Parse folders for sources and sinks
-modules = {"sources" : os.listdir('sources'), "sinks" : os.listdir('sinks')}
+modules = {"sources": os.listdir('sources'), "sinks": os.listdir('sinks')}
 
 # Remove dot files
 for module in modules.keys():
@@ -32,6 +34,12 @@ omnibus = [python_executable, "-m", "omnibus"]
 source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
 sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
 
+# Create loggers
+logger = Logger()
+logger.add_logger(f"sources/{modules['sources'][int(source_selection) - 1]}")
+logger.add_logger(f"sinks/{modules['sinks'][int(sink_selection) - 1]}")
+print("Loggers Initiated")
+
 commands = [omnibus, source, sink]
 processes = []
 print("Launching... ", end="")
@@ -39,7 +47,7 @@ print("Launching... ", end="")
 # Execute commands as subprocesses
 for command in commands:
     if sys.platform == "win32":
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                    creationflags=CREATE_NEW_PROCESS_GROUP)
     else:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -68,18 +76,21 @@ except (Finished, KeyboardInterrupt, Exception):
             process.send_signal(signal.SIGINT)
 
         # Dump output and error (if exists) from every
-        # process to the shell 
+        # process to the coresponding log file
         output, err = process.communicate()
         output, err = output.decode(), err.decode()
-        print(f"\nOutput from {process.args}:")
-        print(output)
+        
+        # Log outputs
+        logger.log_output(process, output)
 
+        # Log errors
         if err and "KeyboardInterrupt" not in err:
-            print(f"\nError from {process.args}:")
-            print(err)
+            logger.log_error(process, err)
+            
+    logging.shutdown()
 finally:
     for process in processes:
         if sys.platform == "win32":
             os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
-            process.send_signal(signal.SIGINT)
+            process.send_signal(signal.SIGINT)        

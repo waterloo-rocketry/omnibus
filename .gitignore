@@ -2,6 +2,10 @@
 
 log_*.dat
 .DS_Store
+
+# Launcher Logs
+logs/
+
 # Linter config
 
 .pylintrc
