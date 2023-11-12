@@ -6,7 +6,7 @@ import time
 import argparse
 import sys
 import logging
-from logtool import Logger
+# from logtool import Logger
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt.QtWidgets import QApplication, QDialog, QLabel, QComboBox, QDialogButtonBox, QVBoxLayout
 
@@ -29,6 +29,8 @@ class Launcher(QDialog):
     def __init__(self):
         super().__init__()
 
+    # Enter inputs for CLI launcher
+    def input(self):
         # Remove dot files
         for module in modules.keys():
             for item in modules[module]:
@@ -41,23 +43,22 @@ class Launcher(QDialog):
                 print(f"\t{i+1}. {item.capitalize()}")
 
         # Construct CLI commands to start Omnibus
-        source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
-        sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
-        omnibus = [python_executable, "-m", "omnibus"]
-        source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
-        sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+        self.source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
+        self.sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
+        self.omnibus = [python_executable, "-m", "omnibus"]
+        self.source = [python_executable, f"sources/{modules['sources'][int(self.source_selection) - 1]}/main.py"]
+        self.sink = [python_executable, f"sinks/{modules['sinks'][int(self.sink_selection) - 1]}/main.py"]
 
-        # Create loggers
-        logger = Logger()
-        logger.add_logger(f"sources/{modules['sources'][int(source_selection) - 1]}")
-        logger.add_logger(f"sinks/{modules['sinks'][int(sink_selection) - 1]}")
-        print("Loggers Initiated")
+        return [self.omnibus, self.source, self.sink]
 
-        commands = [omnibus, source, sink]
-        processes = []
+    # Launch Omnibus
+    def launching(self, commands):
+        self.commands = commands
+        self.processes = []
         print("Launching... ", end="")
 
-        # Execute commands as subprocesses
+    # Execute commands as subprocesses
+    def subprocess(self, commands):
         for command in commands:
             if sys.platform == "win32":
                 process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
@@ -66,20 +67,27 @@ class Launcher(QDialog):
             else:
                 process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(0.5)
-            processes.append(process)
+            self.processes.append(process)
 
         print("Done!")
+    
+    # Create loggers
+    def logging(self):
+        self.logger = Logger()
+        self.logger.add_logger(f"sources/{modules['sources'][int(self.source_selection) - 1]}")
+        self.logger.add_logger(f"sinks/{modules['sinks'][int(self.sink_selection) - 1]}")
+        print("Loggers Initiated")
 
     # If any file exits or the user presses control + c,
     # terminate all other files that are running
     def terminate(self):
         try:
             while True:
-                for process in processes:
+                for process in self.processes:
                     if process.poll() != None:
                         raise Finished
         except (Finished, KeyboardInterrupt, Exception):
-            for process in processes:
+            for process in self.processes:
                 if sys.platform == "win32":
                     os.kill(process.pid, signal.CTRL_BREAK_EVENT)
                 else:
@@ -91,15 +99,15 @@ class Launcher(QDialog):
                 output, err = output.decode(), err.decode()
                 
                 # Log outputs
-                logger.log_output(process, output)
+                self.logger.log_output(process, output)
 
                 # Log errors
                 if err and "KeyboardInterrupt" not in err:
-                    logger.log_error(process, err)
+                    self.logger.log_error(process, err)
                     
             logging.shutdown()
         finally:
-            for process in processes:
+            for process in self.processes:
                 if sys.platform == "win32":
                     os.kill(process.pid, signal.CTRL_BREAK_EVENT)
                 else:
@@ -149,7 +157,7 @@ class GUILauncher(Launcher, QDialog):
 
         # Enter selections button
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
-        self.button_box.accepted.connect(self.enter_selections)
+        self.button_box.accepted.connect(self.launching_gui)
 
         # Add button to layout
         self.layout = QVBoxLayout()
@@ -157,20 +165,19 @@ class GUILauncher(Launcher, QDialog):
         self.layout.addWidget(self.button_box)
         self.setLayout(self.layout)
     
-    def enter_selections(self):
+    def launching_gui(self):
         # Selected source and sink in GUI
-        selected_source = self.source_dropdown.currentText()
-        selected_sink = self.sink_dropdown.currentText()
+        self.selected_source = self.source_dropdown.currentText()
+        self.selected_sink = self.sink_dropdown.currentText()
 
-        omnibus = ["python", "-m", "omnibus"]
-        source = ["python", f"sources/{selected_source}/main.py"]
-        sink = ["python", f"sinks/{selected_sink}/main.py"]
-        commands = [omnibus, source, sink]
-        processes = []
-        print("Launching... ", end="")
+        self.omnibus = ["python", "-m", "omnibus"]
+        self.source = ["python", f"sources/{self.selected_source}/main.py"]
+        self.sink = ["python", f"sinks/{self.selected_sink}/main.py"]
 
         # Close the window
         self.close()
+
+        return [self.omnibus, self.source, self.sink]
 
 def main():
     parser = argparse.ArgumentParser(description='Omnibus Launcher')
@@ -183,13 +190,20 @@ def main():
     if args.text:
         print("Running in text mode")
         launcher = Launcher()
+        produce_commands = launcher.input()
+        launcher.launching(produce_commands)
+        launcher.subprocess(produce_commands)
+        launcher.logging()
         launcher.terminate()
 
     # If 'python launcher.py' is run this this block of code will execute
     else:
         print("Running in GUI mode")
         gui_launcher = GUILauncher()
-        gui_launcher.show()
+        produce_commands = gui_launcher.show()
+        gui_launcher.launching(gui_launcher.launching_gui())
+        gui_launcher.subprocess(produce_commands)
+        gui_launcher.logging()
         sys.exit(app.exec())
 
 if __name__ == '__main__':
