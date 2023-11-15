@@ -52,7 +52,15 @@ class Launcher():
         self.source = [python_executable, f"sources/{self.modules['sources'][self.source_selection]}/main.py"]
         self.sink = [python_executable, f"sinks/{self.modules['sinks'][self.sink_selection]}/main.py"]
 
-        self.commands = [self.omnibus, self.source, self.sink]
+# Create loggers
+logger = Logger()
+logger.add_logger(f"sources/{modules['sources'][int(source_selection) - 1]}")
+logger.add_logger(f"sinks/{modules['sinks'][int(sink_selection) - 1]}")
+print("Loggers Initiated")
+
+commands = [omnibus, source, sink]
+processes = []
+print("Launching... ", end="")
 
     # Execute commands as subprocesses
     def subprocess(self):
@@ -216,3 +224,8 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+'''
+Questions:
+-how does the launcher work? is it able to run independently on its own? 
+'''
