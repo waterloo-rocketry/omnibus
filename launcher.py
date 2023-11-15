@@ -28,11 +28,16 @@ for module in modules.keys():
 # Construct CLI commands to start Omnibus
 source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
 sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
-omnibus = [python_executable, "-m", "omnibus"]
-source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
-sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
 
-commands = [omnibus, source, sink]
+if source_selection !="0":
+    omnibus = [python_executable, "-m", "omnibus"]
+    source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
+    commands = [omnibus, source]
+else:
+    commands=[]
+sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+commands.append(sink)
+
 processes = []
 print("Launching... ", end="")
 
@@ -83,3 +88,8 @@ finally:
             os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
             process.send_signal(signal.SIGINT)
+
+'''
+Questions:
+-how does the launcher work? is it able to run independently on its own? 
+'''
