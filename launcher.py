@@ -54,7 +54,6 @@ class Launcher():
 
 commands=[]
 
-commands = [omnibus, source, sink]
 processes = []
 print("Launching... ", end="")
 
@@ -210,10 +209,3 @@ finally:
             os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
             process.send_signal(signal.SIGINT)  
-
-
-'''
-Questions:
--how does the launcher work? is it able to run independently on its own? 
--how does the user select more than one sources/sink 
-'''
