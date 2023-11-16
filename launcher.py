@@ -54,7 +54,7 @@ class Launcher():
 
 commands=[]
 
-processes = []
+processes = [] 
 print("Launching... ", end="")
 
     # Execute commands as subprocesses
