@@ -25,20 +25,65 @@ for module in modules.keys():
     for i, item in enumerate(modules[module]):
         print(f"\t{i+1}. {item.capitalize()}")
 
-# Construct CLI commands to start Omnibus
+#display the options selectable
+def displayOptions(moduleName, moduleList):
+    print(f"{moduleName.capitalize()}:")
+    for idx, item in enumerate(moduleList):
+        print(f"\t{i+1}. {item.capitalize()}")
+
+#arrays to store the user selection 
+srcSelected=[]
+sinkSelected=[]
+
+
+
+
+# Construct CLI commands to start Omnibus [PREVIOUS CODE, ONLY ACCEPTS ONE SOURCE/SINK]
+# remember to check for 0 inputs and handle accordingly 
 source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
 sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
 
-if source_selection !="0":
-    omnibus = [python_executable, "-m", "omnibus"]
-    source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
-    commands = [omnibus, source]
-else:
-    commands=[]
-sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
-commands.append(sink)
+#process the source/sink_selection to see how many were selected 
+sources=source_selection.split()
+srcSelected=[int(item) for item in sources]
+print(srcSelected)
 
+sinks=sink_selection.split()
+sinkSelected=[int(item) for item in sinks]
+print(sinkSelected)
+
+commands=[]
+
+if srcSelected:
+    omnibus = [python_executable, "-m", "omnibus"]
+    for selection in srcSelected:
+        source=[python_executable, f"sources/{modules['sources'][selection - 1]}/main.py"]
+        commands.append([omnibus, source])
+
+if sinkSelected:
+    for selection in sinkSelected:
+        sink = [python_executable, f"sinks/{modules['sinks'][selection - 1]}/main.py"]
+        commands.append([sink])
+#omnibus = [python_executable, "-m", "omnibus"]
+#source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
+#sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+#commands = [omnibus, source, sink]
 processes = []
+print("Launching... ", end="")
+
+
+#if source_selection !="0":
+    #omnibus = [python_executable, "-m", "omnibus"]
+    #source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
+    #commands = [omnibus, source]
+
+#if sink_selection !='0':
+    #sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+    #commands.append(sink)
+
+
+
+processes = [] 
 print("Launching... ", end="")
 
 # Execute commands as subprocesses
@@ -92,4 +137,5 @@ finally:
 '''
 Questions:
 -how does the launcher work? is it able to run independently on its own? 
+-how does the user select more than one sources/sink 
 '''
