@@ -3,6 +3,8 @@ import signal
 import subprocess
 import sys
 import time
+import logging
+from logtool import Logger
 
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
@@ -71,6 +73,11 @@ if sinkSelected:
 processes = []
 print("Launching... ", end="")
 
+# Create loggers
+logger = Logger()
+logger.add_logger(f"sources/{modules['sources'][int(source_selection) - 1]}")
+logger.add_logger(f"sinks/{modules['sinks'][int(sink_selection) - 1]}")
+print("Loggers Initiated")
 
 #if source_selection !="0":
     #omnibus = [python_executable, "-m", "omnibus"]
@@ -118,22 +125,24 @@ except (Finished, KeyboardInterrupt, Exception):
             process.send_signal(signal.SIGINT)
 
         # Dump output and error (if exists) from every
-        # process to the shell 
+        # process to the coresponding log file
         output, err = process.communicate()
         output, err = output.decode(), err.decode()
-        print(f"\nOutput from {process.args}:")
-        print(output)
+        
+        # Log outputs
+        logger.log_output(process, output)
 
+        # Log errors
         if err and "KeyboardInterrupt" not in err:
-            print(f"\nError from {process.args}:")
-            print(err)
+            logger.log_error(process, err)
+            
+    logging.shutdown()
 finally:
     for process in processes:
         if sys.platform == "win32":
             os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
-            process.send_signal(signal.SIGINT)
-
+            process.send_signal(signal.SIGINT)      
 '''
 Questions:
 -how does the launcher work? is it able to run independently on its own? 
