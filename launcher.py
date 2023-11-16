@@ -54,6 +54,35 @@ class Launcher():
 
 commands=[]
 
+if srcSelected:
+    omnibus = [python_executable, "-m", "omnibus"]
+    for selection in srcSelected:
+        source=[python_executable, f"sources/{modules['sources'][selection - 1]}/main.py"]
+        commands.append([omnibus, source])
+
+if sinkSelected:
+    for selection in sinkSelected:
+        sink = [python_executable, f"sinks/{modules['sinks'][selection - 1]}/main.py"]
+        commands.append([sink])
+#omnibus = [python_executable, "-m", "omnibus"]
+#source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
+#sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+#commands = [omnibus, source, sink]
+processes = []
+print("Launching... ", end="")
+
+
+#if source_selection !="0":
+    #omnibus = [python_executable, "-m", "omnibus"]
+    #source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
+    #commands = [omnibus, source]
+
+#if sink_selection !='0':
+    #sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+    #commands.append(sink)
+
+
+
 processes = [] 
 print("Launching... ", end="")
 
@@ -95,110 +124,13 @@ print("Launching... ", end="")
                 else:
                     process.send_signal(signal.SIGINT)
 
-                # Dump output and error (if exists) from every
-                # process to the coresponding log file
-                output, err = process.communicate()
-                output, err = output.decode(), err.decode()
-                
-                # Log outputs
-                self.logger.log_output(process, output)
+        # Dump output and error (if exists) from every
+        # process to the shell 
+        output, err = process.communicate()
+        output, err = output.decode(), err.decode()
+        print(f"\nOutput from {process.args}:")
+        print(output)
 
-                # Log errors
-                if err and "KeyboardInterrupt" not in err:
-                    self.logger.log_error(process, err)
-                    
-            logging.shutdown()
-        finally:
-            for process in self.processes:
-                if sys.platform == "win32":
-                    os.kill(process.pid, signal.CTRL_BREAK_EVENT)
-                else:
-                    process.send_signal(signal.SIGINT)        
-
-# GUI Launcher
-class GUILauncher(Launcher, QDialog):
-    def __init__(self):
-        super().__init__()
-        self.selected_ok = False
-
-        # Sets window title and ensures size of dialog is fixed
-        self.setGeometry(300, 300, 500, 230)
-        self.setFixedSize(500, 230)
-        self.setWindowTitle("Omnibus Launcher")
-
-        # Description / Title
-        description = QLabel(self)
-        description.setText("Please enter your source and sink choices")
-        description.setGeometry(20, 12, 400, 20)
-        description.setFont(QtGui.QFont("", 18))
-
-        # Create a source label
-        source = QLabel(self)
-        source.setText("Source:")
-        source.setGeometry(20, 53, 150, 20)
-
-        # Create a dropdown for source
-        self.source_dropdown = QComboBox(self)
-        self.source_dropdown.setGeometry(90, 52, 150, 30)
-
-        # Add items to the sources dropdown
-        for source in self.modules.get("sources"):
-            self.source_dropdown.addItem(source)
-
-        # Create a sink label
-        sink = QLabel(self)
-        sink.setText("Sink:")
-        sink.setGeometry(20, 93, 150, 20)
-
-        # Create a dropdown for sink
-        self.sink_dropdown = QComboBox(self)
-        self.sink_dropdown.setGeometry(90, 92, 150, 30)
-
-        # Add items to the sinks dropdown
-        for sink in self.modules.get("sinks"):
-            self.sink_dropdown.addItem(sink)
-
-        # Enter selections button
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
-        self.button_box.accepted.connect(self.construct_commands)
-        self.button_box.rejected.connect(self.close)
-
-        # Add button to layout
-        self.layout = QVBoxLayout()
-        self.layout.addStretch(1)
-        self.layout.addWidget(self.button_box)
-        self.setLayout(self.layout)
-
-    def construct_commands(self):
-        self.selected_ok = True
-
-        # Selected source and sink in GUI
-        self.source_selection = self.modules['sources'].index(self.source_dropdown.currentText())
-        self.sink_selection = self.modules['sinks'].index(self.sink_dropdown.currentText())
-
-        self.omnibus = ["python", "-m", "omnibus"]
-        self.source = ["python", f"sources/{self.source_dropdown.currentText()}/main.py"]
-        self.sink = ["python", f"sinks/{self.sink_dropdown.currentText()}/main.py"]
-
-        self.commands = [self.omnibus, self.source, self.sink]
-
-        self.close()
-    
-    def closeEvent(self, event):
-        if self.selected_ok:
-            event.accept()
-        else:
-            process.send_signal(signal.SIGINT)
-
-                # Dump output and error (if exists) from every
-                # process to the coresponding log file
-                output, err = process.communicate()
-                output, err = output.decode(), err.decode()
-                
-                # Log outputs
-                self.logger.log_output(process, output)
-
-        # Log errors
         if err and "KeyboardInterrupt" not in err:
             logger.log_error(process, err)
             
@@ -208,4 +140,10 @@ finally:
         if sys.platform == "win32":
             os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
-            process.send_signal(signal.SIGINT)  
+            process.send_signal(signal.SIGINT)
+
+'''
+Questions:
+-how does the launcher work? is it able to run independently on its own? 
+-how does the user select more than one sources/sink 
+'''
