@@ -250,6 +250,11 @@ if sinkSelected:
 processes = []
 print("Launching... ", end="")
 
+# Create loggers
+logger = Logger()
+logger.add_logger(f"sources/{modules['sources'][int(source_selection) - 1]}")
+logger.add_logger(f"sinks/{modules['sinks'][int(sink_selection) - 1]}")
+print("Loggers Initiated")
 
 #if source_selection !="0":
     #omnibus = [python_executable, "-m", "omnibus"]
@@ -321,7 +326,7 @@ finally:
         if sys.platform == "win32":
             os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
-            process.send_signal(signal.SIGINT)        
+            process.send_signal(signal.SIGINT)
 
 '''
 Questions:
