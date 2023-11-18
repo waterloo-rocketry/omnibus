@@ -31,7 +31,7 @@ for module in modules.keys():
 def displayOptions(moduleName, moduleList):
     print(f"{moduleName.capitalize()}:")
     for idx, item in enumerate(moduleList):
-        print(f"\t{i+1}. {item.capitalize()}")
+        print(f"\t{idx+1}. {item.capitalize()}")
 
 #arrays to store the user selection 
 srcSelected=[]
@@ -60,8 +60,8 @@ if srcSelected:
     omnibus = [python_executable, "-m", "omnibus"]
     for selection in srcSelected:
         source=[python_executable, f"sources/{modules['sources'][selection - 1]}/main.py"]
-        commands.append([omnibus, source])
-
+        commands.append([omnibus, source]) #no need to keep appending omnibus here, only needs to run once 
+    #find out more on how this command thing works 
 if sinkSelected:
     for selection in sinkSelected:
         sink = [python_executable, f"sinks/{modules['sinks'][selection - 1]}/main.py"]
