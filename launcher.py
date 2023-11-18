@@ -6,6 +6,7 @@ import time
 import logging
 from logtool import Logger
 
+
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
     from subprocess import CREATE_NEW_PROCESS_GROUP
@@ -27,21 +28,11 @@ for module in modules.keys():
     for i, item in enumerate(modules[module]):
         print(f"\t{i+1}. {item.capitalize()}")
 
-#display the options selectable
-def displayOptions(moduleName, moduleList):
-    print(f"{moduleName.capitalize()}:")
-    for idx, item in enumerate(moduleList):
-        print(f"\t{idx+1}. {item.capitalize()}")
-
 #arrays to store the user selection 
 srcSelected=[]
 sinkSelected=[]
 
-
-
-
-# Construct CLI commands to start Omnibus [PREVIOUS CODE, ONLY ACCEPTS ONE SOURCE/SINK]
-# remember to check for 0 inputs and handle accordingly 
+# Construct CLI commands to start Omnibus
 source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
 sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
 
@@ -55,51 +46,47 @@ sinkSelected=[int(item) for item in sinks]
 print(sinkSelected)
 
 commands=[]
+logger = Logger() # Create loggers -need to change this to allow multiple sources/sinks 
+omnibus = [python_executable, "-m", "omnibus"]
+commands.append(omnibus)
 
 if srcSelected:
-    omnibus = [python_executable, "-m", "omnibus"]
     for selection in srcSelected:
         source=[python_executable, f"sources/{modules['sources'][selection - 1]}/main.py"]
-        commands.append([omnibus, source]) #no need to keep appending omnibus here, only needs to run once 
-    #find out more on how this command thing works 
+        logger.add_logger(f"sources/{modules['sources'][selection - 1]}")
+        commands.append(source)
+
 if sinkSelected:
     for selection in sinkSelected:
-        sink = [python_executable, f"sinks/{modules['sinks'][selection - 1]}/main.py"]
-        commands.append([sink])
-#omnibus = [python_executable, "-m", "omnibus"]
-#source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
-#sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
-#commands = [omnibus, source, sink]
+        sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+        logger.add_logger(f"sinks/{modules['sinks'][selection - 1]}")
+        commands.append(sink)
+
+
+print("Loggers Initiated")
+
 processes = []
 print("Launching... ", end="")
 
-# Create loggers
-logger = Logger()
-logger.add_logger(f"sources/{modules['sources'][int(source_selection) - 1]}")
-logger.add_logger(f"sinks/{modules['sinks'][int(sink_selection) - 1]}")
-print("Loggers Initiated")
-
-#if source_selection !="0":
-    #omnibus = [python_executable, "-m", "omnibus"]
-    #source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
-    #commands = [omnibus, source]
-
-#if sink_selection !='0':
-    #sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
-    #commands.append(sink)
-
-
-
-processes = [] 
-print("Launching... ", end="")
-
 # Execute commands as subprocesses
-for command in commands:
-    if sys.platform == "win32":
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   creationflags=CREATE_NEW_PROCESS_GROUP)
-    else:
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#for command in commands:
+    #if sys.platform == "win32":
+        #process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   #creationflags=CREATE_NEW_PROCESS_GROUP)
+    #else:
+        #process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    #time.sleep(0.5)
+    #processes.append(process)
+
+#new version for executing the commands as subprocesses
+
+#start the omnibus once only 
+process=subprocess.Popen(commands[0],stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
+for command in commands[1:]:
+    print("how many times does it come in here")
+    #run the remaining processes 
+    subprocess.Popen(command)
 
     time.sleep(0.5)
     processes.append(process)
@@ -142,7 +129,8 @@ finally:
         if sys.platform == "win32":
             os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
-            process.send_signal(signal.SIGINT)
+            process.send_signal(signal.SIGINT)  
+
 
 '''
 Questions:
