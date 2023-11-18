@@ -43,47 +43,15 @@ class Launcher():
             for i, item in enumerate(self.modules[module]):
                 print(f"\t{i+1}. {item.capitalize()}")
 
-    # Enter inputs for CLI launcher
-    def input(self):
-        # Construct CLI commands to start Omnibus
-        self.source_selection = int(input(f"\nPlease enter your Source choice [1-{len(self.modules['sources'])}]: ")) - 1
-        self.sink_selection = int(input(f"Please enter your Sink choice [1-{len(self.modules['sinks'])}]: ")) - 1
-        self.omnibus = [python_executable, "-m", "omnibus"]
-        self.source = [python_executable, f"sources/{self.modules['sources'][self.source_selection]}/main.py"]
-        self.sink = [python_executable, f"sinks/{self.modules['sinks'][self.sink_selection]}/main.py"]
+# Construct CLI commands to start Omnibus
+source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
+sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
+omnibus = [python_executable, "-m", "omnibus"]
+source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
+sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
 
-commands=[]
-
-if srcSelected:
-    omnibus = [python_executable, "-m", "omnibus"]
-    for selection in srcSelected:
-        source=[python_executable, f"sources/{modules['sources'][selection - 1]}/main.py"]
-        commands.append([omnibus, source]) #no need to keep appending omnibus here, only needs to run once 
-    #find out more on how this command thing works 
-if sinkSelected:
-    for selection in sinkSelected:
-        sink = [python_executable, f"sinks/{modules['sinks'][selection - 1]}/main.py"]
-        commands.append([sink])
-#omnibus = [python_executable, "-m", "omnibus"]
-#source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
-#sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
-#commands = [omnibus, source, sink]
+commands = [omnibus, source, sink]
 processes = []
-print("Launching... ", end="")
-
-
-#if source_selection !="0":
-    #omnibus = [python_executable, "-m", "omnibus"]
-    #source = [python_executable, f"sources/{modules['sources'][int(source_selection) - 1]}/main.py"]
-    #commands = [omnibus, source]
-
-#if sink_selection !='0':
-    #sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
-    #commands.append(sink)
-
-
-
-processes = [] 
 print("Launching... ", end="")
 
     # Execute commands as subprocesses
@@ -140,7 +108,8 @@ finally:
         if sys.platform == "win32":
             os.kill(process.pid, signal.CTRL_BREAK_EVENT)
         else:
-            process.send_signal(signal.SIGINT)
+            process.send_signal(signal.SIGINT)  
+
 
 '''
 Questions:
