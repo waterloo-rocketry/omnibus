@@ -8,16 +8,37 @@ import matplotlib.pyplot as plt
 import msgpack
 
 
-def avg(data):
+# average a list of numbers
+def list_avg(data):
     return sum(data) / len(data)
 
 
 # iterator to yield the data from file-link infile
 def get_data(infile):
-    can_last = {"ox tank": [0], "pneumatics for real": [0],
-                "vent temp for real": [0], "vv": [0], "ij": [0], "ij hall": [0]}
-    can_last.update({b: [0] for b in ["CHARGING", "ARMING", "ACTUATOR_INJ",
-                    "ACTUATOR_VENT", "SENSOR_INJ", "SENSOR_VENT", "GPS", "LOGGER", "TELEMETRY"]})
+    can_last = {
+        "ox tank": [0],
+        "pneumatics for real": [0],
+        "vent temp for real": [0],
+        "vv": [0],
+        "ij": [0],
+        "ij hall": [0],
+    }
+    can_last.update(
+        {
+            b: [0]
+            for b in [
+                "CHARGING",
+                "ARMING",
+                "ACTUATOR_INJ",
+                "ACTUATOR_VENT",
+                "SENSOR_INJ",
+                "SENSOR_VENT",
+                "GPS",
+                "LOGGER",
+                "TELEMETRY",
+            ]
+        }
+    )
     start = None
     for data in msgpack.Unpacker(infile):
         # check if this was a file from the NI source (raw data) or the global log (has msgpack channels too)
@@ -39,10 +60,16 @@ def get_data(infile):
                 elif data["msg_type"] == "ACTUATOR_STATUS":
                     data = data["data"]
                     if data["actuator"] == "ACTUATOR_VENT_VALVE":
-                        can_last["vv"] = [0 if data["req_state"] == "ACTUATOR_OFF" else 100]
+                        can_last["vv"] = [
+                            0 if data["req_state"] == "ACTUATOR_OFF" else 100
+                        ]
                     if data["actuator"] == "ACTUATOR_INJECTOR_VALVE":
-                        can_last["ij"] = [0 if data["req_state"] == "ACTUATOR_OFF" else 100]
-                        can_last["ij hall"] = [0 if data["cur_state"] == "ACTUATOR_OFF" else 100]
+                        can_last["ij"] = [
+                            0 if data["req_state"] == "ACTUATOR_OFF" else 100
+                        ]
+                        can_last["ij hall"] = [
+                            0 if data["cur_state"] == "ACTUATOR_OFF" else 100
+                        ]
                 elif data["msg_type"] == "GENERAL_BOARD_STATUS":
                     can_last[data["board_id"]] = [data["data"]["time"]]
                 continue
@@ -80,10 +107,10 @@ def get_range(infile):
             continue
         last = timestamp
         times.append(timestamp)
-        datapoints.append([avg(data[k]) for k in series])
+        datapoints.append([list_avg(data[k]) for k in series])
     for k in range(len(series)):
         plt.plot(times, [d[k] for d in datapoints], label=series[k])
-    plt.legend(loc='upper right')
+    plt.legend(loc="upper right")
     plt.show()
     start = int(input("Enter timestamp (seconds) to start export: "))
     stop = int(input("Enter timestamp (seconds) to stop export: "))
@@ -104,23 +131,33 @@ def write_csv(infile, outfile, start, stop):
         if timestamp < t:
             t = timestamp
             continue
-        writer.writerow([f"{timestamp}"] +
-                        [f"{avg(data[c]):.6f}" for c in channels])
+        writer.writerow(
+            [f"{timestamp}"] + [f"{list_avg(data[c]):.6f}" for c in channels]
+        )
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('file', help='The .dat / .log file to read from')
+    parser.add_argument("file", help="The .dat / .log file to read from")
     args = parser.parse_args()
 
-    with open(args.file, 'rb') as infile:
+    if not Path(args.file).exists():
+        print(
+            f"File {args.file} does not exist! Make sure to run this script from a directory containing the file, and then run it as main.py abc.log"
+        )
+        return
+
+    print(f"Reading data from {args.file}...")
+
+    with open(args.file, "rb") as infile:
         start, stop = get_range(infile)
 
         outfilename = Path(args.file).with_suffix(".csv")
-        with open(outfilename, 'w', encoding='utf-8', newline='') as outfile:
+        with open(outfilename, "w", encoding="utf-8", newline="") as outfile:
             write_csv(infile, outfile, start, stop)
 
     print(f"Successfully wrote data to {outfilename}")
+    print("Done!")
 
 
 if __name__ == "__main__":
