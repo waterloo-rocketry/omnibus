@@ -166,8 +166,9 @@ class GUILauncher(Launcher, QDialog):
     
     def launching_gui(self):
         # Selected source and sink in GUI
-        self.source_selection = modules['sources'].index(self.source_dropdown.currentText())
-        self.sink_selection = modules['sinks'].index(self.sink_dropdown.currentText())
+        # Add one to indexes as they will be subtracted by 1 each at Launcher methods
+        self.source_selection = modules['sources'].index(self.source_dropdown.currentText()) + 1
+        self.sink_selection = modules['sinks'].index(self.sink_dropdown.currentText()) + 1
 
         self.omnibus = ["python", "-m", "omnibus"]
         self.source = ["python", f"sources/{self.source_dropdown.currentText()}/main.py"]
