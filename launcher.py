@@ -28,10 +28,10 @@ class Finished(Exception):
 class Launcher():
     def __init__(self) -> None:
         super().__init__()
-
-    # Enter inputs for CLI launcher
-    def input(self):
-        # Remove dot files
+        self.commands = []
+    
+    # Remove dot files
+    def remove_dot_files(self):
         for module in modules.keys():
             for item in modules[module]:
                 if item.startswith("."):
@@ -40,14 +40,16 @@ class Launcher():
         for module in modules.keys():
             print(f"{module.capitalize()}:")
             for i, item in enumerate(modules[module]):
-                print(f"\t{i+1}. {item.capitalize()}")
+                print(f"\t{i}. {item.capitalize()}")
 
+    # Enter inputs for CLI launcher
+    def input(self):
         # Construct CLI commands to start Omnibus
-        self.source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
-        self.sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
+        self.source_selection = input(f"\nPlease enter your Source choice [0-{len(modules['sources']) - 1}]: ")
+        self.sink_selection = input(f"Please enter your Sink choice [0-{len(modules['sinks']) - 1}]: ")
         self.omnibus = [python_executable, "-m", "omnibus"]
-        self.source = [python_executable, f"sources/{modules['sources'][int(self.source_selection) - 1]}/main.py"]
-        self.sink = [python_executable, f"sinks/{modules['sinks'][int(self.sink_selection) - 1]}/main.py"]
+        self.source = [python_executable, f"sources/{modules['sources'][int(self.source_selection)]}/main.py"]
+        self.sink = [python_executable, f"sinks/{modules['sinks'][int(self.sink_selection)]}/main.py"]
 
         self.commands = [self.omnibus, self.source, self.sink]
 
@@ -70,8 +72,8 @@ class Launcher():
     # Create loggers
     def logging(self):
         self.logger = Logger()
-        self.logger.add_logger(f"sources/{modules['sources'][int(self.source_selection) - 1]}")
-        self.logger.add_logger(f"sinks/{modules['sinks'][int(self.sink_selection) - 1]}")
+        self.logger.add_logger(f"sources/{modules['sources'][int(self.source_selection)]}")
+        self.logger.add_logger(f"sinks/{modules['sinks'][int(self.sink_selection)]}")
         print("Loggers Initiated")
 
     # If any file exits or the user presses control + c,
@@ -96,12 +98,10 @@ class Launcher():
                 
                 # Log outputs
                 self.logger.log_output(process, output)
-                print(output)
 
                 # Log errors
                 if err and "KeyboardInterrupt" not in err:
                     self.logger.log_error(process, err)
-                    print(err)
                     
             logging.shutdown()
         finally:
@@ -115,7 +115,6 @@ class Launcher():
 class GUILauncher(Launcher, QDialog):
     def __init__(self):
         super().__init__()
-        self.commands = []
 
         # Sets window title and ensures size of dialog is fixed
         self.setGeometry(300, 300, 500, 230)
@@ -155,7 +154,7 @@ class GUILauncher(Launcher, QDialog):
             self.sink_dropdown.addItem(sink)
 
         # Enter selections button
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         self.button_box.accepted.connect(self.launching_gui)
 
         # Add button to layout
@@ -163,12 +162,11 @@ class GUILauncher(Launcher, QDialog):
         self.layout.addStretch(1)
         self.layout.addWidget(self.button_box)
         self.setLayout(self.layout)
-    
+
     def launching_gui(self):
         # Selected source and sink in GUI
-        # Add one to indexes as they will be subtracted by 1 each at Launcher methods
-        self.source_selection = modules['sources'].index(self.source_dropdown.currentText()) + 1
-        self.sink_selection = modules['sinks'].index(self.sink_dropdown.currentText()) + 1
+        self.source_selection = modules['sources'].index(self.source_dropdown.currentText())
+        self.sink_selection = modules['sinks'].index(self.sink_dropdown.currentText())
 
         self.omnibus = ["python", "-m", "omnibus"]
         self.source = ["python", f"sources/{self.source_dropdown.currentText()}/main.py"]
@@ -177,7 +175,6 @@ class GUILauncher(Launcher, QDialog):
         self.commands = [self.omnibus, self.source, self.sink]
 
         self.close()
-
 
 def main():
     parser = argparse.ArgumentParser(description='Omnibus Launcher')
@@ -190,6 +187,7 @@ def main():
     if args.text:
         print("Running in text mode")
         launcher = Launcher()
+        launcher.remove_dot_files()
         launcher.input()
         launcher.subprocess()
         launcher.logging()
