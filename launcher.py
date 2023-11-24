@@ -83,16 +83,17 @@ print("Launching... ", end="")
 
 #start the omnibus once only 
 process=subprocess.Popen(commands[0],stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
+processes.append(process)
 for command in commands[1:]:
     print("how many times does it come in here")
     #run the remaining processes 
-    subprocess.Popen(command)
-
+    #subprocess.Popen(command)
+    process=subprocess.Popen(command,stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
     time.sleep(0.5)
     processes.append(process)
 
 print("Done!")
-
+print (processes)
 # Blank exception just for processes to throw
 class Finished(Exception):
     pass
@@ -102,7 +103,9 @@ class Finished(Exception):
 try:
     while True:
         for process in processes:
+            print("process that doesnt terminate: ", process)
             if process.poll() != None:
+                print("process: ", process)
                 raise Finished
 except (Finished, KeyboardInterrupt, Exception):
     for process in processes:
