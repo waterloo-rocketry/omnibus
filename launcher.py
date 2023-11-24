@@ -68,29 +68,25 @@ print("Launching... ", end="")
                 time.sleep(0.5)
             self.processes.append(process)
 
-        print("Done!")
-    
-    # Create loggers
-    def logging(self):
-        self.logger = Logger()
-        self.logger.add_logger(f"sources/{self.modules['sources'][int(self.source_selection)]}")
-        self.logger.add_logger(f"sinks/{self.modules['sinks'][int(self.sink_selection)]}")
-        print("Loggers Initiated")
+print("Done!")
 
-    # If any file exits or the user presses control + c,
-    # terminate all other files that are running
-    def terminate(self):
-        try:
-            while True:
-                for process in self.processes:
-                    if process.poll() != None:
-                        raise Finished
-        except (Finished, KeyboardInterrupt, Exception):
-            for process in self.processes:
-                if sys.platform == "win32":
-                    os.kill(process.pid, signal.CTRL_BREAK_EVENT)
-                else:
-                    process.send_signal(signal.SIGINT)
+# Blank exception just for processes to throw
+class Finished(Exception):
+    pass
+
+# If any file exits or the user presses control + c,
+# terminate all other files that are running
+try:
+    while True:
+        for process in processes:
+            if process.poll() != None:
+                raise Finished
+except (Finished, KeyboardInterrupt, Exception):
+    for process in processes:
+        if sys.platform == "win32":
+            os.kill(process.pid, signal.CTRL_BREAK_EVENT)
+        else:
+            process.send_signal(signal.SIGINT)
 
         # Dump output and error (if exists) from every
         # process to the shell 
