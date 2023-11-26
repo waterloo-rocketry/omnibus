@@ -17,9 +17,6 @@ if sys.platform == "win32":
 else:
     python_executable = "python"
 
-# Parse folders for sources and sinks
-modules = {"sources" : os.listdir('sources'), "sinks" : os.listdir('sinks')}
-
 # Blank exception just for processes to throw
 class Finished(Exception):
     pass
@@ -29,27 +26,29 @@ class Launcher():
     def __init__(self) -> None:
         super().__init__()
         self.commands = []
+
+        # Parse folders for sources and sinks
+        self.modules = {"sources" : os.listdir('sources'), "sinks" : os.listdir('sinks')}
     
-    # Remove dot files
-    def remove_dot_files(self):
-        for module in modules.keys():
-            for item in modules[module]:
+        # Remove dot files
+        for module in self.modules.keys():
+            for item in self.modules[module]:
                 if item.startswith("."):
                     self.modules[module].remove(item)
 
-        for module in modules.keys():
+        for module in self.modules.keys():
             print(f"{module.capitalize()}:")
-            for i, item in enumerate(modules[module]):
+            for i, item in enumerate(self.modules[module]):
                 print(f"\t{i}. {item.capitalize()}")
 
     # Enter inputs for CLI launcher
     def input(self):
         # Construct CLI commands to start Omnibus
-        self.source_selection = input(f"\nPlease enter your Source choice [0-{len(modules['sources']) - 1}]: ")
-        self.sink_selection = input(f"Please enter your Sink choice [0-{len(modules['sinks']) - 1}]: ")
+        self.source_selection = input(f"\nPlease enter your Source choice [0-{len(self.modules['sources']) - 1}]: ")
+        self.sink_selection = input(f"Please enter your Sink choice [0-{len(self.modules['sinks']) - 1}]: ")
         self.omnibus = [python_executable, "-m", "omnibus"]
-        self.source = [python_executable, f"sources/{modules['sources'][int(self.source_selection)]}/main.py"]
-        self.sink = [python_executable, f"sinks/{modules['sinks'][int(self.sink_selection)]}/main.py"]
+        self.source = [python_executable, f"sources/{self.modules['sources'][int(self.source_selection)]}/main.py"]
+        self.sink = [python_executable, f"sinks/{self.modules['sinks'][int(self.sink_selection)]}/main.py"]
 
         self.commands = [self.omnibus, self.source, self.sink]
 
@@ -72,8 +71,8 @@ class Launcher():
     # Create loggers
     def logging(self):
         self.logger = Logger()
-        self.logger.add_logger(f"sources/{modules['sources'][int(self.source_selection)]}")
-        self.logger.add_logger(f"sinks/{modules['sinks'][int(self.sink_selection)]}")
+        self.logger.add_logger(f"sources/{self.modules['sources'][int(self.source_selection)]}")
+        self.logger.add_logger(f"sinks/{self.modules['sinks'][int(self.sink_selection)]}")
         print("Loggers Initiated")
 
     # If any file exits or the user presses control + c,
@@ -138,7 +137,7 @@ class GUILauncher(Launcher, QDialog):
         self.source_dropdown.setGeometry(90, 52, 150, 20)
 
         # Add items to the sources dropdown
-        for source in modules.get("sources"):
+        for source in self.modules.get("sources"):
             self.source_dropdown.addItem(source)
 
         # Create a sink label
@@ -151,7 +150,7 @@ class GUILauncher(Launcher, QDialog):
         self.sink_dropdown.setGeometry(90, 92, 150, 20)
 
         # Add items to the sinks dropdown
-        for sink in modules.get("sinks"):
+        for sink in self.modules.get("sinks"):
             self.sink_dropdown.addItem(sink)
 
         # Enter selections button
@@ -169,8 +168,8 @@ class GUILauncher(Launcher, QDialog):
         self.selected_ok = True
 
         # Selected source and sink in GUI
-        self.source_selection = modules['sources'].index(self.source_dropdown.currentText())
-        self.sink_selection = modules['sinks'].index(self.sink_dropdown.currentText())
+        self.source_selection = self.modules['sources'].index(self.source_dropdown.currentText())
+        self.sink_selection = self.modules['sinks'].index(self.sink_dropdown.currentText())
 
         self.omnibus = ["python", "-m", "omnibus"]
         self.source = ["python", f"sources/{self.source_dropdown.currentText()}/main.py"]
@@ -200,7 +199,6 @@ def main():
     if args.text:
         print("Running in text mode")
         launcher = Launcher()
-        launcher.remove_dot_files()
         launcher.input()
         launcher.subprocess()
         launcher.logging()
