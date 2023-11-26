@@ -115,6 +115,7 @@ class Launcher():
 class GUILauncher(Launcher, QDialog):
     def __init__(self):
         super().__init__()
+        self.selected_ok = False
 
         # Sets window title and ensures size of dialog is fixed
         self.setGeometry(300, 300, 500, 230)
@@ -155,7 +156,8 @@ class GUILauncher(Launcher, QDialog):
 
         # Enter selections button
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
-        self.button_box.accepted.connect(self.launching_gui)
+        self.button_box.accepted.connect(self.construct_commands)
+        self.button_box.rejected.connect(self.closeEvent)
 
         # Add button to layout
         self.layout = QVBoxLayout()
@@ -163,7 +165,9 @@ class GUILauncher(Launcher, QDialog):
         self.layout.addWidget(self.button_box)
         self.setLayout(self.layout)
 
-    def launching_gui(self):
+    def construct_commands(self):
+        self.selected_ok = True
+
         # Selected source and sink in GUI
         self.source_selection = modules['sources'].index(self.source_dropdown.currentText())
         self.sink_selection = modules['sinks'].index(self.sink_dropdown.currentText())
@@ -175,6 +179,12 @@ class GUILauncher(Launcher, QDialog):
         self.commands = [self.omnibus, self.source, self.sink]
 
         self.close()
+
+    def closeEvent(self, event):
+        if self.selected_ok:
+            event.accept()
+        else:
+            sys.exit()
 
 def main():
     parser = argparse.ArgumentParser(description='Omnibus Launcher')
