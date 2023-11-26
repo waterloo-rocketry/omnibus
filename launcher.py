@@ -58,7 +58,7 @@ if srcSelected:
 
 if sinkSelected:
     for selection in sinkSelected:
-        sink = [python_executable, f"sinks/{modules['sinks'][int(sink_selection) - 1]}/main.py"]
+        sink = [python_executable, f"sinks/{modules['sinks'][int(selection) - 1]}/main.py"]
         logger.add_logger(f"sinks/{modules['sinks'][selection - 1]}")
         commands.append(sink)
 
@@ -82,13 +82,17 @@ print("Launching... ", end="")
 #new version for executing the commands as subprocesses
 
 #start the omnibus once only 
-process=subprocess.Popen(commands[0],stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
-processes.append(process)
-for command in commands[1:]:
+#process=subprocess.Popen(commands[0],stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
+#processes.append(process)
+for command in commands:
     print("how many times does it come in here")
     #run the remaining processes 
     #subprocess.Popen(command)
-    process=subprocess.Popen(command,stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
+    if sys.platform == "win32":
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   creationflags=CREATE_NEW_PROCESS_GROUP)
+    else:
+        process=subprocess.Popen(command,stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
     time.sleep(0.5)
     processes.append(process)
 
@@ -103,7 +107,7 @@ class Finished(Exception):
 try:
     while True:
         for process in processes:
-            print("process that doesnt terminate: ", process)
+            #print("process that doesnt terminate: ", process)
             if process.poll() != None:
                 print("process: ", process)
                 raise Finished
