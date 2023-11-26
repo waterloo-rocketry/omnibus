@@ -1,21 +1,22 @@
 # Printer - Prints payload of all messages on a channel.
 import sys
+from typing import Dict, Any
 from omnibus import Receiver
 
 stdout = sys.stdout
 sys.stdout = sys.stderr
 
-receiver = Receiver("")
-gps = {}
+receiver: Receiver = Receiver("")
+gps : Dict[str, Any] = {}
 
 while True:
-    data = receiver.recv()
-    msgtype = data.get("msg_type")
+    data: Dict[str,Any] = receiver.recv()
+    msgtype: str = data.get("msg_type")
     if msgtype in ["GPS_INFO", "GPS_TIMESTAMP", "GPS_ALTITUDE", "GPS_LATITUDE", "GPS_LONGITUDE"]:
         gps[msgtype] = data["data"]
 
     if msgtype == "GPS_ALTITUDE":
-        msg = "$GPGGA,"
+        msg:str = "$GPGGA,"
         msg += "{hrs:02}{mins:02}{secs:02}.{dsecs:02},".format(
             **gps.get("GPS_TIMESTAMP", {"hrs": 0, "mins": 0, "secs": 0, "dsecs": 0}))
         msg += "{degs:02}{mins:02}.{dmins:02},{direction},".format(
@@ -29,7 +30,7 @@ while True:
         msg += "0,M,,,"
         gps = {}
 
-        cs = 0
+        cs: int = 0
         for c in msg[1:]:
             cs ^= ord(c)
 
