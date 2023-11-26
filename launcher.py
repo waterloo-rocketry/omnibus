@@ -71,7 +71,7 @@ print("Launching... ", end="")
 # Execute commands as subprocesses
 
 for command in commands:
-    print("how many times does it come in here")
+    
     #run the remaining processes 
     #subprocess.Popen(command)
     if sys.platform == "win32":
@@ -83,7 +83,7 @@ for command in commands:
     processes.append(process)
 
 print("Done!")
-print (processes)
+
 # Blank exception just for processes to throw
 class Finished(Exception):
     pass
@@ -94,7 +94,6 @@ try:
     while True:
         for process in processes:
             if process.poll() != None:
-                print("process: ", process)
                 raise Finished
 except (Finished, KeyboardInterrupt, Exception):
     for process in processes:
@@ -123,3 +122,8 @@ finally:
         else:
             process.send_signal(signal.SIGINT)  
 
+'''
+notes:
+for sink #3, there's a log error -> possibly its own main 
+
+'''
