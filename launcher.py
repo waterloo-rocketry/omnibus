@@ -71,7 +71,7 @@ print("Launching... ", end="")
 #process=subprocess.Popen(commands[0],stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
 #processes.append(process)
 for command in commands:
-    print("how many times does it come in here")
+    
     #run the remaining processes 
     #subprocess.Popen(command)
     process=subprocess.Popen(command,stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
@@ -117,9 +117,6 @@ finally:
         else:
             process.send_signal(signal.SIGINT)  
 
-
 '''
-Questions:
--how does the launcher work? is it able to run independently on its own? 
--how does the user select more than one sources/sink 
-'''
+notes:
+for sink #3, there's a log error -> possibly its own main 
