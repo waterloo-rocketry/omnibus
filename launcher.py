@@ -182,9 +182,6 @@ class GUILauncher(Launcher, QDialog):
 
     def cancel(self):
         self.close()
-
-    def cancel(self):
-        sys.exit()
     
     def closeEvent(self, event):
         if self.selected_ok:
