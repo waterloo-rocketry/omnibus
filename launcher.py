@@ -157,7 +157,7 @@ class GUILauncher(Launcher, QDialog):
         # Enter selections button
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         self.button_box.accepted.connect(self.construct_commands)
-        self.button_box.rejected.connect(self.closeEvent)
+        self.button_box.rejected.connect(self.cancel)
 
         # Add button to layout
         self.layout = QVBoxLayout()
@@ -180,6 +180,12 @@ class GUILauncher(Launcher, QDialog):
 
         self.close()
 
+    def cancel(self):
+        self.close()
+
+    def cancel(self):
+        sys.exit()
+    
     def closeEvent(self, event):
         if self.selected_ok:
             event.accept()
