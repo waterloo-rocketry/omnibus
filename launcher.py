@@ -39,13 +39,13 @@ class Launcher():
         for module in self.modules.keys():
             print(f"{module.capitalize()}:")
             for i, item in enumerate(self.modules[module]):
-                print(f"\t{i}. {item.capitalize()}")
+                print(f"\t{i+1}. {item.capitalize()}")
 
     # Enter inputs for CLI launcher
     def input(self):
         # Construct CLI commands to start Omnibus
-        self.source_selection = input(f"\nPlease enter your Source choice [0-{len(self.modules['sources']) - 1}]: ")
-        self.sink_selection = input(f"Please enter your Sink choice [0-{len(self.modules['sinks']) - 1}]: ")
+        self.source_selection = int(input(f"\nPlease enter your Source choice [1-{len(self.modules['sources'])}]: ")) - 1
+        self.sink_selection = int(input(f"Please enter your Sink choice [1-{len(self.modules['sinks'])}]: ")) - 1
         self.omnibus = [python_executable, "-m", "omnibus"]
         self.source = [python_executable, f"sources/{self.modules['sources'][int(self.source_selection)]}/main.py"]
         self.sink = [python_executable, f"sinks/{self.modules['sinks'][int(self.sink_selection)]}/main.py"]
@@ -130,11 +130,11 @@ class GUILauncher(Launcher, QDialog):
         # Create a source label
         source = QLabel(self)
         source.setText("Source:")
-        source.setGeometry(20, 50, 150, 20)
+        source.setGeometry(20, 53, 150, 20)
 
         # Create a dropdown for source
         self.source_dropdown = QComboBox(self)
-        self.source_dropdown.setGeometry(90, 52, 150, 20)
+        self.source_dropdown.setGeometry(90, 52, 150, 30)
 
         # Add items to the sources dropdown
         for source in self.modules.get("sources"):
@@ -143,11 +143,11 @@ class GUILauncher(Launcher, QDialog):
         # Create a sink label
         sink = QLabel(self)
         sink.setText("Sink:")
-        sink.setGeometry(20, 90, 150, 20)
+        sink.setGeometry(20, 93, 150, 20)
 
         # Create a dropdown for sink
         self.sink_dropdown = QComboBox(self)
-        self.sink_dropdown.setGeometry(90, 92, 150, 20)
+        self.sink_dropdown.setGeometry(90, 92, 150, 30)
 
         # Add items to the sinks dropdown
         for sink in self.modules.get("sinks"):
@@ -156,7 +156,7 @@ class GUILauncher(Launcher, QDialog):
         # Enter selections button
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         self.button_box.accepted.connect(self.construct_commands)
-        self.button_box.rejected.connect(self.cancel)
+        self.button_box.rejected.connect(self.close)
 
         # Add button to layout
         self.layout = QVBoxLayout()
