@@ -54,19 +54,29 @@ commands = [omnibus, source, sink]
 processes = []
 print("Launching... ", end="")
 
-    # Execute commands as subprocesses
-    def subprocess(self):
-        self.processes = []
-        print("Launching... ", end="")
-        for command in self.commands:
-            if sys.platform == "win32":
-                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
-                                        creationflags=CREATE_NEW_PROCESS_GROUP)
-                time.sleep(0.5)
-            else:
-                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                time.sleep(0.5)
-            self.processes.append(process)
+# Execute commands as subprocesses
+#for command in commands:
+    #if sys.platform == "win32":
+        #process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   #creationflags=CREATE_NEW_PROCESS_GROUP)
+    #else:
+        #process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    #time.sleep(0.5)
+    #processes.append(process)
+
+#new version for executing the commands as subprocesses
+
+#start the omnibus once only 
+process=subprocess.Popen(commands[0],stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
+processes.append(process)
+for command in commands[1:]:
+    print("how many times does it come in here")
+    #run the remaining processes 
+    #subprocess.Popen(command)
+    process=subprocess.Popen(command,stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
+    time.sleep(0.5)
+    processes.append(process)
 
 print("Done!")
 
@@ -79,6 +89,7 @@ class Finished(Exception):
 try:
     while True:
         for process in processes:
+            print("process that doesnt terminate: ", process)
             if process.poll() != None:
                 raise Finished
 except (Finished, KeyboardInterrupt, Exception):
