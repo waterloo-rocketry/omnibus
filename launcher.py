@@ -69,21 +69,7 @@ processes = []
 print("Launching... ", end="")
 
 # Execute commands as subprocesses
-#for command in commands:
-    #if sys.platform == "win32":
-        #process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   #creationflags=CREATE_NEW_PROCESS_GROUP)
-    #else:
-        #process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    #time.sleep(0.5)
-    #processes.append(process)
-
-#new version for executing the commands as subprocesses
-
-#start the omnibus once only 
-#process=subprocess.Popen(commands[0],stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
-#processes.append(process)
 for command in commands:
     print("how many times does it come in here")
     #run the remaining processes 
@@ -107,7 +93,6 @@ class Finished(Exception):
 try:
     while True:
         for process in processes:
-            #print("process that doesnt terminate: ", process)
             if process.poll() != None:
                 print("process: ", process)
                 raise Finished
