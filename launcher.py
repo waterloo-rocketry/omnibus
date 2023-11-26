@@ -35,7 +35,9 @@ class Launcher():
             for item in self.modules[module]:
                 if item.startswith("."):
                     self.modules[module].remove(item)
-
+    
+    # Print list of sources and sinks
+    def print_choices(self):
         for module in self.modules.keys():
             print(f"{module.capitalize()}:")
             for i, item in enumerate(self.modules[module]):
@@ -47,8 +49,8 @@ class Launcher():
         self.source_selection = int(input(f"\nPlease enter your Source choice [1-{len(self.modules['sources'])}]: ")) - 1
         self.sink_selection = int(input(f"Please enter your Sink choice [1-{len(self.modules['sinks'])}]: ")) - 1
         self.omnibus = [python_executable, "-m", "omnibus"]
-        self.source = [python_executable, f"sources/{self.modules['sources'][int(self.source_selection)]}/main.py"]
-        self.sink = [python_executable, f"sinks/{self.modules['sinks'][int(self.sink_selection)]}/main.py"]
+        self.source = [python_executable, f"sources/{self.modules['sources'][self.source_selection]}/main.py"]
+        self.sink = [python_executable, f"sinks/{self.modules['sinks'][self.sink_selection]}/main.py"]
 
         self.commands = [self.omnibus, self.source, self.sink]
 
@@ -178,9 +180,6 @@ class GUILauncher(Launcher, QDialog):
         self.commands = [self.omnibus, self.source, self.sink]
 
         self.close()
-
-    def cancel(self):
-        self.close()
     
     def closeEvent(self, event):
         if self.selected_ok:
@@ -199,6 +198,7 @@ def main():
     if args.text:
         print("Running in text mode")
         launcher = Launcher()
+        launcher.print_choices()
         launcher.input()
         launcher.subprocess()
         launcher.logging()
