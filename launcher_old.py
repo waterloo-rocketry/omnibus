@@ -88,6 +88,10 @@ print("Done!")
 class Finished(Exception):
     pass
 
+print("logs")
+for key, value in logger.loggers.items():
+        print(key, ": ", value)
+
 # If any file exits or the user presses control + c,
 # terminate all other files that are running
 try:
@@ -116,6 +120,10 @@ except (Finished, KeyboardInterrupt, Exception):
             
     logging.shutdown()
 finally:
+    print("finally")
+    for key, value in logger.loggers.items():
+        print(key, ": ", value)
+
     for process in processes:
         if sys.platform == "win32":
             os.kill(process.pid, signal.CTRL_BREAK_EVENT)
@@ -125,5 +133,18 @@ finally:
 '''
 notes:
 for sink & source #3, there's a log error -> possibly its own main 
+    -no log file output due to this? 
 
+-no log file will be produced for processes that have an error 
+
+loggers :
+-create a folder to put all logs (if it hasnt existed already)
+-use a 24hr time format to name the files 
+
+processes with errors:
+sources:
+3,4,6,8
+
+sinks:
+1,3,4, 5(?)
 '''
