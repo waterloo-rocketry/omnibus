@@ -141,7 +141,8 @@ class CanSender(DashboardItem):
             # create a mapping between widget and its index in the can message
             self.widget_to_index[self.widgets[self.widget_index]] = self.widget_index
             self.layout_manager.addWidget(
-                self.widget_labels[self.widget_index], 0, self.widget_index)  # add widget to first row
+                # add widget to first row
+                self.widget_labels[self.widget_index], 0, self.widget_index)
             self.layout_manager.addWidget(
                 self.widgets[self.widget_index], 1, self.widget_index)  # add widget to second row
 

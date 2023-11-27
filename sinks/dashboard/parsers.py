@@ -1,3 +1,5 @@
+from typing import List, Tuple, Union, Any
+
 from publisher import publisher
 
 import time
@@ -29,9 +31,9 @@ func = Register("Chan").__call__(func)
 
 
 class Register:
-    func_map = {}
+    func_map: dict = {}
 
-    def __init__(self, msg_channels):
+    def __init__(self, msg_channels: Union[str, List[str]]):
         if isinstance(msg_channels, str):
             self.msg_channels = [msg_channels]
         else:
@@ -47,11 +49,12 @@ class Register:
         return func
 
 
-def parse(msg_channel, msg_payload):
+def parse(msg_channel: str, msg_payload: Any) -> None:
+    # Note: Assuming that msg_channel is a string and msg_payload can be of any type
     for channel in Register.func_map:
         if msg_channel.startswith(channel):
             for func in Register.func_map[channel]:
-                # For an explanation, please refer to later block of comments
+                # For an explanation, please refer to the later block of comments
                 for stream_name, timestamp, parsed_message in func(msg_payload):
                     publisher.update(stream_name, (timestamp, parsed_message))
 
@@ -69,7 +72,7 @@ def parse(msg_channel, msg_payload):
 
 
 @Register("DAQ")
-def daq_parser(msg_data):
+def daq_parser(msg_data: dict) -> List[Tuple[str, int, float]]:
     timestamp = msg_data["timestamp"]
     parsed_messages = []
 
@@ -80,7 +83,7 @@ def daq_parser(msg_data):
 
 
 # map between message types and fields that we need to split data based on
-splits = {
+splits: dict = {
     "ACTUATOR_CMD": "actuator",
     "ALT_ARM_CMD": "altimeter",
     "ACTUATOR_STATUS": "actuator",
@@ -88,12 +91,13 @@ splits = {
     "SENSOR_TEMP": "sensor_id",
     "SENSOR_ANALOG": "sensor_id",
 }
-last_timestamp = {}  # Last timestamp seen for each board + message type
-offset_timestamp = {}  # per-board-and-message offset to account for time rollovers
+last_timestamp: dict = {}  # Last timestamp seen for each board + message type
+offset_timestamp: dict = {}  # per-board-and-message offset to account for time rollovers
 
 
 @Register("CAN/Parsley")
-def can_parser(payload):
+def can_parser(payload: dict) -> List[Tuple[str, Union[float, int], Union[str, int]]]:
+    # Note: Assuming that the payload of a CAN message is a dictionary
     # Payload is a dictionary representing the parsed CAN message. We need to break
     # it into individual streams of data so we can plot / display / etc.
     # The main complication is that we need to split those streams in a message-
@@ -135,18 +139,21 @@ def can_parser(payload):
 
 
 @Register("RLCS")
-def rlcs_parser(payload):
+def rlcs_parser(payload: dict) -> List[Tuple[str, float, Union[str, int]]]:
+    # Note: Assuming that the payload for the RLCS parser is a dictionary
     timestamp = time.time()
     return [(f"RLCS/{k}", timestamp, v) for k, v in payload.items()]
 
 
 @Register("Parsley/Health")
-def parsley_health(payload):
+def parsley_health(payload: dict) -> List[Tuple[str, float, bool]]:
+    # Note: Assuming that the payload for the Parsley Health parser is a dictionary
     return [(f"Parsley {payload['id']} health", time.time(), payload["healthy"])]
 
 
 @Register("StateEstimation")
-def state_est_parser(payload):
+def state_est_parser(payload: dict) -> List[Tuple[str, float, Union[str, int]]]:
+    # Note: Assuming that the payload for the State Estimation parser is a dictionary
     timestamp = payload["timestamp"]
     return [
         ("StateEstimation/Orientation", timestamp, payload["data"]["orientation"]),
@@ -155,5 +162,5 @@ def state_est_parser(payload):
 
 
 @Register("")
-def all_parser(_):
+def all_parser(_) -> List[Tuple[str, int, int]]:
     return [("ALL", 0, -1)]

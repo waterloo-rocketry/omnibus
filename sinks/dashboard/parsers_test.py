@@ -1,4 +1,5 @@
 import pytest
+from typing import List, Tuple, Union, Any
 
 from parsers import daq_parser
 from parsers import can_parser
@@ -6,7 +7,7 @@ from parsers import can_parser
 
 class TestParser:
     def test_daq_parser(self):
-        data = {
+        data: dict[str, Union[int, dict[str, List[int]]]] = {
             "timestamp": 4,
             "data": {
                 "fake0": [0, 0, 0, 0, 0, 0, 0, 0],
@@ -18,7 +19,7 @@ class TestParser:
         assert daq_parser(data) == [("fake0", 4, 0), ("fake1", 4, 1), ("fake2", 4, 2)]
 
     def test_can_parser(self):
-        can_message = {
+        can_message: dict[str, Union[str, str, dict[str, Union[float, str, int]]]] = {
             'board_id': 'CHARGING',
             'msg_type': 'SENSOR_ANALOG',
             'data': {
