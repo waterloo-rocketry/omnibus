@@ -21,7 +21,7 @@ from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
 from utils import ConfirmDialog, EventTracker
-
+from PyQt5 import QtWidgets
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
 from items.dynamic_text import DynamicTextItem
@@ -32,6 +32,10 @@ from items.can_sender import CanSender
 from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.table_view import TableViewItem
+from publisher import publisher
+
+from items.can_selector import CanSelectorWindow
+
 
 
 class QGraphicsViewWrapper(QGraphicsView):
@@ -40,11 +44,14 @@ class QGraphicsViewWrapper(QGraphicsView):
     For example, we want to allow horizontal scrolling with a mouse, which we define
     as scrolling with a mouse while pressing the shift key.
     """
+    
+    
 
     def __init__(self, scene):
         super().__init__(scene)  # initialize the super class
         self.zoomed = 1.0
         self.SCROLL_SENSITIVITY = 1/3  # scale down the scrolling sensitivity
+        self.ui_window = None
 
     def wheelEvent(self, event):
         """
@@ -135,8 +142,21 @@ class Dashboard(QWidget):
 
         for i in range(len(registry.get_items())):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
-            new_action.triggered.connect(create_registry_trigger(i))
+            new_action.triggered.connect(create_registry_trigger(i)) #5
             self.lockableActions.append(new_action)
+            
+            
+        #adding a button to the dashboard that removes all dashitems on the screen
+        remove_dashitems = menubar.addMenu("Clear")
+        remove_dashitems_action = remove_dashitems.addAction("Remove all the dashitems")
+        remove_dashitems_action.triggered.connect(self.remove_all)
+        self.lockableActions.append(remove_dashitems_action)
+        
+        #adding a button to switch instances of parsley
+        can_selector = menubar.addMenu("CAN")
+        can_selector_action = can_selector.addAction("Select instance of parsley")
+        can_selector_action.triggered.connect(self.on_can_select)
+        self.lockableActions.append(can_selector_action)
 
         # adding a button to the dashboard that removes all dashitems on the screen
         remove_dashitems = menubar.addMenu("Clear")
@@ -332,6 +352,21 @@ class Dashboard(QWidget):
         # because it changes the length and causes
         # a RunTime Error
         self.widgets = {}
+        
+    def on_can_select(self):
+        lst = [e[14:] for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
+        print(lst)
+       
+        app = QtWidgets.QApplication(sys.argv)
+    
+        MainWindow = QtWidgets.QMainWindow()
+        ui = CanSelectorWindow(lst)
+        ui.setupUi(MainWindow)
+        MainWindow.show()
+        if app.exec_():
+            MainWindow.close()
+      
+        
 
     # Method to load layout from file
     def load(self):

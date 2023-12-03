@@ -16,9 +16,10 @@ import parsley.fields as pf
 from parsley.message_definitions import CAN_MESSAGE
 from .registry import Register
 from .dashboard_item import DashboardItem
-from .command_selector import send_can_message
 from utils import EventTracker
+from omnibus import Sender
 
+PARSLEY_INSTANCE = ''
 
 @Register
 class CanSender(DashboardItem):
@@ -51,6 +52,9 @@ class CanSender(DashboardItem):
         self.VALID_PULSES = 1
         self.VALID_PULSE_PERIOD = 500
         self.WIDGET_TEXT_PADDING = 50  # pixels
+        
+        #sender
+        self.sender = Sender()
 
         # using grid layout since widgets are designed in a grid-like format
         self.layout_manager = QGridLayout(self)
@@ -185,10 +189,15 @@ class CanSender(DashboardItem):
             can_message = {
                 'data': {
                     'time': time.time(),
-                    'can_msg': self.parse_can_msg()  # contains the message data bits
+                    'can_msg': self.parse_can_msg(),  # contains the message data bits
+                    'parsley': {
+                        'parsley_instance': PARSLEY_INSTANCE
+                    },
+                    
                 }
             }
-            send_can_message(can_message)
+            self.sender.send("CAN/commands", can_message)
+            
             self.pulse_indices = list(range(self.widget_index))
             self.pulse()
         except ValueError:

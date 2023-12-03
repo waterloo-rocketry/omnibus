@@ -3,6 +3,7 @@ from pyqtgraph.parametertree import Parameter, ParameterTree
 from collections import OrderedDict
 import json
 
+from .parsley_instance import PARSLEY_INSTANCE
 
 class DashboardItem(QWidget):
     """

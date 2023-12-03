@@ -4,12 +4,12 @@ from pyqtgraph.parametertree.parameterTypes import ListParameter
 
 from .dashboard_item import DashboardItem
 from .registry import Register
-from .command_selector import send_can_message
+
 
 import time
 import parsley.message_types as mt
 from parsers import publisher
-
+from .parsley_instance import PARSLEY_INSTANCE
 
 @Register
 class PeriodicCanSender(DashboardItem):
@@ -54,7 +54,10 @@ class PeriodicCanSender(DashboardItem):
                         'time': 0,
                         'actuator': self.actuator,
                         'req_state': 'ACTUATOR_ON' if self.check.isChecked() else 'ACTUATOR_OFF'
-                    }
+                    },
+                    'parsley': {
+                        'parsley_instance': PARSLEY_INSTANCE
+                    },
                 }
             }
             send_can_message(can_message)
