@@ -33,8 +33,33 @@ srcSelected=[]
 sinkSelected=[]
 
 # Construct CLI commands to start Omnibus
-source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
-sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
+#source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
+#sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
+
+#allow user input with validation checking 
+#source selection
+while True:
+    source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
+    if not source_selection.isdigit():
+        print("Please enter a digit between 1-8.")
+        continue
+    
+    if 1 <= int(source_selection) <= len(modules['sources']):
+        break 
+    else:
+        print("Please enter a number between 1-8.")
+
+#sink selection 
+while True:
+    sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
+    if not sink_selection.isdigit():
+        print("Please enter a digit between 1-5.")
+        continue
+    
+    if 1 <= int(sink_selection) <= len(modules['sinks']):
+        break 
+    else:
+        print("Please enter a number between 1-5.")
 
 #process the source/sink_selection to see how many were selected 
 sources=source_selection.split()
