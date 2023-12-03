@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import signal
-
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QPainter
 from pyqtgraph.Qt.QtWidgets import (
