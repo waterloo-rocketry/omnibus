@@ -21,7 +21,6 @@ from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
 from utils import ConfirmDialog, EventTracker
-
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
 from items.dynamic_text import DynamicTextItem
@@ -32,6 +31,11 @@ from items.can_sender import CanSender
 from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.table_view import TableViewItem
+from publisher import publisher
+
+from omnibus import Sender
+
+sender = Sender()
 
 
 class QGraphicsViewWrapper(QGraphicsView):
@@ -82,6 +86,14 @@ class Dashboard(QWidget):
     def __init__(self, callback):
         # Initialize the super class
         super().__init__()
+
+        self.current_parsley_instances = []
+
+        publisher.subscribe("ALL", self.every_second)
+
+        # Stores the selected parsley instance
+        self.parsley_instance = ''
+        publisher.subscribe('outgoing_can_messages', self.send_can_message)
 
         # Called every frame to get new data
         self.callback = callback
@@ -143,6 +155,9 @@ class Dashboard(QWidget):
         remove_dashitems_action = remove_dashitems.addAction("Remove all the dashitems")
         remove_dashitems_action.triggered.connect(self.remove_all)
         self.lockableActions.append(remove_dashitems_action)
+
+        # adding a button to switch instances of parsley
+        self.can_selector = menubar.addMenu("CAN")
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
@@ -218,7 +233,43 @@ class Dashboard(QWidget):
         self.key_press_signals.backspace_pressed.connect(self.remove_selected)
         self.installEventFilter(self.key_press_signals)
 
+    def select_instance(self, name):
+        self.parsley_instance = name
+        
+    def set_parsley_to_none(self):
+        self.parsley_instance = ''
+
+    def every_second(self, payload, stream):
+        def on_select(string):
+            def retval():
+                self.select_instance(string)
+            return retval
+   
+        
+        our_lst = [e[15:]
+                    for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
+
+        if self.current_parsley_instances != our_lst:
+            self.can_selector.clear()
+        
+
+            self.current_parsley_instances = our_lst
+
+            for inst in range(len(our_lst)):
+                new_action = self.can_selector.addAction(our_lst[inst])
+                new_action.triggered.connect(on_select(our_lst[inst]))
+                self.lockableActions.append(new_action)
+                if inst == len(our_lst) - 1:
+                    none_action = self.can_selector.addAction("None")
+                    none_action.triggered.connect(self.set_parsley_to_none)
+                    self.lockableActions.append(none_action)
+
+    def send_can_message(self, stream, payload):
+        payload['parsley'] = self.parsley_instance
+        sender.send("CAN/Commands", payload)
+
     # Method to open the parameter tree to the selected item
+
     def on_selection_changed(self):
         items = self.scene.selectedItems()
         if len(items) != 1:
@@ -333,7 +384,9 @@ class Dashboard(QWidget):
         # a RunTime Error
         self.widgets = {}
 
+
     # Method to load layout from file
+
     def load(self):
         # First remove all the current widgets
         self.remove_all()
