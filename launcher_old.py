@@ -39,35 +39,72 @@ sinkSelected=[]
 #allow user input with validation checking 
 #source selection
 while True:
-    source_selection = input(f"\nPlease enter your Source choice [1-{len(modules['sources'])}]: ")
-    if not source_selection.isdigit():
-        print("Please enter a digit between 1-8.")
-        continue
-    
-    if 1 <= int(source_selection) <= len(modules['sources']):
-        break 
-    else:
-        print("Please enter a number between 1-8.")
+    source_selection = input(f"\nPlease enter your Source choices [1-{len(modules['sources'])}] separated by spaces: ")
+
+    # Split the input string into individual values
+    sources = source_selection.split()
+
+    # Validate each input value
+    valid_src = True
+    srcSelected = []
+    for src in sources:
+        if not src.isdigit():
+            print(f"Invalid input: '{src}' is not a number.")
+            valid_src = False
+            break
+
+        src = int(src)
+        if 1 <= src <= len(modules['sources']):
+            srcSelected.append(src)
+        else:
+            print(f"Please enter a number between 1 and {len(modules['sources'])}.")
+            valid_input = False
+            break
+
+    if valid_src:
+        break
+
+# Use selected_sources list for further processing
+#print("Selected sources:", srcSelected)
 
 #sink selection 
 while True:
-    sink_selection = input(f"Please enter your Sink choice [1-{len(modules['sinks'])}]: ")
-    if not sink_selection.isdigit():
-        print("Please enter a digit between 1-5.")
-        continue
-    
-    if 1 <= int(sink_selection) <= len(modules['sinks']):
-        break 
-    else:
-        print("Please enter a number between 1-5.")
+    sink_selection = input(f"\nPlease enter your Source choices [1-{len(modules['sinks'])}] separated by spaces: ")
+
+    # Split the input string into individual values
+    sinks = sink_selection.split()
+
+    # Validate each input value
+    valid_sink = True
+    sinkSelected = []
+    for sink in sinks:
+        if not sink.isdigit():
+            print(f"Invalid input: '{sink}' is not a number.")
+            valid_sink = False
+            break
+
+        sink = int(sink)
+        if 1 <= sink <= len(modules['sinks']):
+            sinkSelected.append(sink)
+        else:
+            print(f"Please enter a number between 1 and {len(modules['sinks'])}.")
+            valid_sink = False
+            break
+
+    if valid_sink:
+        break
+
+# Use selected_sources list for further processing
+#print("Selected sources:", selected_sources)
+
 
 #process the source/sink_selection to see how many were selected 
-sources=source_selection.split()
-srcSelected=[int(item) for item in sources]
+#sources=source_selection.split()
+#srcSelected=[int(item) for item in sources]
 print(srcSelected)
 
-sinks=sink_selection.split()
-sinkSelected=[int(item) for item in sinks]
+#sinks=sink_selection.split()
+#sinkSelected=[int(item) for item in sinks]
 print(sinkSelected)
 
 commands=[]
