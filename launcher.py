@@ -8,7 +8,10 @@ import sys
 import logging
 from logtool import Logger
 from pyqtgraph.Qt import QtGui
-from pyqtgraph.Qt.QtWidgets import QApplication, QDialog, QLabel, QComboBox, QDialogButtonBox, QVBoxLayout
+from pyqtgraph.Qt.QtWidgets import (
+    QApplication, QDialog, QLabel, QComboBox, QDialogButtonBox, QVBoxLayout,
+    QWidget
+)
 
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
@@ -16,6 +19,7 @@ if sys.platform == "win32":
     python_executable = "venv/Scripts/python"
 else:
     python_executable = "python"
+
 
 # Blank exception just for processes to throw
 class Finished(Exception):
@@ -46,13 +50,84 @@ class Launcher():
     # Enter inputs for CLI launcher
     def input(self):
         # Construct CLI commands to start Omnibus
-        self.source_selection = int(input(f"\nPlease enter your Source choice [1-{len(self.modules['sources'])}]: ")) - 1
-        self.sink_selection = int(input(f"Please enter your Sink choice [1-{len(self.modules['sinks'])}]: ")) - 1
-        self.omnibus = [python_executable, "-m", "omnibus"]
-        self.source = [python_executable, f"sources/{self.modules['sources'][self.source_selection]}/main.py"]
-        self.sink = [python_executable, f"sinks/{self.modules['sinks'][self.sink_selection]}/main.py"]
+        #self.source_selection = int(input(f"\nPlease enter your Source choice [1-{len(self.modules['sources'])}]: ")) - 1
+        #self.sink_selection = int(input(f"Please enter your Sink choice [1-{len(self.modules['sinks'])}]: ")) - 1
+        
+        #source selection
+        while True:
+            self.source_selection = input(f"\nPlease enter your Source choices [1-{len(self.modules['sources'])}] separated by spaces: ")
 
-        self.commands = [self.omnibus, self.source, self.sink]
+            # Split the input string into individual values
+            self.sources = self.source_selection.split()
+
+            # Validate each input value
+            valid_src = True
+            self.srcSelected = []
+            for src in self.sources:
+                if not src.isdigit():
+                    print(f"Invalid input: '{src}' is not a number.")
+                    valid_src = False
+                    break
+                
+                src = int(src)
+                if 1 <= src <= len(self.modules['sources']):
+                    self.srcSelected.append(src)
+                else:
+                    print(f"Please enter a number between 1 and {len(self.modules['sources'])}.")
+                    valid_input = False
+                    break
+                
+            if valid_src:
+                break
+        
+        #sink selection
+        while True:
+            self.sink_selection = input(f"\nPlease enter your Source choices [1-{len(self.modules['sinks'])}] separated by spaces: ")
+        
+            # Split the input string into individual values
+            self.sinks = self.sink_selection.split()
+        
+            # Validate each input value
+            valid_sink = True
+            self.sinkSelected = []
+            for sink in self.sinks:
+                if not sink.isdigit():
+                    print(f"Invalid input: '{sink}' is not a number.")
+                    valid_sink = False
+                    break
+                
+                sink = int(sink)
+                if 1 <= sink <= len(self.modules['sinks']):
+                    self.sinkSelected.append(sink)
+                else:
+                    print(f"Please enter a number between 1 and {len(self.modules['sinks'])}.")
+                    valid_sink = False
+                    break
+                
+            if valid_sink:
+                break
+        
+        
+        
+        self.commands=[]
+        self.omnibus = [python_executable, "-m", "omnibus"]
+        self.commands.append(self.omnibus)
+        if self.srcSelected:
+            for selection in self.srcSelected:
+                source=[python_executable, f"sources/{self.modules['sources'][selection - 1]}/main.py"]
+                #logger.add_logger(f"sources/{modules['sources'][selection - 1]}")
+                self.commands.append(source)
+
+        if self.sinkSelected:
+            for selection in self.sinkSelected:
+                sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
+                #logger.add_logger(f"sinks/{modules['sinks'][selection - 1]}")
+                self.commands.append(sink)
+
+        #self.source = [python_executable, f"sources/{self.modules['sources'][self.source_selection]}/main.py"]
+        #self.sink = [python_executable, f"sinks/{self.modules['sinks'][self.sink_selection]}/main.py"]
+
+        #self.commands = [self.omnibus, self.source, self.sink]
 
     # Execute commands as subprocesses
     def subprocess(self):
@@ -73,8 +148,16 @@ class Launcher():
     # Create loggers
     def logging(self):
         self.logger = Logger()
-        self.logger.add_logger(f"sources/{self.modules['sources'][int(self.source_selection)]}")
-        self.logger.add_logger(f"sinks/{self.modules['sinks'][int(self.sink_selection)]}")
+        #self.logger.add_logger(f"sources/{self.modules['sources'][int(self.source_selection)]}")
+        #self.logger.add_logger(f"sinks/{self.modules['sinks'][int(self.sink_selection)]}")
+        
+        for src in self.srcSelected:
+            self.logger.add_logger(f"sources/{self.modules['sources'][src - 1]}")
+        
+        for sink in self.sinkSelected:
+            self.logger.add_logger(f"sinks/{self.modules['sinks'][sink - 1]}")
+
+        
         print("Loggers Initiated")
 
     # If any file exits or the user presses control + c,
@@ -110,7 +193,27 @@ class Launcher():
                 if sys.platform == "win32":
                     os.kill(process.pid, signal.CTRL_BREAK_EVENT)
                 else:
-                    process.send_signal(signal.SIGINT)        
+                    process.send_signal(signal.SIGINT) 
+
+#class for the checkable combo box that allows multiple input selection
+class CheckableComboBox(QWidget, Launcher):
+    def __init__(self, modules):
+        super().__init__()
+        layout=QVBoxLayout()
+
+        #list for sources 
+        self.srcList=QComboBox()
+        self.srcList.setEditable(True)
+        self.srcList.setMaxVisibleItems(5) #does this enable the scrolling on the list
+        self.srcList.view().pressed.connect(self.select_item)
+
+
+        #add sources/sinks to the selectable list 
+        for src in modules.get("sources"):
+            self.srcList.addItem(src)  
+
+        #todo for sink if this works 
+    
 
 # GUI Launcher
 class GUILauncher(Launcher, QDialog):
@@ -216,3 +319,18 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+'''
+
+-figure out how to do multiselect for the sources/sinks for the gui
+    -allow user to select source from a drop down list and add to comboBox? 
+    -allow user to add/remove items from the selected list 
+    -no repeated selection allowed 
+
+    -dont need a separate class for it, just add it to the guilauncher class 
+
+
+cli input:
+-mostly copy and paste from launcher_old.py
+-deal with the loggers 
+'''
