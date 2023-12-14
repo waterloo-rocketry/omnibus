@@ -12,6 +12,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QApplication, QDialog, QLabel, QComboBox, QDialogButtonBox, QVBoxLayout,
     QWidget
 )
+from PyQt5.QtGui import QStandardItemModel
+from PyQt5.QtCore import Qt
 
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
@@ -195,25 +197,7 @@ class Launcher():
                 else:
                     process.send_signal(signal.SIGINT) 
 
-#class for the checkable combo box that allows multiple input selection
-class CheckableComboBox(QWidget, Launcher):
-    def __init__(self, modules):
-        super().__init__()
-        layout=QVBoxLayout()
 
-        #list for sources 
-        self.srcList=QComboBox()
-        self.srcList.setEditable(True)
-        self.srcList.setMaxVisibleItems(5) #does this enable the scrolling on the list
-        self.srcList.view().pressed.connect(self.select_item)
-
-
-        #add sources/sinks to the selectable list 
-        for src in modules.get("sources"):
-            self.srcList.addItem(src)  
-
-        #todo for sink if this works 
-    
 
 # GUI Launcher
 class GUILauncher(Launcher, QDialog):
@@ -237,30 +221,56 @@ class GUILauncher(Launcher, QDialog):
         source.setText("Source:")
         source.setGeometry(20, 53, 150, 20)
 
-        # Create a dropdown for source
-        self.source_dropdown = QComboBox(self)
-        self.source_dropdown.setGeometry(90, 52, 150, 30)
+        # Create a dropdown for source (old)
+            #self.source_dropdown = QComboBox(self)
+            #self.source_dropdown.setGeometry(90, 52, 150, 30)
 
         # Add items to the sources dropdown
-        for source in self.modules.get("sources"):
-            self.source_dropdown.addItem(source)
+            #for source in self.modules.get("sources"):
+                #self.source_dropdown.addItem(source)
+
+        #updated checkable combo box for source
+        self.srcList=QComboBox(self)
+        self.srcList.setModel(QStandardItemModel(self.srcList))
+        self.srcList.setEditable(True)
+        self.srcList.setMaxVisibleItems(5)
+        self.srcList.setGeometry(90, 52, 150, 30)
+        self.srcList.view().pressed.connect(lambda index: self.selected_item(index, "srcList"))
+        
+
+        #populate the selection list 
+        for src in self.modules.get("sources"):
+            self.srcList.addItem(src)  
 
         # Create a sink label
         sink = QLabel(self)
         sink.setText("Sink:")
         sink.setGeometry(20, 93, 150, 20)
 
-        # Create a dropdown for sink
-        self.sink_dropdown = QComboBox(self)
-        self.sink_dropdown.setGeometry(90, 92, 150, 30)
+        # Create a dropdown for sink (old)
+            #self.sink_dropdown = QComboBox(self)
+            #self.sink_dropdown.setGeometry(90, 92, 150, 30)
 
         # Add items to the sinks dropdown
+            #for sink in self.modules.get("sinks"):
+                #self.sink_dropdown.addItem(sink)
+
+        #updated checkable combo box for sink
+        self.sinkList=QComboBox(self)
+        self.sinkList.setModel(QStandardItemModel(self.sinkList))
+        self.sinkList.setEditable(True)
+        self.sinkList.setMaxVisibleItems(5)
+        self.sinkList.setGeometry(90, 92, 150, 30)
+        self.sinkList.view().pressed.connect(lambda index: self.selected_item(index, "sinkList"))
+        
+
+        #populate the selection list 
         for sink in self.modules.get("sinks"):
-            self.sink_dropdown.addItem(sink)
+            self.sinkList.addItem(sink)  
 
         # Enter selections button
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
-        self.button_box.accepted.connect(self.construct_commands)
+        self.button_box.accepted.connect(self.construct_commands) #modify the chain of actions from here 
         self.button_box.rejected.connect(self.close)
 
         # Add button to layout
@@ -269,19 +279,73 @@ class GUILauncher(Launcher, QDialog):
         self.layout.addWidget(self.button_box)
         self.setLayout(self.layout)
 
+    def selected_item(self, index, model_name):
+        #get the item that is selected 
+        
+        if model_name=="srcList":
+            model=self.srcList.model()
+        elif model_name=="sinkList":
+            model=self.sinkList.model()
+        
+        item=model.itemFromIndex(index)
+
+        #verify if the item is in a checked state 
+        if item.checkState() == Qt.Checked:
+            item.setCheckState(Qt.Unchecked)
+        else:
+            item.setCheckState(Qt.Checked)
+        
+        #self.check_items()
+
+    def check_items(self, model):
+        #this function may not be needed 
+        checkedItems=[] #return this list only when the done is clicked 
+
+        #traverse items that are checked 
+        for row in range(model.rowCount()):
+            item = model.item(row)
+            if item.checkState() == Qt.Checked:
+                checkedItems.append(item.text())
+        return checkedItems
+
+
+
     def construct_commands(self):
         self.selected_ok = True
 
-        # Selected source and sink in GUI
-        self.source_selection = self.modules['sources'].index(self.source_dropdown.currentText())
-        self.sink_selection = self.modules['sinks'].index(self.sink_dropdown.currentText())
+        # Get selected source and sink in GUI
+        self.srcSelected=self.check_items(self.srcList.model())
+        print (self.srcSelected)
 
+        self.sinkSelected=self.check_items(self.sinkList.model())
+        print(self.sinkSelected)
+        
         self.omnibus = ["python", "-m", "omnibus"]
-        self.source = ["python", f"sources/{self.source_dropdown.currentText()}/main.py"]
-        self.sink = ["python", f"sinks/{self.sink_dropdown.currentText()}/main.py"]
+        self.commands.append(self.omnibus)
 
-        self.commands = [self.omnibus, self.source, self.sink]
+        #need to modify here for multiple sources/sinks selected - put it in a loop 
+        #old
+        #self.source_selection = self.modules['sources'].index(self.source_dropdown.currentText())
+        #self.sink_selection = self.modules['sinks'].index(self.sink_dropdown.currentText())
 
+        #TYPE ERRORS HERE
+        if self.srcSelected:
+            for selection in self.srcSelected:
+                source=[python_executable, f"sources/{self.modules['sources'][int(selection) - 1]}/main.py"]
+                #logger.add_logger(f"sources/{modules['sources'][selection - 1]}") need to deal with loggers
+                self.commands.append(source)
+
+        if self.sinkSelected:
+            for selection in self.sinkSelected:
+                sink=[python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
+                #logger.add_logger(f"sources/{modules['sources'][selection - 1]}") need to deal with loggers
+                self.commands.append(sink)
+        
+        #self.source = ["python", f"sources/{self.source_dropdown.currentText()}/main.py"]
+        #self.sink = ["python", f"sinks/{self.sink_dropdown.currentText()}/main.py"]
+
+        #self.commands = [self.omnibus, self.source, self.sink]
+        print(self.commands)
         self.close()
     
     def closeEvent(self, event):
@@ -329,8 +393,8 @@ if __name__ == '__main__':
 
     -dont need a separate class for it, just add it to the guilauncher class 
 
+cosmetic issues:
+-the window is not resizeable, the words in the label are truncated 
+(resize the window)
 
-cli input:
--mostly copy and paste from launcher_old.py
--deal with the loggers 
 '''
