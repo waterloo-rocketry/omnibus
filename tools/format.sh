@@ -10,7 +10,7 @@ fi
 WORKSPACE_DIR=$(git rev-parse --show-toplevel)
 cd "$WORKSPACE_DIR"
 
-autopep8 -i -r sources/ sinks/ omnibus/ tools/ --exit-code
+autopep8 -i -r sources/ sinks/ omnibus/ tools/ *.py --exit-code
 
 # Check for syntax errors or undefined names
 # here (F): https://flake8.pycqa.org/en/latest/user/error-codes.html
