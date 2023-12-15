@@ -153,6 +153,8 @@ class Launcher():
         #self.logger.add_logger(f"sources/{self.modules['sources'][int(self.source_selection)]}")
         #self.logger.add_logger(f"sinks/{self.modules['sinks'][int(self.sink_selection)]}")
         
+        #different for cli and gui input
+
         for src in self.srcSelected:
             self.logger.add_logger(f"sources/{self.modules['sources'][src - 1]}")
         
@@ -208,12 +210,14 @@ class GUILauncher(Launcher, QDialog):
         # Sets window title and ensures size of dialog is fixed
         self.setGeometry(300, 300, 500, 230)
         self.setFixedSize(500, 230)
+        #self.setMinimumWidth(500)
+        #self.setMinimumHeight(600)
         self.setWindowTitle("Omnibus Launcher")
 
         # Description / Title
         description = QLabel(self)
         description.setText("Please enter your source and sink choices")
-        description.setGeometry(20, 12, 400, 20)
+        description.setGeometry(20, 5, 500, 50)
         description.setFont(QtGui.QFont("", 18))
 
         # Create a source label
@@ -300,14 +304,16 @@ class GUILauncher(Launcher, QDialog):
     def check_items(self, model):
         #this function may not be needed 
         checkedItems=[] #return this list only when the done is clicked 
-
+        indexList=[]
         #traverse items that are checked 
         for row in range(model.rowCount()):
             item = model.item(row)
             if item.checkState() == Qt.Checked:
                 checkedItems.append(item.text())
-        return checkedItems
-
+                index=model.indexFromItem(item).row()
+                indexList.append(index)
+        #print("Index list: ",indexList)
+        return indexList
 
 
     def construct_commands(self):
@@ -315,37 +321,40 @@ class GUILauncher(Launcher, QDialog):
 
         # Get selected source and sink in GUI
         self.srcSelected=self.check_items(self.srcList.model())
-        print (self.srcSelected)
+        #print (self.srcSelected)
 
         self.sinkSelected=self.check_items(self.sinkList.model())
-        print(self.sinkSelected)
+        #print(self.sinkSelected)
         
         self.omnibus = ["python", "-m", "omnibus"]
         self.commands.append(self.omnibus)
 
-        #need to modify here for multiple sources/sinks selected - put it in a loop 
+        
         #old
         #self.source_selection = self.modules['sources'].index(self.source_dropdown.currentText())
         #self.sink_selection = self.modules['sinks'].index(self.sink_dropdown.currentText())
 
-        #TYPE ERRORS HERE
+        
         if self.srcSelected:
             for selection in self.srcSelected:
+                #print("current selection: ", selection)
                 source=[python_executable, f"sources/{self.modules['sources'][int(selection) - 1]}/main.py"]
-                #logger.add_logger(f"sources/{modules['sources'][selection - 1]}") need to deal with loggers
+                #source = ["python", f"sources/{selection}/main.py"]
                 self.commands.append(source)
-
+                
         if self.sinkSelected:
             for selection in self.sinkSelected:
-                sink=[python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
-                #logger.add_logger(f"sources/{modules['sources'][selection - 1]}") need to deal with loggers
+                sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
+                #sink = ["python", f"sinks/{selection}/main.py"]
                 self.commands.append(sink)
+                
+                
         
         #self.source = ["python", f"sources/{self.source_dropdown.currentText()}/main.py"]
         #self.sink = ["python", f"sinks/{self.sink_dropdown.currentText()}/main.py"]
 
         #self.commands = [self.omnibus, self.source, self.sink]
-        print(self.commands)
+        #print(self.commands)
         self.close()
     
     def closeEvent(self, event):
