@@ -88,11 +88,13 @@ class Dashboard(QWidget):
         super().__init__()
 
         self.current_parsley_instances = []
+        
+        self.track_current_parsley_instance = ['None']
 
         publisher.subscribe("ALL", self.every_second)
 
         # Stores the selected parsley instance
-        self.parsley_instance = ''
+        self.parsley_instance = "None"
         publisher.subscribe('outgoing_can_messages', self.send_can_message)
 
         # Called every frame to get new data
@@ -235,9 +237,11 @@ class Dashboard(QWidget):
 
     def select_instance(self, name):
         self.parsley_instance = name
+        self.track_current_parsley_instance.append(name)
         
     def set_parsley_to_none(self):
-        self.parsley_instance = ''
+        self.parsley_instance = 'None'
+        self.track_current_parsley_instance.append('None')
 
     def every_second(self, payload, stream):
         def on_select(string):
@@ -245,23 +249,39 @@ class Dashboard(QWidget):
                 self.select_instance(string)
             return retval
    
-        
+       
         our_lst = [e[15:]
                     for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
+        
 
-        if self.current_parsley_instances != our_lst:
+        
+        if self.current_parsley_instances != our_lst or  self.parsley_instance == self.track_current_parsley_instance[len(self.track_current_parsley_instance)-1]:
             self.can_selector.clear()
         
 
             self.current_parsley_instances = our_lst
-
+            
+            
+        
             for inst in range(len(our_lst)):
                 new_action = self.can_selector.addAction(our_lst[inst])
                 new_action.triggered.connect(on_select(our_lst[inst]))
+                new_action.setCheckable(True)
+                
+                if self.parsley_instance != our_lst[inst]:
+                    new_action.setChecked(False)
+                else:
+                    new_action.setChecked(True)
+                
                 self.lockableActions.append(new_action)
                 if inst == len(our_lst) - 1:
                     none_action = self.can_selector.addAction("None")
                     none_action.triggered.connect(self.set_parsley_to_none)
+                    none_action.setCheckable(True)
+                    if self.parsley_instance == "None":
+                        none_action.setChecked(True)
+                    else:
+                        none_action.setChecked(False)
                     self.lockableActions.append(none_action)
 
     def send_can_message(self, stream, payload):
