@@ -21,12 +21,12 @@ class SerialCommunicator:
         self.port = port
         self.serial = serial.Serial(port, baud, timeout=timeout)
         
-
     def read(self):
         return self.serial.read(4096)
 
     def write(self, msg):
         self.serial.write(msg)
+        
        
 
         
