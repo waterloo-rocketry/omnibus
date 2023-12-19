@@ -89,7 +89,7 @@ class Dashboard(QWidget):
 
         self.current_parsley_instances = []
         
-        self.refresh_track = 1
+        self.refresh_track = False
 
         publisher.subscribe("ALL", self.every_second)
 
@@ -237,11 +237,11 @@ class Dashboard(QWidget):
 
     def select_instance(self, name):
         self.parsley_instance = name
-        self.refresh_track +=1
+        self.refresh_track = True
         
     def set_parsley_to_none(self):
         self.parsley_instance = 'None'
-        self.refresh_track +=1
+        self.refresh_track = True
  
 
     def every_second(self, payload, stream):
@@ -255,11 +255,11 @@ class Dashboard(QWidget):
                     for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
         
         
-        if self.current_parsley_instances != our_lst or self.refresh_track % 2 == 0:
+        if self.current_parsley_instances != our_lst or self.refresh_track:
             self.can_selector.clear()
             
-            if (self.refresh_track % 2 == 0):
-                self.refresh_track +=1
+            if self.refresh_track:
+                self.refresh_track = False
         
             self.current_parsley_instances = our_lst
             
