@@ -12,8 +12,9 @@ from pyqtgraph.Qt.QtWidgets import (
     QApplication, QDialog, QLabel, QComboBox, QDialogButtonBox, QVBoxLayout,
     QWidget
 )
-from PySide6.QtGui import QStandardItemModel
-from PySide6.QtCore import Qt
+from pyqtgraph.Qt.QtGui import QStandardItemModel
+from pyqtgraph.Qt.QtCore import Qt
+
 
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
