@@ -245,7 +245,9 @@ class GUILauncher(Launcher, QDialog):
 
         #populate the selection list 
         for src in self.modules.get("sources"):
-            self.srcList.addItem(src)  
+            print("Source: ", src)
+            self.srcList.addItem(src) 
+        print(self.srcList) 
 
         # Create a sink label
         sink = QLabel(self)
@@ -271,6 +273,7 @@ class GUILauncher(Launcher, QDialog):
 
         #populate the selection list 
         for sink in self.modules.get("sinks"):
+            print("sinks: ", sink)
             self.sinkList.addItem(sink)  
 
         # Enter selections button
@@ -312,8 +315,8 @@ class GUILauncher(Launcher, QDialog):
             if item.checkState() == Qt.Checked:
                 checkedItems.append(item.text())
                 index=model.indexFromItem(item).row()
-                indexList.append(index)
-        #print("Index list: ",indexList)
+                indexList.append(index+1)
+        print("checkedItems: ",checkedItems)
         return indexList
 
 
@@ -322,10 +325,10 @@ class GUILauncher(Launcher, QDialog):
 
         # Get selected source and sink in GUI
         self.srcSelected=self.check_items(self.srcList.model())
-        #print (self.srcSelected)
+        print (self.srcSelected)
 
         self.sinkSelected=self.check_items(self.sinkList.model())
-        #print(self.sinkSelected)
+        print(self.sinkSelected)
         
         self.omnibus = ["python", "-m", "omnibus"]
         self.commands.append(self.omnibus)
@@ -338,14 +341,13 @@ class GUILauncher(Launcher, QDialog):
         
         if self.srcSelected:
             for selection in self.srcSelected:
-                #print("current selection: ", selection)
-                source=[python_executable, f"sources/{self.modules['sources'][int(selection) - 1]}/main.py"]
+                source=[python_executable, f"sources/{self.modules['sources'][int(selection)-1]}/main.py"]
                 #source = ["python", f"sources/{selection}/main.py"]
                 self.commands.append(source)
                 
         if self.sinkSelected:
             for selection in self.sinkSelected:
-                sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
+                sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection)-1]}/main.py"]
                 #sink = ["python", f"sinks/{selection}/main.py"]
                 self.commands.append(sink)
                 
