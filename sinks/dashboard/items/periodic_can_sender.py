@@ -1,14 +1,10 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.parametertree.parameterTypes import ListParameter
-
 from .dashboard_item import DashboardItem
 from .registry import Register
-
-
 import time
 import parsley.message_types as mt
-
 from publisher import publisher
 
 

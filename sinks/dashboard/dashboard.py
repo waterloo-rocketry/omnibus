@@ -159,7 +159,7 @@ class Dashboard(QWidget):
         self.lockableActions.append(remove_dashitems_action)
 
         # adding a button to switch instances of parsley
-        self.can_selector = menubar.addMenu("CAN")
+        self.can_selector = menubar.addMenu("Parsley")
 
         # Add an action to the menu bar to save the
         # layout of the dashboard.
@@ -239,44 +239,37 @@ class Dashboard(QWidget):
         self.parsley_instance = name
         self.refresh_track = True
         
-    def set_parsley_to_none(self):
-        self.parsley_instance = 'None'
-        self.refresh_track = True
- 
-
     def every_second(self, payload, stream):
         def on_select(string):
             def retval():
                 self.select_instance(string)
             return retval
    
-       
-        our_lst = [e[15:]
+        parsley_streams = [e[15:]
                     for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
         
-        
-        if self.current_parsley_instances != our_lst or self.refresh_track:
+        if self.current_parsley_instances != parsley_streams or self.refresh_track:
             self.can_selector.clear()
             
             if self.refresh_track:
                 self.refresh_track = False
         
-            self.current_parsley_instances = our_lst
+            self.current_parsley_instances = parsley_streams
             
-            for inst in range(len(our_lst)):
-                new_action = self.can_selector.addAction(our_lst[inst])
-                new_action.triggered.connect(on_select(our_lst[inst]))
+            for inst in range(len(parsley_streams)):
+                new_action = self.can_selector.addAction(parsley_streams[inst])
+                new_action.triggered.connect(on_select(parsley_streams[inst]))
                 new_action.setCheckable(True)
                 
-                if self.parsley_instance != our_lst[inst]:
-                    new_action.setChecked(False)
-                else:
+                if self.parsley_instance == parsley_streams[inst]:
                     new_action.setChecked(True)
+                else:
+                    new_action.setChecked(False)
                 
                 self.lockableActions.append(new_action)
-                if inst == len(our_lst) - 1:
+                if inst == len(parsley_streams) - 1:
                     none_action = self.can_selector.addAction("None")
-                    none_action.triggered.connect(self.set_parsley_to_none)
+                    none_action.triggered.connect(on_select("None"))
                     none_action.setCheckable(True)
                     if self.parsley_instance == "None":
                         none_action.setChecked(True)
