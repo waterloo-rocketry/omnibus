@@ -53,8 +53,6 @@ class Launcher():
     # Enter inputs for CLI launcher
     def input(self):
         # Construct CLI commands to start Omnibus
-        #self.source_selection = int(input(f"\nPlease enter your Source choice [1-{len(self.modules['sources'])}]: ")) - 1
-        #self.sink_selection = int(input(f"Please enter your Sink choice [1-{len(self.modules['sinks'])}]: ")) - 1
         
         #source selection
         while True:
@@ -118,19 +116,13 @@ class Launcher():
         if self.srcSelected:
             for selection in self.srcSelected:
                 source=[python_executable, f"sources/{self.modules['sources'][selection - 1]}/main.py"]
-                #logger.add_logger(f"sources/{modules['sources'][selection - 1]}")
                 self.commands.append(source)
 
         if self.sinkSelected:
             for selection in self.sinkSelected:
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
-                #logger.add_logger(f"sinks/{modules['sinks'][selection - 1]}")
                 self.commands.append(sink)
 
-        #self.source = [python_executable, f"sources/{self.modules['sources'][self.source_selection]}/main.py"]
-        #self.sink = [python_executable, f"sinks/{self.modules['sinks'][self.sink_selection]}/main.py"]
-
-        #self.commands = [self.omnibus, self.source, self.sink]
 
     # Execute commands as subprocesses
     def subprocess(self):
@@ -151,8 +143,6 @@ class Launcher():
     # Create loggers
     def logging(self):
         self.logger = Logger()
-        #self.logger.add_logger(f"sources/{self.modules['sources'][int(self.source_selection)]}")
-        #self.logger.add_logger(f"sinks/{self.modules['sinks'][int(self.sink_selection)]}")
         
         #different for cli and gui input
 
@@ -211,8 +201,6 @@ class GUILauncher(Launcher, QDialog):
         # Sets window title and ensures size of dialog is fixed
         self.setGeometry(300, 300, 500, 230)
         self.setFixedSize(500, 230)
-        #self.setMinimumWidth(500)
-        #self.setMinimumHeight(600)
         self.setWindowTitle("Omnibus Launcher")
 
         # Description / Title
@@ -226,13 +214,6 @@ class GUILauncher(Launcher, QDialog):
         source.setText("Source:")
         source.setGeometry(20, 53, 150, 20)
 
-        # Create a dropdown for source (old)
-            #self.source_dropdown = QComboBox(self)
-            #self.source_dropdown.setGeometry(90, 52, 150, 30)
-
-        # Add items to the sources dropdown
-            #for source in self.modules.get("sources"):
-                #self.source_dropdown.addItem(source)
 
         #updated checkable combo box for source
         self.srcList=QComboBox(self)
@@ -245,22 +226,12 @@ class GUILauncher(Launcher, QDialog):
 
         #populate the selection list 
         for src in self.modules.get("sources"):
-            print("Source: ", src)
             self.srcList.addItem(src) 
-        print(self.srcList) 
 
         # Create a sink label
         sink = QLabel(self)
         sink.setText("Sink:")
         sink.setGeometry(20, 93, 150, 20)
-
-        # Create a dropdown for sink (old)
-            #self.sink_dropdown = QComboBox(self)
-            #self.sink_dropdown.setGeometry(90, 92, 150, 30)
-
-        # Add items to the sinks dropdown
-            #for sink in self.modules.get("sinks"):
-                #self.sink_dropdown.addItem(sink)
 
         #updated checkable combo box for sink
         self.sinkList=QComboBox(self)
@@ -273,12 +244,11 @@ class GUILauncher(Launcher, QDialog):
 
         #populate the selection list 
         for sink in self.modules.get("sinks"):
-            print("sinks: ", sink)
             self.sinkList.addItem(sink)  
 
         # Enter selections button
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
-        self.button_box.accepted.connect(self.construct_commands) #modify the chain of actions from here 
+        self.button_box.accepted.connect(self.construct_commands) 
         self.button_box.rejected.connect(self.close)
 
         # Add button to layout
@@ -302,12 +272,10 @@ class GUILauncher(Launcher, QDialog):
             item.setCheckState(Qt.Unchecked)
         else:
             item.setCheckState(Qt.Checked)
-        
-        #self.check_items()
 
     def check_items(self, model):
         #this function may not be needed 
-        checkedItems=[] #return this list only when the done is clicked 
+        checkedItems=[]  
         indexList=[]
         #traverse items that are checked 
         for row in range(model.rowCount()):
@@ -316,7 +284,6 @@ class GUILauncher(Launcher, QDialog):
                 checkedItems.append(item.text())
                 index=model.indexFromItem(item).row()
                 indexList.append(index+1)
-        print("checkedItems: ",checkedItems)
         return indexList
 
 
@@ -325,39 +292,22 @@ class GUILauncher(Launcher, QDialog):
 
         # Get selected source and sink in GUI
         self.srcSelected=self.check_items(self.srcList.model())
-        print (self.srcSelected)
 
         self.sinkSelected=self.check_items(self.sinkList.model())
-        print(self.sinkSelected)
         
         self.omnibus = ["python", "-m", "omnibus"]
         self.commands.append(self.omnibus)
 
         
-        #old
-        #self.source_selection = self.modules['sources'].index(self.source_dropdown.currentText())
-        #self.sink_selection = self.modules['sinks'].index(self.sink_dropdown.currentText())
-
-        
         if self.srcSelected:
             for selection in self.srcSelected:
                 source=[python_executable, f"sources/{self.modules['sources'][int(selection)-1]}/main.py"]
-                #source = ["python", f"sources/{selection}/main.py"]
                 self.commands.append(source)
                 
         if self.sinkSelected:
             for selection in self.sinkSelected:
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection)-1]}/main.py"]
-                #sink = ["python", f"sinks/{selection}/main.py"]
                 self.commands.append(sink)
-                
-                
-        
-        #self.source = ["python", f"sources/{self.source_dropdown.currentText()}/main.py"]
-        #self.sink = ["python", f"sinks/{self.sink_dropdown.currentText()}/main.py"]
-
-        #self.commands = [self.omnibus, self.source, self.sink]
-        #print(self.commands)
         self.close()
     
     def closeEvent(self, event):
@@ -396,17 +346,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-'''
-
--figure out how to do multiselect for the sources/sinks for the gui
-    -allow user to select source from a drop down list and add to comboBox? 
-    -allow user to add/remove items from the selected list 
-    -no repeated selection allowed 
-
-    -dont need a separate class for it, just add it to the guilauncher class 
-
-cosmetic issues:
--the window is not resizeable, the words in the label are truncated 
-(resize the window)
-
-'''
