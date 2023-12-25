@@ -274,7 +274,7 @@ class GUILauncher(Launcher, QDialog):
             item.setCheckState(Qt.Checked)
 
     def check_items(self, model):
-        #this function may not be needed 
+        #checks if the item is selected (checkboxes)
         checkedItems=[]  
         indexList=[]
         #traverse items that are checked 
