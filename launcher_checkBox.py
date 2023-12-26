@@ -332,15 +332,14 @@ class GUILauncher(Launcher, QDialog):
             selectedList=self.sinkSelected
             print("current sink list: ", selectedList)
         
-        if state == Qt.Checked:
+        if checkbox.isChecked():
             print("Checked")
             if index not in selectedList:
                 selectedList.append(int(index))
-                print("added!")
+                
         else:
-            print("???")
-            if index in selectedList:
-                selectedList.remove(int(index))
+            print("why is it not getting removed")
+            selectedList.remove(int(index))
         
         print("selected sources: ", self.srcSelected)
         print("selected sinks: ", self.sinkSelected)
