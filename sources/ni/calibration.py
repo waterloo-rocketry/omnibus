@@ -18,16 +18,16 @@ class Calibration:
     with units.
     """
 
-    def __init__(self, unit):
-        self.unit = unit
+    def __init__(self, unit: str):
+        self.unit: str = unit
 
-    def calibrate(self, value):
+    def calibrate(self, value: float) -> float:
         """
         Apply the calibration to an input voltage.
         """
         return value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"x ({self.unit})"
 
 
@@ -36,15 +36,15 @@ class LinearCalibration(Calibration):
     Represents a linear calibration with a configurable slope and zero offset.
     """
 
-    def __init__(self, slope, offset, unit):
+    def __init__(self, slope: float, offset: float, unit: str):
         super().__init__(unit)
         self.slope = slope
         self.offset = offset
 
-    def calibrate(self, value):
+    def calibrate(self, value: float) -> float:
         return self.slope * value + self.offset
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.slope}*x + {self.offset} ({self.unit})"
 
 
@@ -53,26 +53,26 @@ class ThermistorCalibration(Calibration):
     Represents the calibration for a thermistor.
     """
 
-    def __init__(self, voltage, resistance, B, r_inf):
+    def __init__(self, voltage: float, resistance: float, B: float, r_inf: float):
         super().__init__("C")
         self.voltage = voltage  # voltage powering the thermistor
         self.resistance = resistance  # voltage divider resistance
         self.B = B  # not sure, pulled from the LabVIEW
         self.r_inf = r_inf  # not sure, pulled from the LabVIEW
 
-    def calibrate(self, value):
+    def calibrate(self, value: float) -> float:
         # thermistor magic pulled from the LabVIEW
         R_therm = (self.voltage - value) / (value / self.resistance)
         if R_therm <= 0:
             return 0
         return self.B / math.log(R_therm / self.r_inf) - 273.15
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Thermistor({self.voltage}, {self.resistance}, {self.B}, x) ({self.unit})"
 
 
 class Sensor:
-    sensors = []
+    sensors: list['Sensor'] = []
     """
     Represents a sensor plugged into the NI box. Instantiating members of this
     class sets up the sensors used with the static methods.
@@ -93,7 +93,7 @@ class Sensor:
         Sensor.sensors.append(self)
 
     @staticmethod
-    def setup(ai):
+    def setup(ai: nidaqmx.Task):
         """
         Set up the NI analog input task with the initialized sensors.
         """
@@ -112,11 +112,11 @@ class Sensor:
             print(f"  {sensor.name} ({sensor.calibration.unit}) on {sensor.channel}")
 
     @staticmethod
-    def parse(data):
+    def parse(data) -> dict[str, list[float]]:
         """
         Apply each sensor's calibration to voltages from the NI box.
         """
-        res = {}
+        res: dict[str, list[float]] = {}
         for i, sensor in enumerate(Sensor.sensors):
             res[sensor.name] = [sensor.calibration.calibrate(d) for d in data[i]]
         return res
