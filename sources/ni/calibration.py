@@ -19,7 +19,7 @@ class Calibration:
     """
 
     def __init__(self, unit: str):
-        self.unit: str = unit
+        self.unit = unit
 
     def calibrate(self, value: float) -> float:
         """
