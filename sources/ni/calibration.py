@@ -21,7 +21,7 @@ class Calibration:
     def __init__(self, unit: str):
         self.unit = unit
 
-    def calibrate(self, value: float) -> float:
+    def calibrate(self, value: float | int) -> float | int:
         """
         Apply the calibration to an input voltage.
         """
@@ -36,12 +36,12 @@ class LinearCalibration(Calibration):
     Represents a linear calibration with a configurable slope and zero offset.
     """
 
-    def __init__(self, slope: float, offset: float, unit: str):
+    def __init__(self, slope: float | int, offset: float | int, unit: str):
         super().__init__(unit)
         self.slope = slope
         self.offset = offset
 
-    def calibrate(self, value: float) -> float:
+    def calibrate(self, value: float | int) -> float | int:
         return self.slope * value + self.offset
 
     def __repr__(self) -> str:
@@ -53,14 +53,14 @@ class ThermistorCalibration(Calibration):
     Represents the calibration for a thermistor.
     """
 
-    def __init__(self, voltage: float, resistance: float, B: float, r_inf: float):
+    def __init__(self, voltage: float | int, resistance: float | int, B: float | int, r_inf: float | int):
         super().__init__("C")
         self.voltage = voltage  # voltage powering the thermistor
         self.resistance = resistance  # voltage divider resistance
         self.B = B  # not sure, pulled from the LabVIEW
         self.r_inf = r_inf  # not sure, pulled from the LabVIEW
 
-    def calibrate(self, value: float) -> float:
+    def calibrate(self, value: float | int) -> float | int:
         # thermistor magic pulled from the LabVIEW
         R_therm = (self.voltage - value) / (value / self.resistance)
         if R_therm <= 0:
@@ -78,7 +78,7 @@ class Sensor:
     class sets up the sensors used with the static methods.
     """
 
-    def __init__(self, name: str, channel: str, input_range: float,
+    def __init__(self, name: str, channel: str, input_range: float | int,
                  connection: Connection,
                  calibration: Calibration):
         self.name = name
@@ -112,11 +112,11 @@ class Sensor:
             print(f"  {sensor.name} ({sensor.calibration.unit}) on {sensor.channel}")
 
     @staticmethod
-    def parse(data) -> dict[str, list[float]]:
+    def parse(data) -> dict[str, list[float | int]]:
         """
         Apply each sensor's calibration to voltages from the NI box.
         """
-        res: dict[str, list[float]] = {}
+        res: dict[str, list[float | int]] = {}
         for i, sensor in enumerate(Sensor.sensors):
             res[sensor.name] = [sensor.calibration.calibrate(d) for d in data[i]]
         return res
