@@ -30,7 +30,7 @@ CHANNEL = "DAQ"
 
 
 def read_data(ai: nidaqmx.Task):
-    rates: list[float] = []
+    rates = []
 
     now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
     with open(f"log_{now}.dat", "wb") as log:

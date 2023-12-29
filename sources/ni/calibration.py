@@ -72,7 +72,7 @@ class ThermistorCalibration(Calibration):
 
 
 class Sensor:
-    sensors: list['Sensor'] = []
+    sensors = []
     """
     Represents a sensor plugged into the NI box. Instantiating members of this
     class sets up the sensors used with the static methods.
@@ -116,7 +116,7 @@ class Sensor:
         """
         Apply each sensor's calibration to voltages from the NI box.
         """
-        res: dict[str, list[float | int]] = {}
+        res = {}
         for i, sensor in enumerate(Sensor.sensors):
             res[sensor.name] = [sensor.calibration.calibrate(d) for d in data[i]]
         return res

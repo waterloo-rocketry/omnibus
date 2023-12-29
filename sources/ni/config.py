@@ -4,7 +4,7 @@ RATE = 1000  # Analog data sample rate
 READ_BULK = 20  # Number of samples to read at once for better performance
 
 # Mapping between briefcase ports and ai channels such that you can do ports[1] through ports[12]
-ports: list[None | str] = [
+ports = [
     None,  # port 0
     "ai16", "ai17", "ai18",  # Differental channels 1-3
     "ai19", "ai27", "ai20",  # Direct voltage channels 4-6. NOTE: Channel 6 is +24V!
@@ -12,7 +12,7 @@ ports: list[None | str] = [
     "ai15", "ai7",  "ai14",  # 4-20 mA channels 10-12
 ]
 
-thermo_ports: list[None | str] = [
+thermo_ports = [
     None,  # port 0
     "ai10", "ai2", "ai9", "ai1",  # Ports 1-4
     "ai8", "ai0"                  # Ports 5-6
