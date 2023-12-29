@@ -32,10 +32,18 @@ class PlotDashItem(DashboardItem):
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
+        self.parameters.param('average').sigValueChanged.connect(self.on_average_change)
+        self.parameters.param('buffer size').sigValueChanged.connect(self.on_buffer_size_change)
 
         self.series = self.parameters.param('series').value()
         # just a single global offset for now
         self.offset = self.parameters.param('offset').value()
+        self.average = self.parameters.param('average').value()
+        # adjustable buffer size for different levels of smoothing
+        self.Buffer_size = self.parameters.param('buffer size').value()
+
+        # buffer to calculate local average
+        self.pointsBuffer = []
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -61,7 +69,9 @@ class PlotDashItem(DashboardItem):
                                           limits=publisher.get_all_streams())
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
-        return [series_param, limit_param, offset_param]
+        average_param = {'name': 'average', 'type': 'bool', 'value': False}
+        buffer_size_param = {'name': 'buffer size', 'type': 'float', 'value': 10}
+        return [series_param, limit_param, offset_param, average_param, buffer_size_param]
 
     def on_series_change(self, param, value):
         if len(value) > 6:
@@ -80,6 +90,12 @@ class PlotDashItem(DashboardItem):
 
     def on_offset_change(self, _, offset):
         self.offset = offset
+
+    def on_average_change(self, _, average):
+        self.average = average
+
+    def on_buffer_size_change(self, _, buffer):
+        self.Buffer_size = buffer
 
     # Create the plot item
     def create_plot(self):
@@ -115,10 +131,20 @@ class PlotDashItem(DashboardItem):
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
 
+        # placing points in the buffer for smoothing
+        self.pointsBuffer.append(point)
+        while len(self.pointsBuffer) > self.Buffer_size:
+            self.pointsBuffer.pop(0)
+
         self.last[stream] = time
 
-        self.times[stream].append(time)
-        self.points[stream].append(point)
+        if self.average == True: # and len(self.pointsBuffer) == self.Buffer_size:
+            avgY = sum(self.pointsBuffer) / self.Buffer_size
+            self.times[stream].append(time)
+            self.points[stream].append(avgY)
+        else:
+            self.times[stream].append(time)
+            self.points[stream].append(point)
 
         while self.times[stream][0] < time - config.GRAPH_DURATION:
             self.times[stream].pop(0)
