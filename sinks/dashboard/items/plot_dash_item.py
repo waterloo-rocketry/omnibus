@@ -25,6 +25,7 @@ class PlotDashItem(DashboardItem):
         # since each PlotDashItem can contain more than one curve
         self.times = {}
         self.points = {}
+        self.orig_values = []
 
         # Specify the layout
         self.layout = QGridLayout()
@@ -124,7 +125,6 @@ class PlotDashItem(DashboardItem):
 
     def on_data_update(self, stream, payload):
         time, point = payload
-
         point += self.offset
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
@@ -138,12 +138,12 @@ class PlotDashItem(DashboardItem):
 
         self.last[stream] = time
 
-        if self.average == True: # and len(self.pointsBuffer) == self.Buffer_size:
+        self.times[stream].append(time)
+        self.orig_values.append(point)
+        if self.average:
             avgY = sum(self.pointsBuffer) / self.Buffer_size
-            self.times[stream].append(time)
             self.points[stream].append(avgY)
         else:
-            self.times[stream].append(time)
             self.points[stream].append(point)
 
         while self.times[stream][0] < time - config.GRAPH_DURATION:
@@ -151,15 +151,12 @@ class PlotDashItem(DashboardItem):
             self.points[stream].pop(0)
 
         # get the min/max point in the whole data set
-
-        values = list(self.points.values())
-
-        if not any(values):
+        if not any(self.orig_values):
             min_point = 0
             max_point = 0
         else:
-            min_point = min(min(v) for v in values if v)
-            max_point = max(max(v) for v in values if v)
+            min_point = min(self.orig_values)
+            max_point = max(self.orig_values)
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
