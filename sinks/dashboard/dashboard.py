@@ -246,7 +246,7 @@ class Dashboard(QWidget):
             return retval
    
         parsley_streams = [e[15:]
-                    for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
+                    for e in publisher.get_all_streams() if e.startswith("Parsley health")]
         
         parsley_streams.append("None")
         
