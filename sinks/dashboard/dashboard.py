@@ -248,6 +248,8 @@ class Dashboard(QWidget):
         parsley_streams = [e[15:]
                     for e in publisher.get_all_streams() if e.startswith("Parsley health ")]
         
+        parsley_streams.append("None")
+        
         if self.current_parsley_instances != parsley_streams or self.refresh_track:
             self.can_selector.clear()
             
@@ -267,16 +269,8 @@ class Dashboard(QWidget):
                     new_action.setChecked(False)
                 
                 self.lockableActions.append(new_action)
-                if inst == len(parsley_streams) - 1:
-                    none_action = self.can_selector.addAction("None")
-                    none_action.triggered.connect(on_select("None"))
-                    none_action.setCheckable(True)
-                    if self.parsley_instance == "None":
-                        none_action.setChecked(True)
-                    else:
-                        none_action.setChecked(False)
-                    self.lockableActions.append(none_action)
-
+                
+                
     def send_can_message(self, stream, payload):
         payload['parsley'] = self.parsley_instance
         sender.send("CAN/Commands", payload)

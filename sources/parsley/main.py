@@ -20,6 +20,7 @@ class SerialCommunicator:
     def __init__(self, port, baud, timeout):
         self.port = port
         self.serial = serial.Serial(port, baud, timeout=timeout)
+        
      
     def read(self):
         return self.serial.read(4096)
