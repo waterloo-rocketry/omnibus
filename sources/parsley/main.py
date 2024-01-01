@@ -4,6 +4,7 @@ import serial
 import crc8
 from socket import gethostname
 import traceback
+import random
 
 from omnibus import Sender, Receiver
 import parsley
@@ -14,18 +15,22 @@ HEARTBEAT_CHANNEL = "Parsley/Health"
 
 HEARTBEAT_TIME = 1
 KEEPALIVE_TIME = 10
+FAKE_MESSAGE_SPACING = 0.25
 
 
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
-        self.port = port
-        self.serial = serial.Serial(port, baud, timeout=timeout)
+        pass
+        # self.port = port
+        # self.serial = serial.Serial(port, baud, timeout=timeout)
 
     def read(self):
-        return self.serial.read(4096)
+        return b''
+        # return self.serial.read(4096)
 
     def write(self, msg):
-        self.serial.write(msg)
+        # self.serial.write(msg)
+        pass
 
 
 def main():
@@ -37,6 +42,8 @@ def main():
                         help='Options: telemetry, logger, usb. Parse input in RocketCAN Logger or USB format')
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
+    parser.add_argument('--fake', action='store_true',
+                        help="Don't read from hardware - uses fake data. Give any value for a port")
     args = parser.parse_args()
 
     communicator = SerialCommunicator(args.port, args.baud, 0)
@@ -52,15 +59,44 @@ def main():
     else:
         channel = RECEIVE_CHANNEL
 
-    sender = None
-    receiver = None
-    if not args.solo:
+    if args.solo:
+        sender = None
+        receiver = None
+    elif args.fake:
+        print("Parsley started in fake mode")
+        sender = Sender()
+        receiver = None
+    else:
         sender = Sender()
         receiver = Receiver(channel)
 
     last_valid_message_time = 0
     last_heartbeat_time = time.time()
     last_keepalive_time = 0
+
+    # fake messages to cycle through in case fake mode is on
+    fake_msgs = [
+        {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {
+            'time': 0, 'sensor_id': 'SENSOR_BATT_CURR', 'value': 0}},
+        {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {
+            'time': 0, 'sensor_id': 'SENSOR_BUS_CURR', 'value': 0}},
+        {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {
+            'time': 0, 'sensor_id': 'SENSOR_CHARGE_CURR', 'value': 0}},
+        {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {
+            'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0}},
+        {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {
+            'time': 0, 'sensor_id': 'SENSOR_GROUND_VOLT', 'value': 0}},
+        {'board_id': 'ACTUATOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data': {
+            'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0}},
+        {'board_id': 'ACTUATOR_INJ', 'msg_type': 'GENERAL_BOARD_STATUS',
+            'data': {'time': 0, 'status': 'E_NOMINAL'}},
+        {'board_id': 'ACTUATOR_INJ', 'msg_type': 'ACTUATOR_STATUS', 'data': {'time': 0,
+                                                                            'actuator': 'ACTUATOR_INJECTOR_VALVE', 'req_state': 'ACTUATOR_UNK', 'cur_state': 'ACTUATOR_OFF'}},
+        {'board_id': 'CHARGING', 'msg_type': 'GENERAL_BOARD_STATUS',
+            'data': {'time': 0, 'status': 'E_NOMINAL'}},
+    ]
+    fake_msg_index = 0
+    last_fake_zero_time = 0
 
     # invariant - buffer starts with the start of a message
     buffer = b''
@@ -92,6 +128,19 @@ def main():
             communicator.write(formatted_msg.encode())
             last_keepalive_time = now
             time.sleep(0.01)
+
+        if args.fake:
+            if now - last_fake_zero_time > FAKE_MESSAGE_SPACING:
+                fake_msgs[fake_msg_index]['data']['time'] = now
+                if "value" in fake_msgs[fake_msg_index]['data']:
+                    fake_msgs[fake_msg_index]['data']["value"] = random.randint(0, 10)
+
+            if sender:
+                sender.send(SEND_CHANNEL, fake_msgs[fake_msg_index])
+
+            fake_msg_index = (fake_msg_index + 1) % len(fake_msgs)
+            if fake_msg_index == 0:
+                last_fake_zero_time = now
 
         line = communicator.read()
 
