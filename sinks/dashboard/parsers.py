@@ -1,6 +1,7 @@
 from publisher import publisher
 
 import time
+from typing import Dict, List, Tuple, Any, Union, Callable
 
 # decorator for parse functions to save a massive if chain
 # https://peps.python.org/pep-0318/#current-syntax
@@ -29,15 +30,15 @@ func = Register("Chan").__call__(func)
 
 
 class Register:
-    func_map = {}
+    func_map: Dict[str, List[Callable[[Dict[str, Any]], List[Tuple[str, float, Any]]]]] = {}
 
-    def __init__(self, msg_channels):
+    def __init__(self, msg_channels: Union[str, List[str]]) -> None:
         if isinstance(msg_channels, str):
             self.msg_channels = [msg_channels]
         else:
             self.msg_channels = msg_channels
 
-    def __call__(self, func):
+    def __call__(self, func: Callable[[Dict[str, Any]], List[Tuple[str, float, Any]]]) -> Callable[[Dict[str, Any]], List[Tuple[str, float, Any]]]:
         for msg_channel in self.msg_channels:
             if msg_channel not in Register.func_map:
                 Register.func_map[msg_channel] = [func]
@@ -47,7 +48,7 @@ class Register:
         return func
 
 
-def parse(msg_channel, msg_payload):
+def parse(msg_channel: str, msg_payload: Dict[str, Any]) -> None:
     for channel in Register.func_map:
         if msg_channel.startswith(channel):
             for func in Register.func_map[channel]:
@@ -69,7 +70,7 @@ def parse(msg_channel, msg_payload):
 
 
 @Register("DAQ")
-def daq_parser(msg_data):
+def daq_parser(msg_data: Dict[str, Any]) -> List[Tuple[str, float, Any]]:
     timestamp = msg_data["timestamp"]
     parsed_messages = []
 
@@ -93,7 +94,7 @@ offset_timestamp = {}  # per-board-and-message offset to account for time rollov
 
 
 @Register("CAN/Parsley")
-def can_parser(payload):
+def can_parser(payload: Dict[str, Any]) -> List[Tuple[str, float, Any]]:
     # Payload is a dictionary representing the parsed CAN message. We need to break
     # it into individual streams of data so we can plot / display / etc.
     # The main complication is that we need to split those streams in a message-
@@ -135,18 +136,18 @@ def can_parser(payload):
 
 
 @Register("RLCS")
-def rlcs_parser(payload):
+def rlcs_parser(payload: Dict[str, Any]) -> List[Tuple[str, float, Any]]:
     timestamp = time.time()
     return [(f"RLCS/{k}", timestamp, v) for k, v in payload.items()]
 
 
 @Register("Parsley/Health")
-def parsley_health(payload):
+def parsley_health(payload: Dict[str, Any]) -> List[Tuple[str, float, Any]]:
     return [(f"Parsley {payload['id']} health", time.time(), payload["healthy"])]
 
 
 @Register("StateEstimation")
-def state_est_parser(payload):
+def state_est_parser(payload: Dict[str, Any]) -> List[Tuple[str, float, Any]]:
     timestamp = payload["timestamp"]
     return [
         ("StateEstimation/Orientation", timestamp, payload["data"]["orientation"]),
@@ -155,5 +156,5 @@ def state_est_parser(payload):
 
 
 @Register("")
-def all_parser(_):
+def all_parser(_: Dict[str, Any]) -> List[Tuple[str, float, Any]]:
     return [("ALL", 0, -1)]

@@ -3,6 +3,7 @@ import sys
 import json
 import signal
 
+from typing import Callable, Optional, Tuple
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QPainter
 from pyqtgraph.Qt.QtWidgets import (
@@ -41,12 +42,12 @@ class QGraphicsViewWrapper(QGraphicsView):
     as scrolling with a mouse while pressing the shift key.
     """
 
-    def __init__(self, scene):
+    def __init__(self, scene: QGraphicsScene) -> None:
         super().__init__(scene)  # initialize the super class
         self.zoomed = 1.0
         self.SCROLL_SENSITIVITY = 1/3  # scale down the scrolling sensitivity
 
-    def wheelEvent(self, event):
+    def wheelEvent(self, event) -> None:
         """
         Zoom in/out if ctrl/cmd is held
         Scroll horizontally if shift is held
@@ -79,7 +80,7 @@ class QGraphicsViewWrapper(QGraphicsView):
 
 
 class Dashboard(QWidget):
-    def __init__(self, callback):
+    def __init__(self, callback: Callable[[], None]) -> None:
         # Initialize the super class
         super().__init__()
 
@@ -127,7 +128,7 @@ class Dashboard(QWidget):
 
         # Need to create triggers like this
         # because of the way python handles
-        def create_registry_trigger(i):
+        def create_registry_trigger(i: int):
             def return_fun():
                 if not self.locked:
                     self.add(registry.get_items()[i](self.on_item_resize))
@@ -219,7 +220,7 @@ class Dashboard(QWidget):
         self.installEventFilter(self.key_press_signals)
 
     # Method to open the parameter tree to the selected item
-    def on_selection_changed(self):
+    def on_selection_changed(self) -> None:
         items = self.scene.selectedItems()
         if len(items) != 1:
             self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
@@ -236,7 +237,7 @@ class Dashboard(QWidget):
         tree_width = item.parameter_tree.sizeHint().width()
         self.splitter.setSizes([total_width - tree_width, tree_width])
 
-    def on_duplicate(self):
+    def on_duplicate(self) -> None:
         selected_items = self.scene.selectedItems()
 
         if len(selected_items) != 1:
@@ -258,7 +259,7 @@ class Dashboard(QWidget):
 
     # method to handle dimension changes in parameter tree
 
-    def on_item_resize(self, item):
+    def on_item_resize(self, item: QGraphicsItem) -> None:
         width = item.parameters.param('width').value() + 1
         height = item.parameters.param('height').value() + 1
         for proxy, candidate in self.widgets.values():
@@ -268,7 +269,7 @@ class Dashboard(QWidget):
                 return
 
     # Method to add widgets
-    def add(self, dashitem, pos=None):
+    def add(self, dashitem: QGraphicsItem, pos: Optional[Tuple[int, int]] = None) -> None:
         # Add the dash item to the scene and get
         # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
@@ -311,7 +312,7 @@ class Dashboard(QWidget):
         self.widgets[rect] = [proxy, dashitem]
 
     # Method to remove a widget
-    def remove(self, item):
+    def remove(self, item) -> None:
         # Remove the rectangle from the scene,
         # delete the proxy widget and tell the
         # dashitem to stop sending data
@@ -323,7 +324,7 @@ class Dashboard(QWidget):
         dashitem.on_delete()
 
     # Method to remove all widgets
-    def remove_all(self):
+    def remove_all(self) -> None:
         for item in self.widgets:
             self.remove(item)
 
@@ -334,7 +335,7 @@ class Dashboard(QWidget):
         self.widgets = {}
 
     # Method to load layout from file
-    def load(self):
+    def load(self) -> None:
         # First remove all the current widgets
         self.remove_all()
 
@@ -362,7 +363,7 @@ class Dashboard(QWidget):
                     break
 
     # Method to save current layout to file
-    def save(self):
+    def save(self) -> None:
         # General structure for saving the dashboard info
         data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
 
@@ -392,7 +393,7 @@ class Dashboard(QWidget):
             json.dump(data, savefile)
 
     # Method to switch to a layout in a different file
-    def switch(self):
+    def switch(self) -> None:
         self.save()
         (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
 
@@ -403,7 +404,7 @@ class Dashboard(QWidget):
         self.load()
 
     # Method to lock dashboard
-    def lock(self):
+    def lock(self) -> None:
         self.locked = True
         self.setWindowTitle("Omnibus Dashboard - LOCKED")
 
@@ -417,7 +418,7 @@ class Dashboard(QWidget):
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
 
     # Method to unlock dashboard
-    def unlock(self):
+    def unlock(self) -> None:
         self.locked = False
         self.setWindowTitle("Omnibus Dashboard")
 
@@ -431,11 +432,11 @@ class Dashboard(QWidget):
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=True)
 
     # Method to handle exit
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self.remove_all()
 
     # Method to display help box
-    def help(self):
+    def help(self) -> None:
         message = """
             WELCOME TO THE OMNIBUS DASHBOARD!
 
@@ -451,12 +452,12 @@ class Dashboard(QWidget):
         help_box.exec()
 
     # Method to get new data for widgets
-    def update(self):
+    def update(self) -> None:
         self.counter.tick()
         self.callback()
 
     # Method to center the view
-    def reset_zoom(self):
+    def reset_zoom(self) -> None:
         # Reset the zoom
         self.view.scale(1/self.view.zoomed, 1/self.view.zoomed)
         self.view.zoomed = 1
@@ -466,7 +467,7 @@ class Dashboard(QWidget):
         scene_height = self.scene.height()
         self.view.centerOn(scene_width/2, scene_height/2)
 
-    def remove_selected(self):
+    def remove_selected(self) -> None:
         if self.locked:
             return
         for item in self.scene.selectedItems():
@@ -475,7 +476,7 @@ class Dashboard(QWidget):
 
 
 # Function to launch the dashboard
-def dashboard_driver(callback):
+def dashboard_driver(callback: Callable[[], None]) -> None:
     # quit applicaiton from terminal
     signal.signal(signal.SIGINT, lambda *args: QApplication.quit())
     app = QApplication(sys.argv)
