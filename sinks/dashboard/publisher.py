@@ -1,3 +1,6 @@
+from typing import Any, Callable, List
+
+
 class Publisher:
     """
     The core data bus of the dashboard. 
@@ -8,14 +11,14 @@ class Publisher:
     is called when the data is updated.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.streams = {}
         self.stream_update_callbacks = []
 
-    def register_stream_callback(self, cb):
+    def register_stream_callback(self, cb: Callable) -> None:
         self.stream_update_callbacks.append(cb)
 
-    def get_all_streams(self):
+    def get_all_streams(self) -> List[Any]:
         ret_val = list(self.streams.keys())
         ret_val.sort()
         return ret_val
