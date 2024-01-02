@@ -88,7 +88,7 @@ class Dashboard(QWidget):
         super().__init__()
 
         self.current_parsley_instances = []
-        
+
         self.refresh_track = False
 
         publisher.subscribe("ALL", self.every_second)
@@ -238,39 +238,38 @@ class Dashboard(QWidget):
     def select_instance(self, name):
         self.parsley_instance = name
         self.refresh_track = True
-        
+
     def every_second(self, payload, stream):
         def on_select(string):
             def retval():
                 self.select_instance(string)
             return retval
-   
+
         parsley_streams = [e[15:]
-                    for e in publisher.get_all_streams() if e.startswith("Parsley health")]
-        
+                           for e in publisher.get_all_streams() if e.startswith("Parsley health")]
+
         parsley_streams.append("None")
-        
+
         if self.current_parsley_instances != parsley_streams or self.refresh_track:
             self.can_selector.clear()
-            
+
             if self.refresh_track:
                 self.refresh_track = False
-        
+
             self.current_parsley_instances = parsley_streams
-            
+
             for inst in range(len(parsley_streams)):
                 new_action = self.can_selector.addAction(parsley_streams[inst])
                 new_action.triggered.connect(on_select(parsley_streams[inst]))
                 new_action.setCheckable(True)
-                
+
                 if self.parsley_instance == parsley_streams[inst]:
                     new_action.setChecked(True)
                 else:
                     new_action.setChecked(False)
-                
+
                 self.lockableActions.append(new_action)
-                
-                
+
     def send_can_message(self, stream, payload):
         payload['parsley'] = self.parsley_instance
         sender.send("CAN/Commands", payload)
@@ -390,7 +389,6 @@ class Dashboard(QWidget):
         # because it changes the length and causes
         # a RunTime Error
         self.widgets = {}
-
 
     # Method to load layout from file
 
