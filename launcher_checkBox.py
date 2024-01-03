@@ -108,8 +108,6 @@ class Launcher():
             if valid_sink:
                 break
         
-        
-        
         self.commands=[]
         self.omnibus = [python_executable, "-m", "omnibus"]
         self.commands.append(self.omnibus)
@@ -201,13 +199,13 @@ class GUILauncher(Launcher, QDialog):
         self.setFixedSize(500, 400)
         self.setWindowTitle("Omnibus Launcher")
 
-        description = QLabel(self)
-        description.setText("Please enter your source and sink choices")
-        description.setGeometry(20, 5, 500, 50)
-        description.setFont(QtGui.QFont("", 18))
+        #description = QLabel(self)
+        #description.setText("Please enter your source and sink choices")
+        #description.setGeometry(20, 5, 500, 50)
+        #description.setFont(QtGui.QFont("", 18))
 
         source_label = QLabel(self)
-        source_label.setText("Source:")
+        source_label.setText("Sources:")
         source_label.setGeometry(20, 53, 150, 20)
 
         # Create checkboxes for each source option
@@ -227,13 +225,13 @@ class GUILauncher(Launcher, QDialog):
         sourceList = QWidget()
         sourceList.setLayout(self.srcLayout)
 
-        #connect checkboxes to detect which sources were selected 
+        #connect checkbox state to signals to detect which sources were selected 
         for checkbox in self.srcCheckBoxes:
             checkbox.stateChanged.connect(self.update_selected)
 
         # Create a sink label
         sink = QLabel(self)
-        sink.setText("Sink:")
+        sink.setText("Sinks:")
         sink.setGeometry(20, 93, 150, 20)
 
        #create checkboxes for each sink option 
@@ -252,7 +250,7 @@ class GUILauncher(Launcher, QDialog):
         sinkList=QWidget()
         sinkList.setLayout(self.sinkLayout)
 
-        #connect checkboxes to detect which sources were selected 
+        #connect checkbox state to signals to detect which sources were selected 
         for checkbox in self.sinkCheckBoxes:
             checkbox.stateChanged.connect(self.update_selected)
 
@@ -263,7 +261,7 @@ class GUILauncher(Launcher, QDialog):
         self.button_box.rejected.connect(self.close)
 
         main_layout = QVBoxLayout()
-        main_layout.addWidget(description)
+        #main_layout.addWidget(description)
         main_layout.addWidget(source_label)
         main_layout.addWidget(sourceList)  # Add source checkboxes in grid layout
         main_layout.addWidget(sink)
@@ -271,35 +269,6 @@ class GUILauncher(Launcher, QDialog):
         main_layout.addWidget(self.button_box)
 
         self.setLayout(main_layout)  # Set the main layout for the dialog
-
-    def selected_item(self, index, model_name):
-        #get the item that is selected 
-        if model_name=="srcList":
-            model=self.srcList.model()
-        elif model_name=="sinkList":
-            model=self.sinkList.model()
-        
-        item=model.itemFromIndex(index)
-
-        #verify if the item is in a checked state 
-        if item.checkState() == Qt.Checked:
-            item.setCheckState(Qt.Unchecked)
-        else:
-            item.setCheckState(Qt.Checked)
-
-    def check_items(self, model):
-        #checks if the item is selected (checkboxes)
-        checkedItems=[]  
-        indexList=[]
-        #traverse items that are checked 
-        for row in range(model.rowCount()):
-            item = model.item(row)
-            if item.checkState() == Qt.Checked:
-                checkedItems.append(item.text())
-                index=model.indexFromItem(item).row()
-                indexList.append(index+1)
-        return indexList
-
 
     def construct_commands(self):
         self.selected_ok = True
@@ -323,27 +292,19 @@ class GUILauncher(Launcher, QDialog):
         checkbox=self.sender()
         text=checkbox.text()
         index=text.split('. ')[0]
-        print("index: ", index)
 
         if checkbox in self.srcCheckBoxes:
             selectedList=self.srcSelected
-            print("current src list: ", selectedList)
         else:
             selectedList=self.sinkSelected
-            print("current sink list: ", selectedList)
-        
         if checkbox.isChecked():
-            print("Checked")
+            
             if index not in selectedList:
                 selectedList.append(int(index))
                 
         else:
-            print("why is it not getting removed")
             selectedList.remove(int(index))
         
-        print("selected sources: ", self.srcSelected)
-        print("selected sinks: ", self.sinkSelected)
-    
     
     def closeEvent(self, event):
         if self.selected_ok:
@@ -380,3 +341,11 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+'''
+You can probably remove the Please enter your source and sink choices text [DONE]
+Pluralize Source: and Sink: [DONE]
+Remove the extra spacing under the source and sink headings
+Remove the numbers for the sources and sinks listed
+Capitalize the sources and sinks listed
+'''
