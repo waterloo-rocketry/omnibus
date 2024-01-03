@@ -199,14 +199,10 @@ class GUILauncher(Launcher, QDialog):
         self.setFixedSize(500, 400)
         self.setWindowTitle("Omnibus Launcher")
 
-        #description = QLabel(self)
-        #description.setText("Please enter your source and sink choices")
-        #description.setGeometry(20, 5, 500, 50)
-        #description.setFont(QtGui.QFont("", 18))
-
         source_label = QLabel(self)
         source_label.setText("Sources:")
-        source_label.setGeometry(20, 0, 150, 20)
+        source_label.setGeometry(20, 10, 50, 10)
+        #source_label.setContentsMargins(0, 0, 0, 0)
 
         # Create checkboxes for each source option
         sources = self.modules.get("sources")
@@ -214,6 +210,7 @@ class GUILauncher(Launcher, QDialog):
         self.src_dict = {source: i + 1 for i, source in enumerate(upSource)}
         self.srcCheckBoxes = [QCheckBox(f"{src}") for src in upSource]
         self.srcSelected=[]
+        
         # Layout for source checkboxes
         self.srcLayout = QGridLayout()
         row = 0
@@ -227,6 +224,7 @@ class GUILauncher(Launcher, QDialog):
 
         sourceList = QWidget()
         sourceList.setLayout(self.srcLayout)
+        sourceList.setContentsMargins(0, 0, 0, 0)
 
         #connect checkbox state to signals to detect which sources were selected 
         for checkbox in self.srcCheckBoxes:
@@ -235,7 +233,8 @@ class GUILauncher(Launcher, QDialog):
         # Create a sink label
         sink = QLabel(self)
         sink.setText("Sinks:")
-        sink.setGeometry(20, 93, 150, 20)
+        sink.setGeometry(20, 200, 50, 10)
+        sink.setContentsMargins(0,0,0,0)
 
        #create checkboxes for each sink option 
         sinks = self.modules.get("sinks")
@@ -256,7 +255,8 @@ class GUILauncher(Launcher, QDialog):
                 row+=1
         sinkList=QWidget()
         sinkList.setLayout(self.sinkLayout)
-        self.sinkLayout.setSpacing(0)
+        sinkList.setContentsMargins(0,0,0,0)
+        #self.sinkLayout.setSpacing(5)
 
         #connect checkbox state to signals to detect which sources were selected 
         for checkbox in self.sinkCheckBoxes:
@@ -269,14 +269,13 @@ class GUILauncher(Launcher, QDialog):
         self.button_box.rejected.connect(self.close)
 
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(20,0,0,0)
-        #main_layout.addWidget(description)
+        main_layout.setSpacing(0)
         
-        main_layout.addWidget(source_label)
-        sourceList.setContentsMargins(0,0,0,0)
+        #main_layout.addWidget(source_label)
+        
         main_layout.addWidget(sourceList)  # Add source checkboxes in grid layout
         
-        main_layout.addWidget(sink)
+        #main_layout.addWidget(sink)
         main_layout.addWidget(sinkList)
         main_layout.addWidget(self.button_box)
 
@@ -304,9 +303,6 @@ class GUILauncher(Launcher, QDialog):
         checkbox=self.sender()
         text=checkbox.text()
         print("Selected: ", text)
-        #index=text.split('. ')[0]
-
-        #search the dictionary for the value 
         
 
         if checkbox in self.srcCheckBoxes:
