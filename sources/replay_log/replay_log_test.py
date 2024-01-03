@@ -11,7 +11,7 @@ from omnibus import Message
 import replay_log
 
 
-def get_rand_str(l: int=10) -> str:
+def get_rand_str(l: int = 10) -> str:
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=l))
 
 
