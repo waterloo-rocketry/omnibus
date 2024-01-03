@@ -206,12 +206,13 @@ class GUILauncher(Launcher, QDialog):
 
         source_label = QLabel(self)
         source_label.setText("Sources:")
-        source_label.setGeometry(20, 53, 150, 20)
+        source_label.setGeometry(20, 0, 150, 20)
 
         # Create checkboxes for each source option
         sources = self.modules.get("sources")
         upSource = [source.capitalize() for source in sources]
-        self.srcCheckBoxes = [QCheckBox(f"{i+1}. {src}") for i, src in enumerate(upSource)]
+        self.src_dict = {source: i + 1 for i, source in enumerate(upSource)}
+        self.srcCheckBoxes = [QCheckBox(f"{src}") for src in upSource]
         self.srcSelected=[]
         # Layout for source checkboxes
         self.srcLayout = QGridLayout()
@@ -239,7 +240,8 @@ class GUILauncher(Launcher, QDialog):
        #create checkboxes for each sink option 
         sinks = self.modules.get("sinks")
         upSink = [sink.capitalize() for sink in sinks]
-        self.sinkCheckBoxes = [QCheckBox(f"{i+1}. {sink}") for i, sink in enumerate(upSink)]
+        self.sink_dict = {sink: i + 1 for i, sink in enumerate(upSink)}
+        self.sinkCheckBoxes = [QCheckBox(f"{sink}") for sink in upSink]
         
         self.sinkSelected=[]
         #Layout for sink checkboxes
@@ -254,6 +256,7 @@ class GUILauncher(Launcher, QDialog):
                 row+=1
         sinkList=QWidget()
         sinkList.setLayout(self.sinkLayout)
+        self.sinkLayout.setSpacing(0)
 
         #connect checkbox state to signals to detect which sources were selected 
         for checkbox in self.sinkCheckBoxes:
@@ -266,9 +269,13 @@ class GUILauncher(Launcher, QDialog):
         self.button_box.rejected.connect(self.close)
 
         main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(20,0,0,0)
         #main_layout.addWidget(description)
+        
         main_layout.addWidget(source_label)
+        sourceList.setContentsMargins(0,0,0,0)
         main_layout.addWidget(sourceList)  # Add source checkboxes in grid layout
+        
         main_layout.addWidget(sink)
         main_layout.addWidget(sinkList)
         main_layout.addWidget(self.button_box)
@@ -296,12 +303,20 @@ class GUILauncher(Launcher, QDialog):
     def update_selected(self, state):
         checkbox=self.sender()
         text=checkbox.text()
-        index=text.split('. ')[0]
+        print("Selected: ", text)
+        #index=text.split('. ')[0]
+
+        #search the dictionary for the value 
+        
 
         if checkbox in self.srcCheckBoxes:
             selectedList=self.srcSelected
+            index=self.src_dict[text]
+
         else:
             selectedList=self.sinkSelected
+            index=self.sink_dict[text]
+        print("index: ", index)
         if checkbox.isChecked():
             
             if index not in selectedList:
@@ -351,6 +366,6 @@ if __name__ == '__main__':
 You can probably remove the Please enter your source and sink choices text [DONE]
 Pluralize Source: and Sink: [DONE]
 Remove the extra spacing under the source and sink headings
-Remove the numbers for the sources and sinks listed
+Remove the numbers for the sources and sinks listed [DONE]
 Capitalize the sources and sinks listed [DONE]
 '''
