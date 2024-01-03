@@ -2,9 +2,7 @@ from pyqtgraph.Qt.QtWidgets import QVBoxLayout, QButtonGroup, QPushButton, QRadi
 from pyqtgraph.Qt.QtGui import QPixmap
 from pyqtgraph.parametertree.parameterTypes import FileParameter
 from pyqtgraph.Qt.QtCore import QSize, Qt
-
 from omnibus import Sender
-
 from .dashboard_item import DashboardItem
 from .registry import Register
 
