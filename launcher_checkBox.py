@@ -209,7 +209,9 @@ class GUILauncher(Launcher, QDialog):
         source_label.setGeometry(20, 53, 150, 20)
 
         # Create checkboxes for each source option
-        self.srcCheckBoxes = [QCheckBox(f"{i+1}. {src}") for i, src in enumerate(self.modules.get("sources"))]
+        sources = self.modules.get("sources")
+        upSource = [source.capitalize() for source in sources]
+        self.srcCheckBoxes = [QCheckBox(f"{i+1}. {src}") for i, src in enumerate(upSource)]
         self.srcSelected=[]
         # Layout for source checkboxes
         self.srcLayout = QGridLayout()
@@ -235,7 +237,10 @@ class GUILauncher(Launcher, QDialog):
         sink.setGeometry(20, 93, 150, 20)
 
        #create checkboxes for each sink option 
-        self.sinkCheckBoxes=[QCheckBox(f"{i+1}. {sink}") for i, sink in enumerate(self.modules.get("sinks"))]
+        sinks = self.modules.get("sinks")
+        upSink = [sink.capitalize() for sink in sinks]
+        self.sinkCheckBoxes = [QCheckBox(f"{i+1}. {sink}") for i, sink in enumerate(upSink)]
+        
         self.sinkSelected=[]
         #Layout for sink checkboxes
         self.sinkLayout=QGridLayout()
@@ -347,5 +352,5 @@ You can probably remove the Please enter your source and sink choices text [DONE
 Pluralize Source: and Sink: [DONE]
 Remove the extra spacing under the source and sink headings
 Remove the numbers for the sources and sinks listed
-Capitalize the sources and sinks listed
+Capitalize the sources and sinks listed [DONE]
 '''
