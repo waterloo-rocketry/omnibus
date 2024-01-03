@@ -15,4 +15,5 @@ autopep8 -i -r sources/ sinks/ omnibus/ tools/ *.py --exit-code
 # Check for syntax errors or undefined names
 # here (F): https://flake8.pycqa.org/en/latest/user/error-codes.html
 # and here (E): https://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
+# flake8 config can be found in setup.cfg
 flake8
