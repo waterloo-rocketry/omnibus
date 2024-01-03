@@ -39,6 +39,8 @@ def main():
                         help="Don't connect to omnibus - just print to stdout.")
     args = parser.parse_args()
 
+    sender_id = f"{gethostname()}/{args.format}/{args.port}"
+
     communicator = SerialCommunicator(args.port, args.baud, 0)
     if args.format == "telemetry":
         parser = parsley.parse_live_telemetry
@@ -71,7 +73,7 @@ def main():
             last_heartbeat_time = now
             healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
             sender.send(HEARTBEAT_CHANNEL, {
-                "id": f"{gethostname()}/{args.format}", "healthy": healthy})
+                "id": sender_id, "healthy": healthy})
 
         if args.format == "telemetry" and time.time() - last_keepalive_time > KEEPALIVE_TIME:
             communicator.write(b'.')
@@ -80,18 +82,21 @@ def main():
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
+            # checking parsley instance
+            parsley_instance = msg.payload['parsley']
 
-            formatted_msg = f"m{msg_sid:03X}"
-            if msg_data:
-                formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
-            formatted_msg += ";" + crc8.crc8(
-                msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
-            ).hexdigest().upper()
-            print(formatted_msg)  # always print the usb debug style can message
-            # send the can message over the specified port
-            communicator.write(formatted_msg.encode())
-            last_keepalive_time = now
-            time.sleep(0.01)
+            if parsley_instance == sender_id:
+                formatted_msg = f"m{msg_sid:03X}"
+                if msg_data:
+                    formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
+                formatted_msg += ";" + crc8.crc8(
+                    msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
+                ).hexdigest().upper()
+                print(formatted_msg)  # always print the usb debug style can message
+                # send the can message over the specified port
+                communicator.write(formatted_msg.encode())
+                last_keepalive_time = now
+                time.sleep(0.01)
 
         line = communicator.read()
 
