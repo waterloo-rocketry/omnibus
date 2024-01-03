@@ -7,6 +7,7 @@ import random
 import msgpack
 import pytest
 
+from omnibus import Message
 import replay_log
 
 
@@ -39,7 +40,7 @@ class MockSender:
     # mock_file records sent messages and has class scope to simplify monkeypatching
     mock_file = None
 
-    def send_message(self, msg):
+    def send_message(self, msg: Message | None):
         if msg is None:
             return
         packed_bytes = msgpack.packb([msg.channel, msg.timestamp, msg.payload])
