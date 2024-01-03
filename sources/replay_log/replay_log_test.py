@@ -1,6 +1,7 @@
 import io
 import time
 import string
+from typing import Generator
 import random
 
 import msgpack
@@ -9,7 +10,7 @@ import pytest
 import replay_log
 
 
-def get_rand_str(l=10):
+def get_rand_str(l: int=10) -> str:
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=l))
 
 
@@ -17,7 +18,7 @@ def get_percent_error(expected, received):
     return abs(expected - received) / expected
 
 
-def generate_mock_writetimes(size, max_incr):
+def generate_mock_writetimes(size: int, max_incr: float) -> Generator[float, None, None]:
     last = time.time()
     for _ in range(size):
         yield last

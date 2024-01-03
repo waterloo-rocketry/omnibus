@@ -7,6 +7,7 @@ or from a selected file, in real time.
 See python3 main.py --help for options.
 """
 
+import io
 import time
 
 import msgpack
@@ -14,7 +15,7 @@ import msgpack
 from omnibus import Sender, Message
 
 
-def replay(log_buffer, replay_speed):
+def replay(log_buffer: io.BufferedReader, replay_speed: float | int):
     """
     Replays the contents of a log_buffer
     """

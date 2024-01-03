@@ -9,7 +9,7 @@ import replay_log
 GLOBAL_LOGS = Path("../..")
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
     """
     Parses command line arguments.
     """
@@ -30,7 +30,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def get_replay_log(max_logs):
+def get_replay_log(max_logs: int) -> Path | None:
     """
     Have the user select a log to replay. 
     """
