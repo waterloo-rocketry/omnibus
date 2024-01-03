@@ -31,12 +31,12 @@ MESSAGE_FORMAT = [
 ]
 
 
-def print_data(parsed):
+def print_data(parsed: dict):
     for k, v in parsed.items():
         print(f"{k}:\t{v}")
 
 
-def parse_rlcs(line):
+def parse_rlcs(line: str | bytes) -> dict | None:
     '''parses data as well as checks for data validity 
         returns none if data is invalid 
     '''
@@ -51,7 +51,7 @@ def parse_rlcs(line):
         return None
 
 
-def check_data_is_valid(line):
+def check_data_is_valid(line: str | bytes) -> bool:
     '''
     Checks whether or not line is valid RLCS data. 
     If it is, returns True. If not, returns False.
