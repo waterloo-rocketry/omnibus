@@ -124,7 +124,7 @@ if sinkSelected:
         logger.add_logger(f"sinks/{modules['sinks'][selection - 1]}")
         commands.append(sink)
 
-
+print(commands)
 print("Loggers Initiated")
 
 processes = []

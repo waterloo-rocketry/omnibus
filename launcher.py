@@ -10,7 +10,7 @@ from logtool import Logger
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt.QtWidgets import (
     QApplication, QDialog, QLabel, QComboBox, QDialogButtonBox, QVBoxLayout,
-    QWidget
+    QWidget, QCheckBox, QHBoxLayout, QGridLayout
 )
 from pyqtgraph.Qt.QtGui import QStandardItemModel
 from pyqtgraph.Qt.QtCore import Qt
@@ -108,8 +108,6 @@ class Launcher():
             if valid_sink:
                 break
         
-        
-        
         self.commands=[]
         self.omnibus = [python_executable, "-m", "omnibus"]
         self.commands.append(self.omnibus)
@@ -192,108 +190,99 @@ class Launcher():
 
 
 
-# GUI Launcher
 class GUILauncher(Launcher, QDialog):
     def __init__(self):
         super().__init__()
         self.selected_ok = False
 
-        # Sets window title and ensures size of dialog is fixed
         self.setGeometry(300, 300, 500, 230)
-        self.setFixedSize(500, 230)
+        self.setFixedSize(500, 400)
         self.setWindowTitle("Omnibus Launcher")
 
-        # Description / Title
-        description = QLabel(self)
-        description.setText("Please enter your source and sink choices")
-        description.setGeometry(20, 5, 500, 50)
-        description.setFont(QtGui.QFont("", 18))
+        source_label = QLabel(self)
+        source_label.setText("Sources:")
+        source_label.setGeometry(20, 10, 50, 10)
+        #source_label.setContentsMargins(0, 0, 0, 0)
 
-        # Create a source label
-        source = QLabel(self)
-        source.setText("Source:")
-        source.setGeometry(20, 53, 150, 20)
-
-
-        #updated checkable combo box for source
-        self.srcList=QComboBox(self)
-        self.srcList.setModel(QStandardItemModel(self.srcList))
-        self.srcList.setEditable(True)
-        self.srcList.setMaxVisibleItems(5)
-        self.srcList.setGeometry(90, 52, 150, 30)
-        self.srcList.view().pressed.connect(lambda index: self.selected_item(index, "srcList"))
+        # Create checkboxes for each source option
+        sources = self.modules.get("sources")
+        upSource = [source.capitalize() for source in sources]
+        self.src_dict = {source: i + 1 for i, source in enumerate(upSource)}
+        self.srcCheckBoxes = [QCheckBox(f"{src}") for src in upSource]
+        self.srcSelected=[]
         
+        # Layout for source checkboxes
+        self.srcLayout = QGridLayout()
+        row = 0
+        col = 0
+        for checkbox in self.srcCheckBoxes:
+            self.srcLayout.addWidget(checkbox, row, col)
+            col += 1
+            if col == 3:  # Three checkboxes per row
+                col = 0
+                row += 1
 
-        #populate the selection list 
-        for src in self.modules.get("sources"):
-            self.srcList.addItem(src) 
+        sourceList = QWidget()
+        sourceList.setLayout(self.srcLayout)
+        sourceList.setContentsMargins(0, 0, 0, 0)
+
+        #connect checkbox state to signals to detect which sources were selected 
+        for checkbox in self.srcCheckBoxes:
+            checkbox.stateChanged.connect(self.update_selected)
 
         # Create a sink label
         sink = QLabel(self)
-        sink.setText("Sink:")
-        sink.setGeometry(20, 93, 150, 20)
+        sink.setText("Sinks:")
+        sink.setGeometry(20, 200, 50, 10)
+        sink.setContentsMargins(0,0,0,0)
 
-        #updated checkable combo box for sink
-        self.sinkList=QComboBox(self)
-        self.sinkList.setModel(QStandardItemModel(self.sinkList))
-        self.sinkList.setEditable(True)
-        self.sinkList.setMaxVisibleItems(5)
-        self.sinkList.setGeometry(90, 92, 150, 30)
-        self.sinkList.view().pressed.connect(lambda index: self.selected_item(index, "sinkList"))
+       #create checkboxes for each sink option 
+        sinks = self.modules.get("sinks")
+        upSink = [sink.capitalize() for sink in sinks]
+        self.sink_dict = {sink: i + 1 for i, sink in enumerate(upSink)}
+        self.sinkCheckBoxes = [QCheckBox(f"{sink}") for sink in upSink]
         
+        self.sinkSelected=[]
+        #Layout for sink checkboxes
+        self.sinkLayout=QGridLayout()
+        row=0
+        col=0
+        for checkbox in self.sinkCheckBoxes:
+            self.sinkLayout.addWidget(checkbox, row, col)
+            col+=1
+            if col==3:
+                col=0
+                row+=1
+        sinkList=QWidget()
+        sinkList.setLayout(self.sinkLayout)
+        sinkList.setContentsMargins(0,0,0,0)
+        #self.sinkLayout.setSpacing(5)
 
-        #populate the selection list 
-        for sink in self.modules.get("sinks"):
-            self.sinkList.addItem(sink)  
+        #connect checkbox state to signals to detect which sources were selected 
+        for checkbox in self.sinkCheckBoxes:
+            checkbox.stateChanged.connect(self.update_selected)
 
-        # Enter selections button
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
-        self.button_box.accepted.connect(self.construct_commands) 
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok
+        )
+        self.button_box.accepted.connect(self.construct_commands)
         self.button_box.rejected.connect(self.close)
 
-        # Add button to layout
-        self.layout = QVBoxLayout()
-        self.layout.addStretch(1)
-        self.layout.addWidget(self.button_box)
-        self.setLayout(self.layout)
-
-    def selected_item(self, index, model_name):
-        #get the item that is selected 
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(0)
         
-        if model_name=="srcList":
-            model=self.srcList.model()
-        elif model_name=="sinkList":
-            model=self.sinkList.model()
+        #main_layout.addWidget(source_label)
         
-        item=model.itemFromIndex(index)
+        main_layout.addWidget(sourceList)  # Add source checkboxes in grid layout
+        
+        #main_layout.addWidget(sink)
+        main_layout.addWidget(sinkList)
+        main_layout.addWidget(self.button_box)
 
-        #verify if the item is in a checked state 
-        if item.checkState() == Qt.Checked:
-            item.setCheckState(Qt.Unchecked)
-        else:
-            item.setCheckState(Qt.Checked)
-
-    def check_items(self, model):
-        #checks if the item is selected (checkboxes)
-        checkedItems=[]  
-        indexList=[]
-        #traverse items that are checked 
-        for row in range(model.rowCount()):
-            item = model.item(row)
-            if item.checkState() == Qt.Checked:
-                checkedItems.append(item.text())
-                index=model.indexFromItem(item).row()
-                indexList.append(index+1)
-        return indexList
-
+        self.setLayout(main_layout)  # Set the main layout for the dialog
 
     def construct_commands(self):
         self.selected_ok = True
-
-        # Get selected source and sink in GUI
-        self.srcSelected=self.check_items(self.srcList.model())
-
-        self.sinkSelected=self.check_items(self.sinkList.model())
         
         self.omnibus = ["python", "-m", "omnibus"]
         self.commands.append(self.omnibus)
@@ -309,6 +298,29 @@ class GUILauncher(Launcher, QDialog):
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection)-1]}/main.py"]
                 self.commands.append(sink)
         self.close()
+
+    def update_selected(self, state):
+        checkbox=self.sender()
+        text=checkbox.text()
+        
+        
+
+        if checkbox in self.srcCheckBoxes:
+            selectedList=self.srcSelected
+            index=self.src_dict[text]
+
+        else:
+            selectedList=self.sinkSelected
+            index=self.sink_dict[text]
+        
+        if checkbox.isChecked():
+            
+            if index not in selectedList:
+                selectedList.append(int(index))
+                
+        else:
+            selectedList.remove(int(index))
+        
     
     def closeEvent(self, event):
         if self.selected_ok:
