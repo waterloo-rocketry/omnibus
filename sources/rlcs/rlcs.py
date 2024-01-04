@@ -1,5 +1,5 @@
 import parsley
-from parsley.fields import Enum, Numeric
+from parsley.fields import Enum, Number, Numeric
 
 VALVE_COMMAND = {"CLOSED": 0, "OPEN": 1}
 BOOLEAN = {"FALSE": 0, "TRUE": 1}
@@ -31,12 +31,12 @@ MESSAGE_FORMAT = [
 ]
 
 
-def print_data(parsed: dict):
+def print_data(parsed: dict[str, str | Number]):
     for k, v in parsed.items():
         print(f"{k}:\t{v}")
 
 
-def parse_rlcs(line: str | bytes) -> dict | None:
+def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     '''parses data as well as checks for data validity 
         returns none if data is invalid 
     '''
