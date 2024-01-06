@@ -20,18 +20,73 @@ FAKE_MESSAGE_SPACING = 0.25
 
 class SerialCommunicator:
     def __init__(self, port, baud, timeout):
-        pass
-        # self.port = port
-        # self.serial = serial.Serial(port, baud, timeout=timeout)
+        self.port = port
+        self.serial = serial.Serial(port, baud, timeout=timeout)
 
     def read(self):
-        return b''
-        # return self.serial.read(4096)
+        return self.serial.read(4096)
 
     def write(self, msg):
-        # self.serial.write(msg)
-        pass
+        self.serial.write(msg)
 
+class FakeSerialCommunicator:
+    def __init__(self):
+        # fake messages to cycle through
+        self.fake_msgs = [
+            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 
+                'time': 0, 'sensor_id': 'SENSOR_BATT_CURR', 'value': 0},
+            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 
+                'time': 0, 'sensor_id': 'SENSOR_BUS_CURR', 'value': 0},
+            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 
+                'time': 0, 'sensor_id': 'SENSOR_CHARGE_CURR', 'value': 0},
+            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 
+                'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
+            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 
+                'time': 0, 'sensor_id': 'SENSOR_GROUND_VOLT', 'value': 0},
+            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'SENSOR_ANALOG', 
+                'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
+            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'GENERAL_BOARD_STATUS',
+                'time': 0, 'status': 'E_NOMINAL'},
+            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'ACTUATOR_STATUS', 'time': 0,
+                'actuator': 'ACTUATOR_INJECTOR_VALVE', 'req_state': 'ACTUATOR_UNK', 'cur_state': 'ACTUATOR_OFF'},
+            {'board_id': 'CHARGING', 'msg_type': 'GENERAL_BOARD_STATUS',
+                'time': 0, 'status': 'E_NOMINAL'},
+        ]
+        self.fake_msg_index = 0
+        self.last_fake_zero_time = 0
+
+    def read(self):
+        now = time.time()
+        if now - self.last_fake_zero_time > FAKE_MESSAGE_SPACING:
+            self.fake_msgs[self.fake_msg_index]['time'] = now
+            if "value" in self.fake_msgs[self.fake_msg_index]:
+                self.fake_msgs[self.fake_msg_index]["value"] = random.randint(0, 10)
+
+            self.fake_msg_index = (self.fake_msg_index + 1) % len(self.fake_msgs)
+            if self.fake_msg_index == 0:
+                self.last_fake_zero_time = now
+
+            # turn the fake message from the dict to the bytes representation that would be read from the serial connection
+            formatted_msg = prepCanMessage(self.fake_msgs[self.fake_msg_index])
+            return formatted_msg.encode()
+            # FIXME: this doesnt correctly encode the message, i'm getting Incorrect line format when I add a \n, or it's just never decoding anything if i dont add the \n
+            # It would be good to have an example of how the real devices encode the data, or closer to real so that we can match the template
+        else:
+            return b''
+
+    def write(self,msg):
+        print(f"Fake serial write out: {msg}")
+
+
+def prepCanMessage(can_msg_data):
+    msg_sid, msg_data = parsley.encode_data(can_msg_data)
+    formatted_msg = f"m{msg_sid:03X}"
+    if msg_data:
+        formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
+    formatted_msg += ";" + crc8.crc8(
+        msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
+    ).hexdigest().upper()
+    return formatted_msg
 
 def main():
     parser = argparse.ArgumentParser()
@@ -46,7 +101,11 @@ def main():
                         help="Don't read from hardware - uses fake data. Give any value for a port")
     args = parser.parse_args()
 
-    communicator = SerialCommunicator(args.port, args.baud, 0)
+    if not args.fake:
+        communicator = SerialCommunicator(args.port, args.baud, 0)
+    else:
+        communicator = FakeSerialCommunicator()
+    
     if args.format == "telemetry":
         parser = parsley.parse_live_telemetry
     elif args.format == "logger":
@@ -65,7 +124,7 @@ def main():
     elif args.fake:
         print("Parsley started in fake mode")
         sender = Sender()
-        receiver = None
+        receiver = None # we do not receive instructions that we need to repeat in fake mode
     else:
         sender = Sender()
         receiver = Receiver(channel)
@@ -73,30 +132,6 @@ def main():
     last_valid_message_time = 0
     last_heartbeat_time = time.time()
     last_keepalive_time = 0
-
-    # fake messages to cycle through in case fake mode is on
-    fake_msgs = [
-        {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {
-            'time': 0, 'sensor_id': 'SENSOR_BATT_CURR', 'value': 0}},
-        {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {
-            'time': 0, 'sensor_id': 'SENSOR_BUS_CURR', 'value': 0}},
-        {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {
-            'time': 0, 'sensor_id': 'SENSOR_CHARGE_CURR', 'value': 0}},
-        {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {
-            'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0}},
-        {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {
-            'time': 0, 'sensor_id': 'SENSOR_GROUND_VOLT', 'value': 0}},
-        {'board_id': 'ACTUATOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data': {
-            'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0}},
-        {'board_id': 'ACTUATOR_INJ', 'msg_type': 'GENERAL_BOARD_STATUS',
-            'data': {'time': 0, 'status': 'E_NOMINAL'}},
-        {'board_id': 'ACTUATOR_INJ', 'msg_type': 'ACTUATOR_STATUS', 'data': {'time': 0,
-                                                                            'actuator': 'ACTUATOR_INJECTOR_VALVE', 'req_state': 'ACTUATOR_UNK', 'cur_state': 'ACTUATOR_OFF'}},
-        {'board_id': 'CHARGING', 'msg_type': 'GENERAL_BOARD_STATUS',
-            'data': {'time': 0, 'status': 'E_NOMINAL'}},
-    ]
-    fake_msg_index = 0
-    last_fake_zero_time = 0
 
     # invariant - buffer starts with the start of a message
     buffer = b''
@@ -115,32 +150,12 @@ def main():
 
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload['data']['can_msg']
-            msg_sid, msg_data = parsley.encode_data(can_msg_data)
-
-            formatted_msg = f"m{msg_sid:03X}"
-            if msg_data:
-                formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
-            formatted_msg += ";" + crc8.crc8(
-                msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
-            ).hexdigest().upper()
+            formatted_msg = prepCanMessage(can_msg_data)
             print(formatted_msg)  # always print the usb debug style can message
             # send the can message over the specified port
             communicator.write(formatted_msg.encode())
             last_keepalive_time = now
             time.sleep(0.01)
-
-        if args.fake:
-            if now - last_fake_zero_time > FAKE_MESSAGE_SPACING:
-                fake_msgs[fake_msg_index]['data']['time'] = now
-                if "value" in fake_msgs[fake_msg_index]['data']:
-                    fake_msgs[fake_msg_index]['data']["value"] = random.randint(0, 10)
-
-            if sender:
-                sender.send(SEND_CHANNEL, fake_msgs[fake_msg_index])
-
-            fake_msg_index = (fake_msg_index + 1) % len(fake_msgs)
-            if fake_msg_index == 0:
-                last_fake_zero_time = now
 
         line = communicator.read()
 
@@ -174,7 +189,7 @@ def main():
                     msg = text_buff[:i]
                     buffer = buffer[i+1:]
                     msg_sid, msg_data = parser(msg)
-
+                
                 parsed_data = parsley.parse(msg_sid, msg_data)
                 last_valid_message_time = time.time()
                 print(parsley.format_line(parsed_data))
