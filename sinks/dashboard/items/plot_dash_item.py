@@ -41,10 +41,10 @@ class PlotDashItem(DashboardItem):
         self.offset = self.parameters.param('offset').value()
         self.average = self.parameters.param('average').value()
         # adjustable buffer size for different levels of smoothing
-        self.Buffer_size = self.parameters.param('buffer size').value()
+        self.buffer_size = self.parameters.param('buffer size').value()
 
         # buffer to calculate local average
-        self.pointsBuffer = []
+        self.points_buffer = []
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -96,7 +96,7 @@ class PlotDashItem(DashboardItem):
         self.average = average
 
     def on_buffer_size_change(self, _, buffer):
-        self.Buffer_size = buffer
+        self.buffer_size = buffer
 
     # Create the plot item
     def create_plot(self):
@@ -132,16 +132,16 @@ class PlotDashItem(DashboardItem):
             return
 
         # placing points in the buffer for smoothing
-        self.pointsBuffer.append(point)
-        while len(self.pointsBuffer) > self.Buffer_size:
-            self.pointsBuffer.pop(0)
+        self.points_buffer.append(point)
+        while len(self.points_buffer) > self.buffer_size:
+            self.points_buffer.pop(0)
 
         self.last[stream] = time
 
         self.times[stream].append(time)
         self.orig_values.append(point)
         if self.average:
-            avgY = sum(self.pointsBuffer) / self.Buffer_size
+            avgY = sum(self.points_buffer) / self.buffer_size
             self.points[stream].append(avgY)
         else:
             self.points[stream].append(point)
