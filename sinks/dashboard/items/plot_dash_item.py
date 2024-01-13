@@ -25,7 +25,7 @@ class PlotDashItem(DashboardItem):
         # since each PlotDashItem can contain more than one curve
         self.times = {}
         self.points = {}
-        self.orig_values = []
+        self.orig_values = {}
 
         # Specify the layout
         self.layout = QGridLayout()
@@ -116,6 +116,7 @@ class PlotDashItem(DashboardItem):
             self.curves[series] = curve
             self.times[series] = []
             self.points[series] = []
+            self.orig_values[series] = []
             self.last[series] = 0
 
         # initialize the threshold line, but do not plot it unless a limit is specified
@@ -139,7 +140,7 @@ class PlotDashItem(DashboardItem):
         self.last[stream] = time
 
         self.times[stream].append(time)
-        self.orig_values.append(point)
+        self.orig_values[stream].append(point)
         if self.average:
             avgY = sum(self.points_buffer) / self.buffer_size
             self.points[stream].append(avgY)
@@ -149,14 +150,15 @@ class PlotDashItem(DashboardItem):
         while self.times[stream][0] < time - config.GRAPH_DURATION:
             self.times[stream].pop(0)
             self.points[stream].pop(0)
+            self.orig_values[stream].pop(0)
 
         # get the min/max point in the whole data set
-        if not any(self.orig_values):
+        if not any(self.orig_values[stream]):
             min_point = 0
             max_point = 0
         else:
-            min_point = min(self.orig_values)
-            max_point = max(self.orig_values)
+            min_point = min(self.orig_values[stream])
+            max_point = max(self.orig_values[stream])
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
