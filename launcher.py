@@ -9,12 +9,9 @@ import logging
 from logtool import Logger
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt.QtWidgets import (
-    QApplication, QDialog, QLabel, QComboBox, QDialogButtonBox, QVBoxLayout,
-    QWidget, QCheckBox, QHBoxLayout, QGridLayout
+    QApplication, QDialog, QLabel, QDialogButtonBox, QVBoxLayout,
+    QWidget, QCheckBox, QGridLayout
 )
-from pyqtgraph.Qt.QtGui import QStandardItemModel
-from pyqtgraph.Qt.QtCore import Qt
-
 
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
@@ -22,8 +19,6 @@ if sys.platform == "win32":
     python_executable = "venv/Scripts/python"
 else:
     python_executable = "python"
-
-
 # Blank exception just for processes to throw
 class Finished(Exception):
     pass
@@ -33,7 +28,8 @@ class Launcher():
     def __init__(self) -> None:
         super().__init__()
         self.commands = []
-
+        self.src_selected = []
+        self.sink_selected = []
         # Parse folders for sources and sinks
         self.modules = {"sources" : os.listdir('sources'), "sinks" : os.listdir('sinks')}
     
@@ -53,73 +49,56 @@ class Launcher():
     # Enter inputs for CLI launcher
     def input(self):
         # Construct CLI commands to start Omnibus
-        
-        #source selection
-        while True:
-            self.source_selection = input(f"\nPlease enter your Source choices [1-{len(self.modules['sources'])}] separated by spaces: ")
 
-            # Split the input string into individual values
-            self.sources = self.source_selection.split()
+        #Source selection
+        self.src_selected = self.validate_inputs(self.modules['sources'], "Source")
 
-            # Validate each input value
-            valid_src = True
-            self.srcSelected = []
-            for src in self.sources:
-                if not src.isdigit():
-                    print(f"Invalid input: '{src}' is not a number.")
-                    valid_src = False
-                    break
-                
-                src = int(src)
-                if 1 <= src <= len(self.modules['sources']):
-                    self.srcSelected.append(src)
-                else:
-                    print(f"Please enter a number between 1 and {len(self.modules['sources'])}.")
-                    valid_input = False
-                    break
-                
-            if valid_src:
-                break
-        
-        #sink selection
-        while True:
-            self.sink_selection = input(f"\nPlease enter your Source choices [1-{len(self.modules['sinks'])}] separated by spaces: ")
-        
-            # Split the input string into individual values
-            self.sinks = self.sink_selection.split()
-        
-            # Validate each input value
-            valid_sink = True
-            self.sinkSelected = []
-            for sink in self.sinks:
-                if not sink.isdigit():
-                    print(f"Invalid input: '{sink}' is not a number.")
-                    valid_sink = False
-                    break
-                
-                sink = int(sink)
-                if 1 <= sink <= len(self.modules['sinks']):
-                    self.sinkSelected.append(sink)
-                else:
-                    print(f"Please enter a number between 1 and {len(self.modules['sinks'])}.")
-                    valid_sink = False
-                    break
-                
-            if valid_sink:
-                break
-        
-        self.commands=[]
+        #Sink selection 
+        self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
+
         self.omnibus = [python_executable, "-m", "omnibus"]
         self.commands.append(self.omnibus)
-        if self.srcSelected:
-            for selection in self.srcSelected:
+        if self.src_selected:
+            for selection in self.src_selected:
                 source=[python_executable, f"sources/{self.modules['sources'][selection - 1]}/main.py"]
                 self.commands.append(source)
 
-        if self.sinkSelected:
-            for selection in self.sinkSelected:
+        if self.sink_selected:
+            for selection in self.sink_selected:
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
                 self.commands.append(sink)
+
+    #validate the input selection for cli input
+    def validate_inputs(self, choices, module):
+        while True:
+            user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces: ")
+
+            #split the input string into individual values
+            selection = user_input.split()
+
+            #validate the input 
+            valid_input = True
+            selected_indices = []
+
+            for item in selection:
+                #Check if the input is a number
+                if not item.isdigit():
+                    print(f"Invalid input: '{item}' is not a number.")
+                    valid_input = False
+                    break
+                
+                #Check if the index is within the choice range 
+                index = int(item)
+                if 1 <= index <= len(choices):
+                    selected_indices.append(index)
+                else:
+                    print(f"Please enter a number between 1 and {len(choices)}.")
+                    valid_input = False
+                    break
+            if valid_input:
+                break
+        return selected_indices
+
 
 
     # Execute commands as subprocesses
@@ -141,16 +120,10 @@ class Launcher():
     # Create loggers
     def logging(self):
         self.logger = Logger()
-        
-        #different for cli and gui input
-
-        for src in self.srcSelected:
+        for src in self.src_selected:
             self.logger.add_logger(f"sources/{self.modules['sources'][src - 1]}")
-        
-        for sink in self.sinkSelected:
+        for sink in self.sink_selected:
             self.logger.add_logger(f"sinks/{self.modules['sinks'][sink - 1]}")
-
-        
         print("Loggers Initiated")
 
     # If any file exits or the user presses control + c,
@@ -202,64 +175,62 @@ class GUILauncher(Launcher, QDialog):
         source_label = QLabel(self)
         source_label.setText("Sources:")
         source_label.setGeometry(20, 10, 50, 10)
-        #source_label.setContentsMargins(0, 0, 0, 0)
 
-        # Create checkboxes for each source option
+        #Create checkboxes for each source option
         sources = self.modules.get("sources")
-        upSource = [source.capitalize() for source in sources]
-        self.src_dict = {source: i + 1 for i, source in enumerate(upSource)}
-        self.srcCheckBoxes = [QCheckBox(f"{src}") for src in upSource]
-        self.srcSelected=[]
+        up_source = [source.capitalize() for source in sources]
+        self.src_dict = {source: i + 1 for i, source in enumerate(up_source)}
+        self.src_checkboxes = [QCheckBox(f"{src}") for src in up_source]
+        self.src_selected = []
         
         # Layout for source checkboxes
-        self.srcLayout = QGridLayout()
+        self.src_layout = QGridLayout()
         row = 0
         col = 0
-        for checkbox in self.srcCheckBoxes:
-            self.srcLayout.addWidget(checkbox, row, col)
+        for checkbox in self.src_checkboxes:
+            self.src_layout.addWidget(checkbox, row, col)
             col += 1
             if col == 3:  # Three checkboxes per row
                 col = 0
                 row += 1
 
-        sourceList = QWidget()
-        sourceList.setLayout(self.srcLayout)
-        sourceList.setContentsMargins(0, 0, 0, 0)
+        source_list = QWidget()
+        source_list.setLayout(self.src_layout)
+        source_list.setContentsMargins(0, 0, 0, 0)
 
-        #connect checkbox state to signals to detect which sources were selected 
-        for checkbox in self.srcCheckBoxes:
+        #Connect checkbox state to signals to detect which sources were selected 
+        for checkbox in self.src_checkboxes:
             checkbox.stateChanged.connect(self.update_selected)
 
-        # Create a sink label
+        #Create a sink label
         sink = QLabel(self)
         sink.setText("Sinks:")
         sink.setGeometry(20, 200, 50, 10)
         sink.setContentsMargins(0,0,0,0)
 
-       #create checkboxes for each sink option 
+        #Create checkboxes for each sink option 
         sinks = self.modules.get("sinks")
-        upSink = [sink.capitalize() for sink in sinks]
-        self.sink_dict = {sink: i + 1 for i, sink in enumerate(upSink)}
-        self.sinkCheckBoxes = [QCheckBox(f"{sink}") for sink in upSink]
+        up_sink = [sink.capitalize() for sink in sinks]
+        self.sink_dict = {sink: i + 1 for i, sink in enumerate(up_sink)}
+        self.sink_checkboxes = [QCheckBox(f"{sink}") for sink in up_sink]
         
-        self.sinkSelected=[]
+        self.sink_selected = []
         #Layout for sink checkboxes
-        self.sinkLayout=QGridLayout()
-        row=0
-        col=0
-        for checkbox in self.sinkCheckBoxes:
-            self.sinkLayout.addWidget(checkbox, row, col)
-            col+=1
-            if col==3:
-                col=0
-                row+=1
-        sinkList=QWidget()
-        sinkList.setLayout(self.sinkLayout)
-        sinkList.setContentsMargins(0,0,0,0)
-        #self.sinkLayout.setSpacing(5)
-
-        #connect checkbox state to signals to detect which sources were selected 
-        for checkbox in self.sinkCheckBoxes:
+        self.sink_layout=QGridLayout()
+        row = 0
+        col = 0
+        for checkbox in self.sink_checkboxes:
+            self.sink_layout.addWidget(checkbox, row, col)
+            col += 1
+            if col == 3:
+                col = 0
+                row += 1
+        sink_list = QWidget()
+        sink_list.setLayout(self.sink_layout)
+        sink_list.setContentsMargins(0,0,0,0)
+        
+        #Connect checkbox state to signals to detect which sources were selected 
+        for checkbox in self.sink_checkboxes:
             checkbox.stateChanged.connect(self.update_selected)
 
         self.button_box = QDialogButtonBox(
@@ -270,58 +241,45 @@ class GUILauncher(Launcher, QDialog):
 
         main_layout = QVBoxLayout()
         main_layout.setSpacing(0)
-        
-        #main_layout.addWidget(source_label)
-        
-        main_layout.addWidget(sourceList)  # Add source checkboxes in grid layout
-        
-        #main_layout.addWidget(sink)
-        main_layout.addWidget(sinkList)
+        main_layout.addWidget(source_list)  # Add source checkboxes in grid layout
+        main_layout.addWidget(sink_list)
         main_layout.addWidget(self.button_box)
 
         self.setLayout(main_layout)  # Set the main layout for the dialog
 
     def construct_commands(self):
         self.selected_ok = True
-        
         self.omnibus = ["python", "-m", "omnibus"]
         self.commands.append(self.omnibus)
 
         
-        if self.srcSelected:
-            for selection in self.srcSelected:
-                source=[python_executable, f"sources/{self.modules['sources'][int(selection)-1]}/main.py"]
+        if self.src_selected:
+            for selection in self.src_selected:
+                source = [python_executable, f"sources/{self.modules['sources'][int(selection)-1]}/main.py"]
                 self.commands.append(source)
                 
-        if self.sinkSelected:
-            for selection in self.sinkSelected:
+        if self.sink_selected:
+            for selection in self.sink_selected:
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection)-1]}/main.py"]
                 self.commands.append(sink)
         self.close()
 
     def update_selected(self, state):
-        checkbox=self.sender()
-        text=checkbox.text()
+        checkbox = self.sender()
+        text = checkbox.text()
         
-        
-
-        if checkbox in self.srcCheckBoxes:
-            selectedList=self.srcSelected
-            index=self.src_dict[text]
-
+        if checkbox in self.src_checkboxes:
+            selected_list = self.src_selected
+            index = self.src_dict[text]
         else:
-            selectedList=self.sinkSelected
-            index=self.sink_dict[text]
-        
+            selected_list = self.sink_selected
+            index = self.sink_dict[text]
         if checkbox.isChecked():
-            
-            if index not in selectedList:
-                selectedList.append(int(index))
-                
+            if index not in selected_list:
+                selected_list.append(int(index))        
         else:
-            selectedList.remove(int(index))
+            selected_list.remove(int(index))
         
-    
     def closeEvent(self, event):
         if self.selected_ok:
             event.accept()
@@ -357,4 +315,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
