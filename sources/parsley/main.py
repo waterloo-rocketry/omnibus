@@ -19,14 +19,14 @@ FAKE_MESSAGE_SPACING = 0.25
 
 
 class SerialCommunicator:
-    def __init__(self, port, baud, timeout):
+    def __init__(self, port: str, baud: int, timeout: int):
         self.port = port
         self.serial = serial.Serial(port, baud, timeout=timeout)
 
     def read(self):
         return self.serial.read(4096)
 
-    def write(self, msg):
+    def write(self, msg: bytes):
         self.serial.write(msg)
 
 
@@ -111,7 +111,9 @@ def main():
         channel = "telemetry/" + RECEIVE_CHANNEL
     else:
         channel = RECEIVE_CHANNEL
-
+    
+    sender_id = f"{gethostname()}/{args.format}/{args.port}"
+    
     if args.solo:
         sender = None
         receiver = None
@@ -136,7 +138,7 @@ def main():
             last_heartbeat_time = now
             healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
             sender.send(HEARTBEAT_CHANNEL, {
-                "id": f"{gethostname()}/{args.format}", "healthy": healthy})
+                "id": sender_id, "healthy": healthy})
 
         if args.format == "telemetry" and time.time() - last_keepalive_time > KEEPALIVE_TIME:
             communicator.write(b'.')
@@ -145,20 +147,22 @@ def main():
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
             can_msg_data = msg.payload["data"]["can_msg"]
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
-            formatted_msg = f"m{msg_sid:03X}"
-            if msg_data:
-                formatted_msg += "," + ",".join(f"{byte:02X}" for byte in msg_data)
-            formatted_msg += (
-                ";"
-                + crc8.crc8(msg_sid.to_bytes(2, byteorder="big") + bytes(msg_data))
-                .hexdigest()
-                .upper()
-            )  # sent messages in the usb debug format have a crc8 checksum at the end, to be investigated: https://github.com/waterloo-rocketry/omnibus/commit/0913ff2ef1c38c3ae715ad87c805d071c1ce2c38
-            print(formatted_msg)  # always print the usb debug style can message
-            # send the can message over the specified port
-            communicator.write(formatted_msg.encode())
-            last_keepalive_time = now
-            time.sleep(0.01)
+
+            # checking parsley instance
+            parsley_instance = msg.payload['parsley']
+
+            if parsley_instance == sender_id:
+                formatted_msg = f"m{msg_sid:03X}"
+                if msg_data:
+                    formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
+                formatted_msg += ";" + crc8.crc8(
+                    msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
+                ).hexdigest().upper() # sent messages in the usb debug format have a crc8 checksum at the end, to be investigated: https://github.com/waterloo-rocketry/omnibus/commit/0913ff2ef1c38c3ae715ad87c805d071c1ce2c38
+                print(formatted_msg)  # always print the usb debug style can message
+                # send the can message over the specified port
+                communicator.write(formatted_msg.encode())
+                last_keepalive_time = now
+                time.sleep(0.01)
 
         line = communicator.read()
 

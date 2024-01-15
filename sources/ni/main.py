@@ -29,7 +29,7 @@ sender = Sender()  # omnibus channel
 CHANNEL = "DAQ"
 
 
-def read_data(ai):
+def read_data(ai: nidaqmx.Task):
     rates = []
 
     now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
