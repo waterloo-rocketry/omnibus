@@ -51,7 +51,7 @@ class FakeSerialCommunicator:  # acting as a fake usb debug board
     def read(self):
         now = time.time()
         if now - self.last_fake_zero_time > FAKE_MESSAGE_SPACING:
-            self.fake_msgs[self.fake_msg_index]["time"] = now - self.zero_time
+            self.fake_msgs[self.fake_msg_index]["time"] = (((now - self.zero_time) * 1000) % 65536) / 1000 # time is in seconds, mod 65536ms to get the 16 bit time
             if "value" in self.fake_msgs[self.fake_msg_index]:
                 self.fake_msgs[self.fake_msg_index]["value"] = random.randint(0, 10)
 
