@@ -29,7 +29,8 @@ class SerialCommunicator:
     def write(self, msg):
         self.serial.write(msg)
 
-class FakeSerialCommunicator: # acting as a fake usb debug board
+
+class FakeSerialCommunicator:  # acting as a fake usb debug board
     def __init__(self):
         # fake messages to cycle through
         self.fake_msgs = [
@@ -47,11 +48,10 @@ class FakeSerialCommunicator: # acting as a fake usb debug board
         self.last_fake_zero_time = 0
         self.zero_time = time.time()
 
-
     def read(self):
         now = time.time()
         if now - self.last_fake_zero_time > FAKE_MESSAGE_SPACING:
-            self.fake_msgs[self.fake_msg_index]['time'] = now - self.zero_time
+            self.fake_msgs[self.fake_msg_index]["time"] = now - self.zero_time
             if "value" in self.fake_msgs[self.fake_msg_index]:
                 self.fake_msgs[self.fake_msg_index]["value"] = random.randint(0, 10)
 
@@ -59,7 +59,9 @@ class FakeSerialCommunicator: # acting as a fake usb debug board
             msg_sid, msg_data = parsley.encode_data(self.fake_msgs[self.fake_msg_index])
             formatted_msg = f"{msg_sid:03X}"
             if msg_data:
-                formatted_msg += ':' + ','.join(f"{byte:02X}" for byte in msg_data) # debug messages have a colon between the sid and data, see https://github.com/waterloo-rocketry/cansw_usb/blob/1575995e9364bca99443362ff51a5311a8a10174/usb_app.c#L99
+                formatted_msg += ":" + ",".join(
+                    f"{byte:02X}" for byte in msg_data
+                )  # debug messages have a colon between the sid and data, see https://github.com/waterloo-rocketry/cansw_usb/blob/1575995e9364bca99443362ff51a5311a8a10174/usb_app.c#L99
             formatted_msg = f"${formatted_msg} \0\r\n"
 
             # update the index after encoding
@@ -67,12 +69,13 @@ class FakeSerialCommunicator: # acting as a fake usb debug board
             if self.fake_msg_index == 0:
                 self.last_fake_zero_time = now
 
-            return formatted_msg.encode(encoding='utf-8')
+            return formatted_msg.encode(encoding="utf-8")
         else:
-            return b''
+            return b""
 
-    def write(self,msg):
+    def write(self, msg):
         print(f"Fake serial write out: {msg}")
+
 
 def main():
     argparser = argparse.ArgumentParser()
@@ -87,7 +90,6 @@ def main():
                         help="Don't read from hardware - uses fake data. Give any value for a port")
     args = argparser.parse_args()
 
-
     if not args.fake:
         if args.port == "NOPORT":
             print("Please specify a serial port by name or use --fake")
@@ -98,8 +100,7 @@ def main():
             print("Fake mode only supports usb format")
             exit(1)
         communicator = FakeSerialCommunicator()
-        
-    
+
     parser = parsley.parse_usb_debug
     if args.format == "telemetry":
         parser = parsley.parse_live_telemetry
@@ -117,7 +118,7 @@ def main():
     elif args.fake:
         print("Parsley started in fake mode")
         sender = Sender()
-        receiver = None # we do not receive instructions that we need to repeat in fake mode
+        receiver = None  # no instructions to echo in fake mode
     else:
         sender = Sender()
         receiver = Receiver(channel)
@@ -127,7 +128,7 @@ def main():
     last_keepalive_time = 0
 
     # invariant - buffer starts with the start of a message
-    buffer = b''
+    buffer = b""
     while True:
         now = time.time()
 
@@ -142,14 +143,17 @@ def main():
             last_keepalive_time = now
 
         if receiver and (msg := receiver.recv_message(0)):  # non-blocking
-            can_msg_data = msg.payload['data']['can_msg']
+            can_msg_data = msg.payload["data"]["can_msg"]
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
             formatted_msg = f"m{msg_sid:03X}"
             if msg_data:
-                formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
-            formatted_msg += ";" + crc8.crc8(
-                msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
-            ).hexdigest().upper() # sent messages in the usb debug format have a crc8 checksum at the end, to be investigated: https://github.com/waterloo-rocketry/omnibus/commit/0913ff2ef1c38c3ae715ad87c805d071c1ce2c38 
+                formatted_msg += "," + ",".join(f"{byte:02X}" for byte in msg_data)
+            formatted_msg += (
+                ";"
+                + crc8.crc8(msg_sid.to_bytes(2, byteorder="big") + bytes(msg_data))
+                .hexdigest()
+                .upper()
+            )  # sent messages in the usb debug format have a crc8 checksum at the end, to be investigated: https://github.com/waterloo-rocketry/omnibus/commit/0913ff2ef1c38c3ae715ad87c805d071c1ce2c38
             print(formatted_msg)  # always print the usb debug style can message
             # send the can message over the specified port
             communicator.write(formatted_msg.encode())
@@ -170,25 +174,25 @@ def main():
                     i = next((i for i, b in enumerate(buffer) if b == 0x02), -1)
                     if i < 0 or i + 1 >= len(buffer):
                         break
-                    msg_len = buffer[i+1] >> 4
+                    msg_len = buffer[i + 1] >> 4
                     if i + msg_len > len(buffer):
                         break
-                    msg = buffer[i:i+msg_len]
+                    msg = buffer[i : i + msg_len]
                     try:
                         msg_sid, msg_data = parser(msg)
-                        buffer = buffer[i+msg_len:]
+                        buffer = buffer[i + msg_len :]
                     except ValueError as e:
-                        buffer = buffer[i+1:]
+                        buffer = buffer[i + 1 :]
                         raise e
                 else:
-                    text_buff = buffer.decode('utf-8', errors='backslashreplace')
-                    i = text_buff.find('\n')
+                    text_buff = buffer.decode("utf-8", errors="backslashreplace")
+                    i = text_buff.find("\n")
                     if i < 0:
                         break
                     msg = text_buff[:i]
-                    buffer = buffer[i+1:]
+                    buffer = buffer[i + 1 :]
                     msg_sid, msg_data = parser(msg)
-                
+
                 parsed_data = parsley.parse(msg_sid, msg_data)
                 last_valid_message_time = time.time()
                 print(parsley.format_line(parsed_data))
@@ -203,7 +207,7 @@ def main():
                 print(traceback.format_exc())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
