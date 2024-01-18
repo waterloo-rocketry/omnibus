@@ -109,8 +109,6 @@ class Launcher():
                 break
         return self.selected_indices
 
-
-
     # Execute commands as subprocesses
     def subprocess(self):
         print("Launching... ", end="")
@@ -170,8 +168,6 @@ class Launcher():
                 else:
                     process.send_signal(signal.SIGINT) 
 
-
-
 class GUILauncher(Launcher, QDialog):
     def __init__(self):
         super().__init__()
@@ -192,7 +188,7 @@ class GUILauncher(Launcher, QDialog):
         self.src_checkboxes = [QCheckBox(f"{src}") for src in up_source]
         self.src_selected = []
         
-        # Layout for source checkboxes
+        #Layout for source checkboxes
         self.src_layout = QGridLayout()
         row = 0
         col = 0
