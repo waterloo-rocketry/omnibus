@@ -30,6 +30,11 @@ class Launcher():
         self.commands = []
         self.src_selected = []
         self.sink_selected = []
+        self.selected_indices = []
+        self.processes = []
+
+        self.omnibus = [python_executable, "-m", "omnibus"]
+        self.commands.append(self.omnibus)
         # Parse folders for sources and sinks
         self.modules = {"sources" : os.listdir('sources'), "sinks" : os.listdir('sinks')}
     
@@ -52,12 +57,15 @@ class Launcher():
 
         #Source selection
         self.src_selected = self.validate_inputs(self.modules['sources'], "Source")
-
+        
         #Sink selection 
         self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
 
-        self.omnibus = [python_executable, "-m", "omnibus"]
-        self.commands.append(self.omnibus)
+        #Command construction
+        self.construct_commands_cli()
+
+    #Construct commands for the selection
+    def construct_commands_cli(self):
         if self.src_selected:
             for selection in self.src_selected:
                 source=[python_executable, f"sources/{self.modules['sources'][selection - 1]}/main.py"]
@@ -67,19 +75,21 @@ class Launcher():
             for selection in self.sink_selected:
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
                 self.commands.append(sink)
+        
+        return self.commands
 
-    #validate the input selection for cli input
+    #Validate the input selection for cli input
     def validate_inputs(self, choices, module):
+        self.selected_indices=[]
         while True:
             user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces: ")
 
-            #split the input string into individual values
+            #Split the input string into individual values
             selection = user_input.split()
 
-            #validate the input 
+            #Validate the input 
             valid_input = True
-            selected_indices = []
-
+            
             for item in selection:
                 #Check if the input is a number
                 if not item.isdigit():
@@ -90,20 +100,19 @@ class Launcher():
                 #Check if the index is within the choice range 
                 index = int(item)
                 if 1 <= index <= len(choices):
-                    selected_indices.append(index)
+                    self.selected_indices.append(index)
                 else:
                     print(f"Please enter a number between 1 and {len(choices)}.")
                     valid_input = False
                     break
             if valid_input:
                 break
-        return selected_indices
+        return self.selected_indices
 
 
 
     # Execute commands as subprocesses
     def subprocess(self):
-        self.processes = []
         print("Launching... ", end="")
         for command in self.commands:
             if sys.platform == "win32":
@@ -241,23 +250,20 @@ class GUILauncher(Launcher, QDialog):
 
         main_layout = QVBoxLayout()
         main_layout.setSpacing(0)
-        main_layout.addWidget(source_list)  # Add source checkboxes in grid layout
+        main_layout.addWidget(source_list) 
         main_layout.addWidget(sink_list)
         main_layout.addWidget(self.button_box)
-
-        self.setLayout(main_layout)  # Set the main layout for the dialog
+        self.setLayout(main_layout)
 
     def construct_commands(self):
         self.selected_ok = True
         self.omnibus = ["python", "-m", "omnibus"]
         self.commands.append(self.omnibus)
 
-        
         if self.src_selected:
             for selection in self.src_selected:
                 source = [python_executable, f"sources/{self.modules['sources'][int(selection)-1]}/main.py"]
-                self.commands.append(source)
-                
+                self.commands.append(source)    
         if self.sink_selected:
             for selection in self.sink_selected:
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection)-1]}/main.py"]
@@ -279,7 +285,7 @@ class GUILauncher(Launcher, QDialog):
                 selected_list.append(int(index))        
         else:
             selected_list.remove(int(index))
-        
+
     def closeEvent(self, event):
         if self.selected_ok:
             event.accept()
