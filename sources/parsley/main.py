@@ -91,7 +91,7 @@ def main():
     args = argparser.parse_args()
 
     if not args.fake:
-        if args.port == "NOPORT":
+        if args.port == "FAKEPORT":
             print("Please specify a serial port by name or use --fake")
             exit(1)
         communicator = SerialCommunicator(args.port, args.baud, 0)
