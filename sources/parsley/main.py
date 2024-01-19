@@ -79,7 +79,7 @@ class FakeSerialCommunicator:  # acting as a fake usb debug board
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('port', type=str, nargs='?', default="NOPORT", help='the serial port to read from, not needed for fake mode')
+    argparser.add_argument('port', type=str, nargs='?', default="FAKEPORT", help='the serial port to read from, not needed for fake mode')
     argparser.add_argument('baud', type=int, nargs='?', default=115200,
                         help='the baud rate to use')
     argparser.add_argument('--format', default='usb',
