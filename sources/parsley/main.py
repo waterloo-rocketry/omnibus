@@ -29,19 +29,29 @@ class SerialCommunicator:
     def write(self, msg: bytes):
         self.serial.write(msg)
 
+# acting as a fake usb debug board
 
-class FakeSerialCommunicator:  # acting as a fake usb debug board
+
+class FakeSerialCommunicator:
     def __init__(self):
         # fake messages to cycle through
         self.fake_msgs = [
-            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'time': 0, 'sensor_id': 'SENSOR_BATT_CURR', 'value': 0},
-            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'time': 0, 'sensor_id': 'SENSOR_BUS_CURR', 'value': 0},
-            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'time': 0, 'sensor_id': 'SENSOR_CHARGE_CURR', 'value': 0},
-            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
-            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'time': 0, 'sensor_id': 'SENSOR_GROUND_VOLT', 'value': 0},
-            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
-            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'GENERAL_BOARD_STATUS', 'time': 0, 'status': 'E_NOMINAL'},
-            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'ACTUATOR_STATUS', 'time': 0, 'actuator': 'ACTUATOR_INJECTOR_VALVE', 'req_state': 'ACTUATOR_UNK', 'cur_state': 'ACTUATOR_OFF'},
+            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG',
+                'time': 0, 'sensor_id': 'SENSOR_BATT_CURR', 'value': 0},
+            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG',
+                'time': 0, 'sensor_id': 'SENSOR_BUS_CURR', 'value': 0},
+            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG',
+                'time': 0, 'sensor_id': 'SENSOR_CHARGE_CURR', 'value': 0},
+            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG',
+                'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
+            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG',
+                'time': 0, 'sensor_id': 'SENSOR_GROUND_VOLT', 'value': 0},
+            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'SENSOR_ANALOG',
+                'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
+            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'GENERAL_BOARD_STATUS',
+                'time': 0, 'status': 'E_NOMINAL'},
+            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'ACTUATOR_STATUS', 'time': 0,
+                'actuator': 'ACTUATOR_INJECTOR_VALVE', 'req_state': 'ACTUATOR_UNK', 'cur_state': 'ACTUATOR_OFF'},
             {'board_id': 'CHARGING', 'msg_type': 'GENERAL_BOARD_STATUS', 'time': 0, 'status': 'E_NOMINAL'},
         ]
         self.fake_msg_index = 0
@@ -51,7 +61,9 @@ class FakeSerialCommunicator:  # acting as a fake usb debug board
     def read(self):
         now = time.time()
         if now - self.last_fake_zero_time > FAKE_MESSAGE_SPACING:
-            self.fake_msgs[self.fake_msg_index]["time"] = (((now - self.zero_time) * 1000) % 65536) / 1000 # time is in seconds, mod 65536ms to get the 16 bit time
+            # time is in seconds, mod 65536ms to get the 16 bit time
+            self.fake_msgs[self.fake_msg_index]["time"] = (
+                ((now - self.zero_time) * 1000) % 65536) / 1000
             if "value" in self.fake_msgs[self.fake_msg_index]:
                 self.fake_msgs[self.fake_msg_index]["value"] = random.randint(0, 10)
 
@@ -79,15 +91,16 @@ class FakeSerialCommunicator:  # acting as a fake usb debug board
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('port', type=str, nargs='?', default="FAKEPORT", help='the serial port to read from, not needed for fake mode')
+    argparser.add_argument('port', type=str, nargs='?', default="FAKEPORT",
+                           help='the serial port to read from, not needed for fake mode')
     argparser.add_argument('baud', type=int, nargs='?', default=115200,
-                        help='the baud rate to use')
+                           help='the baud rate to use')
     argparser.add_argument('--format', default='usb',
-                        help='Options: telemetry, logger, usb. Parse input in RocketCAN Logger or USB format')
+                           help='Options: telemetry, logger, usb. Parse input in RocketCAN Logger or USB format')
     argparser.add_argument('--solo', action='store_true',
-                        help="Don't connect to omnibus - just print to stdout.")
+                           help="Don't connect to omnibus - just print to stdout.")
     argparser.add_argument('--fake', action='store_true',
-                        help="Don't read from hardware - uses fake data. Give any value for a port")
+                           help="Don't read from hardware - uses fake data. Give any value for a port")
     args = argparser.parse_args()
 
     if not args.fake:
@@ -111,16 +124,16 @@ def main():
         channel = "telemetry/" + RECEIVE_CHANNEL
     else:
         channel = RECEIVE_CHANNEL
-    
+
     sender_id = f"{gethostname()}/{args.format}/{args.port}"
-    
+
     if args.solo:
         sender = None
         receiver = None
     elif args.fake:
         print("Parsley started in fake mode")
         sender = Sender()
-        receiver = None  # no instructions to echo in fake mode
+        receiver = Receiver(channel)
     else:
         sender = Sender()
         receiver = Receiver(channel)
@@ -157,7 +170,7 @@ def main():
                     formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
                 formatted_msg += ";" + crc8.crc8(
                     msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
-                ).hexdigest().upper() # sent messages in the usb debug format have a crc8 checksum at the end, to be investigated: https://github.com/waterloo-rocketry/omnibus/commit/0913ff2ef1c38c3ae715ad87c805d071c1ce2c38
+                ).hexdigest().upper()  # sent messages in the usb debug format have a crc8 checksum at the end, to be investigated: https://github.com/waterloo-rocketry/omnibus/commit/0913ff2ef1c38c3ae715ad87c805d071c1ce2c38
                 print(formatted_msg)  # always print the usb debug style can message
                 # send the can message over the specified port
                 communicator.write(formatted_msg.encode())
@@ -181,12 +194,12 @@ def main():
                     msg_len = buffer[i + 1] >> 4
                     if i + msg_len > len(buffer):
                         break
-                    msg = buffer[i : i + msg_len]
+                    msg = buffer[i: i + msg_len]
                     try:
                         msg_sid, msg_data = parser(msg)
-                        buffer = buffer[i + msg_len :]
+                        buffer = buffer[i + msg_len:]
                     except ValueError as e:
-                        buffer = buffer[i + 1 :]
+                        buffer = buffer[i + 1:]
                         raise e
                 else:
                     text_buff = buffer.decode("utf-8", errors="backslashreplace")
@@ -194,7 +207,7 @@ def main():
                     if i < 0:
                         break
                     msg = text_buff[:i]
-                    buffer = buffer[i + 1 :]
+                    buffer = buffer[i + 1:]
                     msg_sid, msg_data = parser(msg)
 
                 parsed_data = parsley.parse(msg_sid, msg_data)
