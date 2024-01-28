@@ -20,10 +20,14 @@ else:
     python_executable = "python"
 
 # Blank exception just for processes to throw
+
+
 class Finished(Exception):
     pass
 
 # CLI Launcher
+
+
 class Launcher():
     def __init__(self) -> None:
         super().__init__()
@@ -33,14 +37,14 @@ class Launcher():
         self.processes = []
 
         # Parse folders for sources and sinks
-        self.modules = {"sources" : os.listdir('sources'), "sinks" : os.listdir('sinks')}
-    
+        self.modules = {"sources": os.listdir('sources'), "sinks": os.listdir('sinks')}
+
         # Remove dot files
         for module in self.modules.keys():
             for item in self.modules[module]:
                 if item.startswith("."):
                     self.modules[module].remove(item)
-    
+
     # Print list of sources and sinks
     def print_choices(self):
         for module in self.modules.keys():
@@ -115,8 +119,8 @@ class Launcher():
         print("Launching... ", end="")
         for command in self.commands:
             if sys.platform == "win32":
-                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
-                                        creationflags=CREATE_NEW_PROCESS_GROUP)
+                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                           creationflags=CREATE_NEW_PROCESS_GROUP)
                 time.sleep(0.5)
             else:
                 process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -124,7 +128,7 @@ class Launcher():
             self.processes.append(process)
 
         print("Done!")
-    
+
     # Create loggers
     def logging(self):
         self.logger = Logger()
@@ -153,22 +157,24 @@ class Launcher():
                 # process to the coresponding log file
                 output, err = process.communicate()
                 output, err = output.decode(), err.decode()
-                
+
                 # Log outputs
                 self.logger.log_output(process, output)
 
                 # Log errors
                 if err and "KeyboardInterrupt" not in err:
                     self.logger.log_error(process, err)
-                    
+
             logging.shutdown()
         finally:
             for process in self.processes:
                 if sys.platform == "win32":
                     os.kill(process.pid, signal.CTRL_BREAK_EVENT)
                 else:
-                    process.send_signal(signal.SIGINT) 
+                    process.send_signal(signal.SIGINT)
 
+
+# GUI Launcher
 class GUILauncher(Launcher, QDialog):
     def __init__(self):
         super().__init__()
@@ -242,6 +248,7 @@ class GUILauncher(Launcher, QDialog):
         self.button_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok
         )
+
         self.button_box.accepted.connect(self.construct_commands)
         self.button_box.rejected.connect(self.close)
 
@@ -289,6 +296,7 @@ class GUILauncher(Launcher, QDialog):
         else:
             sys.exit()
 
+
 def main():
     parser = argparse.ArgumentParser(description='Omnibus Launcher')
     parser.add_argument('--text', action='store_true', help='Use text input mode')
@@ -315,6 +323,7 @@ def main():
         gui_launcher.subprocess()
         gui_launcher.logging()
         gui_launcher.terminate()
+
 
 if __name__ == '__main__':
     main()
