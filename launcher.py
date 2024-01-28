@@ -12,13 +12,13 @@ from pyqtgraph.Qt.QtWidgets import (
     QApplication, QDialog, QLabel, QDialogButtonBox, QVBoxLayout,
     QWidget, QCheckBox, QGridLayout
 )
-
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
     from subprocess import CREATE_NEW_PROCESS_GROUP
     python_executable = "venv/Scripts/python"
 else:
     python_executable = "python"
+
 # Blank exception just for processes to throw
 class Finished(Exception):
     pass
@@ -30,11 +30,8 @@ class Launcher():
         self.commands = []
         self.src_selected = []
         self.sink_selected = []
-        self.selected_indices = []
         self.processes = []
 
-        self.omnibus = [python_executable, "-m", "omnibus"]
-        self.commands.append(self.omnibus)
         # Parse folders for sources and sinks
         self.modules = {"sources" : os.listdir('sources'), "sinks" : os.listdir('sinks')}
     
@@ -62,17 +59,20 @@ class Launcher():
         self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
 
         #Command construction
-        self.construct_commands_cli()
+        omnibus = [python_executable, "-m", "omnibus"]
+        self.commands.append(omnibus)
+        self.construct_commands_cli(self.src_selected, self.sink_selected)
+       
 
     #Construct commands for the selection
-    def construct_commands_cli(self):
-        if self.src_selected:
-            for selection in self.src_selected:
+    def construct_commands_cli(self, src_list, sink_list):
+        if src_list:
+            for selection in src_list:
                 source=[python_executable, f"sources/{self.modules['sources'][selection - 1]}/main.py"]
                 self.commands.append(source)
 
-        if self.sink_selected:
-            for selection in self.sink_selected:
+        if sink_list:
+            for selection in sink_list:
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
                 self.commands.append(sink)
         
@@ -80,7 +80,7 @@ class Launcher():
 
     #Validate the input selection for cli input
     def validate_inputs(self, choices, module):
-        self.selected_indices=[]
+        selected_indices=[]
         while True:
             user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces: ")
 
@@ -100,14 +100,15 @@ class Launcher():
                 #Check if the index is within the choice range 
                 index = int(item)
                 if 1 <= index <= len(choices):
-                    self.selected_indices.append(index)
+                    selected_indices.append(index)
                 else:
                     print(f"Please enter a number between 1 and {len(choices)}.")
                     valid_input = False
+                    selected_indices.clear()
                     break
             if valid_input:
                 break
-        return self.selected_indices
+        return selected_indices
 
     # Execute commands as subprocesses
     def subprocess(self):
