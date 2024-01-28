@@ -4,25 +4,28 @@ import csv
 from typing import List, Union
 
 from tools.data_processing.can_field_definitions import CAN_FIELDS
+from tools.data_processing.msgpack_sorter_unpacker import msgpackSorterUnpacker
 
 def get_can_cols(infile) -> List[str]:
-    cols = set()
-    for full_data in msgpack.Unpacker(infile):
+    cols = [] # the colums in the order they're encountered
+    cols_set = set()
+    for full_data in msgpack.Unpacker(infile): # here, being unsorted is ok
         # all CAN messages are passed from the rocket through parsley into the log, so we can just check for the parsley header
         channel, timestamp, payload = full_data
         if channel.startswith("CAN/Parsley"): 
             for field in CAN_FIELDS:
-                if field.match(payload):
-                    cols.add(field.csv_name)
+                if field.match(payload) and field.csv_name not in cols_set:
+                    cols_set.add(field.csv_name)
+                    cols.append(field.csv_name)
                 continue
 
-    return list(cols)
+    return cols
 
 def get_can_lines(infile, cols=[]) -> List[List[Union[int, str]]]:
     cols_set = set(cols)
     current_info = {col: None for col in cols}
     output_csv_lines = []
-    for full_data in msgpack.Unpacker(infile):
+    for full_data in msgpackSorterUnpacker(infile):
         channel, timestamp, payload = full_data
         if channel.startswith("CAN/Parsley"): 
             matched = False
@@ -42,6 +45,7 @@ def get_can_lines(infile, cols=[]) -> List[List[Union[int, str]]]:
                 out_line.append(current_info[col])
 
             output_csv_lines.append(out_line)
+
     return output_csv_lines
 
 

@@ -54,6 +54,8 @@ class CanProcessingField:
 def read_transformer_actuator_state(x):
     return 0 if x == "ACTUATOR_OFF" else 100
 
+# Optimally we would like to have a way to automatically generate this list based off the master truth
+
 CAN_FIELDS = [
     CanProcessingField("ox_tank", {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}, "data.value"),
     CanProcessingField("pneumatics_pressure", {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_PNEUMATICS"}, "data.value"),
@@ -61,7 +63,16 @@ CAN_FIELDS = [
     CanProcessingField("vent_valve_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, "data.req_state", read_transformer_actuator_state),
     CanProcessingField("injector_valve_req_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state", read_transformer_actuator_state),
     CanProcessingField("injector_valve_cur_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.cur_state", read_transformer_actuator_state),
-    CanProcessingField("general_status", {"msg_type": "GENERAL_BOARD_STATUS"}, "data.time"), # FIXME: I'm really not sure what this feild is for, so it should be investigated
+    # CanProcessingField("general_status", {"msg_type": "GENERAL_BOARD_STATUS"}, "data.time"), # FIXME: I'm really not sure what this feild is for, so it should be investigated
+    CanProcessingField("battery_current", {"board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_CURR"}, "data.value"),
+    CanProcessingField("bus_current", {"board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BUS_CURR"}, "data.value"),
+    CanProcessingField("charge_current", {"board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_CHARGE_CURR"}, "data.value"),
+    CanProcessingField("battery_voltage", {"board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
+    CanProcessingField("ground_voltage", {"board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_GROUND_VOLT"}, "data.value"),
+    CanProcessingField("injector_battery_voltage", {"board_id": "ACTUATOR_INJ", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
+    CanProcessingField("injector_board_status", {"board_id": "ACTUATOR_INJ", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
+    CanProcessingField("injector_valve_status", {"board_id": "ACTUATOR_INJ", "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state", read_transformer_actuator_state),
+    CanProcessingField("charging_board_status", {"board_id": "CHARGING", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
 ]
     
 if __name__ == "__main__":

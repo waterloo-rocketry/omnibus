@@ -1,10 +1,11 @@
 # Take in a log file path and yeild lines of daq data, with the option to be uncompressed or not
 from typing import List, Union
+import msgpack
 
-def get_daq_cols(infile: str) -> List[str]:
+def get_daq_cols(infile) -> List[str]:
     raise NotImplementedError
 
-def get_daq_lines(infile: str, cols=[], compressed=False) -> List[List[Union[int, str]]]:
+def get_daq_lines(infile, cols=[], compressed=False) -> List[List[Union[int, str]]]:
     raise NotImplementedError
 
 if __name__ == "__main__":
