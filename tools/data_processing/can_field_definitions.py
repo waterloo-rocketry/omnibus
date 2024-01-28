@@ -10,10 +10,11 @@
 import argparse
 
 class CanProcessingField:
-    def __init__(self, csv_name, matching_pattern, reading_signature):
+    def __init__(self, csv_name, matching_pattern, reading_signature, read_transformer=lambda x: x):
         self.csv_name = csv_name
         self.matching_pattern = matching_pattern
         self.reading_signature = reading_signature
+        self.read_transformer = read_transformer # a function that takes in the raw data and returns the data to be written to the csv (ex: ACTUATOR_OFF -> 0)
 
     def __repr__(self):
         return f"<ProcessingField {self.csv_name} (matching: {self.matching_pattern}, reading: {self.reading_signature})>"
@@ -47,7 +48,21 @@ class CanProcessingField:
             checking = checking[nested_key]
         if running_key not in checking:
             return None
-        return checking[running_key]
+        
+        return self.read_transformer(checking[running_key])
+    
+def read_transformer_actuator_state(x):
+    return 0 if x == "ACTUATOR_OFF" else 100
+
+CAN_FIELDS = [
+    CanProcessingField("ox_tank", {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}, "data.value"),
+    CanProcessingField("pneumatics_pressure", {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_PNEUMATICS"}, "data.value"),
+    CanProcessingField("vent_temp", {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_VENT_TEMP"}, "data.value"),
+    CanProcessingField("vent_valve_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, "data.req_state", read_transformer_actuator_state),
+    CanProcessingField("injector_valve_req_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state", read_transformer_actuator_state),
+    CanProcessingField("injector_valve_cur_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.cur_state", read_transformer_actuator_state),
+    CanProcessingField("general_status", {"msg_type": "GENERAL_BOARD_STATUS"}, "data.time"), # FIXME: I'm really not sure what this feild is for, so it should be investigated
+]
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run tests for field_definitions.py")
