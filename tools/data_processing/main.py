@@ -4,6 +4,7 @@ import sys
 import argparse
 import matplotlib.pyplot as plt
 import csv
+import os
 
 from tools.data_processing.can_processing import get_can_lines, get_can_cols
 from tools.data_processing.daq_processing import get_daq_lines, get_daq_cols
@@ -57,7 +58,7 @@ def ingest_data(file_path, mode = "a"):
     if selection == "":
         indexes = [i for i in range(len(cols))]
     else:
-        indexes = [int(i) - 1 for i in selection.split(",")]
+        indexes = [int(i) - 1 for i in selection.replace(" ","").split(",")]
 
     # split the indexes into daq and can indexes, and then get the names of the selected columns
     daq_cols = [daq_cols[i] for i in indexes if i < len(daq_cols)]
@@ -134,6 +135,39 @@ def data_preview(file_path, mode = "a"):
     plt.legend()
     plt.show()    
 
+def data_export(file_path, mode = "a"):
+    print(f"Exporting {file_path} in mode {mode}")
+    # Modes: a for all, d for daq, c for can
+    if mode != "a" and mode != "d" and mode != "c":
+        raise ValueError(f"Invalid mode {mode} passed to data_export")
+
+    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode)
+
+    # write the data to a csv file for each data source
+    daq_export_path = f"{file_path}_export_daq.csv"
+    can_export_path = f"{file_path}_export_can.csv"
+    if mode == "a" or mode == "d":
+        with open(daq_export_path, "w") as outfile:
+            writer = csv.writer(outfile)
+            writer.writerow(["time"] + daq_cols)
+            for line in daq_data:
+                writer.writerow(line)
+        
+        # measure the size of the file exported
+        daq_size = os.path.getsize(daq_export_path)
+        formatted_daq_size = "{:.2f} MB".format(daq_size / (1024 * 1024))
+        print(f"DAQ data exported to {daq_export_path} with size {formatted_daq_size}")
+
+    if mode == "a" or mode == "c":
+        with open(can_export_path, "w") as outfile:
+            writer = csv.writer(outfile)
+            writer.writerow(["time"] + can_cols)
+            for line in can_data:
+                writer.writerow(line)
+        can_size = os.path.getsize(can_export_path)
+        formatted_can_size = "{:.2f} MB".format(can_size / (1024 * 1024))
+        print(f"CAN data exported to {can_export_path} with size {formatted_can_size}")
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run data processing on a log file")
     parser.add_argument("file", help="The file to run on")
@@ -177,7 +211,7 @@ if __name__ == "__main__":
     if processing_mode == "p":
         data_preview(in_file_path, data_mode)
     if processing_mode == "e":
-        raise NotImplementedError
+        data_export(in_file_path, data_mode)
     else:
         raise NotImplementedError
     
