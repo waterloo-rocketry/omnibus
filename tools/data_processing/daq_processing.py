@@ -3,10 +3,10 @@ from typing import List, Union
 import msgpack
 
 def get_daq_cols(infile) -> List[str]:
-    raise NotImplementedError
+    return []
 
 def get_daq_lines(infile, cols=[], compressed=False) -> List[List[Union[int, str]]]:
-    raise NotImplementedError
+    return []
 
 if __name__ == "__main__":
     print("This file is not meant to be run directly. Run main.py instead.")
