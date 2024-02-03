@@ -54,6 +54,9 @@ class CanProcessingField:
 def read_transformer_actuator_state(x):
     return 0 if x == "ACTUATOR_OFF" else 100
 
+def read_electrical_status(x):
+    return 1 if x == "E_NOMINAL" else 0
+
 # Optimally we would like to have a way to automatically generate this list based off the master truth
 
 CAN_FIELDS = [
@@ -70,9 +73,9 @@ CAN_FIELDS = [
     CanProcessingField("battery_voltage", {"board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
     CanProcessingField("ground_voltage", {"board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_GROUND_VOLT"}, "data.value"),
     CanProcessingField("injector_battery_voltage", {"board_id": "ACTUATOR_INJ", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
-    CanProcessingField("injector_board_status", {"board_id": "ACTUATOR_INJ", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
+    CanProcessingField("injector_board_status", {"board_id": "ACTUATOR_INJ", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status", read_electrical_status),
     CanProcessingField("injector_valve_status", {"board_id": "ACTUATOR_INJ", "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state", read_transformer_actuator_state),
-    CanProcessingField("charging_board_status", {"board_id": "CHARGING", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
+    CanProcessingField("charging_board_status", {"board_id": "CHARGING", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status", read_electrical_status),
 ]
     
 if __name__ == "__main__":
