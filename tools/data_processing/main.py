@@ -28,25 +28,24 @@ def offset_timestamps(data1, data2):
 
     return time_offset
 
-def data_preview(file_path, mode = "a"):
-    print(f"Previewing {file_path} in mode {mode}")
+def ingest_data(file_path, mode = "a"):
+    """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
     print("Parsing file...")
-    # Modes: a for all, d for daq, c for can
-    if mode != "a" and mode != "d" and mode != "c":
-        raise ValueError(f"Invalid mode {mode} passed to data_preview")
-
+    
     daq_cols = []
     can_cols = []
     cols = []
-
+    
+    # get the columns from the file
+    # we want to do this regardless of the mode for consistent timestamp filtering
     with open(file_path, "rb") as infile:
-            daq_cols = get_daq_cols(infile)
-            can_cols = get_can_cols(infile)
+        daq_cols = get_daq_cols(infile)
+        can_cols = get_can_cols(infile)
 
     if mode == "a" or mode == "d":
-            cols += daq_cols
+        cols += daq_cols
     if mode == "a" or mode == "c":
-            cols += can_cols
+        cols += can_cols
 
     print("The following columns are available:")
     for i in range(len(cols)):
@@ -61,18 +60,21 @@ def data_preview(file_path, mode = "a"):
         indexes = [int(i) - 1 for i in selection.split(",")]
 
     # split the indexes into daq and can indexes, and then get the names of the selected columns
-    daq_selected_cols = [daq_cols[i] for i in indexes if i < len(daq_cols)]
-    can_selected_cols = [can_cols[i - len(daq_cols)] for i in indexes if i >= len(daq_cols)]
+    daq_cols = [daq_cols[i] for i in indexes if i < len(daq_cols)]
+    can_cols = [can_cols[i - len(daq_cols)] for i in indexes if i >= len(daq_cols)]
 
     print("Plotting the following columns:")
-    for col in daq_selected_cols:
+    for col in daq_cols:
         print(f"DAQ: {col}")
-    for col in can_selected_cols:
+    for col in can_cols:
         print(f"CAN: {col}")
+
+    print("Here's a copyable list of the numbers of the columns you selected:")
+    print(",".join([str(i+1) for i in indexes]))
 
     with open(file_path, "rb") as infile:
         if mode == "a" or mode == "d":
-            daq_data = get_daq_lines(infile, daq_selected_cols)
+            daq_data = get_daq_lines(infile, daq_cols)
             # map all None values to 0
             for i in range(len(daq_data)):
                 for j in range(len(daq_data[i])):
@@ -81,7 +83,7 @@ def data_preview(file_path, mode = "a"):
         else:
             daq_data = []
         if mode == "a" or mode == "c":
-            can_data = get_can_lines(infile, can_selected_cols)
+            can_data = get_can_lines(infile, can_cols)
             for i in range(len(can_data)):
                 for j in range(len(can_data[i])):
                     if can_data[i][j] is None:
@@ -95,8 +97,20 @@ def data_preview(file_path, mode = "a"):
     # sanity check that timestamps are increasing for can
     for i in range(len(can_data) - 1):
         if int(can_data[i][0]) > int(can_data[i+1][0]): # compare the timestamps columns (redundant int cast to silence linter)
-            print(f"CAN timestamp {can_data[i][0]} is greater than {can_data[i+1][0]}")
-        
+            print(f"Warning: CAN timestamp {can_data[i][0]} is greater than {can_data[i+1][0]}")
+
+    return daq_cols, can_cols, daq_data, can_data
+
+def data_preview(file_path, mode = "a"):
+    print(f"Previewing {file_path} in mode {mode}")
+    # Modes: a for all, d for daq, c for can
+    if mode != "a" and mode != "d" and mode != "c":
+        raise ValueError(f"Invalid mode {mode} passed to data_preview")
+
+    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode)
+            
+    print("Pan the plot to find the time range you want to export")
+
     # plot the data for the selected columns
     plt.figure()
 
@@ -108,17 +122,17 @@ def data_preview(file_path, mode = "a"):
         plt.title("CAN data")
 
     if mode == "a" or mode == "d":
-        for i in range(len(daq_selected_cols)):
+        for i in range(len(daq_cols)):
             # plot the time column against the column for each selected colum
-            plt.plot([d[0] for d in daq_data], [d[i+1] for d in daq_data], label=daq_selected_cols[i])
+            plt.plot([d[0] for d in daq_data], [d[i+1] for d in daq_data], label=daq_cols[i])
 
     if mode == "a" or mode == "c":
-        for i in range(len(can_selected_cols)):
-            plt.plot([d[0] for d in can_data], [d[i+1] for d in can_data], label=can_selected_cols[i])
+        for i in range(len(can_cols)):
+            plt.plot([d[0] for d in can_data], [d[i+1] for d in can_data], label=can_cols[i])
 
     plt.xlabel("Time (s)")
     plt.legend()
-    plt.show()
+    plt.show()    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run data processing on a log file")
@@ -162,6 +176,8 @@ if __name__ == "__main__":
 
     if processing_mode == "p":
         data_preview(in_file_path, data_mode)
+    if processing_mode == "e":
+        raise NotImplementedError
     else:
         raise NotImplementedError
     
