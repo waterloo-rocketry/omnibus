@@ -29,6 +29,10 @@ def offset_timestamps(data1, data2):
 
     return time_offset
 
+def filter_timestamps(data, start, stop):
+    """Filter the data to only include the timestamps between start and stop"""
+    return [d for d in data if d[0] >= start and d[0] <= stop]
+
 def ingest_data(file_path, mode = "a"):
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
     print("Parsing file...")
@@ -52,7 +56,7 @@ def ingest_data(file_path, mode = "a"):
     for i in range(len(cols)):
         prefix = "DAQ" if i < len(daq_cols) else "CAN"
         print(f"({prefix}) {i+1}: {cols[i]}")
-    selection = input("Enter the numbers for the columns you want to plot, seperated by commas, or leave empty for all: ")
+    selection = input("Enter the numbers for the columns you want to extract, seperated by commas, or leave empty for all: ")
     
     # parse the selection into a list of indexes in the cols list
     if selection == "":
@@ -142,6 +146,28 @@ def data_export(file_path, mode = "a"):
         raise ValueError(f"Invalid mode {mode} passed to data_export")
 
     daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode)
+
+    print("Select the time range to export, or leave empty for the start or end of the data respectively")
+    start = input("Start time (s): ")
+    if start == "":
+        start = 0
+        print("Defaulting to start of data")
+    else:
+        start = float(start)
+
+    stop = input("Stop time (s): ")
+    if stop == "":
+        stop = float("inf")
+        print("Defaulting to end of data")
+    else:
+        stop = float(stop)
+
+    daq_data = filter_timestamps(daq_data, start, stop)
+    can_data = filter_timestamps(can_data, start, stop)
+
+    # print warnings if the data is empty
+    if len(daq_data) == 0 and len(can_data) == 0:
+        print("Warning: No data to export for the selected time range")
 
     # write the data to a csv file for each data source
     daq_export_path = f"{file_path}_export_daq.csv"
