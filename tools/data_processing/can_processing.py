@@ -4,7 +4,7 @@ import csv
 from typing import List, Union
 
 from tools.data_processing.can_field_definitions import CAN_FIELDS
-from tools.data_processing.msgpack_sorter_unpacker import msgpackSorterUnpacker
+from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
 
 def get_can_cols(infile) -> List[str]:
     cols = [] # the colums in the order they're encountered
@@ -25,7 +25,7 @@ def get_can_lines(infile, cols=[]) -> List[List[Union[int, str]]]:
     cols_set = set(cols)
     current_info = {col: None for col in cols}
     output_csv_lines = []
-    for full_data in msgpackSorterUnpacker(infile):
+    for full_data in msgpackFilterUnpacker(infile):
         channel, timestamp, payload = full_data
         if channel.startswith("CAN/Parsley"): 
             matched = False
