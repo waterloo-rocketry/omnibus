@@ -173,7 +173,7 @@ def data_export(file_path, mode = "a",daq_compression=True, daq_aggregate_functi
         print("Warning: No data to export for the selected time range")
 
     # Create an export hash to identify the export
-    export_hash = hashlib.md5(f"{file_path}{mode}{start}{stop}{daq_compression}{daq_aggregate_function}".encode()).hexdigest()
+    export_hash = hashlib.md5(f"{file_path}{mode}{start}{stop}{daq_compression}{daq_aggregate_function}{daq_cols}{can_cols}{daq_data}{can_data}".encode()).hexdigest()
     export_hash = export_hash[:6]
 
     # write the data to a csv file for each data source
