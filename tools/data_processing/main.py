@@ -33,7 +33,7 @@ def filter_timestamps(data, start, stop):
     """Filter the data to only include the timestamps between start and stop"""
     return [d for d in data if d[0] >= start and d[0] <= stop]
 
-def ingest_data(file_path, mode = "a"):
+def ingest_data(file_path, mode = "a", daq_compression=True, daq_aggregate_function="average"):
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
     print("Parsing file...")
     
@@ -77,6 +77,7 @@ def ingest_data(file_path, mode = "a"):
     print("Here's a copyable list of the numbers of the columns you selected:")
     print(",".join([str(i+1) for i in indexes]))
 
+    # get the data for the selected columns
     with open(file_path, "rb") as infile:
         if mode == "a" or mode == "d":
             daq_data = get_daq_lines(infile, daq_cols)
@@ -96,7 +97,7 @@ def ingest_data(file_path, mode = "a"):
         else:
             can_data = []
     
-    
+    # offset the timestamps of the data sources so that they start at 0
     offset_timestamps(daq_data, can_data)
 
     # sanity check that timestamps are increasing for can
@@ -139,13 +140,13 @@ def data_preview(file_path, mode = "a"):
     plt.legend()
     plt.show()    
 
-def data_export(file_path, mode = "a"):
+def data_export(file_path, mode = "a",daq_compression=True, daq_aggregate_function="average"):
     print(f"Exporting {file_path} in mode {mode}")
     # Modes: a for all, d for daq, c for can
     if mode != "a" and mode != "d" and mode != "c":
         raise ValueError(f"Invalid mode {mode} passed to data_export")
 
-    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode)
+    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode, daq_compression, daq_aggregate_function)
 
     print("Select the time range to export, or leave empty for the start or end of the data respectively")
     start = input("Start time (s): ")
@@ -236,7 +237,7 @@ if __name__ == "__main__":
 
     if processing_mode == "p":
         data_preview(in_file_path, data_mode)
-    if processing_mode == "e":
+    elif processing_mode == "e":
         data_export(in_file_path, data_mode)
     else:
         raise NotImplementedError

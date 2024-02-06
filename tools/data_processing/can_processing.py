@@ -20,6 +20,7 @@ def get_can_cols(infile) -> List[str]:
                     cols.append(field.csv_name)
                 continue
 
+    infile.seek(0)
     return cols
 
 def get_can_lines(infile, cols=[]) -> List[List[Union[int, str]]]:
@@ -48,6 +49,7 @@ def get_can_lines(infile, cols=[]) -> List[List[Union[int, str]]]:
 
             output_csv_lines.append(out_line)
 
+    infile.seek(0)
     return output_csv_lines
 
 
