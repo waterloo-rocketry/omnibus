@@ -5,6 +5,8 @@ import argparse
 import matplotlib.pyplot as plt
 import csv
 import os
+import datetime
+import hashlib
 
 from tools.data_processing.can_processing import get_can_lines, get_can_cols
 from tools.data_processing.daq_processing import get_daq_lines, get_daq_cols
@@ -170,9 +172,13 @@ def data_export(file_path, mode = "a",daq_compression=True, daq_aggregate_functi
     if len(daq_data) == 0 and len(can_data) == 0:
         print("Warning: No data to export for the selected time range")
 
+    # Create an export hash to identify the export
+    export_hash = hashlib.md5(f"{file_path}{mode}{start}{stop}{daq_compression}{daq_aggregate_function}".encode()).hexdigest()
+    export_hash = export_hash[:6]
+
     # write the data to a csv file for each data source
-    daq_export_path = f"{file_path}_export_daq.csv"
-    can_export_path = f"{file_path}_export_can.csv"
+    daq_export_path = f"{file_path.replace('.log','')}_export_{export_hash}_daq.csv"
+    can_export_path = f"{file_path.replace('.log','')}_export_{export_hash}_can.csv"
     if mode == "a" or mode == "d":
         with open(daq_export_path, "w") as outfile:
             writer = csv.writer(outfile)
@@ -194,7 +200,12 @@ def data_export(file_path, mode = "a",daq_compression=True, daq_aggregate_functi
         can_size = os.path.getsize(can_export_path)
         formatted_can_size = "{:.2f} MB".format(can_size / (1024 * 1024))
         print(f"CAN data exported to {can_export_path} with size {formatted_can_size}")
-    
+
+    # save an export manifest for information on what was exported with which settings
+    manifest_text = f"Data exported from {file_path} with mode {mode} and time range {start} to {stop}, exported at {datetime.datetime.now()} with the export hash {export_hash}.\nExported columns: \nDAQ: {daq_cols} \nCAN: {can_cols} \nExported files: \nDAQ: {daq_export_path} ({formatted_daq_size}) \nCAN: {can_export_path} ({formatted_can_size}) \nDAQ export settings: \nCompression: {daq_compression} \nAggregation function: {daq_aggregate_function} \nCAN entries were filterd for stricly increasing timestamps, so may not be complete."
+    with open(f"{file_path.replace('.log','')}_export_{export_hash}_manifest.txt", "w") as manifest_file:
+        manifest_file.write(manifest_text)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run data processing on a log file")
     parser.add_argument("file", help="The file to run on")
