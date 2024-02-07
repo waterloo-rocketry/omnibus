@@ -10,7 +10,6 @@ import hashlib
 
 from tools.data_processing.can_processing import get_can_lines, get_can_cols
 from tools.data_processing.daq_processing import get_daq_lines, get_daq_cols
-from tools.data_processing.log_merger import merge_logs
 
 def offset_timestamps(data1, data2):
     """Offset the timestamps of the two data sources so that they start at 0, and return the time offset that was applied to both data sources."""
@@ -212,7 +211,6 @@ if __name__ == "__main__":
 
     parser.add_argument("-p", "--preview", help="Preview the data", action="store_true")
     parser.add_argument("-e", "--export", help="Export the data", action="store_true")
-    parser.add_argument("-m", "--merge", help="Merge the data", action="store_true")
 
     parser.add_argument("-a", "--all", help="Plot all data", action="store_true")
     parser.add_argument("-d", "--daq", help="Plot only daq data", action="store_true")
@@ -231,8 +229,6 @@ if __name__ == "__main__":
         processing_mode = "p"
     elif args.export:
         processing_mode = "e"
-    elif args.merge:
-        processing_mode = "m"
     else:
         print("Defaulting to preview mode")
     
