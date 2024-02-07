@@ -63,14 +63,14 @@ def get_daq_lines(infile, cols=[], compressed=True, aggregate_function_name="ave
 if __name__ == "__main__":
     print("This file is not meant to be run directly. Run main.py instead.")
 
-    # just for testing right now
-    import argparse
-    parser = argparse.ArgumentParser(description="Run tests for daq_processing.py on a real file")
-    parser.add_argument("file", help="The file to test on")
+    # testing code
+    # import argparse
+    # parser = argparse.ArgumentParser(description="Run tests for daq_processing.py on a real file")
+    # parser.add_argument("file", help="The file to test on")
 
-    args = parser.parse_args()
-    file_path = args.file
-    with open(file_path, "rb") as infile:
-        print(get_daq_cols(infile))
-        print(str(average_list))
-        print(get_daq_lines(infile, ["Fake1", "Fake2", "Fake3", "Fake4", "Fake5"], compressed=True, aggregate_function=average_list))
+    # args = parser.parse_args()
+    # file_path = args.file
+    # with open(file_path, "rb") as infile:
+    #     print(get_daq_cols(infile))
+    #     print(str(average_list))
+    #     print(get_daq_lines(infile, ["Fake1", "Fake2", "Fake3", "Fake4", "Fake5"], compressed=True, aggregate_function=average_list))

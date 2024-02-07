@@ -56,27 +56,27 @@ def get_can_lines(infile, cols=[]) -> List[List[Union[int, str]]]:
 if __name__ == "__main__":
     print("This file is not meant to be run directly. Run main.py instead.")
 
-    # for now we're just testing though
-    import argparse
-    parser = argparse.ArgumentParser(description="Run tests for can_processing.py on a real file")
-    parser.add_argument("file", help="The file to test on")
-    args = parser.parse_args()
-    file_path = args.file
+    # testing code
+    # import argparse
+    # parser = argparse.ArgumentParser(description="Run tests for can_processing.py on a real file")
+    # parser.add_argument("file", help="The file to test on")
+    # args = parser.parse_args()
+    # file_path = args.file
 
-    print("Testing get_can_cols")
-    with open(file_path, "rb") as infile:
-        print(get_can_cols(infile))
-        print("Done testing get_can_cols")
+    # print("Testing get_can_cols")
+    # with open(file_path, "rb") as infile:
+    #     print(get_can_cols(infile))
+    #     print("Done testing get_can_cols")
 
-    print("Testing get_can_lines for 10th line")
-    with open(file_path, "rb") as infile:
-        print(get_can_lines(infile, ['general_status', 'ox_tank', 'injector_valve_cur_status', 'vent_temp', 'vent_valve_status', 'injector_valve_req_status', 'pneumatics_pressure'])[10])
-        print("Done testing get_can_lines")
+    # print("Testing get_can_lines for 10th line")
+    # with open(file_path, "rb") as infile:
+    #     print(get_can_lines(infile, ['general_status', 'ox_tank', 'injector_valve_cur_status', 'vent_temp', 'vent_valve_status', 'injector_valve_req_status', 'pneumatics_pressure'])[10])
+    #     print("Done testing get_can_lines")
 
-    print("Testing full_extract_can")
-    with open(file_path, "rb") as infile:
-        with open("test-can-out.csv", "w") as outfile:
-            writer = csv.writer(outfile)
-            writer.writerow(["time"] + ['ox_tank', 'injector_valve_cur_status', 'vent_temp', 'vent_valve_status', 'injector_valve_req_status', 'pneumatics_pressure'])
-            for line in get_can_lines(infile, ['ox_tank', 'injector_valve_cur_status', 'vent_temp', 'vent_valve_status', 'injector_valve_req_status', 'pneumatics_pressure']):
-                writer.writerow(line)
+    # print("Testing full_extract_can")
+    # with open(file_path, "rb") as infile:
+    #     with open("test-can-out.csv", "w") as outfile:
+    #         writer = csv.writer(outfile)
+    #         writer.writerow(["time"] + ['ox_tank', 'injector_valve_cur_status', 'vent_temp', 'vent_valve_status', 'injector_valve_req_status', 'pneumatics_pressure'])
+    #         for line in get_can_lines(infile, ['ox_tank', 'injector_valve_cur_status', 'vent_temp', 'vent_valve_status', 'injector_valve_req_status', 'pneumatics_pressure']):
+    #             writer.writerow(line)

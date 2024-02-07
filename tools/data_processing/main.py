@@ -164,6 +164,7 @@ def data_export(file_path, mode = "a",daq_compression=True, daq_aggregate_functi
     else:
         stop = float(stop)
 
+    # filter the data to only include the timestamps between start and stop
     daq_data = filter_timestamps(daq_data, start, stop)
     can_data = filter_timestamps(can_data, start, stop)
 
