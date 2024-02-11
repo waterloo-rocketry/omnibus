@@ -53,13 +53,14 @@ class CanProcessingField:
 # Optimally we would like to have a way to automatically generate this list based off the master truth
 
 CAN_FIELDS = [
-    CanProcessingField("ox_tank", {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}, "data.value"),
+    CanProcessingField("ox_tank_pressure", {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}, "data.value"),
     CanProcessingField("pneumatics_pressure", {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_PNEUMATICS"}, "data.value"),
     CanProcessingField("vent_temp", {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_VENT_TEMP"}, "data.value"),
-    CanProcessingField("vent_valve_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, "data.req_state"),
+    CanProcessingField("vent_ox_pressure", {'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_OX'}, "data.req_state"),
+    CanProcessingField("vent_valve_req_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, "data.req_state"),
+    CanProcessingField("vent_valve_cur_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, "data.cur_state"),
     CanProcessingField("injector_valve_req_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state"),
     CanProcessingField("injector_valve_cur_status", {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.cur_state"),
-    CanProcessingField("general_status", {"msg_type": "GENERAL_BOARD_STATUS"}, "data.time"), # FIXME: I'm really not sure what this feild is for, so it should be investigated
     CanProcessingField("battery_current", {"board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_CURR"}, "data.value"),
     CanProcessingField("bus_current", {"board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BUS_CURR"}, "data.value"),
     CanProcessingField("charge_current", {"board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_CHARGE_CURR"}, "data.value"),
@@ -69,6 +70,8 @@ CAN_FIELDS = [
     CanProcessingField("injector_board_status", {"board_id": "ACTUATOR_INJ", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
     CanProcessingField("injector_valve_status", {"board_id": "ACTUATOR_INJ", "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state"),
     CanProcessingField("charging_board_status", {"board_id": "CHARGING", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
+    CanProcessingField("cc_pressure", {'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_CC'}, 'data.value'),
+
 ]
     
 if __name__ == "__main__":
@@ -81,58 +84,58 @@ if __name__ == "__main__":
         exit(1)
     
     # test matching
-    # correct_matching_pattern = {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}
-    # incorrect_matching_pattern = {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_FUEL"}
-    # inexistant_matching_pattern = {"msg_type": "SENSOR_ANALOG", "mangoes.pears": "SENSOR_PRESSURE_OX"}
+    correct_matching_pattern = {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}
+    incorrect_matching_pattern = {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_FUEL"}
+    inexistant_matching_pattern = {"msg_type": "SENSOR_ANALOG", "mangoes.pears": "SENSOR_PRESSURE_OX"}
     
-    # correct_reading_signature = "data.value"
-    # incorrect_reading_signature = "data.req_state"
-    # inexistant_reading_signature = "data.mangoes"
+    correct_reading_signature = "data.value"
+    incorrect_reading_signature = "data.req_state"
+    inexistant_reading_signature = "data.mangoes"
 
-    # cmatch_cread = CanProcessingField("ox tank", correct_matching_pattern, correct_reading_signature)
-    # cmatch_iread = CanProcessingField("ox tank", correct_matching_pattern, incorrect_reading_signature)
-    # cmatch_ixread = CanProcessingField("ox tank", correct_matching_pattern, inexistant_reading_signature)
-    # imatch_cread = CanProcessingField("ox tank", incorrect_matching_pattern, correct_reading_signature)
-    # imatch_iread = CanProcessingField("ox tank", incorrect_matching_pattern, incorrect_reading_signature)
-    # imatch_ixread = CanProcessingField("ox tank", incorrect_matching_pattern, inexistant_reading_signature)
-    # ixmatch_cread = CanProcessingField("ox tank", inexistant_matching_pattern, correct_reading_signature)
-    # ixmatch_iread = CanProcessingField("ox tank", inexistant_matching_pattern, incorrect_reading_signature)
-    # ixmatch_ixread = CanProcessingField("ox tank", inexistant_matching_pattern, inexistant_reading_signature)
+    cmatch_cread = CanProcessingField("ox tank", correct_matching_pattern, correct_reading_signature)
+    cmatch_iread = CanProcessingField("ox tank", correct_matching_pattern, incorrect_reading_signature)
+    cmatch_ixread = CanProcessingField("ox tank", correct_matching_pattern, inexistant_reading_signature)
+    imatch_cread = CanProcessingField("ox tank", incorrect_matching_pattern, correct_reading_signature)
+    imatch_iread = CanProcessingField("ox tank", incorrect_matching_pattern, incorrect_reading_signature)
+    imatch_ixread = CanProcessingField("ox tank", incorrect_matching_pattern, inexistant_reading_signature)
+    ixmatch_cread = CanProcessingField("ox tank", inexistant_matching_pattern, correct_reading_signature)
+    ixmatch_iread = CanProcessingField("ox tank", inexistant_matching_pattern, incorrect_reading_signature)
+    ixmatch_ixread = CanProcessingField("ox tank", inexistant_matching_pattern, inexistant_reading_signature)
 
-    # # example candidates
-    # correct_candidate = {"msg_type": "SENSOR_ANALOG", "data": {"sensor_id": "SENSOR_PRESSURE_OX", "value": 100}}
-    # missing_value_candidate = {"msg_type": "SENSOR_ANALOG", "data": {"sensor_id": "SENSOR_PRESSURE_OX"}}
-    # false_candidate = {"msg_type": "SENSOR_ANALOG", "data": {"sensor_id": "NOT_THE_ONE", "value": 100}}
-    # missing_data_candidate = {"msg_type": "SENSOR_ANALOG"}
+    # example candidates
+    correct_candidate = {"msg_type": "SENSOR_ANALOG", "data": {"sensor_id": "SENSOR_PRESSURE_OX", "value": 100}}
+    missing_value_candidate = {"msg_type": "SENSOR_ANALOG", "data": {"sensor_id": "SENSOR_PRESSURE_OX"}}
+    false_candidate = {"msg_type": "SENSOR_ANALOG", "data": {"sensor_id": "NOT_THE_ONE", "value": 100}}
+    missing_data_candidate = {"msg_type": "SENSOR_ANALOG"}
 
-    # print("Testing matching")
-    # print("Correct input matching")
-    # assert cmatch_cread.match(correct_candidate)
-    # assert cmatch_iread.match(correct_candidate)
-    # assert cmatch_ixread.match(correct_candidate)
-    # assert not imatch_cread.match(correct_candidate)
-    # assert not imatch_iread.match(correct_candidate)
-    # assert not imatch_ixread.match(correct_candidate)
-    # assert not ixmatch_cread.match(correct_candidate)
-    # assert not ixmatch_iread.match(correct_candidate)
-    # assert not ixmatch_ixread.match(correct_candidate)
-    # print("Correct input reading")
-    # assert cmatch_cread.read(correct_candidate) == 100
-    # assert cmatch_iread.read(correct_candidate) == None
-    # assert cmatch_ixread.read(correct_candidate) == None
-    # assert imatch_cread.read(correct_candidate) == None
-    # assert imatch_iread.read(correct_candidate) == None
-    # assert imatch_ixread.read(correct_candidate) == None
-    # assert ixmatch_cread.read(correct_candidate) == None
-    # assert ixmatch_iread.read(correct_candidate) == None
-    # assert ixmatch_ixread.read(correct_candidate) == None
-    # print("Incorrect input matching")
-    # assert not cmatch_cread.match(false_candidate)
-    # assert not imatch_cread.match(false_candidate)
-    # assert not ixmatch_cread.match(false_candidate)
-    # print("Missing value input reading")
-    # assert cmatch_cread.read(missing_value_candidate) == None
-    # print("Missing data input matching")
-    # assert not cmatch_cread.match(missing_data_candidate)
+    print("Testing matching")
+    print("Correct input matching")
+    assert cmatch_cread.match(correct_candidate)
+    assert cmatch_iread.match(correct_candidate)
+    assert cmatch_ixread.match(correct_candidate)
+    assert not imatch_cread.match(correct_candidate)
+    assert not imatch_iread.match(correct_candidate)
+    assert not imatch_ixread.match(correct_candidate)
+    assert not ixmatch_cread.match(correct_candidate)
+    assert not ixmatch_iread.match(correct_candidate)
+    assert not ixmatch_ixread.match(correct_candidate)
+    print("Correct input reading")
+    assert cmatch_cread.read(correct_candidate) == 100
+    assert cmatch_iread.read(correct_candidate) == None
+    assert cmatch_ixread.read(correct_candidate) == None
+    assert imatch_cread.read(correct_candidate) == None
+    assert imatch_iread.read(correct_candidate) == None
+    assert imatch_ixread.read(correct_candidate) == None
+    assert ixmatch_cread.read(correct_candidate) == None
+    assert ixmatch_iread.read(correct_candidate) == None
+    assert ixmatch_ixread.read(correct_candidate) == None
+    print("Incorrect input matching")
+    assert not cmatch_cread.match(false_candidate)
+    assert not imatch_cread.match(false_candidate)
+    assert not ixmatch_cread.match(false_candidate)
+    print("Missing value input reading")
+    assert cmatch_cread.read(missing_value_candidate) == None
+    print("Missing data input matching")
+    assert not cmatch_cread.match(missing_data_candidate)
     
-    # print("All tests passed!")
+    print("All tests passed!")
