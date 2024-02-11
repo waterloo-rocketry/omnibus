@@ -25,7 +25,7 @@ def get_daq_cols(infile) -> List[str]:
     cols = []
     for full_data in msgpack.Unpacker(infile):
         channel, timestamp, payload = full_data
-        if channel.startswith("DAQ/"):
+        if channel.startswith("DAQ"):
             data = payload["data"]
             for key in data:
                 if key not in cols_set:
@@ -42,7 +42,7 @@ def get_daq_lines(infile, cols=[], compressed=True, aggregate_function_name="ave
     aggregate_function = aggregation_functions[aggregate_function_name]
     for full_data in msgpack.Unpacker(infile):
         channel, timestamp, payload = full_data
-        if channel.startswith("DAQ/"):
+        if channel.startswith("DAQ"):
             data = payload["data"]
             for key in data:
                 if key in cols_set:
