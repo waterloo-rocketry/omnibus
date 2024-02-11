@@ -40,7 +40,7 @@ def ingest_data(file_path, mode = "a", daq_compression=True, daq_aggregate_funct
     
     daq_cols = []
     can_cols = []
-    cols = []
+    cols = {}
     
     # get the columns from the file
     # we want to do this regardless of the mode for consistent timestamp filtering
@@ -48,26 +48,36 @@ def ingest_data(file_path, mode = "a", daq_compression=True, daq_aggregate_funct
         daq_cols = get_daq_cols(infile)
         can_cols = get_can_cols(infile)
 
+    i = 1
     if mode == "a" or mode == "d":
-        cols += daq_cols
+        for col in daq_cols:
+            cols[("DAQ",col)] = i
+            i += 1
     if mode == "a" or mode == "c":
-        cols += can_cols
+        for col in can_cols:
+            cols[("CAN",col)] = i
+            i += 1
+
 
     print("The following columns are available:")
-    for i in range(len(cols)):
-        prefix = "DAQ" if i < len(daq_cols) else "CAN"
-        print(f"({prefix}) {i+1}: {cols[i]}")
+    # for i in range(len(cols)):
+    #     prefix = "DAQ" if i < len(daq_cols) else "CAN"
+    #     print(f"({prefix}) {i+1}: {cols[i]}")
+    for col in cols:
+        print(f"{cols[col]}: {col}")
     selection = input("Enter the numbers for the columns you want to extract, seperated by commas, or leave empty for all: ")
     
     # parse the selection into a list of indexes in the cols list
     if selection == "":
-        indexes = [i for i in range(len(cols))]
+        indexes = [i for i in range(1,len(cols)+1)]
     else:
-        indexes = [int(i) - 1 for i in selection.replace(" ","").split(",")]
+        indexes = [int(i) for i in selection.replace(" ","").split(",")]
 
     # split the indexes into daq and can indexes, and then get the names of the selected columns
-    daq_cols = [daq_cols[i] for i in indexes if i < len(daq_cols)]
-    can_cols = [can_cols[i - len(daq_cols)] for i in indexes if i >= len(daq_cols)]
+    # daq_cols = [daq_cols[i] for i in indexes if i < len(daq_cols)]
+    # can_cols = [can_cols[i - len(daq_cols)] for i in indexes if i >= len(daq_cols)]
+    daq_cols = [col[1] for col in cols if col[0] == "DAQ" and cols[col] in indexes]
+    can_cols = [col[1] for col in cols if col[0] == "CAN" and cols[col] in indexes]
 
     print("Plotting the following columns:")
     for col in daq_cols:
@@ -176,6 +186,8 @@ def data_export(file_path, mode = "a",daq_compression=True, daq_aggregate_functi
     export_hash = hashlib.md5(f"{file_path}{mode}{start}{stop}{daq_compression}{daq_aggregate_function}{daq_cols}{can_cols}{daq_data}{can_data}".encode()).hexdigest()
     export_hash = export_hash[:6]
 
+    formatted_daq_size = "N/A"
+    formatted_can_size = "N/A"
     # write the data to a csv file for each data source
     daq_export_path = f"{file_path.replace('.log','')}_export_{export_hash}_daq.csv"
     can_export_path = f"{file_path.replace('.log','')}_export_{export_hash}_can.csv"
