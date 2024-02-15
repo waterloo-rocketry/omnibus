@@ -6,13 +6,15 @@ from typing import List, Union
 from tools.data_processing.can_field_definitions import CAN_FIELDS
 from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
 
+
 def get_can_cols(infile) -> List[str]:
     """Get the columns that are present in the CAN data in the file"""
-    cols = [] # the colums in the order they're encountered
+    cols = []  # the colums in the order they're encountered
     cols_set = set()
-    for full_data in msgpack.Unpacker(infile): # we don't need to use the filtered source, as we're just looking for the message types
-        channel, timestamp, payload = full_data # extract the three parts of the message packed data
-        if channel.startswith("CAN/Parsley"): # CAN messages come over parsely
+    # we don't need to use the filtered source, as we're just looking for the message types
+    for full_data in msgpack.Unpacker(infile):
+        channel, timestamp, payload = full_data  # extract the three parts of the message packed data
+        if channel.startswith("CAN/Parsley"):  # CAN messages come over parsely
             # try and match the message to a field given the field's matching pattern definition
             for field in CAN_FIELDS:
                 if field.match(payload) and field.csv_name not in cols_set:
@@ -23,21 +25,24 @@ def get_can_cols(infile) -> List[str]:
     infile.seek(0)
     return cols
 
+
 def get_can_lines(infile, cols=[]) -> List[List[Union[int, str]]]:
     """Get all the data from the CAN messages in the file, and return it as a list of lists, where each list is a line of the csv"""
     cols_set = set(cols)
-    current_info = {col: None for col in cols} # a dictionary to store the up to date values of the columns we're tracking, so we can output them when we get a new line
+    # a dictionary to store the up to date values of the columns we're tracking, so we can output them when we get a new line
+    current_info = {col: None for col in cols}
     output_csv_lines = []
-    for full_data in msgpackFilterUnpacker(infile): # we use the filtered source to ensure the timestamps are in order for the output data (see msgpack_sorter_unpacker.py for more info on this method and it's FIXME)
+    # we use the filtered source to ensure the timestamps are in order for the output data (see msgpack_sorter_unpacker.py for more info on this method and it's FIXME)
+    for full_data in msgpackFilterUnpacker(infile):
         channel, timestamp, payload = full_data
-        if channel.startswith("CAN/Parsley"): 
+        if channel.startswith("CAN/Parsley"):
             # we check if the payload matches any of the fields we're tracking, and if it does, we update the current_info dictionary
             matched = False
             for field in CAN_FIELDS:
                 if field.match(payload) and field.csv_name in cols_set:
                     current_info[field.csv_name] = field.read(payload)
                     matched = True
-            
+
             # no need for an updated line if we didnt update any of the values we're tracking, we don't want to output a line with no new up to date info
             if not matched:
                 continue
@@ -57,6 +62,8 @@ if __name__ == "__main__":
     print("This file is not meant to be run directly. Run main.py instead.")
 
     # testing code
+    # uncomment this code to test the file
+
     # import argparse
     # parser = argparse.ArgumentParser(description="Run tests for can_processing.py on a real file")
     # parser.add_argument("file", help="The file to test on")

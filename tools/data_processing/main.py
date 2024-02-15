@@ -11,6 +11,7 @@ import hashlib
 from tools.data_processing.can_processing import get_can_lines, get_can_cols
 from tools.data_processing.daq_processing import get_daq_lines, get_daq_cols
 
+
 def offset_timestamps(data1, data2):
     """Offset the timestamps of the two data sources so that they start at 0, and return the time offset that was applied to both data sources."""
     # we need logic to handle the case where one of the data sources is empty, becuase a recording might only have CAN data
@@ -30,59 +31,59 @@ def offset_timestamps(data1, data2):
 
     return time_offset
 
+
 def filter_timestamps(data, start, stop):
     """Filter the data to only include the timestamps between start and stop"""
     return [d for d in data if d[0] >= start and d[0] <= stop]
 
-def ingest_data(file_path, mode = "a", daq_compression=True, daq_aggregate_function="average"):
+
+def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_function="average"):
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
     print("Parsing file...")
-    
+
     daq_cols = []
     can_cols = []
-    cols = {}
-    
+
     # get the columns from the file
     # we want to do this regardless of the mode for consistent timestamp filtering
     with open(file_path, "rb") as infile:
         daq_cols = get_daq_cols(infile)
         can_cols = get_can_cols(infile)
 
+    column_mapping = {}
+
     i = 1
     if mode == "a" or mode == "d":
         for col in daq_cols:
-            cols[("DAQ",col)] = i
+            column_mapping[("DAQ", col)] = i
             i += 1
     if mode == "a" or mode == "c":
         for col in can_cols:
-            cols[("CAN",col)] = i
+            column_mapping[("CAN", col)] = i
             i += 1
 
-
     print("The following columns are available:")
-    # for i in range(len(cols)):
-    #     prefix = "DAQ" if i < len(daq_cols) else "CAN"
-    #     print(f"({prefix}) {i+1}: {cols[i]}")
-    for col in cols:
-        print(f"{cols[col]}: {col}")
-    selection = input("Enter the numbers for the columns you want to extract, seperated by commas, or leave empty for all: ")
-    
+    for col in column_mapping:
+        print(f"{column_mapping[col]}: {col}")
+    selection = input(
+        "Enter the numbers for the columns you want to extract, seperated by commas, or leave empty for all: ")
+
     # parse the selection into a list of indexes in the cols list
     if selection == "":
-        indexes = [i for i in range(1,len(cols)+1)]
+        indexes = [i for i in range(1, len(column_mapping)+1)]
     else:
-        indexes = [int(i) for i in selection.replace(" ","").split(",")]
+        indexes = [int(i) for i in selection.replace(" ", "").split(",")]
 
     # split the indexes into daq and can indexes, and then get the names of the selected columns
-    # daq_cols = [daq_cols[i] for i in indexes if i < len(daq_cols)]
-    # can_cols = [can_cols[i - len(daq_cols)] for i in indexes if i >= len(daq_cols)]
-    daq_cols = [col[1] for col in cols if col[0] == "DAQ" and cols[col] in indexes]
-    can_cols = [col[1] for col in cols if col[0] == "CAN" and cols[col] in indexes]
+    selected_daq_cols = [col[1] for col in column_mapping if col[0]
+                         == "DAQ" and column_mapping[col] in indexes]
+    selected_can_cols = [col[1] for col in column_mapping if col[0]
+                         == "CAN" and column_mapping[col] in indexes]
 
     print("Plotting the following columns:")
-    for col in daq_cols:
+    for col in selected_daq_cols:
         print(f"DAQ: {col}")
-    for col in can_cols:
+    for col in selected_can_cols:
         print(f"CAN: {col}")
 
     print("Here's a copyable list of the numbers of the columns you selected:")
@@ -91,7 +92,7 @@ def ingest_data(file_path, mode = "a", daq_compression=True, daq_aggregate_funct
     # get the data for the selected columns
     with open(file_path, "rb") as infile:
         if mode == "a" or mode == "d":
-            daq_data = get_daq_lines(infile, daq_cols)
+            daq_data = get_daq_lines(infile, selected_daq_cols)
             # map all None values to 0
             for i in range(len(daq_data)):
                 for j in range(len(daq_data[i])):
@@ -100,32 +101,34 @@ def ingest_data(file_path, mode = "a", daq_compression=True, daq_aggregate_funct
         else:
             daq_data = []
         if mode == "a" or mode == "c":
-            can_data = get_can_lines(infile, can_cols)
+            can_data = get_can_lines(infile, selected_can_cols)
             for i in range(len(can_data)):
                 for j in range(len(can_data[i])):
                     if can_data[i][j] is None:
                         can_data[i][j] = 0
         else:
             can_data = []
-    
+
     # offset the timestamps of the data sources so that they start at 0
     offset_timestamps(daq_data, can_data)
 
     # sanity check that timestamps are increasing for can
     for i in range(len(can_data) - 1):
-        if int(can_data[i][0]) > int(can_data[i+1][0]): # compare the timestamps columns (redundant int cast to silence linter)
+        # compare the timestamps columns (redundant int cast to silence linter)
+        if int(can_data[i][0]) > int(can_data[i+1][0]):
             print(f"Warning: CAN timestamp {can_data[i][0]} is greater than {can_data[i+1][0]}")
 
-    return daq_cols, can_cols, daq_data, can_data
+    return selected_daq_cols, selected_can_cols, daq_data, can_data
 
-def data_preview(file_path, mode = "a"):
+
+def data_preview(file_path, mode="a"):
     print(f"Previewing {file_path} in mode {mode}")
     # Modes: a for all, d for daq, c for can
     if mode != "a" and mode != "d" and mode != "c":
         raise ValueError(f"Invalid mode {mode} passed to data_preview")
 
     daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode)
-            
+
     print("Pan the plot to find the time range you want to export")
 
     # plot the data for the selected columns
@@ -149,16 +152,20 @@ def data_preview(file_path, mode = "a"):
 
     plt.xlabel("Time (s)")
     plt.legend()
-    plt.show()    
+    plt.show()
 
-def data_export(file_path, mode = "a",daq_compression=True, daq_aggregate_function="average"):
+
+def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_function="average"):
     print(f"Exporting {file_path} in mode {mode}")
     # Modes: a for all, d for daq, c for can
     if mode != "a" and mode != "d" and mode != "c":
         raise ValueError(f"Invalid mode {mode} passed to data_export")
 
-    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode, daq_compression, daq_aggregate_function)
+    # get the user to select colums and fetch the data
+    daq_cols, can_cols, daq_data, can_data = ingest_data(
+        file_path, mode, daq_compression, daq_aggregate_function)
 
+    # get the time range to export
     print("Select the time range to export, or leave empty for the start or end of the data respectively")
     start = input("Start time (s): ")
     if start == "":
@@ -183,7 +190,8 @@ def data_export(file_path, mode = "a",daq_compression=True, daq_aggregate_functi
         print("Warning: No data to export for the selected time range")
 
     # Create an export hash to identify the export
-    export_hash = hashlib.md5(f"{file_path}{mode}{start}{stop}{daq_compression}{daq_aggregate_function}{daq_cols}{can_cols}{daq_data}{can_data}".encode()).hexdigest()
+    export_hash = hashlib.md5(
+        f"{file_path}{mode}{start}{stop}{daq_compression}{daq_aggregate_function}{daq_cols}{can_cols}{daq_data}{can_data}".encode()).hexdigest()
     export_hash = export_hash[:6]
 
     formatted_daq_size = "N/A"
@@ -197,7 +205,7 @@ def data_export(file_path, mode = "a",daq_compression=True, daq_aggregate_functi
             writer.writerow(["time"] + daq_cols)
             for line in daq_data:
                 writer.writerow(line)
-        
+
         # measure the size of the file exported
         daq_size = os.path.getsize(daq_export_path)
         formatted_daq_size = "{:.2f} MB".format(daq_size / (1024 * 1024))
@@ -217,6 +225,7 @@ def data_export(file_path, mode = "a",daq_compression=True, daq_aggregate_functi
     manifest_text = f"Data exported from {file_path} with mode {mode} and time range {start} to {stop}, exported at {datetime.datetime.now()} with the export hash {export_hash}.\nExported columns: \nDAQ: {daq_cols} \nCAN: {can_cols} \nExported files: \nDAQ: {daq_export_path} ({formatted_daq_size}) \nCAN: {can_export_path} ({formatted_can_size}) \nDAQ export settings: \nCompression: {daq_compression} \nAggregation function: {daq_aggregate_function} \nCAN entries were filterd for stricly increasing timestamps, so may not be complete."
     with open(f"{file_path.replace('.log','')}_export_{export_hash}_manifest.txt", "w") as manifest_file:
         manifest_file.write(manifest_text)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run data processing on a log file")
@@ -244,7 +253,7 @@ if __name__ == "__main__":
         processing_mode = "e"
     else:
         print("Defaulting to preview mode")
-    
+
     data_mode = "a"
     if args.all:
         data_mode = "a"
@@ -261,4 +270,3 @@ if __name__ == "__main__":
         data_export(in_file_path, data_mode)
     else:
         raise NotImplementedError
-    

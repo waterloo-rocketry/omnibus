@@ -25,10 +25,12 @@ def get_data(infile):
         if isinstance(data, list):
             # global log format is a 3-tuple of (channel, timestamp, data), after passing through this loop, only the data part is kept
             # ignore all non-DAQ data by checking each package type
-            if data[0].startswith("DAQ"): # if a message is DAQ data, add onto the message's data feild all the most up to date info from the CAN discrete
+            # if a message is DAQ data, add onto the message's data feild all the most up to date info from the CAN discrete
+            if data[0].startswith("DAQ"):
                 data = data[2]
                 data["data"].update(can_last)
-            elif data[0].startswith("CAN/Parsley"): # update the apropriate feild in the last known info
+            # update the apropriate feild in the last known info
+            elif data[0].startswith("CAN/Parsley"):
                 data = data[2]
                 if data["msg_type"] == "SENSOR_ANALOG":
                     if data["data"]["sensor_id"] == "SENSOR_PRESSURE_OX":
@@ -92,7 +94,7 @@ def get_range(infile):
 
 
 # automatically establish the sample rate of the DAQ data in the log by dividing the number of entries between the first and nth frame in the ref_channel channel, and dividing it by the time between the first and n+1th DAQ data
-def establish_sample_rate(infile,ref_channel):
+def establish_sample_rate(infile, ref_channel):
     start_timestamp = None
     time_elapsed = 0
     total_entries = 0
@@ -102,15 +104,18 @@ def establish_sample_rate(infile,ref_channel):
         entries_queue = len(data[ref_channel])
         if start_timestamp == None:
             start_timestamp = timestamp
-        
-        time_elapsed = timestamp - start_timestamp # this will be 
-    
+
+        time_elapsed = timestamp - start_timestamp  # this will be
+
     raw_frequency = total_entries / time_elapsed
-    print(raw_frequency,total_entries,time_elapsed)
-    rounded_frequency = math.ceil(raw_frequency/100.0)*100 # round to the closest 100hz, an arbitrarily chosen value TO BE FACTORED OUT
+    print(raw_frequency, total_entries, time_elapsed)
+    # round to the closest 100hz, an arbitrarily chosen value TO BE FACTORED OUT
+    rounded_frequency = math.ceil(raw_frequency/100.0)*100
     return rounded_frequency
 
 # Write a subset of the full data to a CSV file
+
+
 def write_csv(infile, outfile, start, stop):
     writer = csv.writer(outfile)
     channels = None  # columns of CSV file

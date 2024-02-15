@@ -4,8 +4,10 @@ import msgpack
 
 from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
 
+
 def average_list(data):
     return sum(data) / len(data)
+
 
 def median_list(data):
     sorted_data = sorted(data)
@@ -15,10 +17,12 @@ def median_list(data):
     else:
         return sorted_data[length//2]
 
+
 aggregation_functions = {
     "average": average_list,
     "median": median_list
 }
+
 
 def get_daq_cols(infile) -> List[str]:
     cols_set = set()
@@ -35,6 +39,7 @@ def get_daq_cols(infile) -> List[str]:
     infile.seek(0)
     return cols
 
+
 def get_daq_lines(infile, cols=[], compressed=True, aggregate_function_name="average") -> List[List[Union[int, str]]]:
     lines = []
     cols_set = set(cols)
@@ -50,7 +55,7 @@ def get_daq_lines(infile, cols=[], compressed=True, aggregate_function_name="ave
                         current_info[key] = aggregate_function(data[key])
                     else:
                         current_info[key] = data[key]
-            
+
             # Depending on the compression, we either need to append just one line, or agregated entries
             if compressed:
                 lines.append([timestamp] + [current_info[col] for col in cols])
@@ -60,10 +65,13 @@ def get_daq_lines(infile, cols=[], compressed=True, aggregate_function_name="ave
     infile.seek(0)
     return lines
 
+
 if __name__ == "__main__":
     print("This file is not meant to be run directly. Run main.py instead.")
 
     # testing code
+    # uncomment the following to test this file
+
     # import argparse
     # parser = argparse.ArgumentParser(description="Run tests for daq_processing.py on a real file")
     # parser.add_argument("file", help="The file to test on")
