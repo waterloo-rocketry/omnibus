@@ -1,6 +1,6 @@
 # Data Processing Tool
 
-A tool to extract meaninful data streams from DAQ and CAN channels from test or flight logs.
+A tool to extract meaninful data streams from DAQ and CAN channels from test or flight logs comming from globallogger.
 
 ## Usage
 
