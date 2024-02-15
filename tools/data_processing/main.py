@@ -37,7 +37,7 @@ def filter_timestamps(data, start, stop):
     return [d for d in data if d[0] >= start and d[0] <= stop]
 
 
-def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_function="average"):
+def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_function="average",msg_packed_filtering="behind_stream"):
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
     print("Parsing file...")
 
@@ -87,12 +87,12 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
         print(f"CAN: {col}")
 
     print("Here's a copyable list of the numbers of the columns you selected:")
-    print(",".join([str(i+1) for i in indexes]))
+    print(",".join([str(i) for i in indexes]))
 
     # get the data for the selected columns
     with open(file_path, "rb") as infile:
         if mode == "a" or mode == "d":
-            daq_data = get_daq_lines(infile, selected_daq_cols)
+            daq_data = get_daq_lines(infile, selected_daq_cols, aggregate_function_name=daq_aggregate_function)
             # map all None values to 0
             for i in range(len(daq_data)):
                 for j in range(len(daq_data[i])):
@@ -101,7 +101,7 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
         else:
             daq_data = []
         if mode == "a" or mode == "c":
-            can_data = get_can_lines(infile, selected_can_cols)
+            can_data = get_can_lines(infile, selected_can_cols,msg_packed_filtering=msg_packed_filtering)
             for i in range(len(can_data)):
                 for j in range(len(can_data[i])):
                     if can_data[i][j] is None:
@@ -121,13 +121,13 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
     return selected_daq_cols, selected_can_cols, daq_data, can_data
 
 
-def data_preview(file_path, mode="a"):
+def data_preview(file_path, mode="a",msg_packed_filtering="behind_stream"):
     print(f"Previewing {file_path} in mode {mode}")
     # Modes: a for all, d for daq, c for can
     if mode != "a" and mode != "d" and mode != "c":
         raise ValueError(f"Invalid mode {mode} passed to data_preview")
 
-    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode)
+    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode,msg_packed_filtering=msg_packed_filtering)
 
     print("Pan the plot to find the time range you want to export")
 
@@ -155,7 +155,7 @@ def data_preview(file_path, mode="a"):
     plt.show()
 
 
-def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_function="average"):
+def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
     print(f"Exporting {file_path} in mode {mode}")
     # Modes: a for all, d for daq, c for can
     if mode != "a" and mode != "d" and mode != "c":
@@ -222,7 +222,7 @@ def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_functio
         print(f"CAN data exported to {can_export_path} with size {formatted_can_size}")
 
     # save an export manifest for information on what was exported with which settings
-    manifest_text = f"Data exported from {file_path} with mode {mode} and time range {start} to {stop}, exported at {datetime.datetime.now()} with the export hash {export_hash}.\nExported columns: \nDAQ: {daq_cols} \nCAN: {can_cols} \nExported files: \nDAQ: {daq_export_path} ({formatted_daq_size}) \nCAN: {can_export_path} ({formatted_can_size}) \nDAQ export settings: \nCompression: {daq_compression} \nAggregation function: {daq_aggregate_function} \nCAN entries were filterd for stricly increasing timestamps, so may not be complete."
+    manifest_text = f"Data exported from {file_path} with mode {mode} and time range {start} to {stop}, exported at {datetime.datetime.now()} with the export hash {export_hash}.\nExported columns: \nDAQ: {daq_cols} \nCAN: {can_cols} \nExported files: \nDAQ: {daq_export_path} ({formatted_daq_size}) \nCAN: {can_export_path} ({formatted_can_size}) \nDAQ export settings: \nCompression: {daq_compression} \nAggregation function: {daq_aggregate_function} \nCAN entries were filterd for stricly {msg_packed_filtering} timestamps, so may not be complete."
     with open(f"{file_path.replace('.log','')}_export_{export_hash}_manifest.txt", "w") as manifest_file:
         manifest_file.write(manifest_text)
 
@@ -237,6 +237,8 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--all", help="Plot all data", action="store_true")
     parser.add_argument("-d", "--daq", help="Plot only daq data", action="store_true")
     parser.add_argument("-c", "--can", help="Plot only can data", action="store_true")
+
+    parser.add_argument("-b", "--behind", help="Take the behind stream for CAN exporting", action="store_true")
 
     if len(sys.argv) == 1:
         print("Make sure to pass a log file to run on, and other options")
@@ -264,9 +266,13 @@ if __name__ == "__main__":
     else:
         print("Defaulting to all data sources")
 
+    msg_packed_filtering_mode = "ahead_stream"
+    if args.behind:
+        msg_packed_filtering_mode = "behind_stream"
+
     if processing_mode == "p":
-        data_preview(in_file_path, data_mode)
+        data_preview(in_file_path, data_mode,msg_packed_filtering=msg_packed_filtering_mode)
     elif processing_mode == "e":
-        data_export(in_file_path, data_mode)
+        data_export(in_file_path, data_mode,msg_packed_filtering=msg_packed_filtering_mode)
     else:
         raise NotImplementedError

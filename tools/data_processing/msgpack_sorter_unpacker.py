@@ -9,6 +9,8 @@ def msgpackFilterUnpacker(infile, mode="behind_stream"):
     for data in msgpack.Unpacker(infile):
         all_messages.append(data)
 
+    print(f"Processing msgpacked messages in mode {mode}")
+
     # discard all messages if the current time is lower than running current time, by not adding them to the filtered and output list
     if mode == "ahead_stream":
         filtered_messages = []
