@@ -53,19 +53,20 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
 
     column_mapping = {}
 
-    i = 1
+    column_counter = 1
     if mode == "a" or mode == "d":
         for col in daq_cols:
-            column_mapping[("DAQ", col)] = i
-            i += 1
+            column_mapping[("DAQ", col)] = column_counter
+            column_counter += 1
     if mode == "a" or mode == "c":
         for col in can_cols:
-            column_mapping[("CAN", col)] = i
-            i += 1
+            column_mapping[("CAN", col)] = column_counter
+            column_counter += 1
 
     print("The following columns are available:")
     for col in column_mapping:
         print(f"{column_mapping[col]}: {col}")
+
     selection = input(
         "Enter the numbers for the columns you want to extract, seperated by commas, or leave empty for all: ")
 
@@ -95,18 +96,18 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
         if mode == "a" or mode == "d":
             daq_data = get_daq_lines(infile, selected_daq_cols, aggregate_function_name=daq_aggregate_function)
             # map all None values to 0
-            for i in range(len(daq_data)):
-                for j in range(len(daq_data[i])):
-                    if daq_data[i][j] is None:
-                        daq_data[i][j] = 0
+            for column_counter in range(len(daq_data)):
+                for j in range(len(daq_data[column_counter])):
+                    if daq_data[column_counter][j] is None:
+                        daq_data[column_counter][j] = 0
         else:
             daq_data = []
         if mode == "a" or mode == "c":
             can_data = get_can_lines(infile, selected_can_cols, msg_packed_filtering=msg_packed_filtering)
-            for i in range(len(can_data)):
-                for j in range(len(can_data[i])):
-                    if can_data[i][j] is None:
-                        can_data[i][j] = 0
+            for column_counter in range(len(can_data)):
+                for j in range(len(can_data[column_counter])):
+                    if can_data[column_counter][j] is None:
+                        can_data[column_counter][j] = 0
         else:
             can_data = []
 
@@ -114,10 +115,10 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
     offset_timestamps(daq_data, can_data)
 
     # sanity check that timestamps are increasing for can
-    for i in range(len(can_data) - 1):
+    for time_index in range(len(can_data) - 1):
         # compare the timestamps columns (redundant int cast to silence linter)
-        if int(can_data[i][0]) > int(can_data[i+1][0]):
-            print(f"Warning: CAN timestamp {can_data[i][0]} is greater than {can_data[i+1][0]}")
+        if int(can_data[time_index][0]) > int(can_data[time_index+1][0]):
+            print(f"Warning: CAN timestamp {can_data[time_index][0]} is greater than {can_data[time_index+1][0]}")
 
     return selected_daq_cols, selected_can_cols, daq_data, can_data
 
