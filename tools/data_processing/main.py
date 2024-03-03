@@ -11,6 +11,53 @@ import hashlib
 from tools.data_processing.can_processing import get_can_lines, get_can_cols
 from tools.data_processing.daq_processing import get_daq_lines, get_daq_cols
 
+# ARGUMENT PARSING
+
+def parseArguments():
+    parser = argparse.ArgumentParser(description="Run data processing on a log file")
+    parser.add_argument("file", help="The file to run on")
+
+    parser.add_argument("-p", "--preview", help="Preview the data", action="store_true")
+    parser.add_argument("-e", "--export", help="Export the data", action="store_true")
+
+    parser.add_argument("-a", "--all", help="Plot all data", action="store_true")
+    parser.add_argument("-d", "--daq", help="Plot only daq data", action="store_true")
+    parser.add_argument("-c", "--can", help="Plot only can data", action="store_true")
+
+    parser.add_argument("-b", "--behind", help="Take the behind stream for CAN exporting", action="store_true")
+
+    if len(sys.argv) == 1:
+        print("Make sure to pass a log file to run on, and other options")
+        parser.print_help()
+        sys.exit(1)
+
+    args = parser.parse_args()
+
+    in_file_path = args.file
+    processing_mode = "p"
+    if args.preview:
+        processing_mode = "p"
+    elif args.export:
+        processing_mode = "e"
+    else:
+        print("Defaulting to preview mode")
+
+    data_mode = "a"
+    if args.all:
+        data_mode = "a"
+    elif args.daq:
+        data_mode = "d"
+    elif args.can:
+        data_mode = "c"
+    else:
+        print("Defaulting to all data sources")
+
+    msg_packed_filtering_mode = "ahead_stream"
+    if args.behind:
+        msg_packed_filtering_mode = "behind_stream"
+
+    return in_file_path, processing_mode, data_mode, msg_packed_filtering_mode
+
 # HELPER FUNCTIONS
 
 def offset_timestamps(data1, data2):
@@ -261,52 +308,6 @@ def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_functio
         "daq_aggregate_function": daq_aggregate_function,
         "msg_packed_filtering": msg_packed_filtering
     })
-
-
-def parseArguments():
-    parser = argparse.ArgumentParser(description="Run data processing on a log file")
-    parser.add_argument("file", help="The file to run on")
-
-    parser.add_argument("-p", "--preview", help="Preview the data", action="store_true")
-    parser.add_argument("-e", "--export", help="Export the data", action="store_true")
-
-    parser.add_argument("-a", "--all", help="Plot all data", action="store_true")
-    parser.add_argument("-d", "--daq", help="Plot only daq data", action="store_true")
-    parser.add_argument("-c", "--can", help="Plot only can data", action="store_true")
-
-    parser.add_argument("-b", "--behind", help="Take the behind stream for CAN exporting", action="store_true")
-
-    if len(sys.argv) == 1:
-        print("Make sure to pass a log file to run on, and other options")
-        parser.print_help()
-        sys.exit(1)
-
-    args = parser.parse_args()
-
-    in_file_path = args.file
-    processing_mode = "p"
-    if args.preview:
-        processing_mode = "p"
-    elif args.export:
-        processing_mode = "e"
-    else:
-        print("Defaulting to preview mode")
-
-    data_mode = "a"
-    if args.all:
-        data_mode = "a"
-    elif args.daq:
-        data_mode = "d"
-    elif args.can:
-        data_mode = "c"
-    else:
-        print("Defaulting to all data sources")
-
-    msg_packed_filtering_mode = "ahead_stream"
-    if args.behind:
-        msg_packed_filtering_mode = "behind_stream"
-
-    return in_file_path, processing_mode, data_mode, msg_packed_filtering_mode
     
 
 if __name__ == "__main__":
