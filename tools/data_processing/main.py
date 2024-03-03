@@ -11,6 +11,7 @@ import hashlib
 from tools.data_processing.can_processing import get_can_lines, get_can_cols
 from tools.data_processing.daq_processing import get_daq_lines, get_daq_cols
 
+# HELPER FUNCTIONS
 
 def offset_timestamps(data1, data2):
     """Offset the timestamps of the two data sources so that they start at 0, and return the time offset that was applied to both data sources."""
@@ -120,6 +121,18 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
 
     return selected_daq_cols, selected_can_cols, daq_data, can_data
 
+def save_data_to_csv(file_path, data, cols):
+    formatted_can_size = "N/A"
+    with open(file_path, "w") as outfile:
+        writer = csv.writer(outfile)
+        writer.writerow(["time"] + cols)
+        for line in data:
+            writer.writerow(line)
+        export_size = os.path.getsize(file_path)
+        formatted_can_size = "{:.2f} MB".format(export_size / (1024 * 1024))
+    return formatted_can_size
+
+# THE MAIN DATA PROCESSING DRIVING FUNCTIONS
 
 def data_preview(file_path, mode="a", msg_packed_filtering="behind_stream"):
     print(f"Previewing {file_path} in mode {mode}")
@@ -200,25 +213,11 @@ def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_functio
     daq_export_path = f"{file_path.replace('.log','')}_export_{export_hash}_daq.csv"
     can_export_path = f"{file_path.replace('.log','')}_export_{export_hash}_can.csv"
     if mode == "a" or mode == "d":
-        with open(daq_export_path, "w") as outfile:
-            writer = csv.writer(outfile)
-            writer.writerow(["time"] + daq_cols)
-            for line in daq_data:
-                writer.writerow(line)
-
-        # measure the size of the file exported
-        daq_size = os.path.getsize(daq_export_path)
-        formatted_daq_size = "{:.2f} MB".format(daq_size / (1024 * 1024))
+        formatted_daq_size = save_data_to_csv(daq_export_path, daq_data, daq_cols)
         print(f"DAQ data exported to {daq_export_path} with size {formatted_daq_size}")
 
     if mode == "a" or mode == "c":
-        with open(can_export_path, "w") as outfile:
-            writer = csv.writer(outfile)
-            writer.writerow(["time"] + can_cols)
-            for line in can_data:
-                writer.writerow(line)
-        can_size = os.path.getsize(can_export_path)
-        formatted_can_size = "{:.2f} MB".format(can_size / (1024 * 1024))
+        formatted_can_size = save_data_to_csv(can_export_path, can_data, can_cols)
         print(f"CAN data exported to {can_export_path} with size {formatted_can_size}")
 
     # save an export manifest for information on what was exported with which settings
