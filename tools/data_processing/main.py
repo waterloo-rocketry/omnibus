@@ -132,6 +132,29 @@ def save_data_to_csv(file_path, data, cols):
         formatted_can_size = "{:.2f} MB".format(export_size / (1024 * 1024))
     return formatted_can_size
 
+def save_manifest(manifest_args):
+    if "file_path" not in manifest_args:
+        raise ValueError("Manifest must have a file path")
+    
+    manifest_empty_filler = "NONE"
+
+    # The string literal must be un-indented to save properly
+    manifest_text = f"""Data exported from {manifest_args.get("file_path", manifest_empty_filler)} with mode {manifest_args.get("mode", manifest_empty_filler)} and time range {manifest_args.get("start", manifest_empty_filler)} to {manifest_args.get("stop", manifest_empty_filler)}, exported at {datetime.datetime.now()} with the export hash {manifest_args.get("export_hash", manifest_empty_filler)}.
+Exported columns:
+DAQ: {manifest_args.get("daq_cols", manifest_empty_filler)}
+CAN: {manifest_args.get("can_cols", manifest_empty_filler)}
+Exported files:
+DAQ: {manifest_args.get("daq_export_path", manifest_empty_filler)} ({manifest_args.get("formatted_daq_size", manifest_empty_filler)})
+CAN: {manifest_args.get("can_export_path", manifest_empty_filler)} ({manifest_args.get("formatted_can_size", manifest_empty_filler)})
+DAQ export settings:
+Compression: {manifest_args.get("daq_compression", manifest_empty_filler)}
+Aggregation function: {manifest_args.get("daq_aggregate_function", manifest_empty_filler)}
+CAN entries were filterd for stricly {manifest_args.get("msg_packed_filtering", manifest_empty_filler)} timestamps, so may not be complete.
+    """
+
+    with open(f"{manifest_args.get('file_path', 'NONE').replace('.log','')}_export_{manifest_args.get('export_hash', 'NONE')}_manifest.txt", "w") as manifest_file:
+        manifest_file.write(manifest_text)
+
 # THE MAIN DATA PROCESSING DRIVING FUNCTIONS
 
 def data_preview(file_path, mode="a", msg_packed_filtering="behind_stream"):
@@ -221,9 +244,22 @@ def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_functio
         print(f"CAN data exported to {can_export_path} with size {formatted_can_size}")
 
     # save an export manifest for information on what was exported with which settings
-    manifest_text = f"Data exported from {file_path} with mode {mode} and time range {start} to {stop}, exported at {datetime.datetime.now()} with the export hash {export_hash}.\nExported columns: \nDAQ: {daq_cols} \nCAN: {can_cols} \nExported files: \nDAQ: {daq_export_path} ({formatted_daq_size}) \nCAN: {can_export_path} ({formatted_can_size}) \nDAQ export settings: \nCompression: {daq_compression} \nAggregation function: {daq_aggregate_function} \nCAN entries were filterd for stricly {msg_packed_filtering} timestamps, so may not be complete."
-    with open(f"{file_path.replace('.log','')}_export_{export_hash}_manifest.txt", "w") as manifest_file:
-        manifest_file.write(manifest_text)
+    save_manifest({
+        "file_path": file_path,
+        "mode": mode,
+        "start": start,
+        "stop": stop,
+        "export_hash": export_hash,
+        "daq_cols": daq_cols,
+        "can_cols": can_cols,
+        "daq_export_path": daq_export_path,
+        "can_export_path": can_export_path,
+        "formatted_daq_size": formatted_daq_size,
+        "formatted_can_size": formatted_can_size,
+        "daq_compression": daq_compression,
+        "daq_aggregate_function": daq_aggregate_function,
+        "msg_packed_filtering": msg_packed_filtering
+    })
 
 
 def parseArguments():
