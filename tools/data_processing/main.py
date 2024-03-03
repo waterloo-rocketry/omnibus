@@ -227,7 +227,7 @@ def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_functio
         manifest_file.write(manifest_text)
 
 
-if __name__ == "__main__":
+def parseArguments():
     parser = argparse.ArgumentParser(description="Run data processing on a log file")
     parser.add_argument("file", help="The file to run on")
 
@@ -269,6 +269,13 @@ if __name__ == "__main__":
     msg_packed_filtering_mode = "ahead_stream"
     if args.behind:
         msg_packed_filtering_mode = "behind_stream"
+
+    return in_file_path, processing_mode, data_mode, msg_packed_filtering_mode
+    
+
+if __name__ == "__main__":
+    
+    in_file_path, processing_mode, data_mode, msg_packed_filtering_mode = parseArguments()
 
     if processing_mode == "p":
         data_preview(in_file_path, data_mode,msg_packed_filtering=msg_packed_filtering_mode)
