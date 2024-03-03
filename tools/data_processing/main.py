@@ -37,7 +37,7 @@ def filter_timestamps(data, start, stop):
     return [d for d in data if d[0] >= start and d[0] <= stop]
 
 
-def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_function="average",msg_packed_filtering="behind_stream"):
+def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
     print("Parsing file...")
 
@@ -101,7 +101,7 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
         else:
             daq_data = []
         if mode == "a" or mode == "c":
-            can_data = get_can_lines(infile, selected_can_cols,msg_packed_filtering=msg_packed_filtering)
+            can_data = get_can_lines(infile, selected_can_cols, msg_packed_filtering=msg_packed_filtering)
             for i in range(len(can_data)):
                 for j in range(len(can_data[i])):
                     if can_data[i][j] is None:
@@ -121,13 +121,13 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
     return selected_daq_cols, selected_can_cols, daq_data, can_data
 
 
-def data_preview(file_path, mode="a",msg_packed_filtering="behind_stream"):
+def data_preview(file_path, mode="a", msg_packed_filtering="behind_stream"):
     print(f"Previewing {file_path} in mode {mode}")
     # Modes: a for all, d for daq, c for can
     if mode != "a" and mode != "d" and mode != "c":
         raise ValueError(f"Invalid mode {mode} passed to data_preview")
 
-    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode,msg_packed_filtering=msg_packed_filtering)
+    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode, msg_packed_filtering=msg_packed_filtering)
 
     print("Pan the plot to find the time range you want to export")
 
@@ -163,7 +163,7 @@ def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_functio
 
     # get the user to select colums and fetch the data
     daq_cols, can_cols, daq_data, can_data = ingest_data(
-        file_path, mode, daq_compression, daq_aggregate_function)
+        file_path, mode, daq_compression, daq_aggregate_function, msg_packed_filtering=msg_packed_filtering)
 
     # get the time range to export
     print("Select the time range to export, or leave empty for the start or end of the data respectively")
