@@ -200,7 +200,9 @@ Aggregation function: {manifest_args.get("daq_aggregate_function", manifest_empt
 CAN entries were filterd for stricly {manifest_args.get("msg_packed_filtering", manifest_empty_filler)} timestamps, so may not be complete.
     """
 
-    with open(f"{manifest_args.get('file_path', 'NONE').replace('.log','')}_export_{manifest_args.get('export_hash', 'NONE')}_manifest.txt", "w") as manifest_file:
+    manifest_path = f"{manifest_args.get('file_path', 'NONE').replace('.log','')}_export_{manifest_args.get('export_hash', 'NONE')}_manifest.txt"
+
+    with open(manifest_path, "w") as manifest_file:
         manifest_file.write(manifest_text)
 
 # THE MAIN DATA PROCESSING DRIVING FUNCTIONS

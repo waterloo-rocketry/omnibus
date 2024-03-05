@@ -12,27 +12,19 @@ def msgpackFilterUnpacker(infile, mode="behind_stream"):
     print(f"Processing msgpacked messages in mode {mode}")
 
     # discard all messages if the current time is lower than running current time, by not adding them to the filtered and output list
-    if mode == "ahead_stream":
-        filtered_messages = []
-        curr_max_time = 0
-        for i in range(len(all_messages) - 1):
+    filtered_messages = []
+    curr_max_time = 0
+    for i in range(len(all_messages) - 1):
+        if mode == "ahead_stream":
             if all_messages[i][1] >= curr_max_time:
                 filtered_messages.append(all_messages[i])
                 curr_max_time = all_messages[i][1]
-
-        return filtered_messages
-
-    elif mode == "behind_stream":
-        # find all the messages that are higher than the current running time, and then actually discard the ones ahead and only keep the ones behind
-        filtered_messages = []
-        curr_max_time = 0
-        for i in range(len(all_messages) - 1):
+        elif mode == "behind_stream":   # find all the messages that are higher than the current running time, and then actually discard the ones ahead and only keep the ones behind
             if all_messages[i][1] >= curr_max_time:
                 curr_max_time = all_messages[i][1]
             else:
                 filtered_messages.append(all_messages[i])
+        else:
+            raise ValueError(f"Unknown msgpack filter mode {mode}")
 
-        return filtered_messages
-
-    else:
-        return all_messages
+    return filtered_messages
