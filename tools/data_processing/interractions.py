@@ -11,7 +11,7 @@ from tools.data_processing.helpers import offset_timestamps, filter_timestamps
 
 # HELPER FUNCTION
 
-def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
+def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
     
     print("Parsing file...")
@@ -98,7 +98,7 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
 
 # THE MAIN DATA PROCESSING DRIVING FUNCTIONS
 
-def data_preview(file_path, mode="a", msg_packed_filtering="behind_stream"):
+def data_preview(file_path: str, mode="a", msg_packed_filtering="behind_stream"):
     """A mode for previewing data with user input and plotting"""
 
     print(f"Previewing {file_path} in mode {mode}")
@@ -134,7 +134,7 @@ def data_preview(file_path, mode="a", msg_packed_filtering="behind_stream"):
     plt.show()
 
 
-def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
+def data_export(file_path: str, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
     """A mode for exporting data to csv files with user input, csv filtering, and manifest creation"""
 
     print(f"Exporting {file_path} in mode {mode}")

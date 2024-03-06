@@ -2,10 +2,15 @@ import argparse
 import msgpack
 import csv
 
+from argparse import Namespace
+from typing import Callable, Any
+
 messages = {}
 
 
-def process_CAN_message(channel, payload):
+def process_CAN_message(channel: str, payload: dict) -> None:
+    """Extract the regonizable fields from the CAN message and add it to the messages dictionary"""
+
     field_signature = {}
     # fill in the field signature for all the matches that we have in the format {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}
     if "board_id" in payload:
@@ -23,16 +28,20 @@ def process_CAN_message(channel, payload):
         "data", {}).get("sensor_id", ""), payload.get("data", {}).get("actuator", ""), sig_text)] = payload
 
 
-def process_DAQ_message(channel, payload):
+def process_DAQ_message(channel: str, payload: dict) -> None:
+    """Get the names of the fields in the DAQ messages"""
+
     for field in payload["data"]:
         messages[(channel, field)] = payload["data"][(field)][0]
 
 
-def process_file(args, process_func, headers):
+def process_file(args: Namespace, process_func: Callable[[str, Any]], headers: list[str]) -> None:
+    """Process the file with the given function and headers, and write the results to a csv file. The args are used to get the log file, and the type of channel being processed."""
+
     with open(args.file, "rb") as infile:
         for full_data in msgpack.Unpacker(infile):
             channel, timestamp, payload = full_data
-            if channel.startswith(args.channel):
+            if channel.startswith(args.channel): # check the message is in the channel we want
                 process_func(channel, payload)
 
     with open(f"unique_messages_{args.file.split('.log')[0]}_{args.channel}.csv", "w") as outfile:

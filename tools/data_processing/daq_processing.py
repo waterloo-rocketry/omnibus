@@ -1,15 +1,15 @@
 # Take in a log file path and yeild lines of daq data, with the option to be uncompressed or not
-from typing import List, Union
+from typing import List, Union, IO
 import msgpack
 
 from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
 
 
-def average_list(data):
+def average_list(data : List[Union[int, float]]) -> Union[int, float]:
     return sum(data) / len(data)
 
 
-def median_list(data):
+def median_list(data : List[Union[int, float]]) -> Union[int, float]:
     sorted_data = sorted(data)
     length = len(sorted_data)
     if length % 2 == 0:
@@ -24,7 +24,7 @@ aggregation_functions = {
 }
 
 
-def get_daq_cols(infile) -> List[str]:
+def get_daq_cols(infile: IO) -> List[str]:
     """Get the columns that are present in the DAQ data in the file and returns them in the order they're encountered"""
 
     cols_set = set()
@@ -42,7 +42,7 @@ def get_daq_cols(infile) -> List[str]:
     return cols
 
 
-def get_daq_lines(infile, cols=[], compressed=True, aggregate_function_name="average") -> List[List[Union[int, str]]]:
+def get_daq_lines(infile: IO, cols=[], compressed=True, aggregate_function_name="average") -> List[List[Union[int, str]]]:
     """Get all the data from the DAQ messages in the file, and return it as a list of lists, where each list is a line of the csv"""
 
     lines = []

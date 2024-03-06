@@ -1,15 +1,14 @@
 # Take in a log file object and yield lines of can data
 import msgpack
-import csv
-from typing import List, Union
+from typing import List, Union, IO
 
 from tools.data_processing.can_field_definitions import CAN_FIELDS
 from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
 
 
-def get_can_cols(infile) -> List[str]:
+def get_can_cols(infile: IO) -> List[str]:
     """Get the columns that are present in the CAN data in the file"""
-    
+
     cols = []  # the colums in the order they're encountered
     cols_set = set()
     # we don't need to use the filtered source, as we're just looking for the message types
@@ -27,7 +26,7 @@ def get_can_cols(infile) -> List[str]:
     return cols
 
 
-def get_can_lines(infile, cols=[],msg_packed_filtering="behind_stream") -> List[List[Union[int, str]]]:
+def get_can_lines(infile: IO, cols=[],msg_packed_filtering="behind_stream") -> List[List[Union[int, str]]]:
     """Get all the data from the CAN messages in the file, and return it as a list of lists, where each list is a line of the csv"""
 
     cols_set = set(cols)
