@@ -3,6 +3,8 @@ import os
 import datetime
 
 def save_data_to_csv(file_path, data, cols):
+    """Save the export data in our given format to a csv file, and return the size of the file"""
+    
     formatted_can_size = "N/A"
     with open(file_path, "w") as outfile:
         writer = csv.writer(outfile)
@@ -14,6 +16,8 @@ def save_data_to_csv(file_path, data, cols):
     return formatted_can_size
 
 def save_manifest(manifest_args):
+    """Prepare and save a manifest file for the export, with the given arguments."""
+
     if "file_path" not in manifest_args:
         raise ValueError("Manifest must have a file path")
     

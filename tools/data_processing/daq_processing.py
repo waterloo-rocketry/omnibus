@@ -25,6 +25,8 @@ aggregation_functions = {
 
 
 def get_daq_cols(infile) -> List[str]:
+    """Get the columns that are present in the DAQ data in the file and returns them in the order they're encountered"""
+
     cols_set = set()
     cols = []
     for full_data in msgpack.Unpacker(infile):
@@ -41,6 +43,8 @@ def get_daq_cols(infile) -> List[str]:
 
 
 def get_daq_lines(infile, cols=[], compressed=True, aggregate_function_name="average") -> List[List[Union[int, str]]]:
+    """Get all the data from the DAQ messages in the file, and return it as a list of lists, where each list is a line of the csv"""
+
     lines = []
     cols_set = set(cols)
     current_info = {col: None for col in cols}

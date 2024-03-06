@@ -11,7 +11,11 @@ import argparse
 
 
 class CanProcessingField:
+    """A class to represent a field in the CAN data that we can export as a CSV column. Has a matching pattern to try and see if a message payload matches the field (for CAN fields logged in the .log file by a parsley instance), and extracts the value from the payload if it does. These should be though of as an abstraction to explain what a message represents ex: the pneumatic pressure can be found at "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_PNEUMATICS" and we want to extract "data.value" from it."""
+
     def __init__(self, csv_name, matching_pattern, reading_signature):
+        """Initialize the field with a name, a matching pattern, and a reading signature. The matching pattern is a dictionary of keys and values that MUST appear inside the message payload being matched, and if it's sub-dictioinaries, use . like data.sensor_id. The reading signature is a string that describes the path to the value we want to extract from the payload. Again, if it's a sub-dictionary, use . like data.value."""
+        
         self.csv_name = csv_name
         self.matching_pattern = matching_pattern
         self.reading_signature = reading_signature
@@ -23,6 +27,8 @@ class CanProcessingField:
         return self.__repr__()
 
     def match(self, candidate):
+        """Check if the candidate message payload matches the matching pattern"""
+
         for key, value in self.matching_pattern.items():
             running_key = key
             checking = candidate
@@ -36,8 +42,10 @@ class CanProcessingField:
         return True
 
     def read(self, candidate):
+        """Read the value from the candidate message payload, if it matches the matching pattern. If it doesn't, raises an error."""
+
         if not self.match(candidate):  # first double check that it's the right thing
-            return None
+            raise ValueError(f"Can't read from a candidate that doesn't match the matching pattern {self.matching_pattern} for the data {candidate}")
 
         running_key = self.reading_signature
         checking = candidate

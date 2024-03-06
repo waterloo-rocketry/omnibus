@@ -8,6 +8,8 @@ from tools.data_processing.interractions import data_preview, data_export
 # ARGUMENT PARSING
 
 def parseArguments():
+    """Take parameters from the command line and parse them for the differnt modes"""
+    
     parser = argparse.ArgumentParser(description="Run data processing on a log file")
     parser.add_argument("file", help="The file to run on")
 

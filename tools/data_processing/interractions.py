@@ -13,6 +13,7 @@ from tools.data_processing.helpers import offset_timestamps, filter_timestamps
 
 def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
+    
     print("Parsing file...")
 
     daq_cols = []
@@ -55,7 +56,7 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
     selected_can_cols = [col[1] for col in column_mapping if col[0]
                          == "CAN" and column_mapping[col] in indexes]
 
-    print("Plotting the following columns:")
+    print("Ingesting the following columns:")
     for col in selected_daq_cols:
         print(f"DAQ: {col}")
     for col in selected_can_cols:
@@ -98,6 +99,8 @@ def ingest_data(file_path, mode="a", daq_compression=True, daq_aggregate_functio
 # THE MAIN DATA PROCESSING DRIVING FUNCTIONS
 
 def data_preview(file_path, mode="a", msg_packed_filtering="behind_stream"):
+    """A mode for previewing data with user input and plotting"""
+
     print(f"Previewing {file_path} in mode {mode}")
     # Modes: a for all, d for daq, c for can
     if mode != "a" and mode != "d" and mode != "c":
@@ -132,6 +135,8 @@ def data_preview(file_path, mode="a", msg_packed_filtering="behind_stream"):
 
 
 def data_export(file_path, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
+    """A mode for exporting data to csv files with user input, csv filtering, and manifest creation"""
+
     print(f"Exporting {file_path} in mode {mode}")
     # Modes: a for all, d for daq, c for can
     if mode != "a" and mode != "d" and mode != "c":

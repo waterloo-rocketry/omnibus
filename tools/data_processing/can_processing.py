@@ -9,6 +9,7 @@ from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
 
 def get_can_cols(infile) -> List[str]:
     """Get the columns that are present in the CAN data in the file"""
+    
     cols = []  # the colums in the order they're encountered
     cols_set = set()
     # we don't need to use the filtered source, as we're just looking for the message types
@@ -28,6 +29,7 @@ def get_can_cols(infile) -> List[str]:
 
 def get_can_lines(infile, cols=[],msg_packed_filtering="behind_stream") -> List[List[Union[int, str]]]:
     """Get all the data from the CAN messages in the file, and return it as a list of lists, where each list is a line of the csv"""
+
     cols_set = set(cols)
     # a dictionary to store the up to date values of the columns we're tracking, so we can output them when we get a new line
     current_info = {col: None for col in cols}
