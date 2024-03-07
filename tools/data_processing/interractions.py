@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
-import csv
-import os
-import datetime
+import pandas as pd
+from typing import List, Union, IO, Tuple
 import hashlib
 
 from tools.data_processing.can_processing import get_can_lines, get_can_cols
@@ -11,7 +10,7 @@ from tools.data_processing.helpers import offset_timestamps, filter_timestamps
 
 # HELPER FUNCTION
 
-def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
+def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream") -> Tuple[List[str], List[str], Union[pd.DataFrame,None], Union[pd.DataFrame,None]]:
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
     
     print("Parsing file...")
@@ -65,36 +64,25 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     print("Here's a copyable list of the numbers of the columns you selected:")
     print(",".join([str(i) for i in indexes]))
 
+    EMPTY_DATA_PLACEHOLDER = 0
     # get the data for the selected columns
     with open(file_path, "rb") as infile:
         if mode == "a" or mode == "d":
-            daq_data = get_daq_lines(infile, selected_daq_cols, aggregate_function_name=daq_aggregate_function)
+            daq_df = get_daq_lines(infile, selected_daq_cols, aggregate_function_name=daq_aggregate_function,placeholder=EMPTY_DATA_PLACEHOLDER)
             # map all None values to 0
-            for column_counter in range(len(daq_data)):
-                for j in range(len(daq_data[column_counter])):
-                    if daq_data[column_counter][j] is None:
-                        daq_data[column_counter][j] = 0
         else:
-            daq_data = []
+            daq_df = None
+
         if mode == "a" or mode == "c":
-            can_data = get_can_lines(infile, selected_can_cols, msg_packed_filtering=msg_packed_filtering)
-            for column_counter in range(len(can_data)):
-                for j in range(len(can_data[column_counter])):
-                    if can_data[column_counter][j] is None:
-                        can_data[column_counter][j] = 0
+            can_df = get_can_lines(infile, selected_can_cols, msg_packed_filtering=msg_packed_filtering,placeholder=EMPTY_DATA_PLACEHOLDER)
+            
         else:
-            can_data = []
+            can_df = None
 
     # offset the timestamps of the data sources so that they start at 0
-    offset_timestamps(daq_data, can_data)
+    offset_timestamps(daq_df, can_df)
 
-    # sanity check that timestamps are increasing for can
-    for time_index in range(len(can_data) - 1):
-        # compare the timestamps columns (redundant int cast to silence linter)
-        if int(can_data[time_index][0]) > int(can_data[time_index+1][0]):
-            print(f"Warning: CAN timestamp {can_data[time_index][0]} is greater than {can_data[time_index+1][0]}")
-
-    return selected_daq_cols, selected_can_cols, daq_data, can_data
+    return selected_daq_cols, selected_can_cols, daq_df, can_df
 
 # THE MAIN DATA PROCESSING DRIVING FUNCTIONS
 
@@ -167,7 +155,7 @@ def data_export(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     can_data = filter_timestamps(can_data, start, stop)
 
     # print warnings if the data is empty
-    if len(daq_data) == 0 and len(can_data) == 0:
+    if daq_data is None and can_data is None:
         print("Warning: No data to export for the selected time range")
 
     # Create an export hash to identify the export
@@ -180,13 +168,19 @@ def data_export(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     # write the data to a csv file for each data source
     daq_export_path = f"{file_path.replace('.log','')}_export_{export_hash}_daq.csv"
     can_export_path = f"{file_path.replace('.log','')}_export_{export_hash}_can.csv"
-    if mode == "a" or mode == "d":
-        formatted_daq_size = save_data_to_csv(daq_export_path, daq_data, daq_cols)
-        print(f"DAQ data exported to {daq_export_path} with size {formatted_daq_size}")
+    if mode == "a" or mode == "d" and daq_data is not None:
+        if daq_data is not None:
+            formatted_daq_size = save_data_to_csv(daq_export_path, daq_data)
+            print(f"DAQ data exported to {daq_export_path} with size {formatted_daq_size}")
+        else:
+            print("No DAQ data to export")
 
     if mode == "a" or mode == "c":
-        formatted_can_size = save_data_to_csv(can_export_path, can_data, can_cols)
-        print(f"CAN data exported to {can_export_path} with size {formatted_can_size}")
+        if can_data is not None:
+            formatted_can_size = save_data_to_csv(can_export_path, can_data)
+            print(f"CAN data exported to {can_export_path} with size {formatted_can_size}")
+        else:
+            print("No CAN data to export")
 
     # save an export manifest for information on what was exported with which settings
     save_manifest({
