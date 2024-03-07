@@ -10,7 +10,7 @@ from tools.data_processing.helpers import offset_timestamps, filter_timestamps
 
 # HELPER FUNCTION
 
-def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream") -> Tuple[List[str], List[str], Union[pd.DataFrame,None], Union[pd.DataFrame,None]]:
+def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream", EMPTY_DATA_PLACEHOLDER:Union[int,None] =0) -> Tuple[List[str], List[str], Union[pd.DataFrame,None], Union[pd.DataFrame,None]]:
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
     
     print("Parsing file...")
@@ -64,7 +64,6 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     print("Here's a copyable list of the numbers of the columns you selected:")
     print(",".join([str(i) for i in indexes]))
 
-    EMPTY_DATA_PLACEHOLDER = 0
     # get the data for the selected columns
     with open(file_path, "rb") as infile:
         if mode == "a" or mode == "d":
@@ -94,7 +93,7 @@ def data_preview(file_path: str, mode="a", msg_packed_filtering="behind_stream")
     if mode != "a" and mode != "d" and mode != "c":
         raise ValueError(f"Invalid mode {mode} passed to data_preview")
 
-    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode, msg_packed_filtering=msg_packed_filtering)
+    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode, msg_packed_filtering=msg_packed_filtering, EMPTY_DATA_PLACEHOLDER=0)
 
     print("Pan the plot to find the time range you want to export")
 
@@ -108,14 +107,22 @@ def data_preview(file_path: str, mode="a", msg_packed_filtering="behind_stream")
     else:
         plt.title("CAN data")
 
-    if mode == "a" or mode == "d":
+    if (mode == "a" or mode == "d") and daq_data is not None:
         for i in range(len(daq_cols)):
             # plot the time column against the column for each selected colum
-            plt.plot([d[0] for d in daq_data], [d[i+1] for d in daq_data], label=daq_cols[i])
+            plt.plot(daq_data["timestamp"], daq_data[daq_cols[i]], label=daq_cols[i])
 
-    if mode == "a" or mode == "c":
+    if (mode == "a" or mode == "c") and can_data is not None:
         for i in range(len(can_cols)):
-            plt.plot([d[0] for d in can_data], [d[i+1] for d in can_data], label=can_cols[i])
+            # the plot wants integers for the y axis, so we need to convert any strings that come up into arbitrary integers for now
+            string_map = {}
+            for val in can_data[can_cols[i]]:
+                if type(val) == str:
+                    if val not in string_map:
+                        string_map[val] = len(string_map)
+            
+            string_mapped_data = [string_map[val] if type(val) == str else val for val in can_data[can_cols[i]]]
+            plt.plot(can_data["timestamp"], string_mapped_data, label=can_cols[i])
 
     plt.xlabel("Time (s)")
     plt.legend()
@@ -132,7 +139,7 @@ def data_export(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
 
     # get the user to select colums and fetch the data
     daq_cols, can_cols, daq_data, can_data = ingest_data(
-        file_path, mode, daq_compression, daq_aggregate_function, msg_packed_filtering=msg_packed_filtering)
+        file_path, mode, daq_compression, daq_aggregate_function, msg_packed_filtering=msg_packed_filtering, EMPTY_DATA_PLACEHOLDER=0)
 
     # get the time range to export
     print("Select the time range to export, or leave empty for the start or end of the data respectively")
