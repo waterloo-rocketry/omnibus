@@ -2,7 +2,7 @@
 from typing import List, Union, IO
 import msgpack
 
-from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
+from msgpack_sorter_unpacker import msgpackFilterUnpacker
 
 
 def average_list(data : List[Union[int, float]]) -> Union[int, float]:
