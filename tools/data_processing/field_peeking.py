@@ -35,7 +35,7 @@ def process_DAQ_message(channel: str, payload: dict) -> None:
         messages[(channel, field)] = payload["data"][(field)][0]
 
 
-def process_file(args: Namespace, process_func: Callable[[str, Any]], headers: list[str]) -> None:
+def process_file(args: Namespace, process_func: Callable[[str, Any],None], headers: list[str]) -> None:
     """Process the file with the given function and headers, and write the results to a csv file. The args are used to get the log file, and the type of channel being processed."""
 
     with open(args.file, "rb") as infile:
@@ -51,6 +51,8 @@ def process_file(args: Namespace, process_func: Callable[[str, Any]], headers: l
             row = [k for k in key] + [value]
             writer.writerow(row)
 
+    print(f"Unique messages written to unique_messages_{args.file.split('.log')[0]}_{args.channel}.csv")
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -62,8 +64,10 @@ def main():
     if args.channel.startswith("CAN"):
         process_file(args, process_CAN_message, [
                      "channel", "board_id", "msg_type", "sensor_id", "actuator", "signature", "sample"])
-    else:
+    elif args.channel.startswith("DAQ"):
         process_file(args, process_DAQ_message, ["channel", "field", "sample"])
+    else:
+        print("We don't support that channel yet, use dump_whole_log.py to dump the whole log file and figure out what's in it.")
 
 
 if __name__ == "__main__":
