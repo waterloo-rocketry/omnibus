@@ -143,7 +143,7 @@ class GaugeWidget(QWidget):
 
             value = self.item.data
             # Value is clamped to the bounds
-            angle = max(min((value - min_value) / (max_value - min_value), 1.0), 0.0) * (end_angle - start_angle) + start_angle
+            angle = max(min((value - min_value) / (max_value - min_value), 1.05), -0.05) * (end_angle - start_angle) + start_angle
             painter.save()
             painter.rotate(angle)
             painter.setPen(QPen(Qt.GlobalColor.red))
