@@ -7,6 +7,8 @@ from pyqtgraph.parametertree.parameterTypes import ChecklistParameter, NumericPa
 from .dashboard_item import DashboardItem
 from .registry import Register
 
+from decimal import Decimal
+
 @Register
 class GaugeItem(DashboardItem):
     def __init__(self, *args):
@@ -18,15 +20,13 @@ class GaugeItem(DashboardItem):
         self.widget = GaugeWidget(self)
         self.layout.addWidget(self.widget)
 
-        self.resize(250, 250)
+        self.resize(300, 300)
 
         # Value detection code is based on plot_dash_item.py
         self.parameters.param("value").sigValueChanged.connect(self.on_value_change)
         
         self.parameters.param("min_value").sigValueChanged.connect(self.on_min_value_change)
         self.parameters.param("max_value").sigValueChanged.connect(self.on_max_value_change)
-        self.parameters.param("step_value").sigValueChanged.connect(self.on_step_value_change)
-        self.parameters.param("tick_count").sigValueChanged.connect(self.on_tick_count_change)
 
         self.data: float = 0.0
 
@@ -45,9 +45,7 @@ class GaugeItem(DashboardItem):
                                           exclusive=True)
         min_value_param = {"name": "min_value", "type": "int", "value": 0}
         max_value_param = {"name": "max_value", "type": "int", "value": 10}
-        step_value_param = {"name": "step_value", "type": "int", "value": 1}
-        tick_count_param = {"name": "tick_count", "type": "int", "value": 5}
-        return [value_param, min_value_param, max_value_param, step_value_param, tick_count_param]
+        return [value_param, min_value_param, max_value_param]
 
     @staticmethod
     def get_name():
@@ -64,14 +62,6 @@ class GaugeItem(DashboardItem):
 
     def on_max_value_change(self, param, value):
         self.max_value = self.parameters.param("max_value").value()
-        self.widget.update()
-
-    def on_step_value_change(self, param, value):
-        self.step_value = self.parameters.param("step_value").value()
-        self.widget.update()
-
-    def on_tick_count_change(self, param, value):
-        self.tick_count = self.parameters.param("tick_count").value()
         self.widget.update()
     
     def on_data_update(self, stream, payload):
@@ -109,37 +99,45 @@ class GaugeWidget(QWidget):
             step_length = 15
             min_value = self.item.min_value
             max_value = self.item.max_value
-            step_value = self.item.step_value
-            tick_count = self.item.tick_count
 
             # Invalid conditions
             if max_value < min_value:
                 return
 
+            value_range = Decimal(max_value - min_value)
+            exp = value_range.adjusted()
+            power = Decimal(10 ** exp)
+            coeff = value_range / power
+            if coeff >= 4:
+                step_value = power
+            elif coeff >= 2:
+                step_value = power / 5
+            else:
+                step_value = power / 10
+            tick_count = 5
+
             # rotate about the center
             painter.save()
             painter.translate(cx, cy)
 
-            if step_value > 0:
-                step = min_value
-                while step <= max_value:
-                    angle = (step - min_value) / (max_value - min_value) * (end_angle - start_angle) + start_angle
+            step = min_value
+            while step <= max_value:
+                angle = (float(step) - min_value) / (max_value - min_value) * (end_angle - start_angle) + start_angle
+                painter.save()
+                painter.rotate(angle)
+                painter.drawLine(QLineF(0, -(radius - step_length), 0, -radius))
+                painter.drawText(-15, -(radius - step_length), 30, 20, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(step))
+                for tick in range(1, tick_count + 1):
+                    # avoid floating point comparison
+                    if (step * tick_count + step_value * tick) > max_value * tick_count:
+                        break
+                    angle = (float(step_value) / tick_count * tick) / (max_value - min_value) * (end_angle - start_angle)
                     painter.save()
                     painter.rotate(angle)
-                    painter.drawLine(QLineF(0, -(radius - step_length), 0, -radius))
-                    painter.drawText(-15, -(radius - step_length), 30, 20, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(step))
-                    for tick in range(1, tick_count + 1):
-                        # avoid floating point comparison
-                        if (step * tick_count + step_value * tick) > max_value * tick_count:
-                            break
-                        angle = (step_value / tick_count * tick) / (max_value - min_value) * (end_angle - start_angle)
-                        painter.save()
-                        painter.rotate(angle)
-                        painter.drawLine(QLineF(0, -(radius - tick_length), 0, -radius))
-                        painter.restore()
-                    step += step_value
+                    painter.drawLine(QLineF(0, -(radius - tick_length), 0, -radius))
                     painter.restore()
-
+                step += step_value
+                painter.restore()
 
             value = self.item.data
             # Value is clamped to the bounds
