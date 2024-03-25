@@ -15,7 +15,7 @@ class CanProcessingField:
 
     def __init__(self, csv_name, matching_pattern, reading_signature):
         """Initialize the field with a name, a matching pattern, and a reading signature. The matching pattern is a dictionary of keys and values that MUST appear inside the message payload being matched, and if it's sub-dictioinaries, use . like data.sensor_id. The reading signature is a string that describes the path to the value we want to extract from the payload. Again, if it's a sub-dictionary, use . like data.value."""
-        
+
         self.csv_name = csv_name
         self.matching_pattern = matching_pattern
         self.reading_signature = reading_signature
@@ -45,7 +45,8 @@ class CanProcessingField:
         """Read the value from the candidate message payload, if it matches the matching pattern. If it doesn't, raises an error."""
 
         if not self.match(candidate):  # first double check that it's the right thing
-            raise ValueError(f"Can't read from a candidate that doesn't match the matching pattern {self.matching_pattern} for the data {candidate}")
+            raise ValueError(
+                f"Can't read from a candidate that doesn't match the matching pattern {self.matching_pattern} for the data {candidate}")
 
         running_key = self.reading_signature
         checking = candidate
@@ -100,6 +101,36 @@ CAN_FIELDS = [
                        "board_id": "CHARGING", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
     CanProcessingField("cc_pressure", {
                        'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_CC'}, 'data.value'),
+    CanProcessingField("barometer", {
+                       'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_BARO'}, "data.value"),
+
+    # These GPS fields should maybe be formatted differently, but this works great :)
+    CanProcessingField("gps_timestamp_hours", {
+                       'board_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'}, "data.hrs"),
+    CanProcessingField("gps_timestamp_minutes", {
+                       'board_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'}, "data.mins"),
+    CanProcessingField("gps_timestamp_seconds", {
+                       'board_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'}, "data.secs"),
+    CanProcessingField("gps_lat_degrees", {'board_id': 'GPS',
+                       'msg_type': 'GPS_LATITUDE'}, "data.degs"),
+    CanProcessingField("gps_lat_minutes", {'board_id': 'GPS',
+                       'msg_type': 'GPS_LATITUDE'}, "data.mins"),
+    # idk what dmins is for
+    CanProcessingField("gps_lat_dmins", {'board_id': 'GPS',
+                       'msg_type': 'GPS_LATITUDE'}, "data.dmins"),
+    CanProcessingField("gps_lat_direction", {'board_id': 'GPS',
+                       'msg_type': 'GPS_LATITUDE'}, "data.direction"),
+    CanProcessingField("gps_lon_degrees", {'board_id': 'GPS',
+                       'msg_type': 'GPS_LONGITUDE'}, "data.degs"),
+    CanProcessingField("gps_lon_minutes", {'board_id': 'GPS',
+                       'msg_type': 'GPS_LONGITUDE'}, "data.mins"),
+    CanProcessingField("gps_lon_dmins", {'board_id': 'GPS',
+                       'msg_type': 'GPS_LONGITUDE'}, "data.dmins"),
+    CanProcessingField("gps_lon_direction", {'board_id': 'GPS',
+                       'msg_type': 'GPS_LONGITUDE'}, "data.direction"),
+    CanProcessingField("gps_altitude_meters", {
+                       'board_id': 'GPS', 'msg_type': 'GPS_ALTITUDE'}, "data.altitude"),
+
 ]
 
 
