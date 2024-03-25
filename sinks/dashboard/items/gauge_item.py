@@ -82,7 +82,7 @@ class GaugeWidget(QWidget):
     def paintEvent(self, paintEvent):
         width = self.width()
         height = self.height()
-        if width < 200 or height < 200:
+        if width < 300 or height < 300:
             return
         with QPainter(self) as painter:
             # Draw circle
