@@ -1,6 +1,6 @@
 from publisher import publisher
 from pyqtgraph.Qt.QtCore import Qt, QLineF, QRectF
-from pyqtgraph.Qt.QtGui import QBrush, QFont, QPainter, QPen
+from pyqtgraph.Qt.QtGui import QBrush, QFont, QPainter, QPainterPath, QPen
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
 from pyqtgraph.parametertree.parameterTypes import ChecklistParameter, NumericParameterItem
 
@@ -146,8 +146,12 @@ class GaugeWidget(QWidget):
             angle = max(min((value - min_value) / (max_value - min_value), 1.05), -0.05) * (end_angle - start_angle) + start_angle
             painter.save()
             painter.rotate(angle)
-            painter.setPen(QPen(Qt.GlobalColor.red))
-            painter.drawLine(QLineF(0, 0, 0, -radius))
+            path = QPainterPath()
+            path.moveTo(5, 0)
+            path.arcTo(-5, -5, 10, 10, 0, -180)
+            path.lineTo(0, -radius + 5)
+            path.lineTo(5, 0)
+            painter.fillPath(path, QBrush(Qt.GlobalColor.red))
             painter.restore()
 
             painter.restore()
