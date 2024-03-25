@@ -20,20 +20,20 @@ class GaugeItem(DashboardItem):
         self.widget = GaugeWidget(self)
         self.layout.addWidget(self.widget)
 
-        self.resize(300, 300)
+        self.resize(400, 400)
 
         # Value detection code is based on plot_dash_item.py
         self.parameters.param("value").sigValueChanged.connect(self.on_value_change)
         
         self.parameters.param("min_value").sigValueChanged.connect(self.on_min_value_change)
         self.parameters.param("max_value").sigValueChanged.connect(self.on_max_value_change)
+        self.parameters.param("label").sigValueChanged.connect(self.on_label_change)
 
         self.data: float = 0.0
 
         self.min_value: int = 0
         self.max_value: int = 10
-        self.step_value: int = 1
-        self.tick_count: int = 5
+        self.label = ""
 
         self.value = "Not connected"
 
@@ -45,7 +45,8 @@ class GaugeItem(DashboardItem):
                                           exclusive=True)
         min_value_param = {"name": "min_value", "type": "int", "value": 0}
         max_value_param = {"name": "max_value", "type": "int", "value": 10}
-        return [value_param, min_value_param, max_value_param]
+        label_param = {"name": "label", "type": "str", "value": ""}
+        return [value_param, min_value_param, max_value_param, label_param]
 
     @staticmethod
     def get_name():
@@ -63,6 +64,10 @@ class GaugeItem(DashboardItem):
     def on_max_value_change(self, param, value):
         self.max_value = self.parameters.param("max_value").value()
         self.widget.update()
+
+    def on_label_change(self, param, value):
+        self.label = self.parameters.param("label").value()
+        self.widget.update()
     
     def on_data_update(self, stream, payload):
         time, point = payload
@@ -77,12 +82,14 @@ class GaugeWidget(QWidget):
     def paintEvent(self, paintEvent):
         width = self.width()
         height = self.height()
+        if width < 200 or height < 200:
+            return
         with QPainter(self) as painter:
             # Draw circle
             painter.setBrush(QBrush(Qt.GlobalColor.white))
-            side = min(width, height) - 30
+            side = min(width, height - 60)
             left = (width - side) / 2
-            top = (height - side) / 2
+            top = (height - side) / 2 - 20
             painter.drawEllipse(QRectF(left, top, side, side))
 
             # Tick marks and text
@@ -154,11 +161,15 @@ class GaugeWidget(QWidget):
 
             painter.restore()
 
-            painter.drawText(cx - 15, top + side * 0.8 - 20, 30, 20, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(value))
+            font = QFont()
+            font.setPointSize(20)
+            painter.setFont(font)
+            painter.drawText(cx - 30, top + side * 0.8 - 30, 60, 30, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(value))
+
+            label = self.item.label if self.item.label != "" else self.item.value
 
             font = QFont()
-            font.setPointSize(6)
-
+            font.setPointSize(20)
             painter.setFont(font)
-            painter.drawText(0, height - 10, width, 10, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, self.item.value)
+            painter.drawText(0, height - 40, width, 40, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, label)
             
