@@ -136,7 +136,7 @@ CAN_FIELDS = [
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run tests for field_definitions.py")
-    parser.add_argument("-test", action="store_true", help="Run tests")
+    parser.add_argument("--test", action="store_true", help="Run tests")
     TESTING = parser.parse_args().test
 
     if not TESTING:
