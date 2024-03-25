@@ -1,8 +1,9 @@
 from typing import List, Any, Union
 
+
 def offset_timestamps(data1: List[List[Union[int, Any]]], data2: List[List[Union[int, Any]]]):
     """Offset the timestamps of the two data sources so that they start at 0, and return the time offset that was applied to both data sources."""
-    
+
     # we need logic to handle the case where one of the data sources is empty, becuase a recording might only have CAN data
     if len(data1) > 0 and len(data2) > 0:
         time_offset = min(data1[0][0], data2[0][0])
@@ -23,6 +24,5 @@ def offset_timestamps(data1: List[List[Union[int, Any]]], data2: List[List[Union
 
 def filter_timestamps(data: List[List[Union[int, Any]]], start: int, stop: int) -> List[List[Union[int, Any]]]:
     """Filter the data to only include the timestamps between start and stop"""
-    
-    return [d for d in data if d[0] >= start and d[0] <= stop]
 
+    return [d for d in data if d[0] >= start and d[0] <= stop]

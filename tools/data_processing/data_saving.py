@@ -4,6 +4,7 @@ import datetime
 
 from typing import List, Any
 
+
 def save_data_to_csv(file_path: str, data: List[Any], cols: List[str]):
     """Save the export data in our given format to a csv file, and return the size of the file"""
 
@@ -17,12 +18,13 @@ def save_data_to_csv(file_path: str, data: List[Any], cols: List[str]):
         formatted_can_size = "{:.2f} MB".format(export_size / (1024 * 1024))
     return formatted_can_size
 
+
 def save_manifest(manifest_args: dict):
     """Prepare and save a manifest file for the export, with the given arguments."""
 
     if "file_path" not in manifest_args:
         raise ValueError("Manifest must have a file path")
-    
+
     manifest_empty_filler = "NONE"
 
     # The string literal must be un-indented to save properly

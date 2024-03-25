@@ -26,7 +26,7 @@ def get_can_cols(infile: IO) -> List[str]:
     return cols
 
 
-def get_can_lines(infile: IO, cols=[],msg_packed_filtering="behind_stream") -> List[List[Union[int, str]]]:
+def get_can_lines(infile: IO, cols=[], msg_packed_filtering="behind_stream") -> List[List[Union[int, str]]]:
     """Get all the data from the CAN messages in the file, and return it as a list of lists, where each list is a line of the csv"""
 
     cols_set = set(cols)
@@ -34,7 +34,7 @@ def get_can_lines(infile: IO, cols=[],msg_packed_filtering="behind_stream") -> L
     current_info = {col: None for col in cols}
     output_csv_lines = []
     # we use the filtered source to ensure the timestamps are in order for the output data (see msgpack_sorter_unpacker.py for more info on this method and it's FIXME)
-    for full_data in msgpackFilterUnpacker(infile,msg_packed_filtering):
+    for full_data in msgpackFilterUnpacker(infile, msg_packed_filtering):
         channel, timestamp, payload = full_data
         if channel.startswith("CAN/Parsley"):
             # we check if the payload matches any of the fields we're tracking, and if it does, we update the current_info dictionary

@@ -11,9 +11,10 @@ from helpers import offset_timestamps, filter_timestamps
 
 # HELPER FUNCTION
 
+
 def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
-    
+
     print("Parsing file...")
 
     daq_cols = []
@@ -68,7 +69,8 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     # get the data for the selected columns
     with open(file_path, "rb") as infile:
         if mode == "a" or mode == "d":
-            daq_data = get_daq_lines(infile, selected_daq_cols, aggregate_function_name=daq_aggregate_function)
+            daq_data = get_daq_lines(infile, selected_daq_cols,
+                                     aggregate_function_name=daq_aggregate_function)
             # map all None values to 0
             for column_counter in range(len(daq_data)):
                 for j in range(len(daq_data[column_counter])):
@@ -77,7 +79,8 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
         else:
             daq_data = []
         if mode == "a" or mode == "c":
-            can_data = get_can_lines(infile, selected_can_cols, msg_packed_filtering=msg_packed_filtering)
+            can_data = get_can_lines(infile, selected_can_cols,
+                                     msg_packed_filtering=msg_packed_filtering)
             for column_counter in range(len(can_data)):
                 for j in range(len(can_data[column_counter])):
                     if can_data[column_counter][j] is None:
@@ -92,11 +95,13 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     for time_index in range(len(can_data) - 1):
         # compare the timestamps columns (redundant int cast to silence linter)
         if int(can_data[time_index][0]) > int(can_data[time_index+1][0]):
-            print(f"Warning: CAN timestamp {can_data[time_index][0]} is greater than {can_data[time_index+1][0]}")
+            print(
+                f"Warning: CAN timestamp {can_data[time_index][0]} is greater than {can_data[time_index+1][0]}")
 
     return selected_daq_cols, selected_can_cols, daq_data, can_data
 
 # THE MAIN DATA PROCESSING DRIVING FUNCTIONS
+
 
 def data_preview(file_path: str, mode="a", msg_packed_filtering="behind_stream"):
     """A mode for previewing data with user input and plotting"""
@@ -106,7 +111,8 @@ def data_preview(file_path: str, mode="a", msg_packed_filtering="behind_stream")
     if mode != "a" and mode != "d" and mode != "c":
         raise ValueError(f"Invalid mode {mode} passed to data_preview")
 
-    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode, msg_packed_filtering=msg_packed_filtering)
+    daq_cols, can_cols, daq_data, can_data = ingest_data(
+        file_path, mode, msg_packed_filtering=msg_packed_filtering)
 
     print("Pan the plot to find the time range you want to export")
 
