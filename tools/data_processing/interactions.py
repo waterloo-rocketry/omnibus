@@ -43,13 +43,23 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
         print(f"{column_mapping[col]}: {col}")
 
     selection = input(
-        "Enter the numbers for the columns you want to extract, seperated by commas, or leave empty for all: ")
+        "Enter the numbers or ranges with a - between (ex 3-5 for 3,4,5) for the columns you want to extract, seperated by commas, or leave empty for all: ")
 
     # parse the selection into a list of indexes in the cols list
     if selection == "":
         indexes = [i for i in range(1, len(column_mapping)+1)]
     else:
-        indexes = [int(i) for i in selection.replace(" ", "").split(",")]
+        selection = selection.replace(" ", "")
+        indexes = []
+        for part in selection.split(","):
+            if "-" in part:
+                start, end = part.split("-")
+                indexes += [i for i in range(int(start), int(end)+1)]
+            else:
+                indexes.append(int(part))
+    
+    # remove duplicates while keeping order
+    indexes = list(dict.fromkeys(indexes))
 
     # split the indexes into daq and can indexes, and then get the names of the selected columns
     selected_daq_cols = [col[1] for col in column_mapping if col[0]
