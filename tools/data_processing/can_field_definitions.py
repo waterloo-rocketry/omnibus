@@ -103,36 +103,63 @@ CAN_FIELDS = [
                        'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_CC'}, 'data.value'),
     CanProcessingField("barometer", {
                        'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_BARO'}, "data.value"),
-
-    # These GPS fields should maybe be formatted differently, but this works great :)
-    CanProcessingField("gps_timestamp_hours", {
-                       'board_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'}, "data.hrs"),
-    CanProcessingField("gps_timestamp_minutes", {
-                       'board_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'}, "data.mins"),
-    CanProcessingField("gps_timestamp_seconds", {
-                       'board_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'}, "data.secs"),
-    CanProcessingField("gps_lat_degrees", {'board_id': 'GPS',
-                       'msg_type': 'GPS_LATITUDE'}, "data.degs"),
-    CanProcessingField("gps_lat_minutes", {'board_id': 'GPS',
-                       'msg_type': 'GPS_LATITUDE'}, "data.mins"),
-    # idk what dmins is for
-    CanProcessingField("gps_lat_dmins", {'board_id': 'GPS',
-                       'msg_type': 'GPS_LATITUDE'}, "data.dmins"),
-    CanProcessingField("gps_lat_direction", {'board_id': 'GPS',
-                       'msg_type': 'GPS_LATITUDE'}, "data.direction"),
-    CanProcessingField("gps_lon_degrees", {'board_id': 'GPS',
-                       'msg_type': 'GPS_LONGITUDE'}, "data.degs"),
-    CanProcessingField("gps_lon_minutes", {'board_id': 'GPS',
-                       'msg_type': 'GPS_LONGITUDE'}, "data.mins"),
-    CanProcessingField("gps_lon_dmins", {'board_id': 'GPS',
-                       'msg_type': 'GPS_LONGITUDE'}, "data.dmins"),
-    CanProcessingField("gps_lon_direction", {'board_id': 'GPS',
-                       'msg_type': 'GPS_LONGITUDE'}, "data.direction"),
-    CanProcessingField("gps_altitude_meters", {
-                       'board_id': 'GPS', 'msg_type': 'GPS_ALTITUDE'}, "data.altitude"),
-
 ]
 
+# Auto-add fields with multiple values for the same signature
+# the signature is the same as usual, the base name is the prefix used, and then the fields are used for the part of the data and for labeling
+auto_fields = [
+    {
+        "base_name": "gps_lat",
+        "signature": {'board_id': 'GPS', 'msg_type': 'GPS_LATITUDE'},
+        "fields": ["data.degs", "data.mins", "data.dmidminsnutes", "data.direction"]
+    },
+    {
+        "base_name": "gps_lon",
+        "signature": {'board_id': 'GPS', 'msg_type': 'GPS_LONGITUDE'},
+        "fields": ["data.degs", "data.mins", "data.dmins", "data.direction"]
+    },
+    {
+        "base_name": "gps_timestamp",
+        "signature": {'board_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'},
+        "fields": ["data.hrs", "data.mins", "data.secs"]
+    },
+    {
+        "base_name": "sensor_vent_acc",
+        "signature": {'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_ACC'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+    {
+        "base_name": "sensor_vent_mag",
+        "signature": {'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_MAG'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+    {
+        "base_name": "sensor_vent_gyro",
+        "signature": {'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_GYRO'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+    {
+        "base_name": "sensor_inj_acc",
+        "signature": {'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ACC'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+    {
+        "base_name": "sensor_inj_mag",
+        "signature": {'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_MAG'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+    {
+        "base_name": "sensor_inj_gyro",
+        "signature": {'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_GYRO'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+]
+
+# Add the auto fields to the CAN_FIELDS
+for field in auto_fields:
+    for subfield in field["fields"]:
+        CAN_FIELDS.append(CanProcessingField(
+            f"{field['base_name']}_{subfield.split('.')[-1]}", field["signature"], subfield))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run tests for field_definitions.py")

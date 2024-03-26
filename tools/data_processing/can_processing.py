@@ -39,6 +39,7 @@ def get_can_lines(infile: IO, cols=[], msg_packed_filtering="behind_stream") -> 
         if channel.startswith("CAN/Parsley"):
             # we check if the payload matches any of the fields we're tracking, and if it does, we update the current_info dictionary
             matched = False
+            # WARNING: we need to loop through all the fields, becuase columns can have the same signatures and matching patterns, but we're taking differnt data out of them so we need to check multiple times
             for field in CAN_FIELDS:
                 if field.match(payload) and field.csv_name in cols_set:
                     current_info[field.csv_name] = field.read(payload)
