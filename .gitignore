@@ -38,3 +38,7 @@ htmlcov
 *.csv
 *.png
 *.jpg
+
+# Data export manifests
+*_manifest.txt
+all_messages_*.txt
