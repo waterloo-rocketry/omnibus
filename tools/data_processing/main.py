@@ -3,13 +3,14 @@
 import sys
 import argparse
 
-from interractions import data_preview, data_export
+from interactions import data_preview, data_export
 
 # ARGUMENT PARSING
 
+
 def parseArguments():
     """Take parameters from the command line and parse them for the differnt modes"""
-    
+
     parser = argparse.ArgumentParser(description="Run data processing on a log file")
     parser.add_argument("file", help="The file to run on")
 
@@ -20,7 +21,8 @@ def parseArguments():
     parser.add_argument("-d", "--daq", help="Plot only daq data", action="store_true")
     parser.add_argument("-c", "--can", help="Plot only can data", action="store_true")
 
-    parser.add_argument("-b", "--behind", help="Take the behind stream for CAN exporting", action="store_true")
+    parser.add_argument(
+        "-b", "--behind", help="Take the behind stream for CAN exporting", action="store_true")
 
     if len(sys.argv) == 1:
         print("Make sure to pass a log file to run on, and other options")
@@ -56,12 +58,12 @@ def parseArguments():
 
 
 if __name__ == "__main__":
-    
+
     in_file_path, processing_mode, data_mode, msg_packed_filtering_mode = parseArguments()
 
     if processing_mode == "p":
-        data_preview(in_file_path, data_mode,msg_packed_filtering=msg_packed_filtering_mode)
+        data_preview(in_file_path, data_mode, msg_packed_filtering=msg_packed_filtering_mode)
     elif processing_mode == "e":
-        data_export(in_file_path, data_mode,msg_packed_filtering=msg_packed_filtering_mode)
+        data_export(in_file_path, data_mode, msg_packed_filtering=msg_packed_filtering_mode)
     else:
         raise NotImplementedError

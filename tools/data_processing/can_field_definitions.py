@@ -15,7 +15,7 @@ class CanProcessingField:
 
     def __init__(self, csv_name, matching_pattern, reading_signature):
         """Initialize the field with a name, a matching pattern, and a reading signature. The matching pattern is a dictionary of keys and values that MUST appear inside the message payload being matched, and if it's sub-dictioinaries, use . like data.sensor_id. The reading signature is a string that describes the path to the value we want to extract from the payload. Again, if it's a sub-dictionary, use . like data.value."""
-        
+
         self.csv_name = csv_name
         self.matching_pattern = matching_pattern
         self.reading_signature = reading_signature
@@ -45,7 +45,8 @@ class CanProcessingField:
         """Read the value from the candidate message payload, if it matches the matching pattern. If it doesn't, raises an error."""
 
         if not self.match(candidate):  # first double check that it's the right thing
-            raise ValueError(f"Can't read from a candidate that doesn't match the matching pattern {self.matching_pattern} for the data {candidate}")
+            raise ValueError(
+                f"Can't read from a candidate that doesn't match the matching pattern {self.matching_pattern} for the data {candidate}")
 
         running_key = self.reading_signature
         checking = candidate
@@ -100,12 +101,69 @@ CAN_FIELDS = [
                        "board_id": "CHARGING", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
     CanProcessingField("cc_pressure", {
                        'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_CC'}, 'data.value'),
+    CanProcessingField("barometer", {
+                       'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_BARO'}, "data.value"),
 ]
 
+# Auto-add fields with multiple values for the same signature
+# the signature is the same as usual, the base name is the prefix used, and then the fields are used for the part of the data and for labeling
+auto_fields = [
+    {
+        "base_name": "gps_lat",
+        "signature": {'board_id': 'GPS', 'msg_type': 'GPS_LATITUDE'},
+        "fields": ["data.degs", "data.mins", "data.dmidminsnutes", "data.direction"]
+    },
+    {
+        "base_name": "gps_lon",
+        "signature": {'board_id': 'GPS', 'msg_type': 'GPS_LONGITUDE'},
+        "fields": ["data.degs", "data.mins", "data.dmins", "data.direction"]
+    },
+    {
+        "base_name": "gps_timestamp",
+        "signature": {'board_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'},
+        "fields": ["data.hrs", "data.mins", "data.secs"]
+    },
+    {
+        "base_name": "sensor_vent_acc",
+        "signature": {'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_ACC'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+    {
+        "base_name": "sensor_vent_mag",
+        "signature": {'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_MAG'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+    {
+        "base_name": "sensor_vent_gyro",
+        "signature": {'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_GYRO'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+    {
+        "base_name": "sensor_inj_acc",
+        "signature": {'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ACC'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+    {
+        "base_name": "sensor_inj_mag",
+        "signature": {'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_MAG'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+    {
+        "base_name": "sensor_inj_gyro",
+        "signature": {'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_GYRO'},
+        "fields": ["data.time", "data.x", "data.y", "data.z"]
+    },
+]
+
+# Add the auto fields to the CAN_FIELDS
+for field in auto_fields:
+    for subfield in field["fields"]:
+        CAN_FIELDS.append(CanProcessingField(
+            f"{field['base_name']}_{subfield.split('.')[-1]}", field["signature"], subfield))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run tests for field_definitions.py")
-    parser.add_argument("-test", action="store_true", help="Run tests")
+    parser.add_argument("--test", action="store_true", help="Run tests")
     TESTING = parser.parse_args().test
 
     if not TESTING:

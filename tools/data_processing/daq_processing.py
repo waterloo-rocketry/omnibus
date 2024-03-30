@@ -5,11 +5,11 @@ import msgpack
 from msgpack_sorter_unpacker import msgpackFilterUnpacker
 
 
-def average_list(data : List[Union[int, float]]) -> Union[int, float]:
+def average_list(data: List[Union[int, float]]) -> Union[int, float]:
     return sum(data) / len(data)
 
 
-def median_list(data : List[Union[int, float]]) -> Union[int, float]:
+def median_list(data: List[Union[int, float]]) -> Union[int, float]:
     sorted_data = sorted(data)
     length = len(sorted_data)
     if length % 2 == 0:

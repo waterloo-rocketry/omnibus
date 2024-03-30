@@ -11,9 +11,10 @@ from helpers import offset_timestamps, filter_timestamps
 
 # HELPER FUNCTION
 
+
 def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
-    
+
     print("Parsing file...")
 
     daq_cols = []
@@ -42,13 +43,23 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
         print(f"{column_mapping[col]}: {col}")
 
     selection = input(
-        "Enter the numbers for the columns you want to extract, seperated by commas, or leave empty for all: ")
+        "Enter the numbers or ranges with a - between (ex 3-5 for 3,4,5) for the columns you want to extract, seperated by commas, or leave empty for all: ")
 
     # parse the selection into a list of indexes in the cols list
     if selection == "":
         indexes = [i for i in range(1, len(column_mapping)+1)]
     else:
-        indexes = [int(i) for i in selection.replace(" ", "").split(",")]
+        selection = selection.replace(" ", "")
+        indexes = []
+        for part in selection.split(","):
+            if "-" in part:
+                start, end = part.split("-")
+                indexes += [i for i in range(int(start), int(end)+1)]
+            else:
+                indexes.append(int(part))
+    
+    # remove duplicates while keeping order
+    indexes = list(dict.fromkeys(indexes))
 
     # split the indexes into daq and can indexes, and then get the names of the selected columns
     selected_daq_cols = [col[1] for col in column_mapping if col[0]
@@ -68,7 +79,8 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     # get the data for the selected columns
     with open(file_path, "rb") as infile:
         if mode == "a" or mode == "d":
-            daq_data = get_daq_lines(infile, selected_daq_cols, aggregate_function_name=daq_aggregate_function)
+            daq_data = get_daq_lines(infile, selected_daq_cols,
+                                     aggregate_function_name=daq_aggregate_function)
             # map all None values to 0
             for column_counter in range(len(daq_data)):
                 for j in range(len(daq_data[column_counter])):
@@ -77,7 +89,8 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
         else:
             daq_data = []
         if mode == "a" or mode == "c":
-            can_data = get_can_lines(infile, selected_can_cols, msg_packed_filtering=msg_packed_filtering)
+            can_data = get_can_lines(infile, selected_can_cols,
+                                     msg_packed_filtering=msg_packed_filtering)
             for column_counter in range(len(can_data)):
                 for j in range(len(can_data[column_counter])):
                     if can_data[column_counter][j] is None:
@@ -92,11 +105,13 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     for time_index in range(len(can_data) - 1):
         # compare the timestamps columns (redundant int cast to silence linter)
         if int(can_data[time_index][0]) > int(can_data[time_index+1][0]):
-            print(f"Warning: CAN timestamp {can_data[time_index][0]} is greater than {can_data[time_index+1][0]}")
+            print(
+                f"Warning: CAN timestamp {can_data[time_index][0]} is greater than {can_data[time_index+1][0]}")
 
     return selected_daq_cols, selected_can_cols, daq_data, can_data
 
 # THE MAIN DATA PROCESSING DRIVING FUNCTIONS
+
 
 def data_preview(file_path: str, mode="a", msg_packed_filtering="behind_stream"):
     """A mode for previewing data with user input and plotting"""
@@ -106,7 +121,8 @@ def data_preview(file_path: str, mode="a", msg_packed_filtering="behind_stream")
     if mode != "a" and mode != "d" and mode != "c":
         raise ValueError(f"Invalid mode {mode} passed to data_preview")
 
-    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode, msg_packed_filtering=msg_packed_filtering)
+    daq_cols, can_cols, daq_data, can_data = ingest_data(
+        file_path, mode, msg_packed_filtering=msg_packed_filtering)
 
     print("Pan the plot to find the time range you want to export")
 
