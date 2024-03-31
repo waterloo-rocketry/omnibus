@@ -126,6 +126,10 @@ class GaugeWidget(QWidget):
             # rotate about the center
             painter.save()
             painter.translate(cx, cy)
+            
+            font = QFont()
+            font.setPointSize(15)
+            painter.setFont(font)
 
             step = min_value
             while step <= max_value:
@@ -133,7 +137,7 @@ class GaugeWidget(QWidget):
                 painter.save()
                 painter.rotate(angle)
                 painter.drawLine(QLineF(0, -(radius - step_length), 0, -radius))
-                painter.drawText(-15, -(radius - step_length), 30, 20, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(step))
+                painter.drawText(-20, -(radius - step_length), 40, 30, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(step))
                 for tick in range(1, tick_count + 1):
                     # avoid floating point comparison
                     if (step * tick_count + step_value * tick) > max_value * tick_count:
