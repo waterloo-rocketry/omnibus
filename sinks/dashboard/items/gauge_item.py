@@ -20,7 +20,7 @@ class GaugeItem(DashboardItem):
         self.widget = GaugeWidget(self)
         self.layout.addWidget(self.widget)
 
-        self.resize(400, 400)
+        self.resize(150, 150)
 
         # Value detection code is based on plot_dash_item.py
         self.parameters.param("value").sigValueChanged.connect(self.on_value_change)
@@ -82,14 +82,14 @@ class GaugeWidget(QWidget):
     def paintEvent(self, paintEvent):
         width = self.width()
         height = self.height()
-        if width < 300 or height < 300:
+        if width < 100 or height < 100:
             return
         with QPainter(self) as painter:
             # Draw circle
             painter.setBrush(QBrush(Qt.GlobalColor.white))
-            side = min(width, height - 60)
+            side = min(width, height - 20)
             left = (width - side) / 2
-            top = (height - side) / 2 - 20
+            top = (height - side) / 2 - 5
             painter.drawEllipse(QRectF(left, top, side, side))
 
             # Tick marks and text
@@ -102,8 +102,8 @@ class GaugeWidget(QWidget):
             # Angle clockwise with 0 at the top
             start_angle = -120.0
             end_angle = 120.0
-            tick_length = 10
-            step_length = 15
+            tick_length = 4
+            step_length = 8
             min_value = self.item.min_value
             max_value = self.item.max_value
 
@@ -128,7 +128,7 @@ class GaugeWidget(QWidget):
             painter.translate(cx, cy)
             
             font = QFont()
-            font.setPointSize(15)
+            font.setPointSize(6)
             painter.setFont(font)
 
             step = min_value
@@ -156,24 +156,24 @@ class GaugeWidget(QWidget):
             painter.save()
             painter.rotate(angle)
             path = QPainterPath()
-            path.moveTo(5, 0)
-            path.arcTo(-5, -5, 10, 10, 0, -180)
-            path.lineTo(0, -radius + 5)
-            path.lineTo(5, 0)
+            path.moveTo(3, 0)
+            path.arcTo(-3, -3, 6, 6, 0, -180)
+            path.lineTo(0, -radius + 3)
+            path.lineTo(3, 0)
             painter.fillPath(path, QBrush(Qt.GlobalColor.red))
             painter.restore()
 
             painter.restore()
 
             font = QFont()
-            font.setPointSize(20)
+            font.setPointSize(8)
             painter.setFont(font)
-            painter.drawText(cx - 30, top + side * 0.8 - 30, 60, 30, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(value))
+            painter.drawText(cx - 15, top + side * 0.8 - 15, 30, 15, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(value))
 
             label = self.item.label if self.item.label != "" else self.item.value
 
             font = QFont()
-            font.setPointSize(20)
+            font.setPointSize(8)
             painter.setFont(font)
-            painter.drawText(0, height - 40, width, 40, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, label)
+            painter.drawText(0, height - 15, width, 15, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, label)
             
