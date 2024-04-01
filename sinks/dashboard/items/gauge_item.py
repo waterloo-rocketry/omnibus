@@ -169,9 +169,9 @@ class GaugeWidget(QWidget):
             painter.restore()
 
             font = QFont()
-            font.setPointSize(8)
+            font.setPointSize(12)
             painter.setFont(font)
-            painter.drawText(cx - 15, top + side * 0.8 - 15, 30, 15, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(value))
+            painter.drawText(cx - 30, top + side * 0.8 - 12, 60, 24, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(value))
 
             label = self.item.label if self.item.label != "" else self.item.value
 
