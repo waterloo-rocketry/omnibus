@@ -115,12 +115,15 @@ class GaugeWidget(QWidget):
             exp = value_range.adjusted()
             power = Decimal(10 ** exp)
             coeff = value_range / power
-            if coeff >= 4:
+            # Keep at least 5 steps but space them out
+            if coeff >= 8:
+                step_value = 2 * power
+            elif coeff >= 4:
                 step_value = power
             elif coeff >= 2:
-                step_value = power / 5
+                step_value = power / 2
             else:
-                step_value = power / 10
+                step_value = power / 5
             tick_count = 5
 
             # rotate about the center
@@ -128,7 +131,7 @@ class GaugeWidget(QWidget):
             painter.translate(cx, cy)
             
             font = QFont()
-            font.setPointSize(6)
+            font.setPointSize(8)
             painter.setFont(font)
 
             step = min_value
