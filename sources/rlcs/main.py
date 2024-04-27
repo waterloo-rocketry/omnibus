@@ -7,7 +7,7 @@ import rlcs
 import commander
 
 
-def reader(port):
+def reader(port: str):
     if port == "-":
         return input
     s = serial.Serial(port, 115200)  # listen on the RLCS port
