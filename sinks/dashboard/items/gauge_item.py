@@ -1,8 +1,8 @@
 from publisher import publisher
 from pyqtgraph.Qt.QtCore import Qt, QLineF, QRectF
-from pyqtgraph.Qt.QtGui import QBrush, QFont, QPainter, QPainterPath, QPen
+from pyqtgraph.Qt.QtGui import QBrush, QFont, QPainter, QPainterPath
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
-from pyqtgraph.parametertree.parameterTypes import ChecklistParameter, NumericParameterItem
+from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 
 from .dashboard_item import DashboardItem
 from .registry import Register
@@ -129,6 +129,7 @@ class GaugeWidget(QWidget):
             # rotate about the center
             painter.save()
             painter.translate(cx, cy)
+            painter.setPen(Qt.GlobalColor.black)
             
             font = QFont()
             font.setPointSize(8)
@@ -168,10 +169,15 @@ class GaugeWidget(QWidget):
 
             painter.restore()
 
+            painter.save()
+            painter.setPen(Qt.GlobalColor.black)
+
             font = QFont()
             font.setPointSize(12)
             painter.setFont(font)
             painter.drawText(cx - 30, top + side * 0.8 - 12, 60, 24, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(value))
+
+            painter.restore()
 
             label = self.item.label if self.item.label != "" else self.item.value
 
