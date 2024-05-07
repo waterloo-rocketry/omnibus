@@ -175,7 +175,8 @@ class GaugeWidget(QWidget):
             font = QFont()
             font.setPointSize(side / 10)
             painter.setFont(font)
-            painter.drawText(cx - side / 4, top + side * 0.8 - side / 10, side / 2, side / 5, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(value))
+            value_text = "{0:.6g}".format(value)
+            painter.drawText(cx - side * 0.3, top + side * 0.8 - side / 10, side * 0.6, side / 5, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, value_text)
 
             painter.restore()
 
