@@ -20,7 +20,7 @@ class GaugeItem(DashboardItem):
         self.widget = GaugeWidget(self)
         self.layout.addWidget(self.widget)
 
-        self.resize(150, 150)
+        self.resize(250, 250)
 
         # Value detection code is based on plot_dash_item.py
         self.parameters.param("value").sigValueChanged.connect(self.on_value_change)
