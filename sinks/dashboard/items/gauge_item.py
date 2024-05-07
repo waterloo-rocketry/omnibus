@@ -87,9 +87,9 @@ class GaugeWidget(QWidget):
         with QPainter(self) as painter:
             # Draw circle
             painter.setBrush(QBrush(Qt.GlobalColor.white))
-            side = min(width, height - 20)
+            side = min(width, height * 0.9)
             left = (width - side) / 2
-            top = (height - side) / 2 - 5
+            top = (height - side) / 2 - side / 20
             painter.drawEllipse(QRectF(left, top, side, side))
 
             # Tick marks and text
@@ -132,7 +132,7 @@ class GaugeWidget(QWidget):
             painter.setPen(Qt.GlobalColor.black)
             
             font = QFont()
-            font.setPointSize(8)
+            font.setPointSize(side / 14)
             painter.setFont(font)
 
             step = min_value
@@ -173,16 +173,16 @@ class GaugeWidget(QWidget):
             painter.setPen(Qt.GlobalColor.black)
 
             font = QFont()
-            font.setPointSize(12)
+            font.setPointSize(side / 10)
             painter.setFont(font)
-            painter.drawText(cx - 30, top + side * 0.8 - 12, 60, 24, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(value))
+            painter.drawText(cx - side / 4, top + side * 0.8 - side / 10, side / 2, side / 5, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(value))
 
             painter.restore()
 
             label = self.item.label if self.item.label != "" else self.item.value
 
             font = QFont()
-            font.setPointSize(8)
+            font.setPointSize(side / 14)
             painter.setFont(font)
-            painter.drawText(0, height - 15, width, 15, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, label)
+            painter.drawText(0, height - side / 8, width, side / 8, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, label)
             
