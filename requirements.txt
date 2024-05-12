@@ -4,3 +4,4 @@ pytest
 pyzmq
 flake8
 matplotlib
+dash
