@@ -93,7 +93,6 @@ class GaugeWidget(QWidget):
             painter.drawEllipse(QRectF(left, top, side, side))
 
             # Tick marks and text
-
             radius = side / 2
             cx = left + radius
             cy = top + radius
