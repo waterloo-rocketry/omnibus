@@ -109,7 +109,7 @@ class GaugeWidget(QWidget):
             max_value_decimal = Decimal("{0:.6g}".format(max_value))
 
             # Invalid conditions
-            if max_value < min_value:
+            if max_value_decimal <= min_value_decimal:
                 return
 
             value_range = max_value_decimal - min_value_decimal
