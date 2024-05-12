@@ -1,4 +1,4 @@
 numpy
-PySide6==6.5.0
-pyqtgraph==0.13.3
-pyopengl==3.1.6
+PySide6
+pyqtgraph
+pyopengl
