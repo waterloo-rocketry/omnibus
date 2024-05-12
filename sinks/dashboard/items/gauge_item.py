@@ -186,4 +186,3 @@ class GaugeWidget(QWidget):
             font.setPointSize(side / 14)
             painter.setFont(font)
             painter.drawText(0, height - side / 8, width, side / 8, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, label)
-            
