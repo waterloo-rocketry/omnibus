@@ -31,8 +31,8 @@ class GaugeItem(DashboardItem):
 
         self.data: float = 0.0
 
-        self.min_value: int = 0
-        self.max_value: int = 10
+        self.min_value: float = 0.0
+        self.max_value: float = 10.0
         self.label = ""
 
         self.value = "Not connected"
@@ -43,8 +43,8 @@ class GaugeItem(DashboardItem):
                                           value=[],
                                           limits=publisher.get_all_streams(),
                                           exclusive=True)
-        min_value_param = {"name": "min_value", "type": "int", "value": 0}
-        max_value_param = {"name": "max_value", "type": "int", "value": 10}
+        min_value_param = {"name": "min_value", "type": "float", "value": 0.0}
+        max_value_param = {"name": "max_value", "type": "float", "value": 10.0}
         label_param = {"name": "label", "type": "str", "value": ""}
         return [value_param, min_value_param, max_value_param, label_param]
 
@@ -103,16 +103,18 @@ class GaugeWidget(QWidget):
             end_angle = 120.0
             tick_length = 4
             step_length = 8
-            min_value = self.item.min_value
-            max_value = self.item.max_value
+            min_value: float = self.item.min_value
+            max_value: float = self.item.max_value
+            min_value_decimal = Decimal("{0:.6g}".format(min_value))
+            max_value_decimal = Decimal("{0:.6g}".format(max_value))
 
             # Invalid conditions
             if max_value < min_value:
                 return
 
-            value_range = Decimal(max_value - min_value)
+            value_range = max_value_decimal - min_value_decimal
             exp = value_range.adjusted()
-            power = Decimal(10 ** exp)
+            power = Decimal(10) ** exp
             coeff = value_range / power
             # Keep at least 5 steps but space them out
             if coeff >= 8:
@@ -134,16 +136,17 @@ class GaugeWidget(QWidget):
             font.setPointSize(side / 14)
             painter.setFont(font)
 
-            step = min_value
-            while step <= max_value:
+            step = min_value_decimal
+            while step <= max_value_decimal:
                 angle = (float(step) - min_value) / (max_value - min_value) * (end_angle - start_angle) + start_angle
                 painter.save()
                 painter.rotate(angle)
                 painter.drawLine(QLineF(0, -(radius - step_length), 0, -radius))
-                painter.drawText(-20, -(radius - step_length), 40, 30, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, str(step))
+                step_display_number = int(step) if step == int(step) else step
+                step_str = str(step_display_number)
+                painter.drawText(-20, -(radius - step_length), 40, 30, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, step_str)
                 for tick in range(1, tick_count + 1):
-                    # avoid floating point comparison
-                    if (step * tick_count + step_value * tick) > max_value * tick_count:
+                    if (step + step_value * tick / tick_count) > max_value_decimal:
                         break
                     angle = (float(step_value) / tick_count * tick) / (max_value - min_value) * (end_angle - start_angle)
                     painter.save()
