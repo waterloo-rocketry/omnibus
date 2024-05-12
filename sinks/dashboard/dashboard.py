@@ -32,6 +32,7 @@ from items.can_sender import CanSender
 from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.table_view import TableViewItem
+from items.improved_image_item import ImprovedImageItem
 from publisher import publisher
 
 from omnibus import Sender
