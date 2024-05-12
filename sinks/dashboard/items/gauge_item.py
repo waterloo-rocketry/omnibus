@@ -144,7 +144,7 @@ class GaugeWidget(QWidget):
                 painter.drawLine(QLineF(0, -(radius - step_length), 0, -radius))
                 step_display_number = int(step) if step == int(step) else step
                 step_str = str(step_display_number)
-                painter.drawText(-20, -(radius - step_length), 40, 30, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, step_str)
+                painter.drawText(-side * 0.15, -(radius - step_length), side * 0.3, side * 0.2, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, step_str)
                 for tick in range(1, tick_count + 1):
                     if (step + step_value * tick / tick_count) > max_value_decimal:
                         break
