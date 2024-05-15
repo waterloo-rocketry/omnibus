@@ -87,6 +87,11 @@ splits = {
     "ALT_ARM_STATUS": "altimeter",
     "SENSOR_TEMP": "sensor_id",
     "SENSOR_ANALOG": "sensor_id",
+    "SENSOR_SPOOF": "sensor_id",
+    "FAKE_RPM": "sensor_id",
+    "SENSOR_RPM": "sensor_id",
+    "SENSOR_LEVEL": "sensor_id",
+
 }
 last_timestamp = {}  # Last timestamp seen for each board + message type
 offset_timestamp = {}  # per-board-and-message offset to account for time rollovers
@@ -130,6 +135,7 @@ def can_parser(payload):
 
     if message_type == "GENERAL_BOARD_STATUS" and data['status'] != "E_NOMINAL":
         error_series.append((f"{board_id}/ERROR", timestamp, payload["data"]))
+    
 
     return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()] + error_series
 
@@ -152,7 +158,6 @@ def state_est_parser(payload):
         ("StateEstimation/Orientation", timestamp, payload["data"]["orientation"]),
         ("StateEstimation/Position", timestamp, payload["data"]["position"])
     ]
-
 
 @Register("")
 def all_parser(_):
