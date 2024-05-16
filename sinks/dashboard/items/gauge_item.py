@@ -58,11 +58,19 @@ class GaugeItem(DashboardItem):
         publisher.subscribe(self.value, self.on_data_update)
 
     def on_min_value_change(self, param, value):
-        self.min_value = self.parameters.param("min_value").value()
+        new = self.parameters.param("min_value").value()
+        if new >= self.max_value:
+            self.parameters.param("min_value").setValue(self.min_value)
+            return
+        self.min_value = new
         self.widget.update()
 
     def on_max_value_change(self, param, value):
-        self.max_value = self.parameters.param("max_value").value()
+        new = self.parameters.param("max_value").value()
+        if new <= self.min_value:
+            self.parameters.param("max_value").setValue(self.max_value)
+            return
+        self.max_value = new
         self.widget.update()
 
     def on_label_change(self, param, value):
