@@ -73,6 +73,10 @@ class GaugeItem(DashboardItem):
         time, point = payload
         self.data = float(point)
         self.widget.update()
+
+    def on_delete(self):
+        publisher.unsubscribe_from_all(self.on_data_update)
+        super().on_delete()
     
 class GaugeWidget(QWidget):
     def __init__(self, item: GaugeItem):
