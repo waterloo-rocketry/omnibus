@@ -15,7 +15,9 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsItem,
     QGraphicsRectItem,
     QFileDialog,
-    QSplitter
+    QSplitter,
+    QInputDialog,
+    QMessageBox
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
@@ -440,7 +442,10 @@ class Dashboard(QWidget):
                     break
 
     # Method to save current layout to file
-    def save(self):
+    def save(self, filename: str = None):
+        if filename is None:
+            filename = self.filename
+
         # General structure for saving the dashboard info
         data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
 
@@ -466,8 +471,24 @@ class Dashboard(QWidget):
                     break
 
         # Write data to savefile
-        with open(self.filename, "w") as savefile:
+        with open(filename, "w") as savefile:
             json.dump(data, savefile)
+
+    # Method to save file with a custom chosen name
+    def save_as(self):
+        user_response = self.show_prompt()
+        self.save(user_response)
+
+    # Method to allow user to choose name of the file of the configuration they would like to save
+    def show_prompt(self) -> str:
+        # Show a prompt box using QInputDialog
+        text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter file name:')
+        
+        # Check if OK was pressed and text is not empty
+        if ok and text:
+            return text + ".json"
+        elif ok:
+            QMessageBox.warning(self, 'Warning', 'No input provided.')
 
     # Method to switch to a layout in a different file
     def switch(self):
