@@ -161,6 +161,26 @@ class Dashboard(QWidget):
         # adding a button to switch instances of parsley
         self.can_selector = menubar.addMenu("Parsley")
 
+        # Add an action to the menu bar containing Save, Save As and Open.
+        # Save will save the layout of the dashboard
+        # Save As will prompt a name, then saves the layout of the dashboard
+        # Open loads the layout of the dashboard
+        add_file_menu = menubar.addMenu("File")
+
+        file_save_layout_action = add_file_menu.addAction("Save")
+        file_save_layout_action.triggered.connect(self.save)
+
+        file_save_as_layout_action = add_file_menu.addAction("Save As")
+        file_save_as_layout_action.triggered.connect(self.save_as)
+
+        file_open_layout_action = add_file_menu.addAction("Open")
+        file_open_layout_action.triggered.connect(self.switch)
+
+        self.lockableActions.append(file_save_layout_action)
+        self.lockableActions.append(file_save_as_layout_action)
+        self.lockableActions.append(file_open_layout_action)
+
+
         # Add an action to the menu bar to save the
         # layout of the dashboard.
         add_save_menu = menubar.addMenu("Save")
