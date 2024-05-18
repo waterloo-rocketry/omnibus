@@ -478,7 +478,7 @@ class Dashboard(QWidget):
         if ok and text:
             return text + ".json"
         elif ok:
-            QMessageBox.warning(self, 'Warning', 'No input provided.')
+            QMessageBox.warning(self, 'Warning', 'No input provided, try again')
 
     # Method to switch to a layout in a different file
     def switch(self):
