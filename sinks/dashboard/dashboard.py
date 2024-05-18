@@ -136,6 +136,25 @@ class Dashboard(QWidget):
         # can be disabled when dashboard is locked
         self.lockableActions = []
 
+        # Add an action to the menu bar containing Save, Save As and Open.
+        # Save will save the layout of the dashboard
+        # Save As will prompt a name, then saves the layout of the dashboard
+        # Open loads the layout of the dashboard
+        add_file_menu = menubar.addMenu("File")
+
+        file_save_layout_action = add_file_menu.addAction("Save")
+        file_save_layout_action.triggered.connect(self.save)
+
+        file_save_as_layout_action = add_file_menu.addAction("Save As")
+        file_save_as_layout_action.triggered.connect(self.save_as)
+
+        file_open_layout_action = add_file_menu.addAction("Open")
+        file_open_layout_action.triggered.connect(self.switch)
+
+        self.lockableActions.append(file_save_layout_action)
+        self.lockableActions.append(file_save_as_layout_action)
+        self.lockableActions.append(file_open_layout_action)
+
         # Create a sub menu which will be used
         # to add items to our dash board.
         # For all dash items we support, there will
@@ -163,46 +182,6 @@ class Dashboard(QWidget):
 
         # adding a button to switch instances of parsley
         self.can_selector = menubar.addMenu("Parsley")
-
-        # Add an action to the menu bar containing Save, Save As and Open.
-        # Save will save the layout of the dashboard
-        # Save As will prompt a name, then saves the layout of the dashboard
-        # Open loads the layout of the dashboard
-        add_file_menu = menubar.addMenu("File")
-
-        file_save_layout_action = add_file_menu.addAction("Save")
-        file_save_layout_action.triggered.connect(self.save)
-
-        file_save_as_layout_action = add_file_menu.addAction("Save As")
-        file_save_as_layout_action.triggered.connect(self.save_as)
-
-        file_open_layout_action = add_file_menu.addAction("Open")
-        file_open_layout_action.triggered.connect(self.switch)
-
-        self.lockableActions.append(file_save_layout_action)
-        self.lockableActions.append(file_save_as_layout_action)
-        self.lockableActions.append(file_open_layout_action)
-
-
-        # Add an action to the menu bar to save the
-        # layout of the dashboard.
-        add_save_menu = menubar.addMenu("Save")
-        save_layout_action = add_save_menu.addAction("Save Current Config")
-        save_layout_action.triggered.connect(self.save)
-        self.lockableActions.append(save_layout_action)
-
-        # Add an action to the menu bar to load the
-        # layout of the dashboard.
-        add_restore_menu = menubar.addMenu("Load")
-        restore_layout_action = add_restore_menu.addAction("Load from File")
-        restore_layout_action.triggered.connect(self.load)
-        self.lockableActions.append(restore_layout_action)
-
-        # Add an action to the menu bar to open a file
-        add_open_menu = menubar.addMenu("Open")
-        open_file_action = add_open_menu.addAction("Open File")
-        open_file_action.triggered.connect(self.switch)
-        self.lockableActions.append(open_file_action)
 
         # Add an action to the menu bar to lock/unlock
         # the dashboard
@@ -444,8 +423,18 @@ class Dashboard(QWidget):
 
     # Method to save current layout to file
     def save(self, filename: str = None):
+        save_directory = "saved-files"
+
+         # Ensure the save directory exists, if not, create it
+        if not os.path.exists(save_directory):
+            os.makedirs(save_directory)
+
+        # If file name doesn't exist, default name is savefile.json
         if filename is None:
             filename = self.filename
+
+        # Adjust filename to include the save directory
+        filename = os.path.join(save_directory, os.path.basename(filename))
 
         # General structure for saving the dashboard info
         data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
@@ -477,11 +466,11 @@ class Dashboard(QWidget):
 
     # Method to save file with a custom chosen name
     def save_as(self):
-        user_response = self.show_prompt()
+        user_response = self.show_save_as_prompt()
         self.save(user_response)
 
     # Method to allow user to choose name of the file of the configuration they would like to save
-    def show_prompt(self) -> str:
+    def show_save_as_prompt(self) -> str:
         # Show a prompt box using QInputDialog
         text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter file name:')
         
