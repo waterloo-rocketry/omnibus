@@ -15,7 +15,6 @@ class CanProcessingField:
 
     def __init__(self, csv_name, matching_pattern, reading_signature):
         """Initialize the field with a name, a matching pattern, and a reading signature. The matching pattern is a dictionary of keys and values that MUST appear inside the message payload being matched, and if it's sub-dictioinaries, use . like data.sensor_id. The reading signature is a string that describes the path to the value we want to extract from the payload. Again, if it's a sub-dictionary, use . like data.value."""
-
         self.csv_name = csv_name
         self.matching_pattern = matching_pattern
         self.reading_signature = reading_signature
