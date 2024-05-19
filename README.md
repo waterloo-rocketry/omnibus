@@ -22,20 +22,14 @@ Python 3.10 or newer is required. For Linux users, a python package with C heade
 4. Activate the virtual environment:
    - For osx/linux: `source venv/bin/activate`
    - For windows: `venv\Scripts\activate`
-5. Upgrade pip version: `pip install --upgrade pip`
-6. Run `pip install wheel`, which will help install the rest of the packages more quickly
-7. Install Python dependencies with `pip install -r requirements.txt`. You'll also need to run that command in each of the following folders:
-   - `sources/ni/`
-   - `sources/parsley/`
-   - `sinks/dashboard/`
-   - If you get a permission error, try `pip install --user -r requirements.txt` instead.
-8. Install the Omnibus library locally with `pip install -e .`
-   - Don't forget the `.`! This allows the sources and sinks (and you) to import Omnibus
-9. Initialize the `Parsley` submodule with `git submodule update --init --recursive` and install the library locally with `pip install -e ./parsley`
+5. Run the setup script `source setup.sh`
 
 ## Usage
 
 Omnibus works by running sources (to send data), sinks (to receive data) and a server to connect them together.
+The easiest way to run Omnibus is through the launcher script `python launcher.py`. This will open a GUI (or prompt by text if you pass in the `--text` flag) where you can select the sources and sinks to run. You can also manually run the different components of Omnibus using the commands described below.
+
+Known limitation of the launcher script: currently, CLI flags can't be passed to a source/sink so one requiring them (such as `parsley`) need to be run manually.
 
 ### Server
 
@@ -43,4 +37,4 @@ Start the Omnibus server by activating your `venv`, then running `python -m omni
 
 ### Sources/Sinks
 
-Depending on your configuration, you'll need to run one or more sources or sinks. Each one is started independently in the same way: `python sources-or-sinks/name/main.py`. For example, you can start the Dashboard by running `python sinks/dashboard/main.py`.
+Depending on your configuration, you'll need to run one or more sources or sinks. Each one is started independently in the same way: `python <sources-or-sinks>/<name>/main.py`. For example, you can start the Dashboard by running `python sinks/dashboard/main.py`.
