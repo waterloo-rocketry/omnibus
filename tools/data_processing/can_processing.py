@@ -6,6 +6,9 @@ from typing import List, Union, IO
 from tools.data_processing.can_field_definitions import CAN_FIELDS
 from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
 
+from can_field_definitions import CAN_FIELDS
+from msgpack_sorter_unpacker import msgpackFilterUnpacker
+
 
 def get_can_cols(infile: IO) -> List[str]:
     """Get the columns that are present in the CAN data in the file"""

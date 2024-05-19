@@ -51,6 +51,8 @@ def process_file(args: Namespace, process_func: Callable[[str, Any]], headers: l
             row = [k for k in key] + [value]
             writer.writerow(row)
 
+    print(f"Unique messages written to {output_path}")
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -62,8 +64,10 @@ def main():
     if args.channel.startswith("CAN"):
         process_file(args, process_CAN_message, [
                      "channel", "board_id", "msg_type", "sensor_id", "actuator", "signature", "sample"])
-    else:
+    elif args.channel.startswith("DAQ"):
         process_file(args, process_DAQ_message, ["channel", "field", "sample"])
+    else:
+        print("We don't support that channel yet, use dump_whole_log.py to dump the whole log file and figure out what's in it. ")
 
 
 if __name__ == "__main__":

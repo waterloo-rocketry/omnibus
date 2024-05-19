@@ -28,4 +28,3 @@ def filter_timestamps(data: Union[pd.DataFrame, None], start: float, stop: float
         return  data[(data["timestamp"] >= start) & (data["timestamp"] <= stop)]
     else:
         return None
-

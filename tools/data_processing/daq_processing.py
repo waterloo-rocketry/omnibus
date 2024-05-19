@@ -2,13 +2,11 @@
 from typing import List, Union, IO
 import msgpack
 import pandas as pd
-
+from msgpack_sorter_unpacker import msgpackFilterUnpacker
 from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
-
 
 def average_list(data : List[Union[int, float]]) -> Union[int, float]:
     return sum(data) / len(data)
-
 
 def median_list(data : List[Union[int, float]]) -> Union[int, float]:
     sorted_data = sorted(data)

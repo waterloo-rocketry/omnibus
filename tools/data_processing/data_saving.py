@@ -19,7 +19,7 @@ def save_manifest(manifest_args: dict):
 
     if "file_path" not in manifest_args:
         raise ValueError("Manifest must have a file path")
-    
+        
     manifest_empty_filler = "NONE"
 
     # The string literal must be un-indented to save properly
