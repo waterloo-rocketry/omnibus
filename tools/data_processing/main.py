@@ -3,7 +3,7 @@
 import sys
 import argparse
 
-from tools.data_processing.interractions import data_preview, data_export
+from tools.data_processing.interactions import data_preview, data_export
 from interactions import data_preview, data_export
 
 # ARGUMENT PARSING

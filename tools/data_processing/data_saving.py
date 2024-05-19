@@ -40,3 +40,6 @@ CAN entries were filterd for stricly {manifest_args.get("msg_packed_filtering", 
 
     with open(manifest_path, "w") as manifest_file:
         manifest_file.write(manifest_text)
+
+    print(f"Export manifest saved to {manifest_path}")
+    

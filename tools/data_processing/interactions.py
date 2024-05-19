@@ -1,20 +1,18 @@
 import matplotlib.pyplot as plt
-import csv
-import os
-import datetime
+import pandas as pd
+from typing import List, Union, IO, Tuple
 import hashlib
 
-from can_processing import get_can_lines, get_can_cols
-from daq_processing import get_daq_lines, get_daq_cols
-from data_saving import save_data_to_csv, save_manifest
-from helpers import offset_timestamps, filter_timestamps
+from tools.data_processing.can_processing import get_can_lines, get_can_cols
+from tools.data_processing.daq_processing import get_daq_lines, get_daq_cols
+from tools.data_processing.data_saving import save_data_to_csv, save_manifest
+from tools.data_processing.helpers import offset_timestamps, filter_timestamps
 
 # HELPER FUNCTION
 
-
-def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream"):
+def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_function="average", msg_packed_filtering="behind_stream", EMPTY_DATA_PLACEHOLDER:Union[int,None] =0) -> Tuple[List[str], List[str], Union[pd.DataFrame,None], Union[pd.DataFrame,None]]:
     """Takes in a file path and asks the users prompts before returning the data for the columns they selected"""
-
+    
     print("Parsing file...")
 
     daq_cols = []
@@ -43,23 +41,13 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
         print(f"{column_mapping[col]}: {col}")
 
     selection = input(
-        "Enter the numbers or ranges with a - between (ex 3-5 for 3,4,5) for the columns you want to extract, seperated by commas, or leave empty for all: ")
+        "Enter the numbers for the columns you want to extract, seperated by commas, or leave empty for all: ")
 
     # parse the selection into a list of indexes in the cols list
     if selection == "":
         indexes = [i for i in range(1, len(column_mapping)+1)]
     else:
-        selection = selection.replace(" ", "")
-        indexes = []
-        for part in selection.split(","):
-            if "-" in part:
-                start, end = part.split("-")
-                indexes += [i for i in range(int(start), int(end)+1)]
-            else:
-                indexes.append(int(part))
-    
-    # remove duplicates while keeping order
-    indexes = list(dict.fromkeys(indexes))
+        indexes = [int(i) for i in selection.replace(" ", "").split(",")]
 
     # split the indexes into daq and can indexes, and then get the names of the selected columns
     selected_daq_cols = [col[1] for col in column_mapping if col[0]
@@ -79,39 +67,23 @@ def ingest_data(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     # get the data for the selected columns
     with open(file_path, "rb") as infile:
         if mode == "a" or mode == "d":
-            daq_data = get_daq_lines(infile, selected_daq_cols,
-                                     aggregate_function_name=daq_aggregate_function)
+            daq_df = get_daq_lines(infile, selected_daq_cols, aggregate_function_name=daq_aggregate_function,placeholder=EMPTY_DATA_PLACEHOLDER)
             # map all None values to 0
-            for column_counter in range(len(daq_data)):
-                for j in range(len(daq_data[column_counter])):
-                    if daq_data[column_counter][j] is None:
-                        daq_data[column_counter][j] = 0
         else:
-            daq_data = []
+            daq_df = None
+
         if mode == "a" or mode == "c":
-            can_data = get_can_lines(infile, selected_can_cols,
-                                     msg_packed_filtering=msg_packed_filtering)
-            for column_counter in range(len(can_data)):
-                for j in range(len(can_data[column_counter])):
-                    if can_data[column_counter][j] is None:
-                        can_data[column_counter][j] = 0
+            can_df = get_can_lines(infile, selected_can_cols, msg_packed_filtering=msg_packed_filtering,placeholder=EMPTY_DATA_PLACEHOLDER)
+            
         else:
-            can_data = []
+            can_df = None
 
     # offset the timestamps of the data sources so that they start at 0
-    offset_timestamps(daq_data, can_data)
+    offset_timestamps(daq_df, can_df)
 
-    # sanity check that timestamps are increasing for can
-    for time_index in range(len(can_data) - 1):
-        # compare the timestamps columns (redundant int cast to silence linter)
-        if int(can_data[time_index][0]) > int(can_data[time_index+1][0]):
-            print(
-                f"Warning: CAN timestamp {can_data[time_index][0]} is greater than {can_data[time_index+1][0]}")
-
-    return selected_daq_cols, selected_can_cols, daq_data, can_data
+    return selected_daq_cols, selected_can_cols, daq_df, can_df
 
 # THE MAIN DATA PROCESSING DRIVING FUNCTIONS
-
 
 def data_preview(file_path: str, mode="a", msg_packed_filtering="behind_stream"):
     """A mode for previewing data with user input and plotting"""
@@ -121,8 +93,7 @@ def data_preview(file_path: str, mode="a", msg_packed_filtering="behind_stream")
     if mode != "a" and mode != "d" and mode != "c":
         raise ValueError(f"Invalid mode {mode} passed to data_preview")
 
-    daq_cols, can_cols, daq_data, can_data = ingest_data(
-        file_path, mode, msg_packed_filtering=msg_packed_filtering)
+    daq_cols, can_cols, daq_data, can_data = ingest_data(file_path, mode, msg_packed_filtering=msg_packed_filtering, EMPTY_DATA_PLACEHOLDER=0)
 
     print("Pan the plot to find the time range you want to export")
 
@@ -136,14 +107,22 @@ def data_preview(file_path: str, mode="a", msg_packed_filtering="behind_stream")
     else:
         plt.title("CAN data")
 
-    if mode == "a" or mode == "d":
+    if (mode == "a" or mode == "d") and daq_data is not None:
         for i in range(len(daq_cols)):
             # plot the time column against the column for each selected colum
-            plt.plot([d[0] for d in daq_data], [d[i+1] for d in daq_data], label=daq_cols[i])
+            plt.plot(daq_data["timestamp"], daq_data[daq_cols[i]], label=daq_cols[i])
 
-    if mode == "a" or mode == "c":
+    if (mode == "a" or mode == "c") and can_data is not None:
         for i in range(len(can_cols)):
-            plt.plot([d[0] for d in can_data], [d[i+1] for d in can_data], label=can_cols[i])
+            # the plot wants integers for the y axis, so we need to convert any strings that come up into arbitrary integers for now
+            string_map = {}
+            for val in can_data[can_cols[i]]:
+                if type(val) == str:
+                    if val not in string_map:
+                        string_map[val] = len(string_map)
+            
+            string_mapped_data = [string_map[val] if type(val) == str else val for val in can_data[can_cols[i]]]
+            plt.plot(can_data["timestamp"], string_mapped_data, label=can_cols[i])
 
     plt.xlabel("Time (s)")
     plt.legend()
@@ -160,7 +139,7 @@ def data_export(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
 
     # get the user to select colums and fetch the data
     daq_cols, can_cols, daq_data, can_data = ingest_data(
-        file_path, mode, daq_compression, daq_aggregate_function, msg_packed_filtering=msg_packed_filtering)
+        file_path, mode, daq_compression, daq_aggregate_function, msg_packed_filtering=msg_packed_filtering, EMPTY_DATA_PLACEHOLDER=0)
 
     # get the time range to export
     print("Select the time range to export, or leave empty for the start or end of the data respectively")
@@ -183,7 +162,7 @@ def data_export(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     can_data = filter_timestamps(can_data, start, stop)
 
     # print warnings if the data is empty
-    if len(daq_data) == 0 and len(can_data) == 0:
+    if daq_data is None and can_data is None:
         print("Warning: No data to export for the selected time range")
 
     # Create an export hash to identify the export
@@ -196,13 +175,19 @@ def data_export(file_path: str, mode="a", daq_compression=True, daq_aggregate_fu
     # write the data to a csv file for each data source
     daq_export_path = f"{file_path.replace('.log','')}_export_{export_hash}_daq.csv"
     can_export_path = f"{file_path.replace('.log','')}_export_{export_hash}_can.csv"
-    if mode == "a" or mode == "d":
-        formatted_daq_size = save_data_to_csv(daq_export_path, daq_data, daq_cols)
-        print(f"DAQ data exported to {daq_export_path} with size {formatted_daq_size}")
+    if mode == "a" or mode == "d" and daq_data is not None:
+        if daq_data is not None:
+            formatted_daq_size = save_data_to_csv(daq_export_path, daq_data)
+            print(f"DAQ data exported to {daq_export_path} with size {formatted_daq_size}")
+        else:
+            print("No DAQ data to export")
 
     if mode == "a" or mode == "c":
-        formatted_can_size = save_data_to_csv(can_export_path, can_data, can_cols)
-        print(f"CAN data exported to {can_export_path} with size {formatted_can_size}")
+        if can_data is not None:
+            formatted_can_size = save_data_to_csv(can_export_path, can_data)
+            print(f"CAN data exported to {can_export_path} with size {formatted_can_size}")
+        else:
+            print("No CAN data to export")
 
     # save an export manifest for information on what was exported with which settings
     save_manifest({
