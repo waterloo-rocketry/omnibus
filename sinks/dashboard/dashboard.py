@@ -424,14 +424,16 @@ class Dashboard(QWidget):
 
     # Method to save current layout to file
     def save(self, filename: Union[str, bool] = False):
-        save_directory = "saved-files"
+        # Ensures the save directory is always in omnibus/sinks/dashboard/saved-files no matter which directory you launch the app from
+        script_dir = os.path.dirname(__file__)
+        save_directory = os.path.join(script_dir, "..", "..", "sinks", "dashboard", "saved-files")
 
          # Ensure the save directory exists, if not, create it
         if not os.path.exists(save_directory):
             os.makedirs(save_directory)
 
         # If file name doesn't exist, default name is savefile.json
-        if filename is False:
+        if not filename:
             filename = self.filename
 
         # Adjust filename to include the save directory
@@ -484,6 +486,7 @@ class Dashboard(QWidget):
     def open(self):
         (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
 
+        # If the user presses cancel, do nothing
         if not filename:
             return
         
