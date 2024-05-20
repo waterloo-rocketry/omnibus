@@ -3,6 +3,5 @@ msgpack
 pytest
 pyzmq
 flake8
-pandas
 matplotlib
 dash

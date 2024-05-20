@@ -1,14 +1,15 @@
 # Take in a log file path and yeild lines of daq data, with the option to be uncompressed or not
 from typing import List, Union, IO
 import msgpack
-import pandas as pd
-from msgpack_sorter_unpacker import msgpackFilterUnpacker
-from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
 
-def average_list(data : List[Union[int, float]]) -> Union[int, float]:
+from msgpack_sorter_unpacker import msgpackFilterUnpacker
+
+
+def average_list(data: List[Union[int, float]]) -> Union[int, float]:
     return sum(data) / len(data)
 
-def median_list(data : List[Union[int, float]]) -> Union[int, float]:
+
+def median_list(data: List[Union[int, float]]) -> Union[int, float]:
     sorted_data = sorted(data)
     length = len(sorted_data)
     if length % 2 == 0:
@@ -41,12 +42,13 @@ def get_daq_cols(infile: IO) -> List[str]:
     return cols
 
 
-def get_daq_lines(infile: IO, cols=[], compressed=True, aggregate_function_name="average",placeholder=None) -> pd.DataFrame:
-    """Get all the data from the DAQ messages in the file, and return it as a pandas dataframe."""
+def get_daq_lines(infile: IO, cols=[], compressed=True, aggregate_function_name="average") -> List[List[Union[int, str]]]:
+    """Get all the data from the DAQ messages in the file, and return it as a list of lists, where each list is a line of the csv"""
+
+    lines = []
     cols_set = set(cols)
-    current_info = {col: placeholder for col in cols}
+    current_info = {col: None for col in cols}
     aggregate_function = aggregation_functions[aggregate_function_name]
-    output_lines = []
     for full_data in msgpack.Unpacker(infile):
         channel, timestamp, payload = full_data
         if channel.startswith("DAQ"):
@@ -60,15 +62,12 @@ def get_daq_lines(infile: IO, cols=[], compressed=True, aggregate_function_name=
 
             # Depending on the compression, we either need to append just one line, or agregated entries
             if compressed:
-                output_lines.append({"timestamp": timestamp, **current_info})
+                lines.append([timestamp] + [current_info[col] for col in cols])
             else:
                 raise NotImplementedError("Uncompressed DAQ data is not yet supported")
-            
-    # load all the output lines into the dataframe
-    output_df = pd.DataFrame(columns=["timestamp"] + cols, data=output_lines)
 
     infile.seek(0)
-    return output_df
+    return lines
 
 
 if __name__ == "__main__":
