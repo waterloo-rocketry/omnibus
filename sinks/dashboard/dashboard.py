@@ -35,6 +35,7 @@ from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.table_view import TableViewItem
 from publisher import publisher
+from typing import Union
 
 from omnibus import Sender
 
@@ -422,7 +423,7 @@ class Dashboard(QWidget):
                     break
 
     # Method to save current layout to file
-    def save(self, filename: str = None):
+    def save(self, filename: Union[str, bool] = False):
         save_directory = "saved-files"
 
          # Ensure the save directory exists, if not, create it
@@ -430,7 +431,7 @@ class Dashboard(QWidget):
             os.makedirs(save_directory)
 
         # If file name doesn't exist, default name is savefile.json
-        if filename is None:
+        if filename is False:
             filename = self.filename
 
         # Adjust filename to include the save directory
@@ -460,7 +461,6 @@ class Dashboard(QWidget):
                                             "pos": [viewpos.x(), viewpos.y()]})
                     break
 
-        # Write data to savefile
         with open(filename, "w") as savefile:
             json.dump(data, savefile)
 
@@ -482,12 +482,11 @@ class Dashboard(QWidget):
 
     # Method to switch to a layout in a different file
     def switch(self):
-        self.save()
         (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
 
-        if filename is None:
+        if not filename:
             return
-
+        
         self.filename = filename
         self.load()
 
