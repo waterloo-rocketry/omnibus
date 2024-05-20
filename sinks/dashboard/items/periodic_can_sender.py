@@ -1,6 +1,6 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox, QLabel
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QButtonGroup
+from PySide6.QtWidgets import QButtonGroup, QVBoxLayout
 from pyqtgraph.parametertree.parameterTypes import ListParameter
 from .dashboard_item import DashboardItem
 from .registry import Register
@@ -21,8 +21,11 @@ class PeriodicCanSender(DashboardItem):
         self.actuator = self.parameters.param('actuator').value()
 
         # Specify the layout
-        self.layout = QHBoxLayout()
+        self.layout = QVBoxLayout()
         self.setLayout(self.layout)
+
+        self.label = QLabel("Periodic Can Sender")
+        self.layout.addWidget(self.label)
 
         self.check_on = QCheckBox("ON")
         self.check_off = QCheckBox("OFF")
@@ -32,8 +35,13 @@ class PeriodicCanSender(DashboardItem):
         self.button_group.addButton(self.check_off)
         self.button_group.setExclusive(True)
 
-        self.layout.addWidget(self.check_on)
-        self.layout.addWidget(self.check_off)
+        # Create a horizontal layout for the checkboxes
+        self.h_layout = QHBoxLayout()
+        self.h_layout.addWidget(self.check_on)
+        self.h_layout.addWidget(self.check_off)
+
+        # Add the horizontal layout to the main vertical layout
+        self.layout.addLayout(self.h_layout)
 
         self.pulse_timer = QTimer()
         self.pulse_timer.timeout.connect(self.pulse_widgets)
