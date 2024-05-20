@@ -1,5 +1,6 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox
 from pyqtgraph.Qt.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QButtonGroup
 from pyqtgraph.parametertree.parameterTypes import ListParameter
 from .dashboard_item import DashboardItem
 from .registry import Register
@@ -23,8 +24,16 @@ class PeriodicCanSender(DashboardItem):
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
 
-        self.check = QCheckBox()
-        self.layout.addWidget(self.check)
+        self.check_on = QCheckBox("ON")
+        self.check_off = QCheckBox("OFF")
+
+        self.button_group = QButtonGroup(self)
+        self.button_group.addButton(self.check_on)
+        self.button_group.addButton(self.check_off)
+        self.button_group.setExclusive(True)
+
+        self.layout.addWidget(self.check_on)
+        self.layout.addWidget(self.check_off)
 
         self.pulse_timer = QTimer()
         self.pulse_timer.timeout.connect(self.pulse_widgets)
