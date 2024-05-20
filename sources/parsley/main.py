@@ -213,7 +213,7 @@ def main():
 
                 parsed_data = parsley.parse(msg_sid, msg_data)
                 last_valid_message_time = time.time()
-                #print(parsley.format_line(parsed_data))
+                print(parsley.format_line(parsed_data))
 
                 if sender:
                     sender.send(SEND_CHANNEL, parsed_data)  # Send the CAN message over the channel
