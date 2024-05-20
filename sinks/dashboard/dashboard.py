@@ -150,7 +150,7 @@ class Dashboard(QWidget):
         file_save_as_layout_action.triggered.connect(self.save_as)
 
         file_open_layout_action = add_file_menu.addAction("Open")
-        file_open_layout_action.triggered.connect(self.switch)
+        file_open_layout_action.triggered.connect(self.open)
 
         self.lockableActions.append(file_save_layout_action)
         self.lockableActions.append(file_save_as_layout_action)
@@ -481,7 +481,7 @@ class Dashboard(QWidget):
             QMessageBox.warning(self, 'Warning', 'No input provided, try again')
 
     # Method to switch to a layout in a different file
-    def switch(self):
+    def open(self):
         (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
 
         if not filename:
