@@ -29,6 +29,7 @@ class PeriodicCanSender(DashboardItem):
 
         self.check_on = QCheckBox("ON")
         self.check_off = QCheckBox("OFF")
+        self.check_off.setChecked(True)
 
         self.button_group = QButtonGroup(self)
         self.button_group.addButton(self.check_on)
@@ -67,7 +68,7 @@ class PeriodicCanSender(DashboardItem):
                         'board_id': 'ANY',
                         'time': 0,
                         'actuator': self.actuator,
-                        'req_state': 'ACTUATOR_ON' if self.check.isChecked() else 'ACTUATOR_OFF'
+                        'req_state': 'ACTUATOR_ON' if self.check_on.isChecked() else 'ACTUATOR_OFF'
                     },
 
                 }
