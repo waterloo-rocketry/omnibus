@@ -18,6 +18,9 @@ from pyqtgraph.Qt.QtWidgets import (
     QSplitter,
     QInputDialog,
     QMessageBox
+    QSplitter,
+    QInputDialog,
+    QMessageBox
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
@@ -35,6 +38,7 @@ from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.table_view import TableViewItem
 from publisher import publisher
+from typing import Union
 from typing import Union
 
 from omnibus import Sender
@@ -136,6 +140,25 @@ class Dashboard(QWidget):
         # List to keep track of menu bar action that
         # can be disabled when dashboard is locked
         self.lockableActions = []
+
+        # Add an action to the menu bar containing Save, Save As and Open.
+        # Save will save the layout of the dashboard
+        # Save As will prompt a name, then saves the layout of the dashboard
+        # Open loads the layout of the dashboard
+        add_file_menu = menubar.addMenu("File")
+
+        file_save_layout_action = add_file_menu.addAction("Save")
+        file_save_layout_action.triggered.connect(self.save)
+
+        file_save_as_layout_action = add_file_menu.addAction("Save As")
+        file_save_as_layout_action.triggered.connect(self.save_as)
+
+        file_open_layout_action = add_file_menu.addAction("Open")
+        file_open_layout_action.triggered.connect(self.open)
+
+        self.lockableActions.append(file_save_layout_action)
+        self.lockableActions.append(file_save_as_layout_action)
+        self.lockableActions.append(file_open_layout_action)
 
         # Add an action to the menu bar containing Save, Save As and Open.
         # Save will save the layout of the dashboard
@@ -464,7 +487,24 @@ class Dashboard(QWidget):
                     break
 
         with open(filename, "w") as savefile:
+        with open(filename, "w") as savefile:
             json.dump(data, savefile)
+
+    # Method to save file with a custom chosen name
+    def save_as(self):
+        user_response = self.show_save_as_prompt()
+        self.save(user_response)
+
+    # Method to allow user to choose name of the file of the configuration they would like to save
+    def show_save_as_prompt(self) -> str:
+        # Show a prompt box using QInputDialog
+        text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter file name without extension:')
+        
+        # Check if OK was pressed and text is not empty
+        if ok and text:
+            return text + ".json"
+        elif ok:
+            QMessageBox.warning(self, 'Warning', 'No input provided, try again')
 
     # Method to save file with a custom chosen name
     def save_as(self):
@@ -484,11 +524,13 @@ class Dashboard(QWidget):
 
     # Method to switch to a layout in a different file
     def open(self):
+    def open(self):
         (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
 
         # If the user presses cancel, do nothing
         if not filename:
             return
+        
         
         self.filename = filename
         self.load()
