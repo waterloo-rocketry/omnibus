@@ -471,7 +471,7 @@ class Dashboard(QWidget):
     # Method to allow user to choose name of the file of the configuration they would like to save
     def show_save_as_prompt(self) -> str:
         # Show a prompt box using QInputDialog
-        text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter file name:')
+        text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter file name without extension:')
         
         # Check if OK was pressed and text is not empty
         if ok and text:
