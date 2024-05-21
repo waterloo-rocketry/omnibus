@@ -18,7 +18,6 @@ from pyqtgraph.Qt.QtWidgets import (
     QSplitter,
     QInputDialog,
     QMessageBox
-    QSplitter,
     QInputDialog,
     QMessageBox
 )
