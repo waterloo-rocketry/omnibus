@@ -18,8 +18,6 @@ from pyqtgraph.Qt.QtWidgets import (
     QSplitter,
     QInputDialog,
     QMessageBox
-    QInputDialog,
-    QMessageBox
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
