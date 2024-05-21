@@ -157,25 +157,6 @@ class Dashboard(QWidget):
         self.lockableActions.append(file_save_as_layout_action)
         self.lockableActions.append(file_open_layout_action)
 
-        # Add an action to the menu bar containing Save, Save As and Open.
-        # Save will save the layout of the dashboard
-        # Save As will prompt a name, then saves the layout of the dashboard
-        # Open loads the layout of the dashboard
-        add_file_menu = menubar.addMenu("File")
-
-        file_save_layout_action = add_file_menu.addAction("Save")
-        file_save_layout_action.triggered.connect(self.save)
-
-        file_save_as_layout_action = add_file_menu.addAction("Save As")
-        file_save_as_layout_action.triggered.connect(self.save_as)
-
-        file_open_layout_action = add_file_menu.addAction("Open")
-        file_open_layout_action.triggered.connect(self.open)
-
-        self.lockableActions.append(file_save_layout_action)
-        self.lockableActions.append(file_save_as_layout_action)
-        self.lockableActions.append(file_open_layout_action)
-
         # Create a sub menu which will be used
         # to add items to our dash board.
         # For all dash items we support, there will
@@ -484,7 +465,6 @@ class Dashboard(QWidget):
                     break
 
         with open(filename, "w") as savefile:
-        with open(filename, "w") as savefile:
             json.dump(data, savefile)
 
     # Method to save file with a custom chosen name
@@ -521,13 +501,11 @@ class Dashboard(QWidget):
 
     # Method to switch to a layout in a different file
     def open(self):
-    def open(self):
         (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
 
         # If the user presses cancel, do nothing
         if not filename:
             return
-        
         
         self.filename = filename
         self.load()
