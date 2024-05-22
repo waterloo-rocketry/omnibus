@@ -24,7 +24,8 @@ class PeriodicCanSender(DashboardItem):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self.label = QLabel("Periodic Can Sender")
+        self.label = QLabel("Periodic CAN Sender")
+        self.label.setStyleSheet("font-size: 17px;")
         self.layout.addWidget(self.label)
 
         self.check_on = QCheckBox("ON")
@@ -87,8 +88,8 @@ class PeriodicCanSender(DashboardItem):
 
     def pulse_widgets(self):
         if self.pulse_count > 0:
-            if self.pulse_count % 2 == 0:
-                self.setStyleSheet("background-color: black;")
+            if self.pulse_count % 2 == 0 and self.check_on.isChecked():
+                self.setStyleSheet("background-color: red;")
             else:
                 self.setStyleSheet("")
             self.pulse_count -= 1
