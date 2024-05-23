@@ -96,13 +96,12 @@ class PeriodicCanSender(DashboardItem):
 
     def pulse_widgets(self):
         if self.pulse_count > 0:
-            if self.period != 0 and self.pulse_count % 2 == 0 and self.check_on.isChecked():
-                
+            if self.period != 0 and self.pulse_count % 2 == 0:
                 self.setStyleSheet("background-color: red;")
                 self.status_label.setText("ACTIVE")
             else:
                 self.setStyleSheet("")
-                if self.check_off.isChecked() or self.period == 0:
+                if self.period == 0:
                     self.status_label.setText("INACTIVE")
             self.pulse_count -= 1
         else:
