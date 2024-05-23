@@ -47,7 +47,7 @@ class EventTracker(QObject):
                     self.zoom_out.emit()
                 case KeyEvent(Qt.Key_0, Qt.ControlModifier):
                     self.zoom_reset.emit()
-                case KeyEvent(Qt.Key_S, Qt.ControlModifier):  # Handle Ctrl+S
+                case KeyEvent(Qt.Key_S, Qt.ControlModifier):
                     self.save_file_keys_pressed.emit()
         return super().eventFilter(widget, event)
 
