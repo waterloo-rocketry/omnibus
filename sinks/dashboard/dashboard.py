@@ -484,22 +484,6 @@ class Dashboard(QWidget):
         elif ok:
             QMessageBox.warning(self, 'Warning', 'No input provided, try again')
 
-    # Method to save file with a custom chosen name
-    def save_as(self):
-        user_response = self.show_save_as_prompt()
-        self.save(user_response)
-
-    # Method to allow user to choose name of the file of the configuration they would like to save
-    def show_save_as_prompt(self) -> str:
-        # Show a prompt box using QInputDialog
-        text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter file name without extension:')
-        
-        # Check if OK was pressed and text is not empty
-        if ok and text:
-            return text + ".json"
-        elif ok:
-            QMessageBox.warning(self, 'Warning', 'No input provided, try again')
-
     # Method to switch to a layout in a different file
     def open(self):
         (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
