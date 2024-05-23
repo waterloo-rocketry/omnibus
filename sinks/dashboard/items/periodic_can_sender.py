@@ -1,4 +1,4 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox, QLabel
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox, QLabel, QRadioButton
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QButtonGroup, QVBoxLayout
 from pyqtgraph.parametertree.parameterTypes import ListParameter
@@ -24,12 +24,16 @@ class PeriodicCanSender(DashboardItem):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
+        self.status_label = QLabel("INACTIVE")
+        self.status_label.setAlignment(Qt.AlignCenter)
+
         self.label = QLabel("Periodic CAN Sender")
+        self.label.setAlignment(Qt.AlignCenter)
         self.label.setStyleSheet("font-size: 17px;")
         self.layout.addWidget(self.label)
 
-        self.check_on = QCheckBox("ON")
-        self.check_off = QCheckBox("OFF")
+        self.check_on = QRadioButton("ON")
+        self.check_off = QRadioButton("OFF")
         self.check_off.setChecked(True)
 
         self.button_group = QButtonGroup(self)
@@ -40,7 +44,10 @@ class PeriodicCanSender(DashboardItem):
         # Create a horizontal layout for the checkboxes
         self.h_layout = QHBoxLayout()
         self.h_layout.addWidget(self.check_on)
+        self.h_layout.addSpacing(20)
         self.h_layout.addWidget(self.check_off)
+        self.layout.addWidget(self.status_label)
+        self.h_layout.setAlignment(Qt.AlignCenter)
 
         # Add the horizontal layout to the main vertical layout
         self.layout.addLayout(self.h_layout)
@@ -49,6 +56,7 @@ class PeriodicCanSender(DashboardItem):
         self.pulse_timer.timeout.connect(self.pulse_widgets)
         self.pulse_count = 0
         self.pulse_period = 300  # ms
+
 
         self.parameters.param('period').sigValueChanged.connect(self.on_period_change)
         self.parameters.param('actuator').sigValueChanged.connect(self.on_actuator_change)
@@ -88,10 +96,14 @@ class PeriodicCanSender(DashboardItem):
 
     def pulse_widgets(self):
         if self.pulse_count > 0:
-            if self.pulse_count % 2 == 0 and self.check_on.isChecked():
+            if self.period != 0 and self.pulse_count % 2 == 0 and self.check_on.isChecked():
+                
                 self.setStyleSheet("background-color: red;")
+                self.status_label.setText("ACTIVE")
             else:
                 self.setStyleSheet("")
+                if self.check_off.isChecked() or self.period == 0:
+                    self.status_label.setText("INACTIVE")
             self.pulse_count -= 1
         else:
             self.pulse_timer.stop()
