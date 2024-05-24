@@ -26,11 +26,11 @@ This repo conforms to [PEP8](https://pep8.org) guidelines for Python code. We ha
 
 ### Publishing PRs
 
-When you have written up your code and are ready to get it revieweda and merged to `master`, then you can [open a PR for your branch](https://github.com/waterloo-rocketry/omnibus/compare). Here's a few things that you should make sure to do when creating your PR:
+When you have written your code and are ready to get it reviewed and merged to `master`, then you can [open a PR for your branch](https://github.com/waterloo-rocketry/omnibus/compare). Here's a few things that you should make sure to do when creating your PR:
 
 - All branches being merged to `master` must pass all their unit tests (they are run automatically when you open a PR).
 - Assign yourself as the assignee for the PR.
-- Assign the `omnibus-reviewers` team as a reviewer for your PR. This will assign the people in charge of Omnibus as reviewers. Additionally, if desired, assign others as reviewers to the PR if you want them specifically to review it or if the reviewer is not in the `omnibus-reviewers` team.
+- The default software reviewers and Omnibus codeowners will automatically get requested for review on your PR. You can also request a review from anyone else that you think would be interested in your code.
 - Make sure to link the PR to the relevant issue, if possible. The easiest way is [by using keywords in the PR description](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword), e.g. you can link the PR to Issue 157 by writing "closes #157" somewhere in the description.
 - Since your task is now in a review state, make sure to move the project status of the issue that this PR is linked to from "In Progress" to "Needs Review". If this project is not linked to an issue, add the PR to the "Software Master Project" Project under Omnibus and set its status accordingly.
 
