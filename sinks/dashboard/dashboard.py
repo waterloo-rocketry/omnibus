@@ -15,6 +15,7 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsItem,
     QGraphicsRectItem,
     QFileDialog,
+    QMessageBox,
     QSplitter
 )
 from pyqtgraph.parametertree import ParameterTree
@@ -397,7 +398,7 @@ class Dashboard(QWidget):
         self.remove_all()
 
         # Then load the data from the savefile
-        if not os.path.exists(self.filename):
+        if not os.path.exists(self.filename) or os.stat(self.filename).st_size == 0:
             return
 
         with open(self.filename, "r") as savefile:
@@ -490,8 +491,36 @@ class Dashboard(QWidget):
 
     # Method to handle exit
     def closeEvent(self, event):
-        self.remove_all()
+        # Get data from savefile.
+        if os.path.exists(self.filename) and os.stat(self.filename).st_size != 0:
+            with open(self.filename, "r") as savefile:
+                old_data = json.load(savefile)
+        
 
+        # Obtain current data 
+        self.save()
+        with open(self.filename, "r") as savefile:
+            new_data = json.load(savefile)
+            
+        # Determine whether current savefile is the same as previous savefile.
+        if new_data != old_data:
+            # Display Popup prompting for save.
+            title = 'Save Work'
+            message = 'You have made changes, would you like to save them?'
+            save_popup = QMessageBox.question(self, 'Save work', 'You have made changes, would you like to save them?')
+            
+            if save_popup == QMessageBox.Yes:
+                self.remove_all()
+                return
+            elif save_popup == QMessageBox.No:
+                # Dump old data.
+                with open("savefile.json", "w") as samplefile:
+                   json.dump(old_data, samplefile)    
+
+        else:
+            self.remove_all()
+
+    
     # Method to display help box
     def help(self):
         message = """
