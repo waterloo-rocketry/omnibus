@@ -1,6 +1,5 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox, QLabel, QRadioButton, QButtonGroup, QVBoxLayout
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-# from PySide6.QtWidgets import 
 from pyqtgraph.parametertree.parameterTypes import ListParameter
 from .dashboard_item import DashboardItem
 from .registry import Register
