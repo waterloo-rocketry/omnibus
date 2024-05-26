@@ -1,6 +1,6 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox, QLabel, QRadioButton
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox, QLabel, QRadioButton, QButtonGroup, QVBoxLayout
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QButtonGroup, QVBoxLayout
+# from PySide6.QtWidgets import 
 from pyqtgraph.parametertree.parameterTypes import ListParameter
 from .dashboard_item import DashboardItem
 from .registry import Register
@@ -96,12 +96,14 @@ class PeriodicCanSender(DashboardItem):
 
     def pulse_widgets(self):
         if self.pulse_count > 0:
-            if self.period != 0 and self.pulse_count % 2 == 0:
+            if self.period != 0 and self.pulse_count % 2 == 0 and self.check_on.isChecked():
                 self.setStyleSheet("background-color: red;")
                 self.status_label.setText("ACTIVE")
             else:
                 self.setStyleSheet("")
-                if self.period == 0:
+                if self.period != 0:
+                    self.status_label.setText("ACTIVE")
+                elif self.period == 0:
                     self.status_label.setText("INACTIVE")
             self.pulse_count -= 1
         else:
