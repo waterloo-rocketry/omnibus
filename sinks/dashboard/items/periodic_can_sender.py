@@ -31,20 +31,23 @@ class PeriodicCanSender(DashboardItem):
         self.label.setStyleSheet("font-size: 17px;")
         self.layout.addWidget(self.label)
 
-        self.check_on = QRadioButton("ON")
-        self.check_off = QRadioButton("OFF")
-        self.check_off.setChecked(True)
+        self.radio_on = QRadioButton("ON")
+        self.radio_off = QRadioButton("OFF")
+        self.radio_off.setChecked(True)
+
+        self.radio_on.clicked.connect(self.set_status)
+        self.radio_off.clicked.connect(self.set_status)
 
         self.button_group = QButtonGroup(self)
-        self.button_group.addButton(self.check_on)
-        self.button_group.addButton(self.check_off)
+        self.button_group.addButton(self.radio_on)
+        self.button_group.addButton(self.radio_off)
         self.button_group.setExclusive(True)
 
         # Create a horizontal layout for the checkboxes
         self.h_layout = QHBoxLayout()
-        self.h_layout.addWidget(self.check_on)
+        self.h_layout.addWidget(self.radio_on)
         self.h_layout.addSpacing(20)
-        self.h_layout.addWidget(self.check_off)
+        self.h_layout.addWidget(self.radio_off)
         self.layout.addWidget(self.status_label)
         self.h_layout.setAlignment(Qt.AlignCenter)
 
@@ -76,7 +79,7 @@ class PeriodicCanSender(DashboardItem):
                         'board_id': 'ANY',
                         'time': 0,
                         'actuator': self.actuator,
-                        'req_state': 'ACTUATOR_ON' if self.check_on.isChecked() else 'ACTUATOR_OFF'
+                        'req_state': 'ACTUATOR_ON' if self.radio_on.isChecked() else 'ACTUATOR_OFF'
                     },
 
                 }
@@ -90,26 +93,34 @@ class PeriodicCanSender(DashboardItem):
         actuator_ids = list(mt.actuator_id.keys())
         series_param = ListParameter(name='actuator', type='list',
                                      default=actuator_ids[0], limits=actuator_ids)
-        period_param = {'name': 'period', 'type': 'int', 'value': 0}
+        period_param = {'name': 'period', 'type': 'int', 'value': 0, 'limits': (0, None)}
         return [series_param, period_param]
+        
 
     def pulse_widgets(self):
         if self.pulse_count > 0:
-            if self.period != 0 and self.pulse_count % 2 == 0 and self.check_on.isChecked():
+            if self.period != 0 and self.pulse_count % 2 == 0 and self.radio_on.isChecked():
                 self.setStyleSheet("background-color: red;")
-                self.status_label.setText("ACTIVE")
             else:
                 self.setStyleSheet("")
-                if self.period != 0:
-                    self.status_label.setText("ACTIVE")
-                elif self.period == 0:
-                    self.status_label.setText("INACTIVE")
             self.pulse_count -= 1
         else:
             self.pulse_timer.stop()
 
+    def set_status(self):
+        if self.period != 0 and self.radio_on.isChecked():
+            self.status_label.setText("ACTIVE")
+        elif self.radio_off.isChecked() and self.period != 0:
+            self.status_label.setText("ACTIVE")
+        elif self.period == 0:
+            self.status_label.setText("INACTIVE")
+
     def on_period_change(self, _, value):
-        self.period = value
+        if value >= 0:
+            self.period = value
+        else:
+            self.period = 0  # Set the period to 0 if the value is less than 0
+        self.set_status()
 
     def on_actuator_change(self, _, value):
         self.actuator = value
