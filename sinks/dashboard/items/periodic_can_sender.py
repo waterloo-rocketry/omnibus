@@ -108,9 +108,7 @@ class PeriodicCanSender(DashboardItem):
             self.pulse_timer.stop()
 
     def set_status(self):
-        if self.period != 0 and self.radio_on.isChecked():
-            self.status_label.setText("ACTIVE")
-        elif self.radio_off.isChecked() and self.period != 0:
+        if self.period != 0:
             self.status_label.setText("ACTIVE")
         elif self.period == 0:
             self.status_label.setText("INACTIVE")
