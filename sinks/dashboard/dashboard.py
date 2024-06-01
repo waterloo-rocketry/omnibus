@@ -421,7 +421,7 @@ class Dashboard(QWidget):
                     break
 
     # Method to save current layout to file
-    def save(self):
+    def save(self, retrieve_data=False):
         # General structure for saving the dashboard info
         data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "save_on_exit": True}
 
@@ -445,7 +445,9 @@ class Dashboard(QWidget):
                                             "params": dashitem.get_serialized_parameters(),
                                             "pos": [viewpos.x(), viewpos.y()]})
                     break
-
+        # Return current dashboard information JSON and omit save.
+        if retrieve_data:
+            return data
         # Write data to savefile
         with open(self.filename, "w") as savefile:
             json.dump(data, savefile)
@@ -500,12 +502,12 @@ class Dashboard(QWidget):
         
 
         # Obtain current data 
-        self.save()
-        with open(self.filename, "r") as savefile:
-            new_data = json.load(savefile)
+        new_data = self.save(retrieve_data=True)
 
-        # Determine whether current savefile is the same as previous savefile.
-        if new_data != old_data:
+        # Determine whether current widget configuration is the same as saved widget configuration.
+        if new_data["widgets"] != old_data["widgets"]:
+            print(new_data["widgets"])
+            print(old_data["widgets"])
             # Display Popup prompting for save.
             title = 'Save Work'
             message = 'You have made changes, would you like to save them?'
