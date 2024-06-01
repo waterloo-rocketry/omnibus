@@ -423,7 +423,7 @@ class Dashboard(QWidget):
     # Method to save current layout to file
     def save(self):
         # General structure for saving the dashboard info
-        data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
+        data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "save_on_exit": True}
 
         # Save the coordinates of the center of the view on the scene
         scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
@@ -495,13 +495,15 @@ class Dashboard(QWidget):
         if os.path.exists(self.filename) and os.stat(self.filename).st_size != 0:
             with open(self.filename, "r") as savefile:
                 old_data = json.load(savefile)
+        else:
+            old_data = None
         
 
         # Obtain current data 
         self.save()
         with open(self.filename, "r") as savefile:
             new_data = json.load(savefile)
-            
+
         # Determine whether current savefile is the same as previous savefile.
         if new_data != old_data:
             # Display Popup prompting for save.
@@ -517,8 +519,7 @@ class Dashboard(QWidget):
                 with open("savefile.json", "w") as samplefile:
                    json.dump(old_data, samplefile)    
 
-        else:
-            self.remove_all()
+        self.remove_all()
 
     
     # Method to display help box
