@@ -243,6 +243,8 @@ class Dashboard(QWidget):
         self.key_press_signals.zoom_reset.connect(self.reset_zoom)
         self.key_press_signals.backspace_pressed.connect(self.remove_selected)
         self.key_press_signals.save_file_keys_pressed.connect(self.save)
+        self.key_press_signals.save_as_file_keys_pressed.connect(self.save_as)
+        self.key_press_signals.open_file_keys_pressed.connect(self.open)
         self.installEventFilter(self.key_press_signals)
 
     def select_instance(self, name):
