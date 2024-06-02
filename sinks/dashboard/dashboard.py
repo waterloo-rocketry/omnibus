@@ -486,7 +486,13 @@ class Dashboard(QWidget):
 
     # Method to switch to a layout in a different file
     def open(self):
-        (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
+        script_dir = os.path.dirname(__file__)
+        save_directory = os.path.join(script_dir, "..", "..", "sinks", "dashboard", "saved-files")
+         # Ensure the save directory exists, if not, create it
+        if not os.path.exists(save_directory):
+            os.makedirs(save_directory)
+            
+        (filename, _) = QFileDialog.getOpenFileName(self, "Open File", save_directory, "JSON Files (*.json)")
 
         # If the user presses cancel, do nothing
         if not filename:
