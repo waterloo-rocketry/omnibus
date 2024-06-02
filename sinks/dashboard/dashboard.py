@@ -114,6 +114,11 @@ class Dashboard(QWidget):
         # The file from which the dashboard is loaded
         self.filename = "savefile.json"
 
+        # Determine the specific directory you want to always open
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.save_directory = os.path.join(script_dir, "..", "..", "sinks", "dashboard", "saved-files")
+        self.default_file_location = os.path.join(self.save_directory, "savefile.json")
+
         # Create a GUI
         self.width = 1100
         self.height = 700
@@ -402,10 +407,10 @@ class Dashboard(QWidget):
         self.remove_all()
 
         # Then load the data from the savefile
-        if not os.path.exists(self.filename):
+        if not os.path.exists(self.default_file_location):
             return
 
-        with open(self.filename, "r") as savefile:
+        with open(self.default_file_location, "r") as savefile:
             data = json.load(savefile)
 
         # Set the zoom
@@ -426,25 +431,16 @@ class Dashboard(QWidget):
 
     # Method to save current layout to file
     def save(self, filename: Union[str, bool] = False):
-       # print("This is the filename with nothing" + filename)
-        # Ensures the save directory is always in omnibus/sinks/dashboard/saved-files no matter which directory you launch the app from
-        script_dir = os.path.dirname(__file__)
-        save_directory = os.path.join(script_dir, "..", "..", "sinks", "dashboard", "saved-files")
-
          # Ensure the save directory exists, if not, create it
-        if not os.path.exists(save_directory):
-            os.makedirs(save_directory)
+        if not os.path.exists(self.save_directory):
+            os.makedirs(self.save_directory)
 
         # If file name doesn't exist, default name is savefile.json
         if not filename:
-            # print("Before IF: " + filename)
             filename = "savefile.json"
-            print("After IF: " + filename)
 
         # Adjust filename to include the save directory
-        filename = os.path.join(save_directory, filename)
-
-        print("This is the file name: " + filename)
+        filename = os.path.join(self.save_directory, filename)
 
         # General structure for saving the dashboard info
         data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
@@ -491,19 +487,17 @@ class Dashboard(QWidget):
 
     # Method to switch to a layout in a different file
     def open(self):
-        script_dir = os.path.dirname(__file__)
-        save_directory = os.path.join(script_dir, "..", "..", "sinks", "dashboard", "saved-files")
          # Ensure the save directory exists, if not, create it
-        if not os.path.exists(save_directory):
-            os.makedirs(save_directory)
+        if not os.path.exists(self.save_directory):
+            os.makedirs(self.save_directory)
             
-        (filename, _) = QFileDialog.getOpenFileName(self, "Open File", save_directory, "JSON Files (*.json)")
+        (filename, _) = QFileDialog.getOpenFileName(self, "Open File", self.save_directory, "JSON Files (*.json)")
 
         # If the user presses cancel, do nothing
         if not filename:
             return
         
-        self.filename = filename
+        self.default_file_location = filename
         self.load()
 
     # Method to lock dashboard
