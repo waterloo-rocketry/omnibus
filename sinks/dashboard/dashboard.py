@@ -289,10 +289,6 @@ class Dashboard(QWidget):
     # Method to open the parameter tree to the selected item
     def open_property_panel(self, item):
         items = self.scene.selectedItems()
-        if len(items) != 1:
-            self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
-            self.parameter_tree_placeholder.hide()
-            return
 
         # Show the tree
         item = self.widgets[items[0]][1]
@@ -308,8 +304,10 @@ class Dashboard(QWidget):
 
     # On selection changed, hide the parameter tree
     def on_selection_changed(self):
-        self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
-        self.parameter_tree_placeholder.hide()
+        current_widget = self.splitter.widget(1)
+        if current_widget is not self.parameter_tree_placeholder:
+            self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
+            self.parameter_tree_placeholder.hide()
 
 
     def on_duplicate(self):
