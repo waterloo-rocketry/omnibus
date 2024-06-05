@@ -426,10 +426,23 @@ class Dashboard(QWidget):
                     break
 
     # Method to save current layout to file
-    def save(self, retrieve_data=False):
+    def save(self, retrieve_data=False, toggle_save_popup=False):
         # General structure for saving the dashboard info
-        data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "save_on_exit": True}
+        data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
 
+        # Obtain current save on exit value.
+        current_data = None
+        if os.path.exists(self.filename) and os.stat(self.filename).st_size != 0:
+            with open(self.filename, "r") as savefile:
+                current_data = json.load(savefile) 
+        # Correspondingly update show_save_popup 
+        if current_data is None:
+            data["show_save_popup"] = True
+        elif toggle_save_popup:
+            data["show_save_popup"] = not current_data["show_save_popup"]
+        else:
+            data["show_save_popup"] = current_data["show_save_popup"]
+    
         # Save the coordinates of the center of the view on the scene
         scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
         data["center"] = [scene_center.x(), scene_center.y()]
@@ -498,26 +511,25 @@ class Dashboard(QWidget):
 
     # Method to handle exit
     def closeEvent(self, event):
-        print("BP0")
         # Get data from savefile.
         if os.path.exists(self.filename) and os.stat(self.filename).st_size != 0:
             with open(self.filename, "r") as savefile:
                 old_data = json.load(savefile)
         else:
-            old_data = None
+            # Set default values to default data.
+            old_data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "show_save_popup": True}
         
-
         # Obtain current data 
         new_data = self.save(retrieve_data=True)
-
-         # Automatically save on exit if user has clicked "Dont ask again checkbox"
-        if not new_data["save_on_exit"]:
+        
+        # Automatically save and exit if user has clicked "Dont ask again checkbox"
+        if not old_data["show_save_popup"]:
+            self.save()
             self.remove_all()
-            return
         # Determine whether current widget configuration is the same as saved widget configuration.
-        if new_data["widgets"] != old_data["widgets"]:
-            print("BP1")
-            # Display Popup prompting for save.
+        elif new_data["widgets"] != old_data["widgets"]:
+            
+            # Display Popup that prompts for save.
             save_popup = QDialog()
             save_popup.setWindowTitle('Save Work')
             save_popup.setModal(True)
@@ -530,7 +542,7 @@ class Dashboard(QWidget):
             dont_ask_again_checkbox = QCheckBox("Don't ask again")
             save_layout.addWidget(dont_ask_again_checkbox)
 
-            # Add buttons
+            # Create horizontal button layout and add buttons
             button_layout = QHBoxLayout()
             save_changes = QPushButton("Yes")
             discard_changes = QPushButton("No")
@@ -539,27 +551,37 @@ class Dashboard(QWidget):
             button_layout.addWidget(save_changes)
             button_layout.addWidget(discard_changes)
             button_layout.addWidget(cancel)
-
+            # Apply layout to save popup
             save_layout.addLayout(button_layout)
-
             save_popup.setLayout(save_layout)
-            # Handle user click events.
+
+
+            # Connect buttons to action listeners. 
             save_changes.clicked.connect(lambda: save_popup.done(0))
             discard_changes.clicked.connect(lambda: save_popup.done(1))
             cancel.clicked.connect(lambda: save_popup.done(2))
+
             result = save_popup.exec_()
+
+            # Handle the input changes. 
+            toggle_popup = False
             if dont_ask_again_checkbox.isChecked():
-                print("Checked")
+                toggle_popup = True
+
             if result == 0:
-                self.save()
+                self.save(toggle_save_popup=toggle_popup)
                 self.remove_all()
             elif result == 1:
+                if toggle_popup:
+                    # Persist changes by saving to JSON file.
+                    old_data["show_save_popup"] = False
+                    with open(self.filename, "w") as savefile:
+                        old_data = json.dump(old_data)
                 self.remove_all()
             else:
                 event.ignore()
-
-    
-            
+        else:
+            self.remove_all()
 
 
     # Method to display help box
@@ -577,7 +599,7 @@ class Dashboard(QWidget):
         """
         help_box = ConfirmDialog("Omnibus Help", message)
         help_box.exec()
-
+    
     # Method to get new data for widgets
     def update(self):
         self.counter.tick()
