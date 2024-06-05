@@ -46,11 +46,12 @@ class QGraphicsViewWrapper(QGraphicsView):
     as scrolling with a mouse while pressing the shift key.
     """
 
-    def __init__(self, scene):
+    def __init__(self, scene, dashboard):
         super().__init__(scene)  # initialize the super class
         self.zoomed = 1.0
         self.SCROLL_SENSITIVITY = 1/3  # scale down the scrolling sensitivity
-
+        self.dashboard = dashboard
+        
     def wheelEvent(self, event):
         """
         Zoom in/out if ctrl/cmd is held
@@ -73,7 +74,18 @@ class QGraphicsViewWrapper(QGraphicsView):
                 self.verticalScrollBar().setValue(int(value + numDegrees))
         else:  # let the default implementation occur for everything else
             super().wheelEvent(event)
-
+    
+    # override the mouseDoubleClickEvent to open the property panel
+    def mouseDoubleClickEvent(self, event):
+        item = self.itemAt(event.pos())
+        # if an item is clicked, open the property panel of item
+        if item in self.scene().items():
+            self.dashboard.open_property_panel(item)
+        else:
+            #else close the property panel
+            self.dashboard.open_property_panel(None)
+        super().mouseDoubleClickEvent(event)  # Call the superclass implementation
+    
     # we define a function for zooming since keyboard zooming needs a function
     def zoom(self, angle: int):
         zoomFactor = 1 + angle*0.001  # create adjusted zoom factor
@@ -210,7 +222,7 @@ class Dashboard(QWidget):
         self.counter = TickCounter(1)
 
         # Create the view and add it to the widget
-        self.view = QGraphicsViewWrapper(self.scene)
+        self.view = QGraphicsViewWrapper(self.scene, self)
         self.view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.view.setRenderHints(QPainter.Antialiasing)
         # zooms to the position of mouse
@@ -276,13 +288,9 @@ class Dashboard(QWidget):
         sender.send("CAN/Commands", payload)
 
     # Method to open the parameter tree to the selected item
-
-    def on_selection_changed(self):
+    def open_property_panel(self, item):
         items = self.scene.selectedItems()
-        if len(items) != 1:
-            self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
-            self.parameter_tree_placeholder.hide()
-            return
+
         # Show the tree
         item = self.widgets[items[0]][1]
         if self.splitter.widget(1) is not item.parameter_tree:
@@ -293,6 +301,15 @@ class Dashboard(QWidget):
         total_width = self.splitter.size().width() - 100
         tree_width = item.parameter_tree.sizeHint().width()
         self.splitter.setSizes([total_width - tree_width, tree_width])
+
+
+    # On selection changed, hide the parameter tree
+    def on_selection_changed(self):
+        current_widget = self.splitter.widget(1)
+        if current_widget is not self.parameter_tree_placeholder:
+            self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
+            self.parameter_tree_placeholder.hide()
+
 
     def on_duplicate(self):
         selected_items = self.scene.selectedItems()
