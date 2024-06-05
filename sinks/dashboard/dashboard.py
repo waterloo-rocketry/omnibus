@@ -522,9 +522,8 @@ class Dashboard(QWidget):
         # Obtain current data 
         new_data = self.save(retrieve_data=True)
         
-        # Automatically save and exit if user has clicked "Dont ask again checkbox"
+        # Automatically exit if user has clicked "Dont ask again checkbox"
         if not old_data["show_save_popup"]:
-            self.save()
             self.remove_all()
         # Determine whether current widget configuration is the same as saved widget configuration.
         elif new_data["widgets"] != old_data["widgets"]:
