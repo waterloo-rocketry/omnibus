@@ -16,7 +16,12 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsRectItem,
     QFileDialog,
     QMessageBox,
-    QSplitter
+    QSplitter,
+    QDialog,
+    QLabel,
+    QCheckBox,
+    QHBoxLayout,
+    QPushButton
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
@@ -493,6 +498,7 @@ class Dashboard(QWidget):
 
     # Method to handle exit
     def closeEvent(self, event):
+        print("BP0")
         # Get data from savefile.
         if os.path.exists(self.filename) and os.stat(self.filename).st_size != 0:
             with open(self.filename, "r") as savefile:
@@ -504,26 +510,58 @@ class Dashboard(QWidget):
         # Obtain current data 
         new_data = self.save(retrieve_data=True)
 
+         # Automatically save on exit if user has clicked "Dont ask again checkbox"
+        if not new_data["save_on_exit"]:
+            self.remove_all()
+            return
         # Determine whether current widget configuration is the same as saved widget configuration.
         if new_data["widgets"] != old_data["widgets"]:
-            print(new_data["widgets"])
-            print(old_data["widgets"])
+            print("BP1")
             # Display Popup prompting for save.
-            title = 'Save Work'
-            message = 'You have made changes, would you like to save them?'
-            save_popup = QMessageBox.question(self, 'Save work', 'You have made changes, would you like to save them?')
-            
-            if save_popup == QMessageBox.Yes:
-                self.remove_all()
-                return
-            elif save_popup == QMessageBox.No:
-                # Dump old data.
-                with open("savefile.json", "w") as samplefile:
-                   json.dump(old_data, samplefile)    
+            save_popup = QDialog()
+            save_popup.setWindowTitle('Save Work')
+            save_popup.setModal(True)
 
-        self.remove_all()
+            save_layout = QVBoxLayout()
+            # Add UI Components to Popup.
+            label = QLabel("You have made changes, would you like to save them")
+            save_layout.addWidget(label)
+            # Add a checkbox
+            dont_ask_again_checkbox = QCheckBox("Don't ask again")
+            save_layout.addWidget(dont_ask_again_checkbox)
+
+            # Add buttons
+            button_layout = QHBoxLayout()
+            save_changes = QPushButton("Yes")
+            discard_changes = QPushButton("No")
+            cancel = QPushButton("Cancel")
+
+            button_layout.addWidget(save_changes)
+            button_layout.addWidget(discard_changes)
+            button_layout.addWidget(cancel)
+
+            save_layout.addLayout(button_layout)
+
+            save_popup.setLayout(save_layout)
+            # Handle user click events.
+            save_changes.clicked.connect(lambda: save_popup.done(0))
+            discard_changes.clicked.connect(lambda: save_popup.done(1))
+            cancel.clicked.connect(lambda: save_popup.done(2))
+            result = save_popup.exec_()
+            if dont_ask_again_checkbox.isChecked():
+                print("Checked")
+            if result == 0:
+                self.save()
+                self.remove_all()
+            elif result == 1:
+                self.remove_all()
+            else:
+                event.ignore()
 
     
+            
+
+
     # Method to display help box
     def help(self):
         message = """
