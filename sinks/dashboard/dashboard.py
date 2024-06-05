@@ -521,7 +521,6 @@ class Dashboard(QWidget):
         
         # Obtain current data 
         new_data = self.save(retrieve_data=True)
-        
         # Automatically exit if user has clicked "Dont ask again checkbox"
         if not old_data["show_save_popup"]:
             self.remove_all()
@@ -572,10 +571,10 @@ class Dashboard(QWidget):
                 self.remove_all()
             elif result == 1:
                 if toggle_popup:
-                    # Persist changes by saving to JSON file.
+                    # Persist old data to JSON file.
                     old_data["show_save_popup"] = False
                     with open(self.filename, "w") as savefile:
-                        old_data = json.dump(old_data)
+                        json.dump(old_data)
                 self.remove_all()
             else:
                 event.ignore()
