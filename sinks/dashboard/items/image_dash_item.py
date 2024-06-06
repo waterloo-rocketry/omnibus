@@ -1,7 +1,8 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QScrollArea
-from pyqtgraph.Qt.QtGui import QPixmap
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout
+from pyqtgraph.Qt.QtCore import QRect
+from pyqtgraph.Qt.QtGui import QPixmap, QPainter
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
 from pyqtgraph.parametertree.parameterTypes import FileParameter
-from pyqtgraph.Qt.QtCore import QSize, Qt
 
 from .dashboard_item import DashboardItem
 from .registry import Register
@@ -19,27 +20,17 @@ class ImageDashItem(DashboardItem):
 
         # need to wrap the label in a scroll area to
         # avoid problems by qt widget resizing on text change
-        self.widget = QLabel()
-        self.frame = QScrollArea()
-        self.frame.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.frame.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.frame.setWidgetResizable(True)
-        self.frame.setWidget(self.widget)
+        self.widget = ImageWidget(self)
 
         self.image_path = self.parameters.child("file").value()
-
-        # if we set the size of image same as the widget, the widget will
-        # grow, triggering the resize event which makes an infinite loop
-        # this is a hacky way to avoid that and the value is achieved using
-        # trial and error
-        self.offset = 40
+        self.pixmap = None
 
         if self.image_path:
             self.on_file_change()
 
         self.parameters.sigTreeStateChanged.connect(self.on_file_change)
 
-        self.layout.addWidget(self.frame)
+        self.layout.addWidget(self.widget)
 
     def add_parameters(self):
         # list of supported file formats: https://doc.qt.io/qtforpython-5/PySide2/QtGui/QImageReader.html#PySide2.QtGui.PySide2.QtGui.QImageReader.supportedImageFormats
@@ -47,13 +38,25 @@ class ImageDashItem(DashboardItem):
         return [file_param]
 
     def on_file_change(self):
-        # subtracting to account for the new 'border'
-        width = self.parameters.child("width").value() - self.offset
-        height = self.parameters.child("height").value() - self.offset
         self.image_path = self.parameters.child("file").value()
-
-        self.widget.setPixmap(QPixmap(self.image_path).scaled(width, height))
+        self.pixmap = QPixmap(self.image_path)
 
     @staticmethod
     def get_name():
         return "Image"
+
+
+class ImageWidget(QWidget):
+    def __init__(self, item: ImageDashItem):
+        super().__init__()
+        self.item: ImageDashItem = item
+
+    def paintEvent(self, paintEvent):
+        width = self.width()
+        height = self.height()
+
+        if self.item.pixmap is None:
+            return
+        
+        with QPainter(self) as painter:
+            painter.drawPixmap(QRect(0, 0, width, height), self.item.pixmap, QRect(0, 0, self.item.pixmap.width(), self.item.pixmap.height()))
