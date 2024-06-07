@@ -115,6 +115,8 @@ class Dashboard(QWidget):
         # The file from which the dashboard is loaded
         self.filename = "savefile.json"
 
+        # Value to keep track of save on exit.
+        self.show_save_popup = True
         # Create a GUI
         self.width = 1100
         self.height = 700
@@ -415,6 +417,9 @@ class Dashboard(QWidget):
         new_zoom = data["zoom"]
         self.view.scale(new_zoom, new_zoom)
         self.view.zoomed = new_zoom
+        # Capture the save on exit settting.
+        self.show_save_popup = True if data["show_save_popup"] else False
+
 
         # Add every widget in the data
         for widget in data["widgets"]:
@@ -426,46 +431,9 @@ class Dashboard(QWidget):
                     break
 
     # Method to save current layout to file
-    def save(self, retrieve_data=False, toggle_save_popup=False):
-        # General structure for saving the dashboard info
-        data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
-
-        # Obtain current save on exit value.
-        current_data = None
-        if os.path.exists(self.filename) and os.stat(self.filename).st_size != 0:
-            with open(self.filename, "r") as savefile:
-                current_data = json.load(savefile) 
-        # Correspondingly update show_save_popup 
-        if current_data is None:
-            data["show_save_popup"] = True
-        elif toggle_save_popup:
-            data["show_save_popup"] = not current_data["show_save_popup"]
-        else:
-            data["show_save_popup"] = current_data["show_save_popup"]
-    
-        # Save the coordinates of the center of the view on the scene
-        scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
-        data["center"] = [scene_center.x(), scene_center.y()]
-
-        for items in self.widgets.values():
-            # Get the proxy widget and dashitem
-            proxy = items[0]
-            dashitem = items[1]
-
-            # Get the coordinates of the proxy widget on the view
-            scenepos = proxy.scenePos()
-            viewpos = self.view.mapFromScene(scenepos)
-
-            # Add the position, dashitem name and dashitem props
-            for item_type in registry.get_items():
-                if type(dashitem) == item_type:
-                    data["widgets"].append({"class": item_type.get_name(),
-                                            "params": dashitem.get_serialized_parameters(),
-                                            "pos": [viewpos.x(), viewpos.y()]})
-                    break
-        # Return current dashboard information JSON and omit save.
-        if retrieve_data:
-            return data
+    def save(self):
+        data = self.get_data()
+                    
         # Write data to savefile
         with open(self.filename, "w") as savefile:
             json.dump(data, savefile)
@@ -520,66 +488,93 @@ class Dashboard(QWidget):
             old_data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "show_save_popup": True}
         
         # Obtain current data 
-        new_data = self.save(retrieve_data=True)
-        # Automatically exit if user has clicked "Dont ask again checkbox"
-        if not old_data["show_save_popup"]:
+        new_data = self.get_data()
+        # Automatically exit if user has clicked "Dont ask again checkbox" or no new changes are made.
+        if not self.show_save_popup or new_data["widgets"] == old_data["widgets"]:
             self.remove_all()
         # Determine whether current widget configuration is the same as saved widget configuration.
-        elif new_data["widgets"] != old_data["widgets"]:
-            
-            # Display Popup that prompts for save.
-            save_popup = QDialog()
-            save_popup.setWindowTitle('Save Work')
-            save_popup.setModal(True)
-
-            save_layout = QVBoxLayout()
-            # Add UI Components to Popup.
-            label = QLabel("You have made changes, would you like to save them")
-            save_layout.addWidget(label)
-            # Add a checkbox
-            dont_ask_again_checkbox = QCheckBox("Don't ask again")
-            save_layout.addWidget(dont_ask_again_checkbox)
-
-            # Create horizontal button layout and add buttons
-            button_layout = QHBoxLayout()
-            save_changes = QPushButton("Yes")
-            discard_changes = QPushButton("No")
-            cancel = QPushButton("Cancel")
-
-            button_layout.addWidget(save_changes)
-            button_layout.addWidget(discard_changes)
-            button_layout.addWidget(cancel)
-            # Apply layout to save popup
-            save_layout.addLayout(button_layout)
-            save_popup.setLayout(save_layout)
-
-
-            # Connect buttons to action listeners. 
-            save_changes.clicked.connect(lambda: save_popup.done(0))
-            discard_changes.clicked.connect(lambda: save_popup.done(1))
-            cancel.clicked.connect(lambda: save_popup.done(2))
-
-            result = save_popup.exec_()
-
-            # Handle the input changes. 
-            toggle_popup = False
-            if dont_ask_again_checkbox.isChecked():
-                toggle_popup = True
-
-            if result == 0:
-                self.save(toggle_save_popup=toggle_popup)
-                self.remove_all()
-            elif result == 1:
-                if toggle_popup:
-                    # Persist old data to JSON file.
-                    old_data["show_save_popup"] = False
-                    with open(self.filename, "w") as savefile:
-                        json.dump(old_data)
-                self.remove_all()
-            else:
-                event.ignore()
         else:
+            self.save_popup(old_data, event)
+
+
+    def get_data(self):
+        # General structure for obtaining the dashboard info
+        data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "show_save_popup": True}
+
+        # Obtain current save on exit value.
+        data["show_save_popup"] = self.show_save_popup
+    
+        # Capture the coordinates of the center of the view on the scene
+        scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
+        data["center"] = [scene_center.x(), scene_center.y()]
+
+        for items in self.widgets.values():
+            # Get the proxy widget and dashitem
+            proxy = items[0]
+            dashitem = items[1]
+
+            # Get the coordinates of the proxy widget on the view
+            scenepos = proxy.scenePos()
+            viewpos = self.view.mapFromScene(scenepos)
+
+            # Add the position, dashitem name and dashitem props
+            for item_type in registry.get_items():
+                if type(dashitem) == item_type:
+                    data["widgets"].append({"class": item_type.get_name(),
+                                            "params": dashitem.get_serialized_parameters(),
+                                            "pos": [viewpos.x(), viewpos.y()]})
+        
+        return data
+    
+    # Method to display save on exit popup.
+    def save_popup(self, old_data, event):
+        # Display Popup that prompts for save.
+        save_popup = QDialog()
+        save_popup.setWindowTitle('Save Work')
+        save_popup.setModal(True)
+
+        save_layout = QVBoxLayout()
+        # Add UI Components to Popup.
+        label = QLabel("You have made changes, would you like to save them")
+        save_layout.addWidget(label)
+        # Add a checkbox
+        dont_ask_again_checkbox = QCheckBox("Don't ask again")
+        save_layout.addWidget(dont_ask_again_checkbox)
+
+        # Create horizontal button layout and add buttons
+        button_layout = QHBoxLayout()
+        save_changes = QPushButton("Yes")
+        discard_changes = QPushButton("No")
+        cancel = QPushButton("Cancel")
+
+        button_layout.addWidget(save_changes)
+        button_layout.addWidget(discard_changes)
+        button_layout.addWidget(cancel)
+        # Apply layout to save popup
+        save_layout.addLayout(button_layout)
+        save_popup.setLayout(save_layout)
+
+        events = {"save_changes": 0, "discard_changes": 1, "cancel": 2}
+        # Connect buttons to action listeners. 
+        save_changes.clicked.connect(lambda: save_popup.done(events["save_changes"]))
+        discard_changes.clicked.connect(lambda: save_popup.done(events["discard_changes"]))
+        cancel.clicked.connect(lambda: save_popup.done(events["cancel"]))
+
+        result = save_popup.exec_()
+        self.show_save_popup = False if dont_ask_again_checkbox.isChecked() else self.show_save_popup
+        
+        if result == events["save_changes"]:
+            self.save()
             self.remove_all()
+        elif result == events["discard_changes"]:
+            if not self.show_save_popup:
+                # Persist old data to JSON file.
+                old_data["show_save_popup"] = False
+                with open(self.filename, "w") as savefile:
+                    json.dump(old_data, savefile)
+            self.remove_all()
+        else:
+            event.ignore()
 
 
     # Method to display help box
