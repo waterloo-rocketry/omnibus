@@ -115,7 +115,7 @@ class Dashboard(QWidget):
         # The file from which the dashboard is loaded
         self.filename = "savefile.json"
 
-        # Value to keep track of save on exit.
+        # Keep track on whether the save popup should be shown on exit.
         self.show_save_popup = True
         # Create a GUI
         self.width = 1100
@@ -492,11 +492,12 @@ class Dashboard(QWidget):
         # Automatically exit if user has clicked "Dont ask again checkbox" or no new changes are made.
         if not self.show_save_popup or new_data["widgets"] == old_data["widgets"]:
             self.remove_all()
-        # Determine whether current widget configuration is the same as saved widget configuration.
         else:
+            # Execute save popup dialog.
             self.save_popup(old_data, event)
 
 
+    # Method to retrieve current data on dashboard.
     def get_data(self):
         # General structure for obtaining the dashboard info
         data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "show_save_popup": True}
