@@ -35,8 +35,7 @@ from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.table_view import TableViewItem
 from publisher import publisher
-from typing import Union
-from typing import Union
+from typing import Union, Optional
 
 from omnibus import Sender
 
@@ -432,7 +431,7 @@ class Dashboard(QWidget):
                     break
 
     # Method to save current layout to file
-    def save(self, filename: Union[str, bool] = False):
+    def save(self, filename: Optional[str]):
          # Ensure the save directory exists, if not, create it
         if not os.path.exists(self.save_directory):
             os.makedirs(self.save_directory)
