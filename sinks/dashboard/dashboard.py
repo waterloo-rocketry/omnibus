@@ -35,7 +35,7 @@ from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.table_view import TableViewItem
 from publisher import publisher
-from typing import Union, Optional
+from typing import Optional
 
 from omnibus import Sender
 
