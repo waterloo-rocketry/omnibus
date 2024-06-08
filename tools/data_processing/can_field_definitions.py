@@ -103,7 +103,36 @@ CAN_FIELDS = [
                        'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_CC'}, 'data.value'),
     CanProcessingField("barometer", {
                        'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_BARO'}, "data.value"),
+
+    # FYDP fields
+    CanProcessingField("P501", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'P501'}, "data.pressure"),
+    CanProcessingField("P502", {
+                    'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'P502'}, "data.pressure"),
+    CanProcessingField("P503", {
+                    'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'P503'}, "data.pressure"),
+    CanProcessingField("P504", {
+                    'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'P504'}, "data.pressure"),
+    CanProcessingField("P301", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'P301'}, "data.pressure"),
+
+    CanProcessingField("T501", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T501'}, "data.temperature"),
+    CanProcessingField("T502", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T502'}, "data.temperature"),
+    CanProcessingField("T503", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T503'}, "data.temperature"),
+    CanProcessingField("T504", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T504'}, "data.temperature"),
+    CanProcessingField("T505", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T505'}, "data.temperature"),
+
+    CanProcessingField("RPM501_S", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_RPM', 'data.sensor_id': 'RPM501_S'}, "data.RPM_S"),
+    CanProcessingField("RPM502_S", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_RPM', 'data.sensor_id': 'RPM502_S'}, "data.RPM_S"),
 ]
+
 
 # Auto-add fields with multiple values for the same signature
 # the signature is the same as usual, the base name is the prefix used, and then the fields are used for the part of the data and for labeling
