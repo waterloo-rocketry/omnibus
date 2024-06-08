@@ -19,7 +19,7 @@ class ProgressBarItem(DashboardItem):
         self.widget = ProgressBarWidget(self)
         self.layout.addWidget(self.widget)
 
-        self.resize(800, 200)
+        self.resize(200, 80) # Change the initial size of the progress bar
 
         # Value detection code is based on plot_dash_item.py
         self.parameters.param("value").sigValueChanged.connect(self.on_value_change)
@@ -104,8 +104,8 @@ class ProgressBarWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.data = 0
-        self.min_value = 0
-        self.max_value = 100
+        self.min_value: float = 0
+        self.max_value: float = 10.0 # Default max value
         self.label = ""
 
     def set_parameters(self, min_value, max_value, data, label):
@@ -117,6 +117,10 @@ class ProgressBarWidget(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         rect = self.rect()
+
+        width: float = self.width()
+        height: float = self.height()
+        size: float = min(width/2.5, height) # size of the progress bar
 
         # Draw the border
         painter.setPen(QColor(255, 255, 255))
@@ -142,13 +146,11 @@ class ProgressBarWidget(QWidget):
         percentage = (
             (self.data - self.min_value) / (self.max_value - self.min_value) * 100
         )
+        painter.setPen(QColor(0, 0, 0))
+        painter.setFont(QFont("", int(size/3))) # Change font size according to the size of the progress bar
         if self.label:
-            painter.setPen(QColor(0, 0, 0))
-            painter.setFont(QFont("Arial", 12))
             painter.drawText(rect, Qt.AlignCenter, f"{self.label}: {percentage:.1f}%")
         else:
-            painter.setPen(QColor(0, 0, 0))
-            painter.setFont(QFont("Arial", 12))
             painter.drawText(rect, Qt.AlignCenter, f"No Label: {percentage:.1f}%")
 
     def update_progress(self, data, min_value, max_value, label):
