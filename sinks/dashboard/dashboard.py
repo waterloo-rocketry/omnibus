@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import signal
-
+from enum import Enum
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QPainter
 from pyqtgraph.Qt.QtWidgets import (
@@ -15,7 +15,6 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsItem,
     QGraphicsRectItem,
     QFileDialog,
-    QMessageBox,
     QSplitter,
     QDialog,
     QLabel,
@@ -116,7 +115,7 @@ class Dashboard(QWidget):
         self.filename = "savefile.json"
 
         # Keep track on whether the save popup should be shown on exit.
-        self.show_save_popup = True
+        self.should_show_save_popup = True
         # Create a GUI
         self.width = 1100
         self.height = 700
@@ -418,7 +417,8 @@ class Dashboard(QWidget):
         self.view.scale(new_zoom, new_zoom)
         self.view.zoomed = new_zoom
         # Capture the save on exit settting.
-        self.show_save_popup = True if data["show_save_popup"] else False
+        if "should_show_save_popup" in data and not data["should_show_save_popup"]:
+            self.should_show_save_popup = False    
 
 
         # Add every widget in the data
@@ -485,25 +485,25 @@ class Dashboard(QWidget):
                 old_data = json.load(savefile)
         else:
             # Set default values to default data.
-            old_data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "show_save_popup": True}
+            old_data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "should_show_save_popup": True}
         
         # Obtain current data 
         new_data = self.get_data()
         # Automatically exit if user has clicked "Dont ask again checkbox" or no new changes are made.
-        if not self.show_save_popup or new_data["widgets"] == old_data["widgets"]:
+        if not self.should_show_save_popup or new_data["widgets"] == old_data["widgets"]:
             self.remove_all()
         else:
             # Execute save popup dialog.
-            self.save_popup(old_data, event)
+            self.show_save_popup(old_data, event)
 
 
     # Method to retrieve current data on dashboard.
     def get_data(self):
         # General structure for obtaining the dashboard info
-        data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "show_save_popup": True}
+        data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "should_show_save_popup": True}
 
         # Obtain current save on exit value.
-        data["show_save_popup"] = self.show_save_popup
+        data["should_show_save_popup"] = self.should_show_save_popup
     
         # Capture the coordinates of the center of the view on the scene
         scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
@@ -527,12 +527,12 @@ class Dashboard(QWidget):
         
         return data
     
-    # Method to display save on exit popup.
-    def save_popup(self, old_data, event):
+    """ Method to display save on exit popup. """
+    def show_save_popup(self, old_data, event):
         # Display Popup that prompts for save.
-        save_popup = QDialog()
-        save_popup.setWindowTitle('Save Work')
-        save_popup.setModal(True)
+        popup = QDialog()
+        popup.setWindowTitle('Save Work')
+        popup.setModal(True)
 
         save_layout = QVBoxLayout()
         # Add UI Components to Popup.
@@ -553,24 +553,29 @@ class Dashboard(QWidget):
         button_layout.addWidget(cancel)
         # Apply layout to save popup
         save_layout.addLayout(button_layout)
-        save_popup.setLayout(save_layout)
+        popup.setLayout(save_layout)
 
-        events = {"save_changes": 0, "discard_changes": 1, "cancel": 2}
+        class Event(Enum):
+            SAVE_CHANGES = 0
+            DISCARD_CHANGES = 1
+            CANCEL = 2
         # Connect buttons to action listeners. 
-        save_changes.clicked.connect(lambda: save_popup.done(events["save_changes"]))
-        discard_changes.clicked.connect(lambda: save_popup.done(events["discard_changes"]))
-        cancel.clicked.connect(lambda: save_popup.done(events["cancel"]))
+        save_changes.clicked.connect(lambda: popup.done(Event.SAVE_CHANGES.value))
+        discard_changes.clicked.connect(lambda: popup.done(Event.DISCARD_CHANGES.value))
+        cancel.clicked.connect(lambda: popup.done(Event.CANCEL.value))
 
-        result = save_popup.exec_()
-        self.show_save_popup = False if dont_ask_again_checkbox.isChecked() else self.show_save_popup
+        result = popup.exec_()
+
+        if dont_ask_again_checkbox.isChecked():
+            self.should_show_save_popup = False
         
-        if result == events["save_changes"]:
+        if result == Event.SAVE_CHANGES.value:
             self.save()
             self.remove_all()
-        elif result == events["discard_changes"]:
-            if not self.show_save_popup:
+        elif result == Event.DISCARD_CHANGES.value:
+            if not self.should_show_save_popup:
                 # Persist old data to JSON file.
-                old_data["show_save_popup"] = False
+                old_data["should_show_save_popup"] = False
                 with open(self.filename, "w") as savefile:
                     json.dump(old_data, savefile)
             self.remove_all()
