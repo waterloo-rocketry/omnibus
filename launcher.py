@@ -35,6 +35,7 @@ class Launcher():
         self.src_selected = []
         self.sink_selected = []
         self.processes = []
+        self.load_last: bool = False
 
         # Parse folders for sources and sinks
         self.modules = {"sources": os.listdir('sources'), "sinks": os.listdir('sinks')}
@@ -45,15 +46,36 @@ class Launcher():
                 if item.startswith("."):
                     self.modules[module].remove(item)
 
+    def load_config(self):
+        print("Loading last selected sources and sinks...")
+        with open("config.txt", "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                if line.startswith("Sources"):
+                    self.src_selected = [int(x) for x in line.split(":")[1][1:-1].split(",")]
+                elif line.startswith("Sinks"):
+                    self.sink_selected = [int(x) for x in line.split(":")[1][1:-1].split(",")]
+            f.close()
+
     # Print list of sources and sinks
     def print_choices(self):
         for module in self.modules.keys():
             print(f"{module.capitalize()}:")
             for i, item in enumerate(self.modules[module]):
                 print(f"\t{i+1}. {item.capitalize()}")
+                
+    def print_last_selected(self):
+        print("\nDisplaying last selected sources and sinks...\n")
+        print("Last selected sources: ", end="")
+        print(*self.src_selected, sep=", ")
+        print("Last selected sinks: ", end="")
+        print(*self.sink_selected, sep=", ")
 
     # Enter inputs for CLI launcher
     def input(self):
+        
+        if self.load_last:
+            self.print_last_selected()
         # Construct CLI commands to start Omnibus
 
         #Source selection
@@ -61,6 +83,8 @@ class Launcher():
         
         #Sink selection 
         self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
+
+        self.save_selected_to_config()
 
         #Command construction
         omnibus = [python_executable, "-m", "omnibus"]
@@ -86,7 +110,10 @@ class Launcher():
     def validate_inputs(self, choices, module):
         selected_indices=[]
         while True:
-            user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces: ")
+            if self.load_last:
+                user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces (If you want keep last selected, press enter): ")
+            else:
+                user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces: ")
 
             #Split the input string into individual values
             selection = user_input.split()
@@ -137,6 +164,12 @@ class Launcher():
         for sink in self.sink_selected:
             self.logger.add_logger(f"sinks/{self.modules['sinks'][sink - 1]}")
         print("Loggers Initiated")
+    
+    def save_selected_to_config(self):
+        with open("config.txt", "w+") as f:
+            f.write(f"Sources: {",".join(map(str,self.src_selected))}\n")
+            f.write(f"Sinks: {",".join(map(str,self.sink_selected))}\n")
+            f.close()
 
     # If any file exits or the user presses control + c,
     # terminate all other files that are running
@@ -193,7 +226,7 @@ class GUILauncher(Launcher, QDialog):
         up_source = [source.capitalize() for source in sources]
         self.src_dict = {source: i + 1 for i, source in enumerate(up_source)}
         self.src_checkboxes = [QCheckBox(f"{src}") for src in up_source]
-        self.src_selected = []
+        # self.src_selected = []  # Don't need to reset agagin
         
         #Layout for source checkboxes
         self.src_layout = QGridLayout()
@@ -226,7 +259,7 @@ class GUILauncher(Launcher, QDialog):
         self.sink_dict = {sink: i + 1 for i, sink in enumerate(up_sink)}
         self.sink_checkboxes = [QCheckBox(f"{sink}") for sink in up_sink]
         
-        self.sink_selected = []
+        # self.sink_selected = [] # Don't need to reset agagin
         #Layout for sink checkboxes
         self.sink_layout=QGridLayout()
         row = 0
@@ -273,6 +306,16 @@ class GUILauncher(Launcher, QDialog):
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection)-1]}/main.py"]
                 self.commands.append(sink)
         self.close()
+        
+    def initial_update_selected(self):
+        for checkbox in self.src_checkboxes:
+            text = checkbox.text()
+            if self.src_dict[text] in self.src_selected:
+                checkbox.setChecked(True)
+        for checkbox in self.sink_checkboxes:
+            text = checkbox.text()
+            if self.sink_dict[text] in self.sink_selected:
+                checkbox.setChecked(True)
 
     def update_selected(self, state):
         checkbox = self.sender()
@@ -292,6 +335,7 @@ class GUILauncher(Launcher, QDialog):
 
     def closeEvent(self, event):
         if self.selected_ok:
+            self.save_selected_to_config()
             event.accept()
         else:
             sys.exit()
@@ -300,6 +344,7 @@ class GUILauncher(Launcher, QDialog):
 def main():
     parser = argparse.ArgumentParser(description='Omnibus Launcher')
     parser.add_argument('--text', action='store_true', help='Use text input mode')
+    parser.add_argument('--last', action='store_true', help='Use last selected sources and sinks')
     args = parser.parse_args()
 
     app = QApplication(sys.argv)
@@ -308,6 +353,9 @@ def main():
     if args.text:
         print("Running in text mode")
         launcher = Launcher()
+        if args.last:
+            launcher.load_last = True
+            launcher.load_config()
         launcher.print_choices()
         launcher.input()
         launcher.subprocess()
@@ -318,6 +366,10 @@ def main():
     else:
         print("Running in GUI mode")
         gui_launcher = GUILauncher()
+        if args.last:
+            gui_launcher.load_last = True
+            gui_launcher.load_config()
+            gui_launcher.initial_update_selected()
         gui_launcher.show()
         app.exec()
         gui_launcher.subprocess()
