@@ -48,13 +48,23 @@ class Launcher():
 
     def load_config(self):
         print("Loading last selected sources and sinks...")
-        with open("config.txt", "r") as f:
+        if not os.path.exists("config.ini"):
+            print("No config file found. Please select sources and sinks.")
+            self.load_last = False
+            return
+        with open("config.ini", "r") as f:
             lines = f.readlines()
             for line in lines:
                 if line.startswith("Sources"):
-                    self.src_selected = [int(x) for x in line.split(":")[1][1:-1].split(",")]
+                    if line.split(":")[1] == " \n":
+                        self.src_selected = []
+                    else:
+                        self.src_selected = [int(x) for x in line.split(":")[1][1:-1].split(",")]
                 elif line.startswith("Sinks"):
-                    self.sink_selected = [int(x) for x in line.split(":")[1][1:-1].split(",")]
+                    if line.split(":")[1] == " \n":
+                        self.sink_selected = []
+                    else:
+                        self.sink_selected = [int(x) for x in line.split(":")[1][1:-1].split(",")]
             f.close()
 
     # Print list of sources and sinks
@@ -166,7 +176,7 @@ class Launcher():
         print("Loggers Initiated")
     
     def save_selected_to_config(self):
-        with open("config.txt", "w+") as f:
+        with open("config.ini", "w+") as f:
             f.write(f"Sources: {",".join(map(str,self.src_selected))}\n")
             f.write(f"Sinks: {",".join(map(str,self.sink_selected))}\n")
             f.close()
