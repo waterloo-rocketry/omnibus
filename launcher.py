@@ -177,8 +177,8 @@ class Launcher():
     
     def save_selected_to_config(self):
         with open("config.ini", "w+") as f:
-            f.write(f"Sources: {",".join(map(str,self.src_selected))}\n")
-            f.write(f"Sinks: {",".join(map(str,self.sink_selected))}\n")
+            f.write(f"Sources: {','.join(map(str,self.src_selected))}\n")
+            f.write(f"Sinks: {','.join(map(str,self.sink_selected))}\n")
             f.close()
 
     # If any file exits or the user presses control + c,
