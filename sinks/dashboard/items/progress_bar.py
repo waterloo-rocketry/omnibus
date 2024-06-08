@@ -120,7 +120,7 @@ class ProgressBarWidget(QWidget):
 
         width: int = self.width()
         height: int = self.height()
-        size: float = min(width/2.5, height) # size of the progress bar
+        size: float | int = min(width/2.5, height) # size of the progress bar
 
         # Draw the border
         painter.setPen(QColor(255, 255, 255))
