@@ -147,7 +147,10 @@ class ProgressBarWidget(QWidget):
             (self.data - self.min_value) / (self.max_value - self.min_value) * 100
         )
         painter.setPen(QColor(0, 0, 0))
-        painter.setFont(QFont("", int(size/3))) # Change font size according to the size of the progress bar
+        # Change font size according to the size of the progress bar
+        font = QFont()
+        font.setPointSize(int(size / 3))
+        painter.setFont(font)
         if self.label:
             painter.drawText(rect, Qt.AlignCenter, f"{self.label}: {percentage:.1f}%")
         else:
