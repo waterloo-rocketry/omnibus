@@ -556,9 +556,9 @@ class Dashboard(QWidget):
         popup.setLayout(save_layout)
 
         class Event(Enum):
-            SAVE_CHANGES = 0
-            DISCARD_CHANGES = 1
-            CANCEL = 2
+            SAVE_CHANGES = 1
+            DISCARD_CHANGES = 2
+            CANCEL = 3
         # Connect buttons to action listeners. 
         save_changes.clicked.connect(lambda: popup.done(Event.SAVE_CHANGES.value))
         discard_changes.clicked.connect(lambda: popup.done(Event.DISCARD_CHANGES.value))
