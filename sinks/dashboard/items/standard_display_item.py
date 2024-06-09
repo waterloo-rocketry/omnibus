@@ -3,6 +3,7 @@ from .dashboard_item import DashboardItem
 from .registry import Register
 from pyqtgraph.Qt.QtWidgets import QVBoxLayout, QWidget, QLabel
 import pyqtgraph as pg
+from pyqtgraph.Qt.QtCore import Qt
 
 @Register
 class StandardDisplayItem (DashboardItem):
@@ -16,12 +17,15 @@ class StandardDisplayItem (DashboardItem):
 
         # Medium text label
         self.label = QLabel()
+        self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         
 
         # Value detection based on plot_dah_item.py
         self.parameters.param('text').sigValueChanged.connect(self.on_label_change)
 
         self.layout.addWidget(self.label)
+
+        self.resize(300,100)
         
 
     def add_parameters(self):
@@ -31,7 +35,7 @@ class StandardDisplayItem (DashboardItem):
     def on_label_change(self, param, value):
         self.text = value
         self.label.setText(self.text)
-        self.resize(10,10)
+        
 
     @staticmethod
     def get_name():
