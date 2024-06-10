@@ -6,6 +6,7 @@ import time
 import argparse
 import sys
 import logging
+import json
 from logtool import Logger
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt.QtWidgets import (
@@ -48,24 +49,15 @@ class Launcher():
 
     def load_config(self):
         print("Loading last selected sources and sinks...")
-        if not os.path.exists("config.ini"):
-            print("No config file found. Please select sources and sinks.")
+        if not os.path.exists("lastrun.json"):
+            print("No last run file found. Please select sources and sinks.")
             self.load_last = False
             return
-        with open("config.ini", "r") as f:
-            lines = f.readlines()
-            for line in lines:
-                if line.startswith("Sources"):
-                    if line.split(":")[1] == " \n":
-                        self.src_selected = []
-                    else:
-                        self.src_selected = [int(x) for x in line.split(":")[1][1:-1].split(",")]
-                elif line.startswith("Sinks"):
-                    if line.split(":")[1] == " \n":
-                        self.sink_selected = []
-                    else:
-                        self.sink_selected = [int(x) for x in line.split(":")[1][1:-1].split(",")]
-            f.close()
+        with open('lastrun.json', 'r') as fp:
+            data = json.load(fp)
+            self.src_selected = data['Sources']
+            self.sink_selected = data['Sinks']
+            fp.close()
 
     # Print list of sources and sinks
     def print_choices(self):
@@ -89,10 +81,14 @@ class Launcher():
         # Construct CLI commands to start Omnibus
 
         #Source selection
-        self.src_selected = self.validate_inputs(self.modules['sources'], "Source")
+        src_select = self.validate_inputs(self.modules['sources'], "Source")
+        if src_select is not None:
+            self.src_selected = src_select
         
         #Sink selection 
-        self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
+        sink_select = self.validate_inputs(self.modules['sinks'], "Sink")
+        if sink_select is not None:
+            self.sink_selected = sink_select
 
         self.save_selected_to_config()
 
@@ -122,6 +118,8 @@ class Launcher():
         while True:
             if self.load_last:
                 user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces (If you want keep last selected, press enter): ")
+                if user_input == "":
+                    return None 
             else:
                 user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces: ")
 
@@ -176,10 +174,11 @@ class Launcher():
         print("Loggers Initiated")
     
     def save_selected_to_config(self):
-        with open("config.ini", "w+") as f:
-            f.write(f"Sources: {','.join(map(str,self.src_selected))}\n")
-            f.write(f"Sinks: {','.join(map(str,self.sink_selected))}\n")
-            f.close()
+        data = {}
+        data ['Sources'] = self.src_selected
+        data ['Sinks'] = self.sink_selected
+        with open('lastrun.json', 'w+') as fp:
+            json.dump(data, fp)
 
     # If any file exits or the user presses control + c,
     # terminate all other files that are running
