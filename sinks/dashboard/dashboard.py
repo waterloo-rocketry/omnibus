@@ -16,6 +16,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsRectItem,
     QFileDialog,
     QSplitter,
+    QInputDialog,
+    QMessageBox,
     QDialog,
     QLabel,
     QCheckBox,
@@ -30,6 +32,7 @@ from utils import ConfirmDialog, EventTracker
 from items.plot_dash_item import PlotDashItem
 from items.dynamic_text import DynamicTextItem
 from items.periodic_can_sender import PeriodicCanSender
+from items.gauge_item import GaugeItem
 from items.image_dash_item import ImageDashItem
 from items.text_dash_item import TextDashItem
 from items.can_sender import CanSender
@@ -37,6 +40,7 @@ from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.table_view import TableViewItem
 from publisher import publisher
+from typing import Optional
 
 from omnibus import Sender
 
@@ -50,11 +54,12 @@ class QGraphicsViewWrapper(QGraphicsView):
     as scrolling with a mouse while pressing the shift key.
     """
 
-    def __init__(self, scene):
+    def __init__(self, scene, dashboard):
         super().__init__(scene)  # initialize the super class
         self.zoomed = 1.0
         self.SCROLL_SENSITIVITY = 1/3  # scale down the scrolling sensitivity
-
+        self.dashboard = dashboard
+        
     def wheelEvent(self, event):
         """
         Zoom in/out if ctrl/cmd is held
@@ -77,7 +82,18 @@ class QGraphicsViewWrapper(QGraphicsView):
                 self.verticalScrollBar().setValue(int(value + numDegrees))
         else:  # let the default implementation occur for everything else
             super().wheelEvent(event)
-
+    
+    # override the mouseDoubleClickEvent to open the property panel
+    def mouseDoubleClickEvent(self, event):
+        item = self.itemAt(event.pos())
+        # if an item is clicked, open the property panel of item
+        if item in self.scene().items():
+            self.dashboard.open_property_panel(item)
+        else:
+            #else close the property panel
+            self.dashboard.open_property_panel(None)
+        super().mouseDoubleClickEvent(event)  # Call the superclass implementation
+    
     # we define a function for zooming since keyboard zooming needs a function
     def zoom(self, angle: int):
         zoomFactor = 1 + angle*0.001  # create adjusted zoom factor
@@ -111,8 +127,12 @@ class Dashboard(QWidget):
         # Keep track of if editing is allowed
         self.locked = False
 
+        # Determine the specific directory you want to always open
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.save_directory = os.path.join(script_dir, "..", "..", "sinks", "dashboard", "saved-files")
+        
         # The file from which the dashboard is loaded
-        self.filename = "savefile.json"
+        self.file_location = os.path.join(self.save_directory, "savefile.json")
 
         # Keep track on whether the save popup should be shown on exit.
         self.should_show_save_popup = True
@@ -139,6 +159,25 @@ class Dashboard(QWidget):
         # List to keep track of menu bar action that
         # can be disabled when dashboard is locked
         self.lockableActions = []
+
+        # Add an action to the menu bar containing Save, Save As and Open.
+        # Save will save the layout of the dashboard
+        # Save As will prompt a name, then saves the layout of the dashboard
+        # Open loads the layout of the dashboard
+        add_file_menu = menubar.addMenu("File")
+
+        file_save_layout_action = add_file_menu.addAction("Save")
+        file_save_layout_action.triggered.connect(self.save)
+
+        file_save_as_layout_action = add_file_menu.addAction("Save As")
+        file_save_as_layout_action.triggered.connect(self.save_as)
+
+        file_open_layout_action = add_file_menu.addAction("Open")
+        file_open_layout_action.triggered.connect(self.open)
+
+        self.lockableActions.append(file_save_layout_action)
+        self.lockableActions.append(file_save_as_layout_action)
+        self.lockableActions.append(file_open_layout_action)
 
         # Create a sub menu which will be used
         # to add items to our dash board.
@@ -168,26 +207,6 @@ class Dashboard(QWidget):
         # adding a button to switch instances of parsley
         self.can_selector = menubar.addMenu("Parsley")
 
-        # Add an action to the menu bar to save the
-        # layout of the dashboard.
-        add_save_menu = menubar.addMenu("Save")
-        save_layout_action = add_save_menu.addAction("Save Current Config")
-        save_layout_action.triggered.connect(self.save)
-        self.lockableActions.append(save_layout_action)
-
-        # Add an action to the menu bar to load the
-        # layout of the dashboard.
-        add_restore_menu = menubar.addMenu("Load")
-        restore_layout_action = add_restore_menu.addAction("Load from File")
-        restore_layout_action.triggered.connect(self.load)
-        self.lockableActions.append(restore_layout_action)
-
-        # Add an action to the menu bar to open a file
-        add_open_menu = menubar.addMenu("Open")
-        open_file_action = add_open_menu.addAction("Open File")
-        open_file_action.triggered.connect(self.switch)
-        self.lockableActions.append(open_file_action)
-
         # Add an action to the menu bar to lock/unlock
         # the dashboard
         add_lock_menu = menubar.addMenu("Lock")
@@ -216,7 +235,7 @@ class Dashboard(QWidget):
         self.counter = TickCounter(1)
 
         # Create the view and add it to the widget
-        self.view = QGraphicsViewWrapper(self.scene)
+        self.view = QGraphicsViewWrapper(self.scene, self)
         self.view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.view.setRenderHints(QPainter.Antialiasing)
         # zooms to the position of mouse
@@ -240,6 +259,9 @@ class Dashboard(QWidget):
         self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))
         self.key_press_signals.zoom_reset.connect(self.reset_zoom)
         self.key_press_signals.backspace_pressed.connect(self.remove_selected)
+        self.key_press_signals.save_file_keys_pressed.connect(self.save)
+        self.key_press_signals.save_as_file_keys_pressed.connect(self.save_as)
+        self.key_press_signals.open_file_keys_pressed.connect(self.open)
         self.installEventFilter(self.key_press_signals)
 
     def select_instance(self, name):
@@ -282,13 +304,9 @@ class Dashboard(QWidget):
         sender.send("CAN/Commands", payload)
 
     # Method to open the parameter tree to the selected item
-
-    def on_selection_changed(self):
+    def open_property_panel(self, item):
         items = self.scene.selectedItems()
-        if len(items) != 1:
-            self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
-            self.parameter_tree_placeholder.hide()
-            return
+
         # Show the tree
         item = self.widgets[items[0]][1]
         if self.splitter.widget(1) is not item.parameter_tree:
@@ -299,6 +317,15 @@ class Dashboard(QWidget):
         total_width = self.splitter.size().width() - 100
         tree_width = item.parameter_tree.sizeHint().width()
         self.splitter.setSizes([total_width - tree_width, tree_width])
+
+
+    # On selection changed, hide the parameter tree
+    def on_selection_changed(self):
+        current_widget = self.splitter.widget(1)
+        if current_widget is not self.parameter_tree_placeholder:
+            self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
+            self.parameter_tree_placeholder.hide()
+
 
     def on_duplicate(self):
         selected_items = self.scene.selectedItems()
@@ -404,10 +431,10 @@ class Dashboard(QWidget):
         self.remove_all()
 
         # Then load the data from the savefile
-        if not os.path.exists(self.filename) or os.stat(self.filename).st_size == 0:
+        if not os.path.exists(self.file_location) or os.stat(self.file_location).st_size == 0:
             return
 
-        with open(self.filename, "r") as savefile:
+        with open(self.file_location, "r") as savefile:
             data = json.load(savefile)
 
         # Set the zoom
@@ -435,18 +462,38 @@ class Dashboard(QWidget):
         data = self.get_data()
                     
         # Write data to savefile
-        with open(self.filename, "w") as savefile:
+        with open(self.file_location, "w") as savefile:
             json.dump(data, savefile)
 
-    # Method to switch to a layout in a different file
-    def switch(self):
+    # Method to save file with a custom chosen name
+    def save_as(self):
+        self.file_location = os.path.join(self.save_directory, self.show_save_as_prompt())
         self.save()
-        (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
 
-        if filename is None:
+    # Method to allow user to choose name of the file of the configuration they would like to save
+    def show_save_as_prompt(self) -> str:
+        # Show a prompt box using QInputDialog
+        text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter file name without extension:')
+        
+        # Check if OK was pressed and text is not empty
+        if ok and text:
+            return text + ".json"
+        elif ok:
+            QMessageBox.warning(self, 'Warning', 'No input provided, try again')
+
+    # Method to switch to a layout in a different file
+    def open(self):
+         # Ensure the save directory exists, if not, create it
+        if not os.path.exists(self.save_directory):
+            os.makedirs(self.save_directory)
+            
+        (filename, _) = QFileDialog.getOpenFileName(self, "Open File", self.save_directory, "JSON Files (*.json)")
+
+        # If the user presses cancel, do nothing
+        if not filename:
             return
-
-        self.filename = filename
+        
+        self.file_location = filename
         self.load()
 
     # Method to lock dashboard
@@ -480,8 +527,8 @@ class Dashboard(QWidget):
     # Method to handle exit
     def closeEvent(self, event):
         # Get data from savefile.
-        if os.path.exists(self.filename) and os.stat(self.filename).st_size != 0:
-            with open(self.filename, "r") as savefile:
+        if os.path.exists(self.file_location) and os.stat(self.file_location).st_size != 0:
+            with open(self.file_location, "r") as savefile:
                 old_data = json.load(savefile)
         else:
             # Set default values to default data.
@@ -576,7 +623,7 @@ class Dashboard(QWidget):
             if not self.should_show_save_popup:
                 # Persist old data to JSON file.
                 old_data["should_show_save_popup"] = False
-                with open(self.filename, "w") as savefile:
+                with open(self.file_location, "w") as savefile:
                     json.dump(old_data, savefile)
             self.remove_all()
         else:

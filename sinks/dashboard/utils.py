@@ -22,6 +22,9 @@ class EventTracker(QObject):
     zoom_in = Signal()
     zoom_out = Signal()
     zoom_reset = Signal()
+    save_file_keys_pressed = Signal()
+    save_as_file_keys_pressed = Signal()
+    open_file_keys_pressed = Signal()
 
     def eventFilter(self, widget, event):
         """
@@ -46,6 +49,12 @@ class EventTracker(QObject):
                     self.zoom_out.emit()
                 case KeyEvent(Qt.Key_0, Qt.ControlModifier):
                     self.zoom_reset.emit()
+                case KeyEvent(Qt.Key_S, Qt.ControlModifier):
+                    self.save_file_keys_pressed.emit()
+                case KeyEvent(Qt.Key_S, modifiers) if (modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) == (Qt.ControlModifier | Qt.ShiftModifier):
+                    self.save_as_file_keys_pressed.emit()
+                case KeyEvent(Qt.Key_O, Qt.ControlModifier):
+                    self.open_file_keys_pressed.emit()
         return super().eventFilter(widget, event)
 
 
