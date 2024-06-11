@@ -1,5 +1,5 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout
-from pyqtgraph.Qt.QtCore import QRect
+from pyqtgraph.Qt.QtCore import QRect, QRectF
 from pyqtgraph.Qt.QtGui import QPixmap, QPainter
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
 from pyqtgraph.parametertree.parameterTypes import FileParameter
@@ -54,11 +54,16 @@ class ImageWidget(QWidget):
         self.item: ImageDashItem = item
 
     def paintEvent(self, paintEvent):
-        width = self.width()
-        height = self.height()
-
         if self.item.pixmap is None:
             return
         
+        width = self.width()
+        height = self.height()
+        image_width = self.item.pixmap.width()
+        image_height = self.item.pixmap.height()
+
+        render_width = min(width, height / image_height * image_width)
+        render_height = min(height, width / image_width * image_height)
+        
         with QPainter(self) as painter:
-            painter.drawPixmap(QRect(0, 0, width, height), self.item.pixmap, QRect(0, 0, self.item.pixmap.width(), self.item.pixmap.height()))
+            painter.drawPixmap(QRectF((width - render_width) / 2, (height - render_height) / 2, render_width, render_height), self.item.pixmap, QRect(0, 0, image_width, image_height))
