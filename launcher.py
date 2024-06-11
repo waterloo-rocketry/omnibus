@@ -65,32 +65,18 @@ class Launcher():
             print(f"{module.capitalize()}:")
             for i, item in enumerate(self.modules[module]):
                 print(f"\t{i+1}. {item.capitalize()}")
-                
-    def print_last_selected(self):
-        print("\nDisplaying last selected sources and sinks...\n")
-        print("Last selected sources: ", end="")
-        print(*self.src_selected, sep=", ")
-        print("Last selected sinks: ", end="")
-        print(*self.sink_selected, sep=", ")
 
     # Enter inputs for CLI launcher
     def input(self):
         
-        if self.load_last:
-            self.print_last_selected()
-        # Construct CLI commands to start Omnibus
+        if not self.load_last:
+            #Source selection
+            self.src_selected  = self.validate_inputs(self.modules['sources'], "Source")
+            
+            #Sink selection 
+            self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
 
-        #Source selection
-        src_select = self.validate_inputs(self.modules['sources'], "Source")
-        if src_select is not None:
-            self.src_selected = src_select
-        
-        #Sink selection 
-        sink_select = self.validate_inputs(self.modules['sinks'], "Sink")
-        if sink_select is not None:
-            self.sink_selected = sink_select
-
-        self.save_selected_to_config()
+            self.save_selected_to_config()
 
         #Command construction
         omnibus = [python_executable, "-m", "omnibus"]
@@ -116,12 +102,7 @@ class Launcher():
     def validate_inputs(self, choices, module):
         selected_indices=[]
         while True:
-            if self.load_last:
-                user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces (If you want keep last selected, press enter): ")
-                if user_input == "":
-                    return None 
-            else:
-                user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces: ")
+            user_input = input(f"\nPlease enter your {module} choices [1-{len(choices)}] separated by spaces: ")
 
             #Split the input string into individual values
             selection = user_input.split()
@@ -316,15 +297,6 @@ class GUILauncher(Launcher, QDialog):
                 self.commands.append(sink)
         self.close()
         
-    def initial_update_selected(self):
-        for checkbox in self.src_checkboxes:
-            text = checkbox.text()
-            if self.src_dict[text] in self.src_selected:
-                checkbox.setChecked(True)
-        for checkbox in self.sink_checkboxes:
-            text = checkbox.text()
-            if self.sink_dict[text] in self.sink_selected:
-                checkbox.setChecked(True)
 
     def update_selected(self, state):
         checkbox = self.sender()
@@ -359,26 +331,27 @@ def main():
     app = QApplication(sys.argv)
 
     # If 'python launcher.py --text' is run this block of code will execute
-    if args.text:
+    if args.last:
+        print("Running with last selected sources and sinks")
+        launcher = Launcher()
+        launcher.load_last = True
+        launcher.load_config()
+        launcher.input()
+        launcher.subprocess()
+        launcher.logging()
+        launcher.terminate()
+    elif args.text:
         print("Running in text mode")
         launcher = Launcher()
-        if args.last:
-            launcher.load_last = True
-            launcher.load_config()
         launcher.print_choices()
         launcher.input()
         launcher.subprocess()
         launcher.logging()
         launcher.terminate()
-
     # If 'python launcher.py' is run this this block of code will execute
     else:
         print("Running in GUI mode")
         gui_launcher = GUILauncher()
-        if args.last:
-            gui_launcher.load_last = True
-            gui_launcher.load_config()
-            gui_launcher.initial_update_selected()
         gui_launcher.show()
         app.exec()
         gui_launcher.subprocess()
