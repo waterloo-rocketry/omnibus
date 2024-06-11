@@ -18,7 +18,7 @@ class StandardDisplayItem (DashboardItem):
         self.setLayout(self.layout)
 
         # Medium text label
-        self.label = QLabel()
+        self.label = QLabel("Label")
         self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         # Big numerical readout
@@ -117,38 +117,43 @@ class StandardDisplayItem (DashboardItem):
         
         return sparkline
     
+    # def on_data_update(self, stream, payload):
+    #     time, point = payload
+
+    #     point += self.offset
+
+    #     if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
+    #         return 
+        
+    #     self.last[stream] = time 
+
+    #     self.times[stream].append(time)
+    #     self.points[stream].append(point)
+
+    #     while self.time[stream][0] < time - config.GRAPH_DURATION:
+    #         self.times[stream].pop(0)
+    #         self.points[stream].pop(0)
+        
+    #     values = list(self.points.values())
+
+    #     if not any(values):
+    #         min_point = 0
+    #         max_point = 0
+
+    #     else:
+    #         min_point = min(min(v) for v in values if v)
+    #         max_point = max(max(v) for v in values if v)
+
+    #     # Update the data curve for sparkline plot
+    #     self.sparkline_curves[stream].setData(self.times[stream], self.points[stream])
+
+    #     # Title for sparkline plot
+    #     self.sparkline.setTitle("/".join(self.series))        
+
     def on_data_update(self, stream, payload):
         time, point = payload
-
-        point += self.offset
-
-        if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
-            return 
-        
-        self.last[stream] = time 
-
-        self.times[stream].append(time)
-        self.points[stream].append(point)
-
-        while self.time[stream][0] < time - config.GRAPH_DURATION:
-            self.times[stream].pop(0)
-            self.points[stream].pop(0)
-        
-        values = list(self.points.values())
-
-        if not any(values):
-            min_point = 0
-            max_point = 0
-
-        else:
-            min_point = min(min(v) for v in values if v)
-            max_point = max(max(v) for v in values if v)
-
-        # Update the data curve for sparkline plot
-        self.sparkline_curves[stream].setData(self.times[stream], self.points[stream])
-
-        # Title for sparkline plot
-        self.sparkline.setTitle("/".join(self.series))        
+        self.data = float(point)
+        self.value.setText(f"{self.data:.6f}")
 
     @staticmethod
     def get_name():
