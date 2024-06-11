@@ -17,10 +17,12 @@ class ImageDashItem(DashboardItem):
         # Specify the layout
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         # need to wrap the label in a scroll area to
         # avoid problems by qt widget resizing on text change
         self.widget = ImageWidget(self)
+        self.resize(100, 100)
 
         self.image_path = self.parameters.child("file").value()
         self.pixmap = None
