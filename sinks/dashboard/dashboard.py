@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import signal
-
+from enum import Enum
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QPainter
 from pyqtgraph.Qt.QtWidgets import (
@@ -17,7 +17,12 @@ from pyqtgraph.Qt.QtWidgets import (
     QFileDialog,
     QSplitter,
     QInputDialog,
-    QMessageBox
+    QMessageBox,
+    QDialog,
+    QLabel,
+    QCheckBox,
+    QHBoxLayout,
+    QPushButton
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
@@ -123,14 +128,15 @@ class Dashboard(QWidget):
         # Keep track of if editing is allowed
         self.locked = False
 
-        # The file from which the dashboard is loaded
-        self.filename = "savefile.json"
-
         # Determine the specific directory you want to always open
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.save_directory = os.path.join(script_dir, "..", "..", "sinks", "dashboard", "saved-files")
-        self.default_file_location = os.path.join(self.save_directory, "savefile.json")
+        
+        # The file from which the dashboard is loaded
+        self.file_location = os.path.join(self.save_directory, "savefile.json")
 
+        # Keep track on whether the save popup should be shown on exit.
+        self.should_show_save_popup = True
         # Create a GUI
         self.width = 1100
         self.height = 700
@@ -426,10 +432,10 @@ class Dashboard(QWidget):
         self.remove_all()
 
         # Then load the data from the savefile
-        if not os.path.exists(self.default_file_location):
+        if not os.path.exists(self.file_location) or os.stat(self.file_location).st_size == 0:
             return
 
-        with open(self.default_file_location, "r") as savefile:
+        with open(self.file_location, "r") as savefile:
             data = json.load(savefile)
 
         # Set the zoom
@@ -438,6 +444,10 @@ class Dashboard(QWidget):
         new_zoom = data["zoom"]
         self.view.scale(new_zoom, new_zoom)
         self.view.zoomed = new_zoom
+        # Capture the save on exit settting.
+        if "should_show_save_popup" in data and not data["should_show_save_popup"]:
+            self.should_show_save_popup = False    
+
 
         # Add every widget in the data
         for widget in data["widgets"]:
@@ -449,49 +459,17 @@ class Dashboard(QWidget):
                     break
 
     # Method to save current layout to file
-    def save(self, filename: Optional[str]):
-         # Ensure the save directory exists, if not, create it
-        if not os.path.exists(self.save_directory):
-            os.makedirs(self.save_directory)
-
-        # If file name doesn't exist, default name is savefile.json
-        if not filename:
-            filename = "savefile.json"
-
-        # Adjust filename to include the save directory
-        filename = os.path.join(self.save_directory, filename)
-
-        # General structure for saving the dashboard info
-        data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
-
-        # Save the coordinates of the center of the view on the scene
-        scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
-        data["center"] = [scene_center.x(), scene_center.y()]
-
-        for items in self.widgets.values():
-            # Get the proxy widget and dashitem
-            proxy = items[0]
-            dashitem = items[1]
-
-            # Get the coordinates of the proxy widget on the view
-            scenepos = proxy.scenePos()
-            viewpos = self.view.mapFromScene(scenepos)
-
-            # Add the position, dashitem name and dashitem props
-            for item_type in registry.get_items():
-                if type(dashitem) == item_type:
-                    data["widgets"].append({"class": item_type.get_name(),
-                                            "params": dashitem.get_serialized_parameters(),
-                                            "pos": [viewpos.x(), viewpos.y()]})
-                    break
-
-        with open(filename, "w") as savefile:
+    def save(self):
+        data = self.get_data()
+                    
+        # Write data to savefile
+        with open(self.file_location, "w") as savefile:
             json.dump(data, savefile)
 
     # Method to save file with a custom chosen name
     def save_as(self):
-        user_response = self.show_save_as_prompt()
-        self.save(user_response)
+        self.file_location = os.path.join(self.save_directory, self.show_save_as_prompt())
+        self.save()
 
     # Method to allow user to choose name of the file of the configuration they would like to save
     def show_save_as_prompt(self) -> str:
@@ -516,7 +494,7 @@ class Dashboard(QWidget):
         if not filename:
             return
         
-        self.default_file_location = filename
+        self.file_location = filename
         self.load()
 
     # Method to lock dashboard
@@ -549,7 +527,109 @@ class Dashboard(QWidget):
 
     # Method to handle exit
     def closeEvent(self, event):
-        self.remove_all()
+        # Get data from savefile.
+        if os.path.exists(self.file_location) and os.stat(self.file_location).st_size != 0:
+            with open(self.file_location, "r") as savefile:
+                old_data = json.load(savefile)
+        else:
+            # Set default values to default data.
+            old_data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "should_show_save_popup": True}
+        
+        # Obtain current data 
+        new_data = self.get_data()
+        # Automatically exit if user has clicked "Dont ask again checkbox" or no new changes are made.
+        if not self.should_show_save_popup or new_data["widgets"] == old_data["widgets"]:
+            self.remove_all()
+        else:
+            # Execute save popup dialog.
+            self.show_save_popup(old_data, event)
+
+
+    # Method to retrieve current data on dashboard.
+    def get_data(self):
+        # General structure for obtaining the dashboard info
+        data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "should_show_save_popup": True}
+
+        # Obtain current save on exit value.
+        data["should_show_save_popup"] = self.should_show_save_popup
+    
+        # Capture the coordinates of the center of the view on the scene
+        scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
+        data["center"] = [scene_center.x(), scene_center.y()]
+
+        for items in self.widgets.values():
+            # Get the proxy widget and dashitem
+            proxy = items[0]
+            dashitem = items[1]
+
+            # Get the coordinates of the proxy widget on the view
+            scenepos = proxy.scenePos()
+            viewpos = self.view.mapFromScene(scenepos)
+
+            # Add the position, dashitem name and dashitem props
+            for item_type in registry.get_items():
+                if type(dashitem) == item_type:
+                    data["widgets"].append({"class": item_type.get_name(),
+                                            "params": dashitem.get_serialized_parameters(),
+                                            "pos": [viewpos.x(), viewpos.y()]})
+        
+        return data
+    
+    # Method to display save on exit popup.
+    def show_save_popup(self, old_data, event):
+        # Display Popup that prompts for save.
+        popup = QDialog()
+        popup.setWindowTitle('Save Work')
+        popup.setModal(True)
+
+        save_layout = QVBoxLayout()
+        # Add UI Components to Popup.
+        label = QLabel("You have made changes, would you like to save them")
+        save_layout.addWidget(label)
+        # Add a checkbox
+        dont_ask_again_checkbox = QCheckBox("Don't ask again")
+        save_layout.addWidget(dont_ask_again_checkbox)
+
+        # Create horizontal button layout and add buttons
+        button_layout = QHBoxLayout()
+        save_changes = QPushButton("Yes")
+        discard_changes = QPushButton("No")
+        cancel = QPushButton("Cancel")
+
+        button_layout.addWidget(save_changes)
+        button_layout.addWidget(discard_changes)
+        button_layout.addWidget(cancel)
+        # Apply layout to save popup
+        save_layout.addLayout(button_layout)
+        popup.setLayout(save_layout)
+
+        class Event(Enum):
+            SAVE_CHANGES = 1
+            DISCARD_CHANGES = 2
+            CANCEL = 3
+        # Connect buttons to action listeners. 
+        save_changes.clicked.connect(lambda: popup.done(Event.SAVE_CHANGES.value))
+        discard_changes.clicked.connect(lambda: popup.done(Event.DISCARD_CHANGES.value))
+        cancel.clicked.connect(lambda: popup.done(Event.CANCEL.value))
+
+        result = popup.exec_()
+
+        if dont_ask_again_checkbox.isChecked():
+            self.should_show_save_popup = False
+        
+        if result == Event.SAVE_CHANGES.value:
+            self.save()
+            self.remove_all()
+        elif result == Event.DISCARD_CHANGES.value:
+            if not self.should_show_save_popup:
+                # Persist old data to JSON file.
+                old_data["should_show_save_popup"] = False
+                with open(self.file_location, "w") as savefile:
+                    json.dump(old_data, savefile)
+            self.remove_all()
+        else:
+            event.ignore()
+
 
     # Method to display help box
     def help(self):
@@ -566,7 +646,7 @@ class Dashboard(QWidget):
         """
         help_box = ConfirmDialog("Omnibus Help", message)
         help_box.exec()
-
+    
     # Method to get new data for widgets
     def update(self):
         self.counter.tick()
