@@ -574,7 +574,7 @@ class Dashboard(QWidget):
         
         return data
     
-    """ Method to display save on exit popup. """
+    # Method to display save on exit popup.
     def show_save_popup(self, old_data, event):
         # Display Popup that prompts for save.
         popup = QDialog()
