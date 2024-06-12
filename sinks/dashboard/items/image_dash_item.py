@@ -2,7 +2,7 @@ from pyqtgraph.Qt.QtWidgets import QHBoxLayout
 from pyqtgraph.Qt.QtCore import QRect, QRectF
 from pyqtgraph.Qt.QtGui import QPixmap, QPainter
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
-from pyqtgraph.parametertree.parameterTypes import FileParameter
+from pyqtgraph.parametertree.parameterTypes import ActionParameter, FileParameter
 
 from .dashboard_item import DashboardItem
 from .registry import Register
@@ -30,20 +30,28 @@ class ImageDashItem(DashboardItem):
         if self.image_path:
             self.on_file_change()
 
-        self.parameters.sigTreeStateChanged.connect(self.on_file_change)
+        self.parameters.param("file").sigTreeStateChanged.connect(self.on_file_change)
+        self.parameters.param("original_size").sigActivated.connect(self.set_original_size)
 
         self.layout.addWidget(self.widget)
 
     def add_parameters(self):
         # list of supported file formats: https://doc.qt.io/qtforpython-5/PySide2/QtGui/QImageReader.html#PySide2.QtGui.PySide2.QtGui.QImageReader.supportedImageFormats
         file_param = FileParameter(name="file", value="", nameFilter="*.jpg;*.png;*.svg")
-        return [file_param]
+        original_size = ActionParameter(name="original_size")
+        return [file_param, original_size]
 
     def on_file_change(self):
         self.image_path = self.parameters.child("file").value()
         self.pixmap = QPixmap(self.image_path)
-        self.resize(self.pixmap.width(), self.pixmap.height())
+        self.set_original_size()
         self.widget.update()
+
+    def set_original_size(self):
+        if self.pixmap is not None:
+            self.resize(self.pixmap.width(), self.pixmap.height())
+        else:
+            self.resize(100, 100)
 
     @staticmethod
     def get_name():
