@@ -48,7 +48,7 @@ class ProgressBarItem(DashboardItem):
         self.color = "red"
 
         # Initialize with 70% progress
-        self.data = (self.max_value+self.min_value)*0.7
+        # self.data = (self.max_value+self.min_value)*0.7
         self.update_data()
 
     def add_parameters(self):
@@ -92,8 +92,6 @@ class ProgressBarItem(DashboardItem):
             self.label_widget = LabelWidget(self, vertical_mode=True)
             self.layout.addWidget(self.widget)
             self.layout.addWidget(self.label_widget)
-
-            self.data = (self.max_value+self.min_value)*0.7
             self.update_data()
         else:
             for i in reversed(range(self.layout.count())):
@@ -102,9 +100,7 @@ class ProgressBarItem(DashboardItem):
             self.widget = ProgressBarWidget(self)
             self.label_widget = LabelWidget(self, vertical_mode=False)
             self.layout.addWidget(self.widget)
-            self.layout.addWidget(self.label_widget)
-            
-            self.data = (self.max_value+self.min_value)*0.7
+            self.layout.addWidget(self.label_widget) 
             self.update_data()
 
     def on_color_change(self, param, value):
@@ -161,12 +157,16 @@ class LabelWidget(QWidget):
         width: int = self.width()
         height: int = self.height()
         if self.vertical_mode:
-            size: float | int = min(width, height/2.5)
+            scale_factor: float | int = min(width, height/2.5) / 32
         else:
-            size: float | int = min(width/2.5, height) # size of the progress bar
-
+            scale_factor: float | int = min(width/2.5, height) / 32 # size of the progress bar
+        
+        font_percent = 1.2 - ((min(len(self.label),50) / 50))
+        
+        font_size = 6 + (23-6)*font_percent*scale_factor
+        
         font = QFont()
-        font.setPointSize(int(size / 4))
+        font.setPointSize(font_size)
         painter.setFont(font)
         if self.vertical_mode:
             painter.drawText(rect, Qt.TextWordWrap | Qt.AlignCenter, self.label)
