@@ -42,6 +42,7 @@ class ImageDashItem(DashboardItem):
     def on_file_change(self):
         self.image_path = self.parameters.child("file").value()
         self.pixmap = QPixmap(self.image_path)
+        self.resize(self.pixmap.width(), self.pixmap.height())
         self.widget.update()
 
     @staticmethod
