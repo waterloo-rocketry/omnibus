@@ -284,7 +284,7 @@ class GUILauncher(Launcher, QDialog):
 
     def construct_commands(self):
         self.selected_ok = True
-        self.omnibus = ["python", "-m", "omnibus"]
+        self.omnibus = [python_executable, "-m", "omnibus"]
         self.commands.append(self.omnibus)
 
         if self.src_selected:
