@@ -52,6 +52,7 @@ class Launcher():
         if not os.path.exists("lastrun.json"):
             print("No last run file found. Please select sources and sinks.")
             self.load_last = False
+            self.print_choices()
             return
         with open('lastrun.json', 'r') as fp:
             data = json.load(fp)
@@ -330,20 +331,17 @@ def main():
 
     app = QApplication(sys.argv)
 
-    # If 'python launcher.py --text' is run this block of code will execute
-    if args.last:
-        print("Running with last selected sources and sinks")
+    if args.last or args.text:
+    # If 'python launcher.py --last' is run this block of code will execute
         launcher = Launcher()
-        launcher.load_last = True
-        launcher.load_config()
-        launcher.input()
-        launcher.subprocess()
-        launcher.logging()
-        launcher.terminate()
-    elif args.text:
-        print("Running in text mode")
-        launcher = Launcher()
-        launcher.print_choices()
+        if args.last:
+            print("Running with last selected sources and sinks")
+            launcher.load_last = True
+            launcher.load_config()
+        # If 'python launcher.py --text' is run this block of code will execute
+        elif args.text:
+            print("Running in text mode")
+            launcher.print_choices()
         launcher.input()
         launcher.subprocess()
         launcher.logging()
