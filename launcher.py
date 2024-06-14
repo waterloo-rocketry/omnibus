@@ -10,7 +10,7 @@ from logtool import Logger
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt.QtWidgets import (
     QApplication, QDialog, QLabel, QDialogButtonBox, QVBoxLayout,
-    QWidget, QCheckBox, QGridLayout
+    QWidget, QCheckBox, QGridLayout, QLineEdit
 )
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
@@ -190,29 +190,42 @@ class GUILauncher(Launcher, QDialog):
 
         #Create checkboxes for each source option
         sources = self.modules.get("sources")
+        self.sources = sources
         up_source = [source.capitalize() for source in sources]
         self.src_dict = {source: i + 1 for i, source in enumerate(up_source)}
-        self.src_checkboxes = [QCheckBox(f"{src}") for src in up_source]
+        self.src_widgets = [(QCheckBox(f"{src}"), QLineEdit()) for src in up_source]
+        for checkbox, args in self.src_widgets:
+            args.setPlaceholderText("CLI args")
         self.src_selected = []
         
         #Layout for source checkboxes
         self.src_layout = QGridLayout()
         row = 0
         col = 0
-        for checkbox in self.src_checkboxes:
+        for checkbox, args in self.src_widgets:
             self.src_layout.addWidget(checkbox, row, col)
+            self.src_layout.addWidget(args, row + 1, col)
             col += 1
             if col == 3:  # Three checkboxes per row
                 col = 0
-                row += 1
+                row += 2
 
         source_list = QWidget()
         source_list.setLayout(self.src_layout)
         source_list.setContentsMargins(0, 0, 0, 0)
 
+        self.src_state = [[False, ""] for _ in sources]
+
         #Connect checkbox state to signals to detect which sources were selected 
-        for checkbox in self.src_checkboxes:
-            checkbox.stateChanged.connect(self.update_selected)
+        for i, (checkbox, args) in enumerate(self.src_widgets):
+            # https://docs.python.org/3/faq/programming.html#why-do-lambdas-defined-in-a-loop-with-different-values-all-return-the-same-result
+            def stateChanged(state, i=i):
+                self.src_state[i][0] = True if state == 2 else False
+            def textChanged(text, i=i):
+                # print(f"text change {i}")
+                self.src_state[i][1] = text
+            checkbox.stateChanged.connect(stateChanged)
+            args.textChanged.connect(textChanged)
 
         #Create a sink label
         sink = QLabel(self)
@@ -263,10 +276,11 @@ class GUILauncher(Launcher, QDialog):
         self.selected_ok = True
         self.omnibus = [python_executable, "-m", "omnibus"]
         self.commands.append(self.omnibus)
-
-        if self.src_selected:
-            for selection in self.src_selected:
-                source = [python_executable, f"sources/{self.modules['sources'][int(selection)-1]}/main.py"]
+        
+        for (source_name, (checked, args)) in zip(self.sources, self.src_state):
+            if checked:
+                # TODO args is wrong here
+                source = [python_executable, f"sources/{source_name}/main.py", args]
                 self.commands.append(source)    
         if self.sink_selected:
             for selection in self.sink_selected:
@@ -278,12 +292,8 @@ class GUILauncher(Launcher, QDialog):
         checkbox = self.sender()
         text = checkbox.text()
         
-        if checkbox in self.src_checkboxes:
-            selected_list = self.src_selected
-            index = self.src_dict[text]
-        else:
-            selected_list = self.sink_selected
-            index = self.sink_dict[text]
+        selected_list = self.sink_selected
+        index = self.sink_dict[text]
         if checkbox.isChecked():
             if index not in selected_list:
                 selected_list.append(int(index))        
