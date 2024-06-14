@@ -60,8 +60,10 @@ class ProgressBarItem(DashboardItem):
         self.value = "Not connected"
         self.color = "red"
 
+        # Test Code (Remove before merging)
         # Initialize with 70% progress
-        self.data = (self.max_value + self.min_value) * 0.7
+        # self.data = (self.max_value + self.min_value) * 0.7
+        
         self.update_data()
 
     def add_parameters(self):
