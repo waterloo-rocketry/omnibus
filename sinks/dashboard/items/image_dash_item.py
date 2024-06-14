@@ -1,6 +1,6 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout
 from pyqtgraph.Qt.QtCore import QRect, QRectF
-from pyqtgraph.Qt.QtGui import QPixmap, QPainter
+from pyqtgraph.Qt.QtGui import QImage, QPainter
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
 from pyqtgraph.parametertree.parameterTypes import ActionParameter, FileParameter
 
@@ -25,7 +25,7 @@ class ImageDashItem(DashboardItem):
         self.resize(100, 100)
 
         self.image_path = self.parameters.child("file").value()
-        self.pixmap = None
+        self.image = None
 
         if self.image_path:
             self.on_file_change()
@@ -43,13 +43,13 @@ class ImageDashItem(DashboardItem):
 
     def on_file_change(self):
         self.image_path = self.parameters.child("file").value()
-        self.pixmap = QPixmap(self.image_path)
+        self.image = QImage(self.image_path)
         self.set_original_size()
         self.widget.update()
 
     def set_original_size(self):
-        if self.pixmap is not None:
-            self.resize(self.pixmap.width(), self.pixmap.height())
+        if self.image is not None:
+            self.resize(self.image.width(), self.image.height())
         else:
             self.resize(100, 100)
 
@@ -64,16 +64,16 @@ class ImageWidget(QWidget):
         self.item: ImageDashItem = item
 
     def paintEvent(self, paintEvent):
-        if self.item.pixmap is None:
+        if self.item.image is None:
             return
         
         width = self.width()
         height = self.height()
-        image_width = self.item.pixmap.width()
-        image_height = self.item.pixmap.height()
+        image_width = self.item.image.width()
+        image_height = self.item.image.height()
 
         render_width = min(width, height / image_height * image_width)
         render_height = min(height, width / image_width * image_height)
         
         with QPainter(self) as painter:
-            painter.drawPixmap(QRectF((width - render_width) / 2, (height - render_height) / 2, render_width, render_height), self.item.pixmap, QRect(0, 0, image_width, image_height))
+            painter.drawImage(QRectF((width - render_width) / 2, (height - render_height) / 2, render_width, render_height), self.item.image, QRect(0, 0, image_width, image_height))
