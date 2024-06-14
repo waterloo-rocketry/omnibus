@@ -1,4 +1,5 @@
 from publisher import publisher
+from math import sqrt
 from PySide6.QtGui import QLinearGradient, QColor, QBrush
 from pyqtgraph.Qt.QtCore import Qt
 from pyqtgraph.Qt.QtGui import QBrush, QFont, QPainter
@@ -16,13 +17,25 @@ class ProgressBarItem(DashboardItem):
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(10, 10, 10, 0)  # Set the margins of the layout
         self.layout.setSpacing(10)  # Remove the spacing between elements in the layout
-        self.resize(200, 85) 
+        self.resize(200, 100) 
         self.setLayout(self.layout)
         self.vertical_mode = False
         
         self.widget = ProgressBarWidget(self)
-        # self.widget.setMinimumSize(180, 30)  # Set the minimum size of the ProgressBarWidget
         self.label_widget = LabelWidget(self, vertical_mode=False)
+        
+        # Set size policies
+        widget_size_policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        widget_size_policy.setHorizontalStretch(4)  # 4 times larger horizontally
+        widget_size_policy.setVerticalStretch(4)    # 4 times larger vertically
+
+        label_size_policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        label_size_policy.setHorizontalStretch(1)   # 1 time (default) horizontally
+        label_size_policy.setVerticalStretch(1)   
+        
+        self.widget.setSizePolicy(widget_size_policy)
+        self.label_widget.setSizePolicy(label_size_policy)
+        
         self.layout.addWidget(self.widget)
         self.layout.addWidget(self.label_widget)
         
@@ -48,7 +61,7 @@ class ProgressBarItem(DashboardItem):
         self.color = "red"
 
         # Initialize with 70% progress
-        # self.data = (self.max_value+self.min_value)*0.7
+        self.data = (self.max_value + self.min_value) * 0.7
         self.update_data()
 
     def add_parameters(self):
@@ -68,6 +81,7 @@ class ProgressBarItem(DashboardItem):
             value=[],
             limits=["red", "green", "blue", "yellow", "purple", "orange"],
             exclusive=True,
+            expanded=False
         )
         vertical_param = {"name": "vertical", "type": "bool", "value": False}
         return [value_param, min_value_param, max_value_param, label_param, color_param, vertical_param]
@@ -83,25 +97,30 @@ class ProgressBarItem(DashboardItem):
         self.label_widget.update_label(self.label)
         
     def on_vertical_change(self, param, value):
+        # Set size policies
+        widget_size_policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        widget_size_policy.setHorizontalStretch(4)  # 4 times larger horizontally
+        widget_size_policy.setVerticalStretch(4)    # 4 times larger vertically
+
+        label_size_policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        label_size_policy.setHorizontalStretch(1)   # 1 time (default) horizontally
+        label_size_policy.setVerticalStretch(1)   
+        
         self.vertical_mode = self.parameters.param("vertical").value()
+        self.resize(self.height(), self.width())
+        for i in reversed(range(self.layout.count())):
+            self.layout.itemAt(i).widget().setParent(None)
         if self.vertical_mode:
-            for i in reversed(range(self.layout.count())):
-                self.layout.itemAt(i).widget().setParent(None)
-            self.resize(120, 260)
             self.widget = VerticalProgressBarWidget(self)
             self.label_widget = LabelWidget(self, vertical_mode=True)
-            self.layout.addWidget(self.widget)
-            self.layout.addWidget(self.label_widget)
-            self.update_data()
         else:
-            for i in reversed(range(self.layout.count())):
-                self.layout.itemAt(i).widget().setParent(None)
-            self.resize(200, 85)
             self.widget = ProgressBarWidget(self)
             self.label_widget = LabelWidget(self, vertical_mode=False)
-            self.layout.addWidget(self.widget)
-            self.layout.addWidget(self.label_widget) 
-            self.update_data()
+        self.widget.setSizePolicy(widget_size_policy)
+        self.label_widget.setSizePolicy(label_size_policy)
+        self.layout.addWidget(self.widget)
+        self.layout.addWidget(self.label_widget)
+        self.update_data()
 
     def on_color_change(self, param, value):
         self.color = self.parameters.param("color").value()
@@ -156,14 +175,21 @@ class LabelWidget(QWidget):
 
         width: int = self.width()
         height: int = self.height()
+
+        # Get minimum scale factor (sqrt(min(width, height)/30)) get scale around 1.0
+        
         if self.vertical_mode:
-            scale_factor: float | int = min(width, height/2.5) / 32
+            scale_factor: float | int = sqrt(min(width, height/2)/30)
         else:
-            scale_factor: float | int = min(width/2.5, height) / 32 # size of the progress bar
+            scale_factor: float | int = sqrt(min(width/2, height)/30)
+            
+        # Calculate font size based on label length between 0 and 60 characters (decrease as label length increases)
         
-        font_percent = 1.2 - ((min(len(self.label),50) / 50))
+        font_percent = 1.2 - ((min(len(self.label),60) / 60))
         
-        font_size = 6 + (23-6)*font_percent*scale_factor
+        # Set minimum font size to 6, maximum to 23 (based on scale factor)
+        
+        font_size = 6 + 17 * font_percent * scale_factor
         
         font = QFont()
         font.setPointSize(font_size)
@@ -251,38 +277,17 @@ class ProgressBarWidget(QWidget):
         self.set_parameters(min_value, max_value, data, color)
         self.update()
         
-class VerticalProgressBarWidget(QWidget):
+class VerticalProgressBarWidget(ProgressBarWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.data = 0
-        self.connectivity = False
-        self.min_value: float = 0
-        self.max_value: float = 10.0 # Default max value
-        self.color = "red"
-        
-    def color_to_scalar(self, color: str) -> list[QColor]:
-        mapping = {
-            "red":      (QColor(255, 0, 0), QColor(255, 200, 0)),
-            "green":    (QColor(0, 255, 0), QColor(0, 200, 255)),
-            "blue":     (QColor(0, 0, 255), QColor(0, 200, 255)),
-            "yellow":   (QColor(255, 255, 0), QColor(255, 200, 0)),
-            "purple":   (QColor(128, 0, 128), QColor(128, 200, 128)),
-            "orange":   (QColor(255, 165, 0), QColor(255, 200, 0))
-        }
-        return mapping[color]
-    
-    def set_color(self, color):
-        self.color = color
-    
-    def set_parameters(self, min_value, max_value, data, color):
-        self.min_value = min_value
-        self.max_value = max_value
-        self.data = data
-        self.color = color
     
     def paintEvent(self, event):
         painter = QPainter(self)
         rect = self.rect()
+       
+        width: int = self.width()
+        height: int = self.height()
+        size: float | int = min(width/2.5, height) # size of the progress bar
         
         # Draw the border
         painter.setPen(QColor(255, 255, 255))
@@ -303,6 +308,14 @@ class VerticalProgressBarWidget(QWidget):
         painter.setPen(Qt.NoPen)
         painter.drawRect(0, rect.height() - progress_height, rect.width(), progress_height)
         
-    def update_progress(self, data, min_value, max_value,color):
-        self.set_parameters(min_value, max_value, data, color)
-        self.update()
+        # Draw the label text with percentage
+        percentage = (
+            (self.data - self.min_value) / (self.max_value - self.min_value) * 10
+        )
+
+        painter.setPen(QColor(0, 0, 0))
+        # Change font size according to the size of the progress bar
+        font = QFont()
+        font.setPointSize(int(size / 1.5))
+        painter.setFont(font)
+        painter.drawText(rect, Qt.AlignCenter, f"{percentage:.1f} \n —— \n 10")
