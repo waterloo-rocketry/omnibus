@@ -6,6 +6,7 @@ import time
 import argparse
 import sys
 import logging
+import json
 from logtool import Logger
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt.QtWidgets import (
@@ -35,6 +36,7 @@ class Launcher():
         self.src_selected = []
         self.sink_selected = []
         self.processes = []
+        self.load_last: bool = False
 
         # Parse folders for sources and sinks
         self.modules = {"sources": os.listdir('sources'), "sinks": os.listdir('sinks')}
@@ -45,6 +47,19 @@ class Launcher():
                 if item.startswith("."):
                     self.modules[module].remove(item)
 
+    def load_config(self):
+        print("Loading last selected sources and sinks...")
+        if not os.path.exists("lastrun.json"):
+            print("No last run file found. Please select sources and sinks.")
+            self.load_last = False
+            self.print_choices()
+            return
+        with open('lastrun.json', 'r') as fp:
+            data = json.load(fp)
+            self.src_selected = data['Sources']
+            self.sink_selected = data['Sinks']
+            fp.close()
+
     # Print list of sources and sinks
     def print_choices(self):
         for module in self.modules.keys():
@@ -54,13 +69,15 @@ class Launcher():
 
     # Enter inputs for CLI launcher
     def input(self):
-        # Construct CLI commands to start Omnibus
-
-        #Source selection
-        self.src_selected = self.validate_inputs(self.modules['sources'], "Source")
         
-        #Sink selection 
-        self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
+        if not self.load_last:
+            #Source selection
+            self.src_selected  = self.validate_inputs(self.modules['sources'], "Source")
+            
+            #Sink selection 
+            self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
+
+            self.save_selected_to_config()
 
         #Command construction
         omnibus = [python_executable, "-m", "omnibus"]
@@ -137,6 +154,13 @@ class Launcher():
         for sink in self.sink_selected:
             self.logger.add_logger(f"sinks/{self.modules['sinks'][sink - 1]}")
         print("Loggers Initiated")
+    
+    def save_selected_to_config(self):
+        data = {}
+        data ['Sources'] = self.src_selected
+        data ['Sinks'] = self.sink_selected
+        with open('lastrun.json', 'w+') as fp:
+            json.dump(data, fp)
 
     # If any file exits or the user presses control + c,
     # terminate all other files that are running
@@ -193,7 +217,7 @@ class GUILauncher(Launcher, QDialog):
         up_source = [source.capitalize() for source in sources]
         self.src_dict = {source: i + 1 for i, source in enumerate(up_source)}
         self.src_checkboxes = [QCheckBox(f"{src}") for src in up_source]
-        self.src_selected = []
+        # self.src_selected = []  # Don't need to reset agagin
         
         #Layout for source checkboxes
         self.src_layout = QGridLayout()
@@ -226,7 +250,7 @@ class GUILauncher(Launcher, QDialog):
         self.sink_dict = {sink: i + 1 for i, sink in enumerate(up_sink)}
         self.sink_checkboxes = [QCheckBox(f"{sink}") for sink in up_sink]
         
-        self.sink_selected = []
+        # self.sink_selected = [] # Don't need to reset agagin
         #Layout for sink checkboxes
         self.sink_layout=QGridLayout()
         row = 0
@@ -273,6 +297,7 @@ class GUILauncher(Launcher, QDialog):
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection)-1]}/main.py"]
                 self.commands.append(sink)
         self.close()
+        
 
     def update_selected(self, state):
         checkbox = self.sender()
@@ -292,6 +317,7 @@ class GUILauncher(Launcher, QDialog):
 
     def closeEvent(self, event):
         if self.selected_ok:
+            self.save_selected_to_config()
             event.accept()
         else:
             sys.exit()
@@ -300,20 +326,26 @@ class GUILauncher(Launcher, QDialog):
 def main():
     parser = argparse.ArgumentParser(description='Omnibus Launcher')
     parser.add_argument('--text', action='store_true', help='Use text input mode')
+    parser.add_argument('--last', action='store_true', help='Use last selected sources and sinks')
     args = parser.parse_args()
 
     app = QApplication(sys.argv)
 
-    # If 'python launcher.py --text' is run this block of code will execute
-    if args.text:
-        print("Running in text mode")
+    if args.last or args.text:
+    # If 'python launcher.py --last' is run this block of code will execute
         launcher = Launcher()
-        launcher.print_choices()
+        if args.last:
+            print("Running with last selected sources and sinks")
+            launcher.load_last = True
+            launcher.load_config()
+        # If 'python launcher.py --text' is run this block of code will execute
+        elif args.text:
+            print("Running in text mode")
+            launcher.print_choices()
         launcher.input()
         launcher.subprocess()
         launcher.logging()
         launcher.terminate()
-
     # If 'python launcher.py' is run this this block of code will execute
     else:
         print("Running in GUI mode")
