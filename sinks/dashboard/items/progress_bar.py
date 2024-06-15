@@ -15,7 +15,7 @@ class ProgressBarItem(DashboardItem):
         super().__init__(*args)
 
         self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(10, 10, 10, 0)  # Set the margins of the layout
+        self.layout.setContentsMargins(10, 10, 10, 10)  # Set the margins of the layout
         self.layout.setSpacing(10)  # Remove the spacing between elements in the layout
         self.resize(200, 100) 
         self.setLayout(self.layout)
@@ -59,10 +59,6 @@ class ProgressBarItem(DashboardItem):
         self.label = "No Label Set!"
         self.value = "Not connected"
         self.color = "red"
-
-        # Test Code (Remove before merging)
-        # Initialize with 70% progress
-        # self.data = (self.max_value + self.min_value) * 0.7
         
         self.update_data()
 
@@ -179,18 +175,15 @@ class LabelWidget(QWidget):
         height: int = self.height()
 
         # Get minimum scale factor (sqrt(min(width, height)/30)) get scale around 1.0
-        
         if self.vertical_mode:
-            scale_factor: float | int = sqrt(min(width, height/2)/30)
+            scale_factor: float | int = sqrt(min(width, height/2)/40)
         else:
-            scale_factor: float | int = sqrt(min(width/2, height)/30)
+            scale_factor: float | int = sqrt(min(width/2, height)/40)
             
-        # Calculate font size based on label length between 0 and 60 characters (decrease as label length increases)
-        
+        # Calculate font size based on label length between 0 and 60 characters (decrease as label length increases) 
         font_percent = 1.2 - ((min(len(self.label),60) / 60))
         
         # Set minimum font size to 6, maximum to 23 (based on scale factor)
-        
         font_size = 6 + 17 * font_percent * scale_factor
         
         font = QFont()
@@ -312,7 +305,7 @@ class VerticalProgressBarWidget(ProgressBarWidget):
         
         # Draw the label text with percentage
         percentage = (
-            (self.data - self.min_value) / (self.max_value - self.min_value) * 10
+            (self.data - self.min_value) / (self.max_value - self.min_value) * 100
         )
 
         painter.setPen(QColor(0, 0, 0))
@@ -320,4 +313,4 @@ class VerticalProgressBarWidget(ProgressBarWidget):
         font = QFont()
         font.setPointSize(int(size / 1.5))
         painter.setFont(font)
-        painter.drawText(rect, Qt.AlignCenter, f"{percentage:.1f} \n —— \n 10")
+        painter.drawText(rect, Qt.AlignCenter, f"{percentage:.1f}%")
