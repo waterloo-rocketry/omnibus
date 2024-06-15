@@ -174,7 +174,7 @@ class LabelWidget(QWidget):
         width: int = self.width()
         height: int = self.height()
 
-        # Get minimum scale factor (sqrt(min(width, height)/30)) get scale around 1.0
+        # Get minimum scale factor (sqrt(min(width, height)/40))
         if self.vertical_mode:
             scale_factor: float | int = sqrt(min(width, height/2)/40)
         else:
