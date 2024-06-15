@@ -262,6 +262,9 @@ class Dashboard(QWidget):
         self.key_press_signals.save_file_keys_pressed.connect(self.save)
         self.key_press_signals.save_as_file_keys_pressed.connect(self.save_as)
         self.key_press_signals.open_file_keys_pressed.connect(self.open)
+        self.key_press_signals.CTRL_D_pressed.connect(self.on_duplicate)  # Connect the new signal for CTRL-D
+        self.key_press_signals.CTRL_L_pressed.connect(self.toggle_lock)  # Connect the new signal for CTRL-L
+        self.key_press_signals.CTRL_O_pressed.connect(self.open) 
         self.installEventFilter(self.key_press_signals)
 
     def select_instance(self, name):
@@ -509,6 +512,12 @@ class Dashboard(QWidget):
         for rect in self.widgets:
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
+    #method to toggle lock/unlock based on if dashboard is locked or not
+    def toggle_lock(self):
+        if(self.locked == True):
+            self.unlock()
+        else:
+            self.lock()
 
     # Method to unlock dashboard
     def unlock(self):
