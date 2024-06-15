@@ -1,7 +1,7 @@
 from publisher import publisher
 from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu, QLabel
 from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
-from pyqtgraph.Qt.QtCore import QEvent
+from pyqtgraph.Qt.QtGui import QFont
 import pyqtgraph as pg
 import numpy as np
 
@@ -55,6 +55,10 @@ class StandardDisplayItem(DashboardItem):
 
         # Medium Text Label
         self.label = QLabel("Label")
+
+        font = QFont()
+        font.setPointSize(15)
+        self.label.setFont(font)
 
         #Big numerical readout
         self.numRead = QLabel("Not Connected")
