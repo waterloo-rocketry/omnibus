@@ -2,7 +2,7 @@ from pyqtgraph.Qt.QtWidgets import QHBoxLayout
 from pyqtgraph.Qt.QtCore import QRect, QRectF
 from pyqtgraph.Qt.QtGui import QImage, QPainter
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
-from pyqtgraph.parametertree.parameterTypes import ActionParameter, FileParameter
+from pyqtgraph.parametertree.parameterTypes import ActionParameter, ActionParameterItem, FileParameter
 
 from .dashboard_item import DashboardItem
 from .registry import Register
@@ -38,7 +38,7 @@ class ImageDashItem(DashboardItem):
     def add_parameters(self):
         # list of supported file formats: https://doc.qt.io/qtforpython-5/PySide2/QtGui/QImageReader.html#PySide2.QtGui.PySide2.QtGui.QImageReader.supportedImageFormats
         file_param = FileParameter(name="file", value="", nameFilter="*.jpg;*.png;*.svg")
-        original_size = ActionParameter(name="original_size")
+        original_size = NoTextActionParameter(name="original_size")
         return [file_param, original_size]
 
     def on_file_change(self):
@@ -56,6 +56,20 @@ class ImageDashItem(DashboardItem):
     @staticmethod
     def get_name():
         return "Image"
+
+
+class NoTextActionParameterItem(ActionParameterItem):
+    """An action parameter item that works around
+    https://github.com/pyqtgraph/pyqtgraph/issues/2380.
+    This avoids the text displaying twice on MacOS dark mode.
+    """
+    def __init__(self, param, depth):
+        super().__init__(param, depth)
+        self.setText(0, "")
+
+
+class NoTextActionParameter(ActionParameter):
+    itemClass = NoTextActionParameterItem
 
 
 class ImageWidget(QWidget):
