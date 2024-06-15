@@ -32,7 +32,7 @@ class StandardDisplayItem(DashboardItem):
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
-        self.parameters.param('text').sigValueChanged.connect(self.on_series_change)
+        self.parameters.param('text').sigValueChanged.connect(self.on_label_change)
 
 
         self.series = self.parameters.param('series').value()
@@ -85,16 +85,19 @@ class StandardDisplayItem(DashboardItem):
             publisher.subscribe(series, self.on_data_update)
         # recreate the plot with new series and add it to the layout
         self.plot = self.create_plot()
-        self.text = self.parameters.param('text').value()
-        self.label.setText(self.text)
         self.widget = pg.PlotWidget(plotItem=self.plot)
-        self.layout.addWidget(self.widget, 0, 0)
+        #self.layout.addWidget(self.widget, 0, 0)
         self.layout.addWidget(self.widget, 1, 0)
         self.resize(self.parameters.param('width').value(),
                     self.parameters.param('height').value())
 
     def on_offset_change(self, _, offset):
         self.offset = offset
+    
+    def on_label_change(self, param, value):
+        self.text = value
+        self.label.setText(self.text)
+        #self.layout.addWidget(self.label,0,0)
 
     # Create the plot item
     def create_plot(self):
@@ -174,23 +177,6 @@ class StandardDisplayItem(DashboardItem):
         t = round(self.times[stream][-1] / config.GRAPH_STEP) * config.GRAPH_STEP
         self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
                             t + config.GRAPH_STEP, padding=0)
-
-        # value readout in the title for at most 2 series
-        # title = ""
-        # if len(self.series) <= 2:
-        #     # avg values
-        #     title += "    current: "
-        #     last_values = [self.points[item][-1]
-        #                    if self.points[item] else 0 for item in self.series]
-        #     for v in last_values:
-        #         title += f"[{v: < 4.4f}]"
-        #     title += "    "
-        # # data series name
-        # title += "/".join(self.series)
-        # if len(title) > 50:
-        #     title = title[:50]
-
-        # self.plot.setTitle(title)
 
         # For the numerical readout label
         self.data = float(point)
