@@ -5,6 +5,8 @@ from collections import OrderedDict
 import json
 from typing import Callable
 
+from .no_text_action_parameter import NoTextActionParameter
+
 
 class DashboardItem(QWidget):
     """
@@ -38,7 +40,7 @@ class DashboardItem(QWidget):
             {"name": "height", "type": "int", "value": 100}
         ])
 
-        lock_parameter = ActionParameter(name="lock")
+        lock_parameter = NoTextActionParameter(name="lock")
         lock_parameter.sigActivated.connect(self.lock)
         self.parameters.addChild(lock_parameter)
 
