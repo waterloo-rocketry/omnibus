@@ -462,6 +462,7 @@ class Dashboard(QWidget):
         data = self.get_data()
                     
         # Write data to savefile
+        os.makedirs(os.path.dirname(self.file_location), exist_ok=True)
         with open(self.file_location, "w") as savefile:
             json.dump(data, savefile)
 
