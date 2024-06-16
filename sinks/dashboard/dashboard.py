@@ -223,6 +223,22 @@ class Dashboard(QWidget):
         duplicate_action.triggered.connect(self.on_duplicate)
         self.lockableActions.append(duplicate_action)
 
+        # We have a menu in the top to allow users to change the stacking order
+        # of the selected items.
+        order_menu = menubar.addMenu("Order")
+        send_to_front_action = order_menu.addAction("Send to Front")
+        send_to_front_action.triggered.connect(self.send_to_front)
+        self.lockableActions.append(send_to_front_action)
+        send_to_back_action = order_menu.addAction("Send to Back")
+        send_to_back_action.triggered.connect(self.send_to_back)
+        self.lockableActions.append(send_to_back_action)
+        send_forward_action = order_menu.addAction("Send Forward")
+        send_forward_action.triggered.connect(self.send_forward)
+        self.lockableActions.append(send_forward_action)
+        send_backward_action = order_menu.addAction("Send Backward")
+        send_backward_action.triggered.connect(self.send_backward)
+        self.lockableActions.append(send_backward_action)
+
         # Add an action to the menu bar to display a
         # help box
         add_help_menu = menubar.addMenu("Help")
@@ -556,8 +572,13 @@ class Dashboard(QWidget):
         scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
         data["center"] = [scene_center.x(), scene_center.y()]
 
-        for items in self.widgets.values():
-            # Get the proxy widget and dashitem
+        # We follow the scene stacking order to serialize dashitems.
+        # We find all relevant proxy widgets and look up their
+        # corresponding dashitems.
+        for widget in self.scene.items(Qt.SortOrder.AscendingOrder):
+            if not isinstance(widget, QGraphicsRectItem):
+                continue
+            items = self.widgets[widget]
             proxy = items[0]
             dashitem = items[1]
 
@@ -669,6 +690,84 @@ class Dashboard(QWidget):
             self.remove(item)
             self.widgets.pop(item)
 
+    def send_to_front(self):
+        """Send the selected items to the front of the stacking order.
+        If there are multiple items selected, they will maintain their relative
+        order.
+        """
+        selected_items = self.scene.selectedItems()
+        if len(selected_items) == 0:
+            return
+        
+        order_of_items = {}
+        for i, item in enumerate(self.scene.items(Qt.SortOrder.AscendingOrder)):
+            order_of_items[item] = i
+        for item in sorted(selected_items, key=lambda item: order_of_items[item]):
+            self.scene.removeItem(item)
+            self.scene.addItem(item)
+
+    def send_to_back(self):
+        """Send the selected item to the back of the stacking order.
+        If there are multiple items selected, they will maintain their relative
+        order."""
+        selected_items = self.scene.selectedItems()
+        if len(selected_items) == 0:
+            return
+        
+        # For some reason QGraphicsItem::stackBefore doesn't work, so we just
+        # go with manually adding/removing all the items that are not supposed
+        # to be at the back
+        readd_items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
+                       if isinstance(item, QGraphicsRectItem) and item not in selected_items]
+        for item in readd_items:
+            self.scene.removeItem(item)
+            self.scene.addItem(item)
+
+    def send_forward(self):
+        """Send the selected item one layer forward in the stacking order,
+        if possible. If there are multiple items selected, we will try to apply
+        this operation to each from front to back, but we will not apply the
+        operation if the next forward item is also selected.
+        """
+        selected_items = self.scene.selectedItems()
+        if len(selected_items) == 0:
+            return
+        
+        # Too complicated to figure out what to add and remove. Just do it for
+        # all in a virtual array first
+        items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
+                 if isinstance(item, QGraphicsRectItem)]
+        for item in items:
+            self.scene.removeItem(item)
+        for i in reversed(range(len(items) - 1)):
+            if items[i] in selected_items and items[i + 1] not in selected_items:
+                tmp = items[i]
+                items[i] = items[i + 1]
+                items[i + 1] = tmp
+        for item in items:
+            self.scene.addItem(item)
+
+    def send_backward(self):
+        """Send the selected item one layer backward in the stacking order,
+        if possible. If there are multiple items selected, we will try to apply
+        this operation to each from back to front, but we will not apply the
+        operation if the next backward item is also selected.
+        """
+        selected_items = self.scene.selectedItems()
+        if len(selected_items) == 0:
+            return
+        
+        items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
+                 if isinstance(item, QGraphicsRectItem)]
+        for item in items:
+            self.scene.removeItem(item)
+        for i in reversed(range(1, len(items))):
+            if items[i] in selected_items and items[i - 1] not in selected_items:
+                tmp = items[i]
+                items[i] = items[i - 1]
+                items[i - 1] = tmp
+        for item in items:
+            self.scene.addItem(item)
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
