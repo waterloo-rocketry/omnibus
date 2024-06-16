@@ -321,6 +321,9 @@ class Dashboard(QWidget):
     def open_property_panel(self, item):
         items = self.scene.selectedItems()
 
+        if len(items) == 0:
+            return
+
         # Show the tree
         item = self.widgets[items[0]][1]
         if self.splitter.widget(1) is not item.parameter_tree:
@@ -537,7 +540,6 @@ class Dashboard(QWidget):
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
         
-        # We get some weird exceptions if we don't do this
         self.scene.clearSelection()
 
     # Method to unlock dashboard
