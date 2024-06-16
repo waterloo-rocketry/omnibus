@@ -1,6 +1,8 @@
 from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
 from pyqtgraph.parametertree import Parameter, ParameterTree
 from collections import OrderedDict
+from PySide6.QtGui import QPainter, QColor
+from PySide6.QtCore import QRect
 import json
 
 
@@ -14,7 +16,9 @@ class DashboardItem(QWidget):
 
     def __init__(self, resize_callback, params=None):
         super().__init__()
-
+        self.setMouseTracking(True)
+        self.corner_grabbed = False
+        self.corner_size = 20
         self.resize_callback = resize_callback
         """
         We use pyqtgraph's ParameterTree functionality to make an easy interface for setting
@@ -95,3 +99,55 @@ class DashboardItem(QWidget):
         remove subscriptions from series
         """
         pass
+    
+    """
+    The following functions are used to make the widget resizable by dragging the bottom right corner.
+    """
+
+    def mousePressEvent(self, event):
+        """ Starts resizing the widget when the mouse is pressed in the bottom right corner.
+
+        Notes:
+            if the mouse is not in the bottom right corner, the event is passed to the base class method for normal processing.
+        """
+        if self.isInCorner(event.pos()):
+            self.corner_grabbed = True
+            self.grab_start_pos = event.globalPos()
+            self.start_rect = self.rect()
+        else:
+            super().mousePressEvent(event)  # Call the base class method for normal processing
+
+    def mouseMoveEvent(self, event):
+        """ 
+        Resizes the widget while the mouse is being moved.
+        """
+        if self.corner_grabbed:
+            delta = event.globalPos() - self.grab_start_pos
+            new_width = max(self.start_rect.width() + delta.x(), self.minimumWidth())
+            new_height = max(self.start_rect.height() + delta.y(), self.minimumHeight())
+            self.resize(new_width, new_height)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        self.drawCorner(painter)
+
+    def mouseReleaseEvent(self, event):
+        """ Stops resizing the widget when the mouse is released.
+
+        Args:
+            event (QMouseEvent): The mouse release event.
+        """
+        self.corner_grabbed = False
+
+    def isInCorner(self, pos):
+        return pos.x() > self.width() - self.corner_size and pos.y() > self.height() - self.corner_size
+    
+    def drawCorner(self, painter):
+        """ Draws a corner grabber in the bottom right corner of the widget.
+
+        Args:
+            painter (QPainter): The painter object to draw with.
+        """
+        rect = QRect(self.width() - self.corner_size, self.height() - self.corner_size, self.corner_size, self.corner_size)
+        painter.setBrush(QColor(100, 100, 100))
+        painter.drawRect(rect)
