@@ -236,7 +236,6 @@ class ProgressBarWidget(QWidget):
         size: float | int = min(width/2.5, height) # size of the progress bar
 
         # Draw the border
-        painter.setPen(QColor(255, 255, 255))
         painter.setBrush(Qt.NoBrush)
         painter.drawRect(rect)
 
@@ -253,7 +252,6 @@ class ProgressBarWidget(QWidget):
         gradient.setColorAt(0, color1)
         gradient.setColorAt(1, color2)
         painter.setBrush(QBrush(gradient))
-        painter.setPen(Qt.NoPen)
         painter.drawRect(0, 0, progress_width, rect.height())
 
         # Draw the label text with percentage
@@ -261,7 +259,6 @@ class ProgressBarWidget(QWidget):
             (self.data - self.min_value) / (self.max_value - self.min_value) * 100
         )
 
-        painter.setPen(QColor(0, 0, 0))
         # Change font size according to the size of the progress bar
         font = QFont()
         font.setPointSize(int(size / 1.5))
@@ -285,9 +282,9 @@ class VerticalProgressBarWidget(ProgressBarWidget):
         size: float | int = min(width/2.5, height) # size of the progress bar
         
         # Draw the border
-        painter.setPen(QColor(255, 255, 255))
         painter.setBrush(Qt.NoBrush)
         painter.drawRect(rect)
+        
         # Calculate the progress height
         progress_height = (
             (self.data - self.min_value)
@@ -300,7 +297,6 @@ class VerticalProgressBarWidget(ProgressBarWidget):
         gradient.setColorAt(0, color1)
         gradient.setColorAt(1, color2)
         painter.setBrush(QBrush(gradient))
-        painter.setPen(Qt.NoPen)
         painter.drawRect(0, rect.height() - progress_height, rect.width(), progress_height)
         
         # Draw the label text with percentage
@@ -308,7 +304,6 @@ class VerticalProgressBarWidget(ProgressBarWidget):
             (self.data - self.min_value) / (self.max_value - self.min_value) * 100
         )
 
-        painter.setPen(QColor(0, 0, 0))
         # Change font size according to the size of the progress bar
         font = QFont()
         font.setPointSize(int(size / 1.5))
