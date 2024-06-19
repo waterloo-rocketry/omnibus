@@ -2,6 +2,7 @@ from publisher import publisher
 from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu, QLabel
 from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 from pyqtgraph.Qt.QtGui import QFont
+from pyqtgraph.Qt.QtCore import Qt
 import pyqtgraph as pg
 import numpy as np
 
@@ -33,6 +34,7 @@ class StandardDisplayItem(DashboardItem):
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
         self.parameters.param('text').sigValueChanged.connect(self.on_label_change)
+        self.parameters.param('display-sparkline').sigValueChanged.connect(self.on_display_sparkline_change)
 
 
         self.series = self.parameters.param('series').value()
@@ -55,6 +57,7 @@ class StandardDisplayItem(DashboardItem):
 
         # Medium Text Label
         self.label = QLabel("Label")
+        self.label.setAlignment(Qt.AlignCenter)
 
         font = QFont()
         font.setPointSize(15)
@@ -66,8 +69,8 @@ class StandardDisplayItem(DashboardItem):
         # add it to the layout
         self.layout.addWidget(self.label, 0, 0)
         self.layout.addWidget(self.widget, 1, 0)
-        self.layout.addWidget(self.numRead, 2, 0)
-        self.resize(300,100)
+        #self.layout.addWidget(self.numRead, 2, 0)
+        self.resize(400,100)
 
     def add_parameters(self):
         text_param = {'name': 'text', 'type': 'str', 'value': ''}
@@ -77,7 +80,8 @@ class StandardDisplayItem(DashboardItem):
                                           limits=publisher.get_all_streams())
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
-        return [text_param, series_param, limit_param, offset_param]
+        display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': False}
+        return [text_param, series_param, limit_param, offset_param, display_sparkline_param]
 
     def on_series_change(self, param, value):
         if len(value) > 6:
@@ -102,6 +106,12 @@ class StandardDisplayItem(DashboardItem):
         self.text = value
         self.label.setText(self.text)
         #self.layout.addWidget(self.label,0,0)
+    
+    def on_display_sparkline_change(self, param, value):
+        if value:
+            self.widget.show()
+        else:
+            self.widget.hide()
 
     # Create the plot item
     def create_plot(self):
@@ -109,7 +119,7 @@ class StandardDisplayItem(DashboardItem):
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
         plot.setMouseEnabled(x=False, y=False)
         plot.hideButtons()
-        plot.setMinimumSize(300, 100)
+        plot.setMinimumSize(300, 95)
         if (len(self.series) > 1):
             plot.addLegend()
          # hide the axes
@@ -183,8 +193,24 @@ class StandardDisplayItem(DashboardItem):
                             t + config.GRAPH_STEP, padding=0)
 
         # For the numerical readout label
-        self.data = float(point)
-        self.numRead.setText(f"{self.data:.6f}")
+        # self.data = float(point)
+        # self.numRead.setText(f"{self.data:.6f}")
+
+        title = ""
+        if len(self.series) <= 2:
+            # avg values
+            title += "    current: "
+            last_values = [self.points[item][-1]
+                           if self.points[item] else 0 for item in self.series]
+            for v in last_values:
+                title += f"[{v: < 4.4f}]"
+            title += "    "
+        # data series name
+        title += "/".join(self.series)
+        if len(title) > 50:
+            title = title[:50]
+
+        self.plot.setTitle(title)
 
 
     @staticmethod
