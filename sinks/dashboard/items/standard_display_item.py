@@ -199,7 +199,6 @@ class StandardDisplayItem(DashboardItem):
         title = ""
         if len(self.series) <= 2:
             # avg values
-            title += "    current: "
             last_values = [self.points[item][-1]
                            if self.points[item] else 0 for item in self.series]
             for v in last_values:
