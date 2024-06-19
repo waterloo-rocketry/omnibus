@@ -63,13 +63,10 @@ class StandardDisplayItem(DashboardItem):
         font.setPointSize(15)
         self.label.setFont(font)
 
-        #Big numerical readout
-        self.numRead = QLabel("Not Connected")
-
         # add it to the layout
         self.layout.addWidget(self.label, 0, 0)
         self.layout.addWidget(self.widget, 1, 0)
-        #self.layout.addWidget(self.numRead, 2, 0)
+        
         self.resize(400,100)
 
     def add_parameters(self):
@@ -94,7 +91,6 @@ class StandardDisplayItem(DashboardItem):
         # recreate the plot with new series and add it to the layout
         self.plot = self.create_plot()
         self.widget = pg.PlotWidget(plotItem=self.plot)
-        #self.layout.addWidget(self.widget, 0, 0)
         self.layout.addWidget(self.widget, 1, 0)
         self.resize(self.parameters.param('width').value(),
                     self.parameters.param('height').value())
@@ -105,7 +101,6 @@ class StandardDisplayItem(DashboardItem):
     def on_label_change(self, param, value):
         self.text = value
         self.label.setText(self.text)
-        #self.layout.addWidget(self.label,0,0)
     
     def on_display_sparkline_change(self, param, value):
         if value:
@@ -191,10 +186,6 @@ class StandardDisplayItem(DashboardItem):
         t = round(self.times[stream][-1] / config.GRAPH_STEP) * config.GRAPH_STEP
         self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
                             t + config.GRAPH_STEP, padding=0)
-
-        # For the numerical readout label
-        # self.data = float(point)
-        # self.numRead.setText(f"{self.data:.6f}")
 
         title = ""
         if len(self.series) <= 2:
