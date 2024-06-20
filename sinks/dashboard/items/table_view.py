@@ -188,9 +188,9 @@ class TVItemDelegate(QItemDelegate):
 
 @Register
 class TableViewItem(DashboardItem):
-    def __init__(self, on_item_resize, lock_item, params=None):
+    def __init__(self, on_item_resize, params=None):
         # Call this in **every** dash item constructor
-        super().__init__(on_item_resize, lock_item, params)
+        super().__init__(on_item_resize, params)
 
         # Specify the layout
         self.layout = QHBoxLayout()
