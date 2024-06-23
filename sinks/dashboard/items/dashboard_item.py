@@ -1,9 +1,10 @@
-from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
-from pyqtgraph.parametertree import Parameter, ParameterTree
-from pyqtgraph.parametertree.parameterTypes import ActionParameter, ActionParameterItem
 from collections import OrderedDict
 import json
 from typing import Callable
+
+from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
+from pyqtgraph.parametertree import Parameter, ParameterTree
+from pyqtgraph.parametertree.parameterTypes import ActionParameter, ActionParameterItem
 
 from .no_text_action_parameter import NoTextActionParameter
 
