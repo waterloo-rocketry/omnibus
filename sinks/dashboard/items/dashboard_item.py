@@ -1,6 +1,5 @@
 from collections import OrderedDict
 import json
-from typing import Callable
 
 from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
 from pyqtgraph.parametertree import Parameter, ParameterTree
@@ -19,11 +18,10 @@ class DashboardItem(QWidget):
 
     """Whether the dashboard item is locked, which disables selection"""
 
-    def __init__(self, resize_callback, lock_item: Callable[['DashboardItem'], None], params=None):
+    def __init__(self, resize_callback, params=None):
         super().__init__()
 
         self.resize_callback = resize_callback
-        self.lock_item = lock_item
         """
         We use pyqtgraph's ParameterTree functionality to make an easy interface for setting
         parameters. Subclasses should add their own parameters in their __init__ as follows:
@@ -40,10 +38,6 @@ class DashboardItem(QWidget):
             {"name": "width", "type": "int", "value": 100},
             {"name": "height", "type": "int", "value": 100}
         ])
-
-        lock_parameter = NoTextActionParameter(name="lock")
-        lock_parameter.sigActivated.connect(self.lock)
-        self.parameters.addChild(lock_parameter)
 
         # add widget specific parameters
         self.parameters.addChildren(self.add_parameters())
@@ -67,11 +61,6 @@ class DashboardItem(QWidget):
         if params:
             state = json.loads(params, object_pairs_hook=OrderedDict)
             self.parameters.restoreState(state, addChildren=False, removeChildren=False)
-
-    def lock(self):
-        """Set the dashboard item as locked.
-        """
-        self.lock_item(self)
 
     def resizeEvent(self, _):
         # These will trigger our lambdas above, but that's not an issue.

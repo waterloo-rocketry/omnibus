@@ -193,7 +193,7 @@ class Dashboard(QWidget):
         def create_registry_trigger(i):
             def return_fun():
                 if not self.locked:
-                    self.add(registry.get_items()[i](self.on_item_resize, self.lock_dashboard_item))
+                    self.add(registry.get_items()[i](self.on_item_resize))
             return return_fun
 
         for i in range(len(registry.get_items())):
@@ -360,7 +360,7 @@ class Dashboard(QWidget):
 
                 params = item.get_serialized_parameters()
 
-                self.add(type(item)(self.on_item_resize, self.lock_dashboard_item, params),
+                self.add(type(item)(self.on_item_resize, params),
                          (viewpos.x() + 20, viewpos.y() + 20))
 
                 break
@@ -475,7 +475,7 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    item = item_type(self.on_item_resize, self.lock_dashboard_item, widget["params"])
+                    item = item_type(self.on_item_resize, widget["params"])
                     rect = self.add(item, widget["pos"])
                     if "locked" in widget and widget["locked"] is not None:
                         locked_item_pairs.append((widget["locked"], rect))
@@ -560,13 +560,6 @@ class Dashboard(QWidget):
             individually_locked = any(rect == pair[0] for pair in self.locked_widgets)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=not individually_locked)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=not individually_locked)
-
-    def lock_dashboard_item(self, item: DashboardItem):
-        """Mark a dashboard item as locked."""
-        for rect, (_proxy, candidate) in self.widgets.items():
-            if candidate is item:
-                self.lock_widget(rect)
-                return
             
     def lock_widget(self, rect: QGraphicsRectItem):
         """Mark a widget rect as locked."""
