@@ -4,7 +4,7 @@ import json
 import signal
 from enum import Enum
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.Qt.QtGui import QPainter
+from pyqtgraph.Qt.QtGui import QPainter, QAction
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -22,12 +22,14 @@ from pyqtgraph.Qt.QtWidgets import (
     QLabel,
     QCheckBox,
     QHBoxLayout,
-    QPushButton
+    QPushButton,
+    QGraphicsProxyWidget
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
 from utils import ConfirmDialog, EventTracker
+from items.dashboard_item import DashboardItem
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
 from items.dynamic_text import DynamicTextItem
@@ -123,7 +125,7 @@ class Dashboard(QWidget):
         self.callback = callback
 
         # Dictionary to map rectitems to widgets and dashitems
-        self.widgets = {}
+        self.widgets: dict[QGraphicsRectItem, tuple[QGraphicsProxyWidget, DashboardItem]] = {}
 
         # Keep track of if editing is allowed
         self.locked = False
@@ -216,6 +218,18 @@ class Dashboard(QWidget):
         self.lockableActions.append(lock_action)
         unlock_action = add_lock_menu.addAction("Unlock Dashboard")
         unlock_action.triggered.connect(self.unlock)
+        lock_selected = add_lock_menu.addAction("Lock Selected")
+        lock_selected.triggered.connect(self.lock_selected)
+        self.lockableActions.append(lock_selected)
+        self.unlock_items_menu = add_lock_menu.addMenu("Unlock Items")
+        """Menu containing actions to unlock items that are locked, in the order
+        in which they were locked.
+        """
+        self.locked_widgets: list[tuple[QGraphicsRectItem, QAction]] = []
+        """List of items which are locked, in the order in which they
+        were locked.
+        
+        Includes the rect item and the unlock action."""
 
         # An action to the to the menu bar to duplicate
         # the selected item
@@ -324,6 +338,9 @@ class Dashboard(QWidget):
     def open_property_panel(self, item):
         items = self.scene.selectedItems()
 
+        if len(items) == 0:
+            return
+
         # Show the tree
         item = self.widgets[items[0]][1]
         if self.splitter.widget(1) is not item.parameter_tree:
@@ -376,7 +393,7 @@ class Dashboard(QWidget):
                 return
 
     # Method to add widgets
-    def add(self, dashitem, pos=None):
+    def add(self, dashitem, pos=None) -> QGraphicsRectItem:
         # Add the dash item to the scene and get
         # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
@@ -417,6 +434,8 @@ class Dashboard(QWidget):
 
         # Map the proxy widget and dashitem to the rectitem
         self.widgets[rect] = [proxy, dashitem]
+
+        return rect
 
     # Method to remove a widget
     def remove(self, item):
@@ -464,6 +483,7 @@ class Dashboard(QWidget):
         if "should_show_save_popup" in data and not data["should_show_save_popup"]:
             self.should_show_save_popup = False    
 
+        locked_item_pairs = []
 
         # Add every widget in the data
         for widget in data["widgets"]:
@@ -471,8 +491,15 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    self.add(item_type(self.on_item_resize, widget["params"]), widget["pos"])
+                    item = item_type(self.on_item_resize, widget["params"])
+                    rect = self.add(item, widget["pos"])
+                    if "locked" in widget and widget["locked"] is not None:
+                        locked_item_pairs.append((widget["locked"], rect))
                     break
+
+        locked_item_pairs.sort(key=lambda pair: pair[0])
+        for _index, rect in locked_item_pairs:
+            self.lock_widget(rect)
 
     # Method to save current layout to file
     def save(self):
@@ -523,10 +550,15 @@ class Dashboard(QWidget):
         for menu_item in self.lockableActions:
             menu_item.setEnabled(False)
 
+        for _rect, action in self.locked_widgets:
+            action.setEnabled(False)
+
         # Disable selecting and moving plots
         for rect in self.widgets:
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
+        
+        self.scene.clearSelection()
 
     # Method to unlock dashboard
     def unlock(self):
@@ -536,11 +568,38 @@ class Dashboard(QWidget):
         # Enable menu actions
         for menu_item in self.lockableActions:
             menu_item.setEnabled(True)
+            
+        for _rect, action in self.locked_widgets:
+            action.setEnabled(True)
 
         # Enable selecting and moving plots
         for rect in self.widgets:
-            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=True)
-            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=True)
+            individually_locked = any(rect == pair[0] for pair in self.locked_widgets)
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=not individually_locked)
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=not individually_locked)
+            
+    def lock_widget(self, rect: QGraphicsRectItem):
+        """Mark a widget rect as locked."""
+        rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
+        rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
+        name = self.widgets[rect][1].get_name()
+        action = self.unlock_items_menu.addAction(f"Unlock {name}")
+
+        def unlock():
+            self.locked_widgets = [pair for pair in self.locked_widgets if pair[0] != rect]
+            self.unlock_items_menu.removeAction(action)
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=not self.locked)
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=not self.locked)
+            
+        action.triggered.connect(unlock)
+        self.locked_widgets.append((rect, action))
+
+        self.scene.clearSelection()
+
+    def lock_selected(self):
+        """Mark all selected widgets as locked, in an arbitrary order"""
+        for widget in self.scene.selectedItems():
+            self.lock_widget(widget)
 
     # Method to handle exit
     def closeEvent(self, event):
@@ -577,10 +636,10 @@ class Dashboard(QWidget):
         # We follow the scene stacking order to serialize dashitems.
         # We find all relevant proxy widgets and look up their
         # corresponding dashitems.
-        for widget in self.scene.items(Qt.SortOrder.AscendingOrder):
-            if not isinstance(widget, QGraphicsRectItem):
+        for rect in self.scene.items(Qt.SortOrder.AscendingOrder):
+            if not isinstance(rect, QGraphicsRectItem):
                 continue
-            items = self.widgets[widget]
+            items = self.widgets[rect]
             proxy = items[0]
             dashitem = items[1]
 
@@ -591,9 +650,11 @@ class Dashboard(QWidget):
             # Add the position, dashitem name and dashitem props
             for item_type in registry.get_items():
                 if type(dashitem) == item_type:
+                    locked_index = next((i for i, (candidate, _action) in enumerate(self.locked_widgets) if candidate == rect), None)
                     data["widgets"].append({"class": item_type.get_name(),
                                             "params": dashitem.get_serialized_parameters(),
-                                            "pos": [viewpos.x(), viewpos.y()]})
+                                            "pos": [viewpos.x(), viewpos.y()],
+                                            "locked": locked_index})
         
         return data
     

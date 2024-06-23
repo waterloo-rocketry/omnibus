@@ -1,7 +1,11 @@
-from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
-from pyqtgraph.parametertree import Parameter, ParameterTree
 from collections import OrderedDict
 import json
+
+from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
+from pyqtgraph.parametertree import Parameter, ParameterTree
+from pyqtgraph.parametertree.parameterTypes import ActionParameter, ActionParameterItem
+
+from .no_text_action_parameter import NoTextActionParameter
 
 
 class DashboardItem(QWidget):
@@ -11,6 +15,8 @@ class DashboardItem(QWidget):
         - get_name() ;  just the name, has to be static
         - add_parameters() ; return a list of pyqtgraph Parameter objects specific to the widget
     """
+
+    """Whether the dashboard item is locked, which disables selection"""
 
     def __init__(self, resize_callback, params=None):
         super().__init__()
