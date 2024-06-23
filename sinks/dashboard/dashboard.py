@@ -761,7 +761,7 @@ class Dashboard(QWidget):
                  if isinstance(item, QGraphicsRectItem)]
         for item in items:
             self.scene.removeItem(item)
-        for i in reversed(range(1, len(items))):
+        for i in range(1, len(items)):
             if items[i] in selected_items and items[i - 1] not in selected_items:
                 tmp = items[i]
                 items[i] = items[i - 1]
