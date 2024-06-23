@@ -125,7 +125,7 @@ class PeriodicCanSender(DashboardItem):
 
     @staticmethod
     def get_name():
-        return "Periodic Can Sender"
+        return "Periodic CAN Sender"
 
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)
