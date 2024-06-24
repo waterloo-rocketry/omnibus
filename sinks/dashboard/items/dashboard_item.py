@@ -1,8 +1,9 @@
 from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
 from pyqtgraph.parametertree import Parameter, ParameterTree
+from pyqtgraph.Qt.QtGui import QPainter, QColor
+from pyqtgraph.Qt.QtCore import QRect, Qt
+
 from collections import OrderedDict
-from PySide6.QtGui import QPainter, QColor
-from PySide6.QtCore import QRect
 import json
 
 
@@ -18,7 +19,11 @@ class DashboardItem(QWidget):
         super().__init__()
         self.setMouseTracking(True)
         self.corner_grabbed = False
+        self.corner_in = False
+        self.corner_index = 0
         self.corner_size = 20
+        self.frame_count = 0 
+        self.frame_mouse_detected = 20 # Number of frames to detect mouse movement
         self.resize_callback = resize_callback
         """
         We use pyqtgraph's ParameterTree functionality to make an easy interface for setting
@@ -100,16 +105,14 @@ class DashboardItem(QWidget):
         """
         pass
     
-    """
-    The following functions are used to make the widget resizable by dragging the bottom right corner.
-    """
+    # The following functions are used to make the widget resizable by dragging the bottom right corner.
 
     def mousePressEvent(self, event):
         """ Starts resizing the widget when the mouse is pressed in the bottom right corner.
         Notes:
             if the mouse is not in the bottom right corner, the event is passed to the base class method for normal processing.
         """
-        if self.isInCorner(event.pos()):
+        if self.corner_in:
             self.corner_grabbed = True
             self.grab_start_pos = event.globalPos()
             self.start_rect = self.rect()
@@ -120,6 +123,17 @@ class DashboardItem(QWidget):
         """ 
         Resizes the widget while the mouse is being moved.
         """
+        if (self.frame_count == self.frame_mouse_detected): # This is a low-pass filter to detect mouse movement
+            self.corner_in, self.corner_index = self.is_in_corner(event.pos())
+            if self.corner_in:
+                self.setCursor(Qt.SizeFDiagCursor)
+            else:
+                self.setCursor(Qt.ArrowCursor)
+            self.frame_count = 0
+        else:
+            self.frame_count += 1
+
+
         if self.corner_grabbed:
             delta = event.globalPos() - self.grab_start_pos
             new_width = max(self.start_rect.width() + delta.x(), self.minimumWidth())
@@ -128,7 +142,7 @@ class DashboardItem(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        self.drawCorner(painter)
+        self.draw_corner(painter)
 
     def mouseReleaseEvent(self, event):
         """ Stops resizing the widget when the mouse is released.
@@ -137,14 +151,41 @@ class DashboardItem(QWidget):
         """
         self.corner_grabbed = False
 
-    def isInCorner(self, pos):
-        return pos.x() > self.width() - self.corner_size and pos.y() > self.height() - self.corner_size
+    def is_in_corner(self, pos):
+        left_up_corner = pos.x() < self.corner_size and pos.y() < self.corner_size
+        if left_up_corner: 
+            return (left_up_corner, 0) 
+        right_up_corner = pos.x() > self.width() - self.corner_size and pos.y() < self.corner_size
+        if right_up_corner: 
+            return (right_up_corner, 1) 
+        left_down_corner = pos.x() < self.corner_size and pos.y() > self.height() - self.corner_size
+        if left_down_corner: 
+            return (left_down_corner, 2) 
+        right_down_corner = pos.x() > self.width() - self.corner_size and pos.y() > self.height() - self.corner_size
+        if right_down_corner: 
+            return (right_down_corner, 3) 
 
-    def drawCorner(self, painter):
+    def draw_corner(self, painter):
         """ Draws a corner grabber in the bottom right corner of the widget.
         Args:
             painter (QPainter): The painter object to draw with.
         """
-        rect = QRect(self.width() - self.corner_size, self.height() - self.corner_size, self.corner_size, self.corner_size)
-        painter.setBrush(QColor(100, 100, 100))
-        painter.drawRect(rect)
+
+        left_up_rect = QRect(0, 0, self.corner_size, self.corner_size)
+        right_up_rect = QRect(self.width() - self.corner_size, 0, self.corner_size, self.corner_size)
+        left_down_rect = QRect(0, self.height() - self.corner_size, self.corner_size, self.corner_size)
+        right_down_rect = QRect(self.width() - self.corner_size, self.height() - self.corner_size, self.corner_size, self.corner_size)
+        
+        rect_lst = [left_up_rect, right_up_rect, left_down_rect, right_down_rect]
+        painter.setPen(Qt.NoPen)  # Hide the outline of the rectangle
+        painter.setBrush(Qt.NoBrush)  # Hide the fill color of the rectangle
+
+        painter.drawRect(left_up_rect)
+        painter.drawRect(right_up_rect)
+        painter.drawRect(left_down_rect)
+        painter.drawRect(right_down_rect)
+        
+        if self.corner_in:
+            painter.setBrush(QColor(100, 100, 100))
+            painter.drawRect(rect_lst[self.corner_index]) 
+
