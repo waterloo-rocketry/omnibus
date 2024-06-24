@@ -59,13 +59,19 @@ class StandardDisplayItem(DashboardItem):
         self.label = QLabel("Label")
         self.label.setAlignment(Qt.AlignCenter)
 
+        #Big numerical readout
+        self.numRead = QLabel("Not Connected")
+        self.numRead.setAlignment(Qt.AlignCenter)
+
         font = QFont()
         font.setPointSize(15)
         self.label.setFont(font)
+        self.numRead.setFont(font)
 
         # add it to the layout
-        self.layout.addWidget(self.label, 0, 0)
-        self.layout.addWidget(self.widget, 1, 0)
+        self.layout.addWidget(self.numRead, 0, 0)
+        self.layout.addWidget(self.label, 1, 0)
+        self.layout.addWidget(self.widget, 2, 0)
         
         self.resize(400,100)
 
@@ -91,7 +97,7 @@ class StandardDisplayItem(DashboardItem):
         # recreate the plot with new series and add it to the layout
         self.plot = self.create_plot()
         self.widget = pg.PlotWidget(plotItem=self.plot)
-        self.layout.addWidget(self.widget, 1, 0)
+        self.layout.addWidget(self.widget, 2, 0)
         self.resize(self.parameters.param('width').value(),
                     self.parameters.param('height').value())
 
@@ -187,20 +193,9 @@ class StandardDisplayItem(DashboardItem):
         self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
                             t + config.GRAPH_STEP, padding=0)
 
-        title = ""
-        if len(self.series) <= 2:
-            # avg values
-            last_values = [self.points[item][-1]
-                           if self.points[item] else 0 for item in self.series]
-            for v in last_values:
-                title += f"[{v: < 4.4f}]"
-            title += "    "
-        # data series name
-        title += "/".join(self.series)
-        if len(title) > 50:
-            title = title[:50]
-
-        self.plot.setTitle(title)
+        # For the numerical readout label
+        self.data = float(point)
+        self.numRead.setText(f"{self.data:.6f}")
 
 
     @staticmethod
