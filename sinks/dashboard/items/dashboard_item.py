@@ -1,11 +1,11 @@
-from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
-from pyqtgraph.parametertree import Parameter, ParameterTree
-from collections import OrderedDict
-import json
-
+from pyqtgraph.Qt.QtGui import QPainter, QColor
 from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
 from pyqtgraph.parametertree import Parameter, ParameterTree
 from pyqtgraph.parametertree.parameterTypes import ActionParameter, ActionParameterItem
+from pyqtgraph.Qt.QtCore import QRect, Qt
+from collections import OrderedDict
+import json
+
 
 from .no_text_action_parameter import NoTextActionParameter
 
@@ -27,8 +27,6 @@ class DashboardItem(QWidget):
         self.corner_in = False
         self.corner_index = 0
         self.corner_size = 20
-        self.frame_count = 0 
-        self.frame_mouse_detected = 20 # Number of frames to detect mouse movement
         self.resize_callback = resize_callback
         """
         We use pyqtgraph's ParameterTree functionality to make an easy interface for setting
@@ -128,15 +126,11 @@ class DashboardItem(QWidget):
         """ 
         Resizes the widget while the mouse is being moved.
         """
-        if (self.frame_count == self.frame_mouse_detected): # This is a low-pass filter to detect mouse movement
-            self.corner_in, self.corner_index = self.is_in_corner(event.pos())
-            if self.corner_in:
-                self.setCursor(Qt.SizeFDiagCursor)
-            else:
-                self.setCursor(Qt.ArrowCursor)
-            self.frame_count = 0
+        self.corner_in, self.corner_index = self.is_in_corner(event.pos())
+        if self.corner_in:
+            self.setCursor(Qt.SizeFDiagCursor)
         else:
-            self.frame_count += 1
+            self.setCursor(Qt.ArrowCursor)
 
 
         if self.corner_grabbed:
@@ -159,16 +153,17 @@ class DashboardItem(QWidget):
     def is_in_corner(self, pos):
         left_up_corner = pos.x() < self.corner_size and pos.y() < self.corner_size
         if left_up_corner: 
-            return (left_up_corner, 0) 
+            return (True, 0) 
         right_up_corner = pos.x() > self.width() - self.corner_size and pos.y() < self.corner_size
         if right_up_corner: 
-            return (right_up_corner, 1) 
+            return (True, 1) 
         left_down_corner = pos.x() < self.corner_size and pos.y() > self.height() - self.corner_size
         if left_down_corner: 
-            return (left_down_corner, 2) 
+            return (True, 2) 
         right_down_corner = pos.x() > self.width() - self.corner_size and pos.y() > self.height() - self.corner_size
         if right_down_corner: 
-            return (right_down_corner, 3) 
+            return (True, 3) 
+        return (False, -1)
 
     def draw_corner(self, painter):
         """ Draws a corner grabber in the bottom right corner of the widget.
