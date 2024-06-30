@@ -38,6 +38,7 @@ from items.gauge_item import GaugeItem
 from items.progress_bar import ProgressBarItem
 from items.image_dash_item import ImageDashItem
 from items.text_dash_item import TextDashItem
+from items.dynamic_text import DynamicTextItem
 from items.periodic_can_sender import PeriodicCanSender
 from items.can_sender import CanSender
 
