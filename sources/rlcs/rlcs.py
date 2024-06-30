@@ -28,6 +28,16 @@ MESSAGE_FORMAT = [
     Enum("VA3 Lims", 8, LIMIT_SWITCHES),
     Enum("VA4 Lims", 8, LIMIT_SWITCHES),
     Enum("Fill Disconnect Lims", 8, LIMIT_SWITCHES),
+    Numeric("Heater Thermistor 1", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Thermistor 2", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Current 1",16,scale=1/1000,big_endian=False),
+    Numeric("Heater Current 2",16,scale=1/1000,big_endian=False),
+    Numeric("Heater Battery 1", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Battery 2", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin Low 1", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin Low 2", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin High 1", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin High 2", 16,scale=1/1000, big_endian=False),
 ]
 
 
