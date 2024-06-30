@@ -18,16 +18,15 @@ class DashboardItem(QWidget):
         - add_parameters() ; return a list of pyqtgraph Parameter objects specific to the widget
     """
 
-    """Whether the dashboard item is locked, which disables selection"""
-
-    def __init__(self, resize_callback, params=None):
+    def __init__(self, dashboard, params=None):
         super().__init__()
         self.setMouseTracking(True)
         self.corner_grabbed = False
         self.corner_in = False
         self.corner_size = 40
         self.corner_index = 0
-        self.resize_callback = resize_callback
+        self.dashboard = dashboard
+        self.resize_callback = dashboard.on_item_resize
         """
         We use pyqtgraph's ParameterTree functionality to make an easy interface for setting
         parameters. Subclasses should add their own parameters in their __init__ as follows:
@@ -117,7 +116,7 @@ class DashboardItem(QWidget):
         """
         if self.is_in_corner(event.pos()):
             self.corner_grabbed = True
-            self.grab_start_pos = event.globalPos()
+            self.grab_start_pos = self.dashboard.view.mapToScene(event.globalPos())
             self.start_rect = self.rect()
         else:
             super().mousePressEvent(event)  # Call the base class method for normal processing
@@ -137,7 +136,7 @@ class DashboardItem(QWidget):
             self.corner_in = False
 
         if self.corner_grabbed:
-            delta = event.globalPos() - self.grab_start_pos
+            delta = self.dashboard.view.mapToScene(event.globalPos()) - self.grab_start_pos
             new_width = max(self.start_rect.width() + delta.x(), self.minimumWidth())
             new_height = max(self.start_rect.height() + delta.y(), self.minimumHeight())
             self.resize(new_width, new_height)
