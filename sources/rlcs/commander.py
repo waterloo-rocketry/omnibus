@@ -1,8 +1,8 @@
 import time
-
+from typing import Union
 from omnibus import Sender
-from parsley import Number
-
+#from parsley import Number FIX ME
+Number=Union[int,float]
 sender = Sender()
 
 

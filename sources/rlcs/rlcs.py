@@ -1,5 +1,8 @@
 import parsley
-from parsley.fields import Enum, Number, Numeric
+from typing import Union #Remove this line
+from parsley.fields import Enum, Numeric #FIX ME
+#from parsley.fields import Enum, Number, Numeric #FIX ME
+Number = Union[int, float] #Remove this line 
 
 VALVE_COMMAND = {"CLOSED": 0, "OPEN": 1}
 BOOLEAN = {"FALSE": 0, "TRUE": 1}
@@ -12,10 +15,14 @@ MESSAGE_FORMAT = [
     Enum("VA4 Command", 8, VALVE_COMMAND),
     Enum("Vent Valve Command", 8, VALVE_COMMAND),
     Enum("Injector Valve Command", 8, VALVE_COMMAND),
+    Enum("Fill Dump Valve Command",8,VALVE_COMMAND),
+    Enum("Fill Disconnect Command", 8, VALVE_COMMAND),
+    Enum("Rocket Power Command", 8, VALVE_COMMAND),
+    Enum("Tank Heating 1",8,VALVE_COMMAND),
+    Enum("Tank Heating 2",8,VALVE_COMMAND),
     Enum("Ignition Primary Command", 8, VALVE_COMMAND),
     Enum("Ignition Secondary Command", 8, VALVE_COMMAND),
-    Enum("Rocket Power Command", 8, VALVE_COMMAND),
-    Enum("Fill Disconnect Command", 8, VALVE_COMMAND),
+
     Numeric("Towerside Main Batt", 16, scale=1/1000, big_endian=False),
     Numeric("Towerside Actuator Batt", 16, scale=1/1000, big_endian=False),
     Numeric("Error Code", 16, big_endian=False),
@@ -27,7 +34,7 @@ MESSAGE_FORMAT = [
     Enum("VA2 Lims", 8, LIMIT_SWITCHES),
     Enum("VA3 Lims", 8, LIMIT_SWITCHES),
     Enum("VA4 Lims", 8, LIMIT_SWITCHES),
-    Enum("Fill Disconnect Lims", 8, LIMIT_SWITCHES),
+    #Enum("Fill Disconnect Lims", 8, LIMIT_SWITCHES),
     Numeric("Heater Thermistor 1", 16,scale=1/1000, big_endian=False),
     Numeric("Heater Thermistor 2", 16,scale=1/1000, big_endian=False),
     Numeric("Heater Current 1",16,scale=1/1000,big_endian=False),
