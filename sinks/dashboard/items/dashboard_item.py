@@ -54,9 +54,9 @@ class DashboardItem(QWidget):
         # add listeners before restoring state so that the
         # dimensions are set correctly from the saved state
         self.parameters.child("width").sigValueChanged.connect(lambda _, val:
-                                                               self.resize(
-                                                                   val, self.size().height())
-                                                               )
+                                                                self.resize(
+                                                                    val, self.size().height())
+                                                                )
         self.parameters.child("height").sigValueChanged.connect(lambda _, val:
                                                                 self.resize(
                                                                     self.size().width(), val)
@@ -121,7 +121,7 @@ class DashboardItem(QWidget):
         else:
             super().mousePressEvent(event)  # Call the base class method for normal processing
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event): # This function is called when the mouse is move in the widget
         """ 
         When the mouse is move in the corner, the cursor shape is changed to indicate that the widget can be resized
         """
@@ -162,7 +162,7 @@ class DashboardItem(QWidget):
     
     def paintEvent(self, event):
         painter = QPainter(self)
-        if self.corner_in:
+        if self.corner_in: # Draw the corner grabber when the mouse is in the corner
             self.draw_corner(painter)
 
 
