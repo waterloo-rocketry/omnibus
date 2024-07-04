@@ -125,13 +125,12 @@ class DashboardItem(QWidget):
         """ 
         When the mouse is move in the corner, the cursor shape is changed to indicate that the widget can be resized
         """
-        
         if self.corner_hit(event.pos()):
             self.setCursor(Qt.SizeFDiagCursor)
             self.corner_in = True
         else:
             self.setCursor(Qt.ArrowCursor)
-            self.corner_in = False
+            self.corner_in = False      
 
         if self.corner_grabbed:
             delta = self.dashboard.view.mapToScene(event.globalPos()) - self.grab_start_pos
@@ -163,7 +162,8 @@ class DashboardItem(QWidget):
     
     def paintEvent(self, event):
         painter = QPainter(self)
-        self.draw_corner(painter)
+        if self.corner_in:
+            self.draw_corner(painter)
 
 
     def draw_corner(self, painter):
@@ -176,6 +176,7 @@ class DashboardItem(QWidget):
         left_down_rect = QRect(0, self.height() - self.corner_size, self.corner_size, self.corner_size)
         right_down_rect = QRect(self.width() - self.corner_size, self.height() - self.corner_size, self.corner_size, self.corner_size)
         rect_lst = [left_up_rect, right_up_rect, left_down_rect, right_down_rect]
+
         painter.setPen(Qt.NoPen)  # Hide the outline of the rectangle
         painter.setBrush(Qt.NoBrush)  # Hide the fill color of the rectangle
 
