@@ -149,10 +149,10 @@ class DashboardItem(QWidget):
         """ 
         Checks if the mouse is in the corner and updates the corner_index.
         """
-        left_up_corner = pos.x() < self.corner_size and pos.y() < self.corner_size
-        right_up_corner = pos.x() > self.width() - self.corner_size and pos.y() < self.corner_size
-        left_down_corner = pos.x() < self.corner_size and pos.y() > self.height() - self.corner_size
-        right_down_corner = pos.x() > self.width() - self.corner_size and pos.y() > self.height() - self.corner_size
+        left_up_corner = pos.x() <= self.corner_size and pos.y() <= self.corner_size
+        right_up_corner = pos.x() >= self.width() - self.corner_size and pos.y() <= self.corner_size
+        left_down_corner = pos.x() <= self.corner_size and pos.y() >= self.height() - self.corner_size
+        right_down_corner = pos.x() >= self.width() - self.corner_size and pos.y() >= self.height() - self.corner_size
         index_list = [left_up_corner, right_up_corner, left_down_corner, right_down_corner]
         if any(index_list):
             self.corner_index = index_list.index(True)
