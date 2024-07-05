@@ -22,7 +22,9 @@ Python 3.10 or newer is required. For Linux users, a python package with C heade
 4. Activate the virtual environment:
    - For osx/linux: `source venv/bin/activate`
    - For windows: `venv\Scripts\activate`
-5. Run the setup script `source setup.sh`
+5. Run the setup script
+   - For osx/linux: `source setup.sh`
+   - For windows: `source setup.bat` 
 
 ## Usage
 
