@@ -22,8 +22,8 @@ MESSAGE_FORMAT = [
     Enum("Ignition Primary Command", 8, VALVE_COMMAND),
     Enum("Ignition Secondary Command", 8, VALVE_COMMAND),
 
-    Numeric("Towerside Main Batt_Voltage", 16, scale=1/1000, big_endian=False),
-    Numeric("Towerside Actuator Batt_Voltage", 16, scale=1/1000, big_endian=False),
+    Numeric("Towerside Main Batt Voltage", 16, scale=1/1000, big_endian=False),
+    Numeric("Towerside Actuator Batt Voltage", 16, scale=1/1000, big_endian=False),
     Numeric("Error Code", 16, big_endian=False),
     Enum("Towerside Armed", 8, BOOLEAN),
     Enum("Towerside Has Contact", 8, BOOLEAN),
@@ -38,12 +38,12 @@ MESSAGE_FORMAT = [
     Numeric("Heater Thermistor 2", 16,scale=1/1000, big_endian=False),
     Numeric("Heater Current 1",16,scale=1/1000,big_endian=False),
     Numeric("Heater Current 2",16,scale=1/1000,big_endian=False),
-    Numeric("Heater Battery 1_Voltage", 16,scale=1/1000, big_endian=False),
-    Numeric("Heater Battery 2_Voltage", 16,scale=1/1000, big_endian=False),
-    Numeric("Heater Kelvin Low 1_Voltage", 16,scale=1/1000, big_endian=False),
-    Numeric("Heater Kelvin Low 2_Voltage", 16,scale=1/1000, big_endian=False),
-    Numeric("Heater Kelvin High 1_Voltage", 16,scale=1/1000, big_endian=False),
-    Numeric("Heater Kelvin High 2_Voltage", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Battery 1 Voltage", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Battery 2 Voltage", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin Low 1 Voltage", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin Low 2 Voltage", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin High 1 Voltage", 16,scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin High 2 Voltage", 16,scale=1/1000, big_endian=False),
 ]
 
 
