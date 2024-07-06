@@ -1,8 +1,10 @@
+from enum import Enum
 import os
 import sys
 import json
 import signal
-from enum import Enum
+
+import pyqtgraph
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QPainter, QAction
 from pyqtgraph.Qt.QtWidgets import (
@@ -43,6 +45,11 @@ from items.text_dash_item import TextDashItem
 from items.dynamic_text import DynamicTextItem
 from items.periodic_can_sender import PeriodicCanSender
 from items.can_sender import CanSender
+from items.standard_display_item import StandardDisplayItem
+
+
+pyqtgraph.setConfigOption('background', 'w')
+pyqtgraph.setConfigOption('foreground', 'k')
 
 
 class QGraphicsViewWrapper(QGraphicsView):
