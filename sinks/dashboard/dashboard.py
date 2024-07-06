@@ -558,9 +558,9 @@ class Dashboard(QWidget):
         
         self.scene.clearSelection()
         
-    #method to toggle lock/unlock based on if dashboard is locked or not
     def toggle_lock(self):
-        if(self.locked == True):
+        """Toggle lock/unlock state of the dashboard"""
+        if self.locked:
             self.unlock()
         else:
             self.lock()
