@@ -13,7 +13,19 @@ def reader(port: str):
     s = serial.Serial(port, 115200)  # listen on the RLCS port
 
     def _reader():
-        return s.readline().strip(b'\r\n')
+        while s.read() != b'W':
+            pass
+
+        output = b'W'
+
+        for i in range(rlcs.EXPECTED_SIZE - 1):
+            output += s.read()
+
+        if int(output[-1]) != ord('R'):
+            return None
+
+        return output
+
     return _reader
 
 
@@ -30,25 +42,16 @@ def main():
         sender = Sender()
         CHANNEL = "RLCS"
 
-    line = b''
-
     while True:
-        old_len = len(line)
-        line += readline()
+        line = readline()
 
-        if old_len == len(line):
+        if not len(line):
             continue
 
         parsed_data = rlcs.parse_rlcs(line)
 
         if not parsed_data:
-            if int(line[-1]) == ord('R'):
-                line = b''
-            else:
-                line += b'\n'
             continue
-
-        line = b''
 
         commander.command(parsed_data)
 
