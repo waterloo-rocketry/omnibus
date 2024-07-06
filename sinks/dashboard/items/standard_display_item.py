@@ -10,9 +10,6 @@ from .dashboard_item import DashboardItem
 import config
 from .registry import Register
 
-pg.setConfigOption('background', 'w')
-pg.setConfigOption('foreground', 'k')
-
 
 @Register
 class StandardDisplayItem(DashboardItem):

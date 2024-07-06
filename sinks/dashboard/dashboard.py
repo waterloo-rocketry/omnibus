@@ -3,6 +3,7 @@ import sys
 import json
 import signal
 
+import pyqtgraph
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QPainter
 from pyqtgraph.Qt.QtWidgets import (
@@ -38,6 +39,10 @@ from publisher import publisher
 from omnibus import Sender
 
 sender = Sender()
+
+
+pyqtgraph.setConfigOption('background', 'w')
+pyqtgraph.setConfigOption('foreground', 'k')
 
 
 class QGraphicsViewWrapper(QGraphicsView):
