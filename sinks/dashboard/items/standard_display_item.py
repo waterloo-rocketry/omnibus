@@ -59,10 +59,12 @@ class StandardDisplayItem(DashboardItem):
         self.numRead = QLabel("Not Connected")
         self.numRead.setAlignment(Qt.AlignCenter)
 
-        font = QFont()
-        font.setPointSize(15)
-        self.label.setFont(font)
-        self.numRead.setFont(font)
+        label_font = QFont()
+        label_font.setPointSize(15)
+        self.label.setFont(label_font)
+        num_read_font = QFont()
+        num_read_font.setPointSize(45)
+        self.numRead.setFont(num_read_font)
 
         # add it to the layout
         self.layout.addWidget(self.numRead, 0, 0)
