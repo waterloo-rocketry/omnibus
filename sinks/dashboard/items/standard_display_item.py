@@ -19,7 +19,7 @@ class StandardDisplayItem(DashboardItem):
         self.last = {}
 
         # storing the series name as key, its time and points as value
-        # since each PlotDashItem can contain more than one curve
+        # since each StandardDisplayItem can contain more than one curve
         self.times = {}
         self.points = {}
 
