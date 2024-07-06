@@ -188,7 +188,7 @@ class Dashboard(QWidget):
         def create_registry_trigger(i):
             def return_fun():
                 if not self.locked:
-                    self.add(registry.get_items()[i](self.on_item_resize))
+                    self.add(registry.get_items()[i](self))
             return return_fun
 
         for i in range(len(registry.get_items())):
@@ -371,7 +371,7 @@ class Dashboard(QWidget):
 
                 params = item.get_serialized_parameters()
 
-                self.add(type(item)(self.on_item_resize, params),
+                self.add(type(item)(self, params),
                          (viewpos.x() + 20, viewpos.y() + 20))
 
                 break
@@ -486,7 +486,7 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    item = item_type(self.on_item_resize, widget["params"])
+                    item = item_type(self, widget["params"])
                     rect = self.add(item, widget["pos"])
                     if "locked" in widget and widget["locked"] is not None:
                         locked_item_pairs.append((widget["locked"], rect))
