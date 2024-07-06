@@ -58,11 +58,9 @@ class EventTracker(QObject):
                 case KeyEvent(Qt.Key_O, Qt.ControlModifier):
                     self.open_file_keys_pressed.emit()
                 case KeyEvent(Qt.Key_D, Qt.ControlModifier):
-                    if event.modifiers() & Qt.ControlModifier:
-                        self.CTRL_D_pressed.emit()
+                    self.CTRL_D_pressed.emit()
                 case KeyEvent(Qt.Key_L, Qt.ControlModifier):
-                    if event.modifiers() & Qt.ControlModifier:
-                        self.CTRL_L_pressed.emit()
+                    self.CTRL_L_pressed.emit()
         return super().eventFilter(widget, event)
 
 
