@@ -29,25 +29,20 @@ from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
 from utils import ConfirmDialog, EventTracker
+from publisher import publisher
+from typing import Optional
+from omnibus import Sender
 from items.dashboard_item import DashboardItem
+
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
-from items.dynamic_text import DynamicTextItem
-from items.periodic_can_sender import PeriodicCanSender
 from items.gauge_item import GaugeItem
 from items.progress_bar import ProgressBarItem
 from items.image_dash_item import ImageDashItem
 from items.text_dash_item import TextDashItem
+from items.dynamic_text import DynamicTextItem
+from items.periodic_can_sender import PeriodicCanSender
 from items.can_sender import CanSender
-from items.plot_3D_orientation import Orientation3DDashItem
-from items.plot_3D_position import Position3DDashItem
-from items.table_view import TableViewItem
-from publisher import publisher
-from typing import Optional
-
-from omnibus import Sender
-
-sender = Sender()
 
 
 class QGraphicsViewWrapper(QGraphicsView):
@@ -111,8 +106,8 @@ class Dashboard(QWidget):
         # Initialize the super class
         super().__init__()
 
+        self.omnibus_sender = Sender()
         self.current_parsley_instances = []
-
         self.refresh_track = False
 
         publisher.subscribe("ALL", self.every_second)
@@ -332,7 +327,7 @@ class Dashboard(QWidget):
 
     def send_can_message(self, stream, payload):
         payload['parsley'] = self.parsley_instance
-        sender.send("CAN/Commands", payload)
+        self.omnibus_sender.send("CAN/Commands", payload)
 
     # Method to open the parameter tree to the selected item
     def open_property_panel(self, item):

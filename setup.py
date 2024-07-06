@@ -2,17 +2,15 @@ from os import path
 
 from setuptools import setup, find_packages
 
-from omnibus import release_info
-
 here = path.abspath(path.dirname(__file__))
 
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name=release_info.name,
-    version=release_info.version,
-    description=release_info.description,
+    name='omnibus',
+    version='1.0.0',
+    description='A unified data bus',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/waterloo-rocketry/omnibus',
