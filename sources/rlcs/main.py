@@ -19,13 +19,13 @@ def reader(port: str):
                 print(f"Unexpected byte read from RLCS serial: {ord(c)}")
                 continue
 
-            output = b'W' + s.read(rlcs.EXPECTED_SIZE - 1)
+            output = b'W' + s.read(rlcs.EXPECTED_SIZE)
 
-            if output[-1] != ord('R'):
+            if output[-2:] != b"R\n":
                 print(f"Incorrectly terminated RLCS message: {[c for c in output]}")
                 continue
 
-            return output
+            return output[:-1]
 
     return _reader
 
