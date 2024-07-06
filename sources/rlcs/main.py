@@ -16,16 +16,15 @@ def reader(port: str):
         while True:
             c = s.read()
             if c != b'W':
-                print(f"Unexpected byte read from RLCS serial: {ord(c)}")
                 continue
 
-            output = b'W' + s.read(rlcs.EXPECTED_SIZE)
+            output = b'W' + s.read(rlcs.EXPECTED_SIZE - 1)
 
-            if output[-2:] != b"R\n":
+            if output[-1] != ord('R'):
                 print(f"Incorrectly terminated RLCS message: {[c for c in output]}")
                 continue
 
-            return output[:-1]
+            return output
 
     return _reader
 
