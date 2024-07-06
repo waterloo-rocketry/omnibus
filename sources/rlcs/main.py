@@ -18,7 +18,7 @@ def reader(port: str):
 
         output = b'W' + s.read(rlcs.EXPECTED_SIZE - 1)
 
-        if int(output[-1]) != ord('R'):
+        if output[-1] != ord('R'):
             return None
 
         return output
