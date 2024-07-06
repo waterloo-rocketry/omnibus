@@ -1,3 +1,4 @@
+from enum import Enum
 import os
 import sys
 import json
@@ -5,7 +6,7 @@ import signal
 
 import pyqtgraph
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.Qt.QtGui import QPainter
+from pyqtgraph.Qt.QtGui import QPainter, QAction
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -16,29 +17,34 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsItem,
     QGraphicsRectItem,
     QFileDialog,
-    QSplitter
+    QSplitter,
+    QInputDialog,
+    QMessageBox,
+    QDialog,
+    QLabel,
+    QCheckBox,
+    QHBoxLayout,
+    QPushButton,
+    QGraphicsProxyWidget
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
 from utils import ConfirmDialog, EventTracker
+from publisher import publisher
+from typing import Optional
+from omnibus import Sender
+from items.dashboard_item import DashboardItem
+
 # These need to be imported to be added to the registry
 from items.plot_dash_item import PlotDashItem
-from items.dynamic_text import DynamicTextItem
-from items.periodic_can_sender import PeriodicCanSender
 from items.gauge_item import GaugeItem
+from items.progress_bar import ProgressBarItem
 from items.image_dash_item import ImageDashItem
 from items.text_dash_item import TextDashItem
+from items.dynamic_text import DynamicTextItem
+from items.periodic_can_sender import PeriodicCanSender
 from items.can_sender import CanSender
-from items.plot_3D_orientation import Orientation3DDashItem
-from items.plot_3D_position import Position3DDashItem
-from items.table_view import TableViewItem
-from items.standard_display_item import StandardDisplayItem
-from publisher import publisher
-
-from omnibus import Sender
-
-sender = Sender()
 
 
 pyqtgraph.setConfigOption('background', 'w')
@@ -106,8 +112,8 @@ class Dashboard(QWidget):
         # Initialize the super class
         super().__init__()
 
+        self.omnibus_sender = Sender()
         self.current_parsley_instances = []
-
         self.refresh_track = False
 
         publisher.subscribe("ALL", self.every_second)
@@ -120,14 +126,20 @@ class Dashboard(QWidget):
         self.callback = callback
 
         # Dictionary to map rectitems to widgets and dashitems
-        self.widgets = {}
+        self.widgets: dict[QGraphicsRectItem, tuple[QGraphicsProxyWidget, DashboardItem]] = {}
 
         # Keep track of if editing is allowed
         self.locked = False
 
+        # Determine the specific directory you want to always open
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.save_directory = os.path.join(script_dir, "..", "..", "sinks", "dashboard", "saved-files")
+        
         # The file from which the dashboard is loaded
-        self.filename = "savefile.json"
+        self.file_location = os.path.join(self.save_directory, "savefile.json")
 
+        # Keep track on whether the save popup should be shown on exit.
+        self.should_show_save_popup = True
         # Create a GUI
         self.width = 1100
         self.height = 700
@@ -151,6 +163,25 @@ class Dashboard(QWidget):
         # List to keep track of menu bar action that
         # can be disabled when dashboard is locked
         self.lockableActions = []
+
+        # Add an action to the menu bar containing Save, Save As and Open.
+        # Save will save the layout of the dashboard
+        # Save As will prompt a name, then saves the layout of the dashboard
+        # Open loads the layout of the dashboard
+        add_file_menu = menubar.addMenu("File")
+
+        file_save_layout_action = add_file_menu.addAction("Save")
+        file_save_layout_action.triggered.connect(self.save)
+
+        file_save_as_layout_action = add_file_menu.addAction("Save As")
+        file_save_as_layout_action.triggered.connect(self.save_as)
+
+        file_open_layout_action = add_file_menu.addAction("Open")
+        file_open_layout_action.triggered.connect(self.open)
+
+        self.lockableActions.append(file_save_layout_action)
+        self.lockableActions.append(file_save_as_layout_action)
+        self.lockableActions.append(file_open_layout_action)
 
         # Create a sub menu which will be used
         # to add items to our dash board.
@@ -180,26 +211,6 @@ class Dashboard(QWidget):
         # adding a button to switch instances of parsley
         self.can_selector = menubar.addMenu("Parsley")
 
-        # Add an action to the menu bar to save the
-        # layout of the dashboard.
-        add_save_menu = menubar.addMenu("Save")
-        save_layout_action = add_save_menu.addAction("Save Current Config")
-        save_layout_action.triggered.connect(self.save)
-        self.lockableActions.append(save_layout_action)
-
-        # Add an action to the menu bar to load the
-        # layout of the dashboard.
-        add_restore_menu = menubar.addMenu("Load")
-        restore_layout_action = add_restore_menu.addAction("Load from File")
-        restore_layout_action.triggered.connect(self.load)
-        self.lockableActions.append(restore_layout_action)
-
-        # Add an action to the menu bar to open a file
-        add_open_menu = menubar.addMenu("Open")
-        open_file_action = add_open_menu.addAction("Open File")
-        open_file_action.triggered.connect(self.switch)
-        self.lockableActions.append(open_file_action)
-
         # Add an action to the menu bar to lock/unlock
         # the dashboard
         add_lock_menu = menubar.addMenu("Lock")
@@ -208,6 +219,18 @@ class Dashboard(QWidget):
         self.lockableActions.append(lock_action)
         unlock_action = add_lock_menu.addAction("Unlock Dashboard")
         unlock_action.triggered.connect(self.unlock)
+        lock_selected = add_lock_menu.addAction("Lock Selected")
+        lock_selected.triggered.connect(self.lock_selected)
+        self.lockableActions.append(lock_selected)
+        self.unlock_items_menu = add_lock_menu.addMenu("Unlock Items")
+        """Menu containing actions to unlock items that are locked, in the order
+        in which they were locked.
+        """
+        self.locked_widgets: list[tuple[QGraphicsRectItem, QAction]] = []
+        """List of items which are locked, in the order in which they
+        were locked.
+        
+        Includes the rect item and the unlock action."""
 
         # An action to the to the menu bar to duplicate
         # the selected item
@@ -215,6 +238,22 @@ class Dashboard(QWidget):
         duplicate_action = duplicate_item_menu.addAction("Duplicate Item")
         duplicate_action.triggered.connect(self.on_duplicate)
         self.lockableActions.append(duplicate_action)
+
+        # We have a menu in the top to allow users to change the stacking order
+        # of the selected items.
+        order_menu = menubar.addMenu("Order")
+        send_to_front_action = order_menu.addAction("Send to Front")
+        send_to_front_action.triggered.connect(self.send_to_front)
+        self.lockableActions.append(send_to_front_action)
+        send_to_back_action = order_menu.addAction("Send to Back")
+        send_to_back_action.triggered.connect(self.send_to_back)
+        self.lockableActions.append(send_to_back_action)
+        send_forward_action = order_menu.addAction("Send Forward")
+        send_forward_action.triggered.connect(self.send_forward)
+        self.lockableActions.append(send_forward_action)
+        send_backward_action = order_menu.addAction("Send Backward")
+        send_backward_action.triggered.connect(self.send_backward)
+        self.lockableActions.append(send_backward_action)
 
         # Add an action to the menu bar to display a
         # help box
@@ -252,6 +291,9 @@ class Dashboard(QWidget):
         self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))
         self.key_press_signals.zoom_reset.connect(self.reset_zoom)
         self.key_press_signals.backspace_pressed.connect(self.remove_selected)
+        self.key_press_signals.save_file_keys_pressed.connect(self.save)
+        self.key_press_signals.save_as_file_keys_pressed.connect(self.save_as)
+        self.key_press_signals.open_file_keys_pressed.connect(self.open)
         self.installEventFilter(self.key_press_signals)
 
     def select_instance(self, name):
@@ -291,11 +333,14 @@ class Dashboard(QWidget):
 
     def send_can_message(self, stream, payload):
         payload['parsley'] = self.parsley_instance
-        sender.send("CAN/Commands", payload)
+        self.omnibus_sender.send("CAN/Commands", payload)
 
     # Method to open the parameter tree to the selected item
     def open_property_panel(self, item):
         items = self.scene.selectedItems()
+
+        if len(items) == 0:
+            return
 
         # Show the tree
         item = self.widgets[items[0]][1]
@@ -349,7 +394,7 @@ class Dashboard(QWidget):
                 return
 
     # Method to add widgets
-    def add(self, dashitem, pos=None):
+    def add(self, dashitem, pos=None) -> QGraphicsRectItem:
         # Add the dash item to the scene and get
         # its proxy widget and dimension
         proxy = self.scene.addWidget(dashitem)
@@ -391,6 +436,8 @@ class Dashboard(QWidget):
         # Map the proxy widget and dashitem to the rectitem
         self.widgets[rect] = [proxy, dashitem]
 
+        return rect
+
     # Method to remove a widget
     def remove(self, item):
         # Remove the rectangle from the scene,
@@ -421,10 +468,10 @@ class Dashboard(QWidget):
         self.remove_all()
 
         # Then load the data from the savefile
-        if not os.path.exists(self.filename):
+        if not os.path.exists(self.file_location) or os.stat(self.file_location).st_size == 0:
             return
 
-        with open(self.filename, "r") as savefile:
+        with open(self.file_location, "r") as savefile:
             data = json.load(savefile)
 
         # Set the zoom
@@ -433,6 +480,11 @@ class Dashboard(QWidget):
         new_zoom = data["zoom"]
         self.view.scale(new_zoom, new_zoom)
         self.view.zoomed = new_zoom
+        # Capture the save on exit settting.
+        if "should_show_save_popup" in data and not data["should_show_save_popup"]:
+            self.should_show_save_popup = False    
+
+        locked_item_pairs = []
 
         # Add every widget in the data
         for widget in data["widgets"]:
@@ -440,48 +492,54 @@ class Dashboard(QWidget):
             # See the save method
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
-                    self.add(item_type(self.on_item_resize, widget["params"]), widget["pos"])
+                    item = item_type(self.on_item_resize, widget["params"])
+                    rect = self.add(item, widget["pos"])
+                    if "locked" in widget and widget["locked"] is not None:
+                        locked_item_pairs.append((widget["locked"], rect))
                     break
+
+        locked_item_pairs.sort(key=lambda pair: pair[0])
+        for _index, rect in locked_item_pairs:
+            self.lock_widget(rect)
 
     # Method to save current layout to file
     def save(self):
-        # General structure for saving the dashboard info
-        data = {"zoom": self.view.zoomed, "center": [], "widgets": []}
-
-        # Save the coordinates of the center of the view on the scene
-        scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
-        data["center"] = [scene_center.x(), scene_center.y()]
-
-        for items in self.widgets.values():
-            # Get the proxy widget and dashitem
-            proxy = items[0]
-            dashitem = items[1]
-
-            # Get the coordinates of the proxy widget on the view
-            scenepos = proxy.scenePos()
-            viewpos = self.view.mapFromScene(scenepos)
-
-            # Add the position, dashitem name and dashitem props
-            for item_type in registry.get_items():
-                if type(dashitem) == item_type:
-                    data["widgets"].append({"class": item_type.get_name(),
-                                            "params": dashitem.get_serialized_parameters(),
-                                            "pos": [viewpos.x(), viewpos.y()]})
-                    break
-
+        data = self.get_data()
+                    
         # Write data to savefile
-        with open(self.filename, "w") as savefile:
+        os.makedirs(os.path.dirname(self.file_location), exist_ok=True)
+        with open(self.file_location, "w") as savefile:
             json.dump(data, savefile)
 
-    # Method to switch to a layout in a different file
-    def switch(self):
+    # Method to save file with a custom chosen name
+    def save_as(self):
+        self.file_location = os.path.join(self.save_directory, self.show_save_as_prompt())
         self.save()
-        (filename, _) = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json)")
 
-        if filename is None:
+    # Method to allow user to choose name of the file of the configuration they would like to save
+    def show_save_as_prompt(self) -> str:
+        # Show a prompt box using QInputDialog
+        text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter file name without extension:')
+        
+        # Check if OK was pressed and text is not empty
+        if ok and text:
+            return text + ".json"
+        elif ok:
+            QMessageBox.warning(self, 'Warning', 'No input provided, try again')
+
+    # Method to switch to a layout in a different file
+    def open(self):
+         # Ensure the save directory exists, if not, create it
+        if not os.path.exists(self.save_directory):
+            os.makedirs(self.save_directory)
+            
+        (filename, _) = QFileDialog.getOpenFileName(self, "Open File", self.save_directory, "JSON Files (*.json)")
+
+        # If the user presses cancel, do nothing
+        if not filename:
             return
-
-        self.filename = filename
+        
+        self.file_location = filename
         self.load()
 
     # Method to lock dashboard
@@ -493,10 +551,15 @@ class Dashboard(QWidget):
         for menu_item in self.lockableActions:
             menu_item.setEnabled(False)
 
+        for _rect, action in self.locked_widgets:
+            action.setEnabled(False)
+
         # Disable selecting and moving plots
         for rect in self.widgets:
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
+        
+        self.scene.clearSelection()
 
     # Method to unlock dashboard
     def unlock(self):
@@ -506,15 +569,151 @@ class Dashboard(QWidget):
         # Enable menu actions
         for menu_item in self.lockableActions:
             menu_item.setEnabled(True)
+            
+        for _rect, action in self.locked_widgets:
+            action.setEnabled(True)
 
         # Enable selecting and moving plots
         for rect in self.widgets:
-            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=True)
-            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=True)
+            individually_locked = any(rect == pair[0] for pair in self.locked_widgets)
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=not individually_locked)
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=not individually_locked)
+            
+    def lock_widget(self, rect: QGraphicsRectItem):
+        """Mark a widget rect as locked."""
+        rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
+        rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
+        name = self.widgets[rect][1].get_name()
+        action = self.unlock_items_menu.addAction(f"Unlock {name}")
+
+        def unlock():
+            self.locked_widgets = [pair for pair in self.locked_widgets if pair[0] != rect]
+            self.unlock_items_menu.removeAction(action)
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=not self.locked)
+            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=not self.locked)
+            
+        action.triggered.connect(unlock)
+        self.locked_widgets.append((rect, action))
+
+        self.scene.clearSelection()
+
+    def lock_selected(self):
+        """Mark all selected widgets as locked, in an arbitrary order"""
+        for widget in self.scene.selectedItems():
+            self.lock_widget(widget)
 
     # Method to handle exit
     def closeEvent(self, event):
-        self.remove_all()
+        # Get data from savefile.
+        if os.path.exists(self.file_location) and os.stat(self.file_location).st_size != 0:
+            with open(self.file_location, "r") as savefile:
+                old_data = json.load(savefile)
+        else:
+            # Set default values to default data.
+            old_data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "should_show_save_popup": True}
+        
+        # Obtain current data 
+        new_data = self.get_data()
+        # Automatically exit if user has clicked "Dont ask again checkbox" or no new changes are made.
+        if not self.should_show_save_popup or new_data["widgets"] == old_data["widgets"]:
+            self.remove_all()
+        else:
+            # Execute save popup dialog.
+            self.show_save_popup(old_data, event)
+
+
+    # Method to retrieve current data on dashboard.
+    def get_data(self):
+        # General structure for obtaining the dashboard info
+        data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "should_show_save_popup": True}
+
+        # Obtain current save on exit value.
+        data["should_show_save_popup"] = self.should_show_save_popup
+    
+        # Capture the coordinates of the center of the view on the scene
+        scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
+        data["center"] = [scene_center.x(), scene_center.y()]
+
+        # We follow the scene stacking order to serialize dashitems.
+        # We find all relevant proxy widgets and look up their
+        # corresponding dashitems.
+        for rect in self.scene.items(Qt.SortOrder.AscendingOrder):
+            if not isinstance(rect, QGraphicsRectItem):
+                continue
+            items = self.widgets[rect]
+            proxy = items[0]
+            dashitem = items[1]
+
+            # Get the coordinates of the proxy widget on the view
+            scenepos = proxy.scenePos()
+            viewpos = self.view.mapFromScene(scenepos)
+
+            # Add the position, dashitem name and dashitem props
+            for item_type in registry.get_items():
+                if type(dashitem) == item_type:
+                    locked_index = next((i for i, (candidate, _action) in enumerate(self.locked_widgets) if candidate == rect), None)
+                    data["widgets"].append({"class": item_type.get_name(),
+                                            "params": dashitem.get_serialized_parameters(),
+                                            "pos": [viewpos.x(), viewpos.y()],
+                                            "locked": locked_index})
+        
+        return data
+    
+    # Method to display save on exit popup.
+    def show_save_popup(self, old_data, event):
+        # Display Popup that prompts for save.
+        popup = QDialog()
+        popup.setWindowTitle('Save Work')
+        popup.setModal(True)
+
+        save_layout = QVBoxLayout()
+        # Add UI Components to Popup.
+        label = QLabel("You have made changes, would you like to save them")
+        save_layout.addWidget(label)
+        # Add a checkbox
+        dont_ask_again_checkbox = QCheckBox("Don't ask again")
+        save_layout.addWidget(dont_ask_again_checkbox)
+
+        # Create horizontal button layout and add buttons
+        button_layout = QHBoxLayout()
+        save_changes = QPushButton("Yes")
+        discard_changes = QPushButton("No")
+        cancel = QPushButton("Cancel")
+
+        button_layout.addWidget(save_changes)
+        button_layout.addWidget(discard_changes)
+        button_layout.addWidget(cancel)
+        # Apply layout to save popup
+        save_layout.addLayout(button_layout)
+        popup.setLayout(save_layout)
+
+        class Event(Enum):
+            SAVE_CHANGES = 1
+            DISCARD_CHANGES = 2
+            CANCEL = 3
+        # Connect buttons to action listeners. 
+        save_changes.clicked.connect(lambda: popup.done(Event.SAVE_CHANGES.value))
+        discard_changes.clicked.connect(lambda: popup.done(Event.DISCARD_CHANGES.value))
+        cancel.clicked.connect(lambda: popup.done(Event.CANCEL.value))
+
+        result = popup.exec_()
+
+        if dont_ask_again_checkbox.isChecked():
+            self.should_show_save_popup = False
+        
+        if result == Event.SAVE_CHANGES.value:
+            self.save()
+            self.remove_all()
+        elif result == Event.DISCARD_CHANGES.value:
+            if not self.should_show_save_popup:
+                # Persist old data to JSON file.
+                old_data["should_show_save_popup"] = False
+                with open(self.file_location, "w") as savefile:
+                    json.dump(old_data, savefile)
+            self.remove_all()
+        else:
+            event.ignore()
+
 
     # Method to display help box
     def help(self):
@@ -531,7 +730,7 @@ class Dashboard(QWidget):
         """
         help_box = ConfirmDialog("Omnibus Help", message)
         help_box.exec()
-
+    
     # Method to get new data for widgets
     def update(self):
         self.counter.tick()
@@ -555,6 +754,84 @@ class Dashboard(QWidget):
             self.remove(item)
             self.widgets.pop(item)
 
+    def send_to_front(self):
+        """Send the selected items to the front of the stacking order.
+        If there are multiple items selected, they will maintain their relative
+        order.
+        """
+        selected_items = self.scene.selectedItems()
+        if len(selected_items) == 0:
+            return
+        
+        order_of_items = {}
+        for i, item in enumerate(self.scene.items(Qt.SortOrder.AscendingOrder)):
+            order_of_items[item] = i
+        for item in sorted(selected_items, key=lambda item: order_of_items[item]):
+            self.scene.removeItem(item)
+            self.scene.addItem(item)
+
+    def send_to_back(self):
+        """Send the selected item to the back of the stacking order.
+        If there are multiple items selected, they will maintain their relative
+        order."""
+        selected_items = self.scene.selectedItems()
+        if len(selected_items) == 0:
+            return
+        
+        # For some reason QGraphicsItem::stackBefore doesn't work, so we just
+        # go with manually adding/removing all the items that are not supposed
+        # to be at the back
+        readd_items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
+                       if isinstance(item, QGraphicsRectItem) and item not in selected_items]
+        for item in readd_items:
+            self.scene.removeItem(item)
+            self.scene.addItem(item)
+
+    def send_forward(self):
+        """Send the selected item one layer forward in the stacking order,
+        if possible. If there are multiple items selected, we will try to apply
+        this operation to each from front to back, but we will not apply the
+        operation if the next forward item is also selected.
+        """
+        selected_items = self.scene.selectedItems()
+        if len(selected_items) == 0:
+            return
+        
+        # Too complicated to figure out what to add and remove. Just do it for
+        # all in a virtual array first
+        items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
+                 if isinstance(item, QGraphicsRectItem)]
+        for item in items:
+            self.scene.removeItem(item)
+        for i in reversed(range(len(items) - 1)):
+            if items[i] in selected_items and items[i + 1] not in selected_items:
+                tmp = items[i]
+                items[i] = items[i + 1]
+                items[i + 1] = tmp
+        for item in items:
+            self.scene.addItem(item)
+
+    def send_backward(self):
+        """Send the selected item one layer backward in the stacking order,
+        if possible. If there are multiple items selected, we will try to apply
+        this operation to each from back to front, but we will not apply the
+        operation if the next backward item is also selected.
+        """
+        selected_items = self.scene.selectedItems()
+        if len(selected_items) == 0:
+            return
+        
+        items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
+                 if isinstance(item, QGraphicsRectItem)]
+        for item in items:
+            self.scene.removeItem(item)
+        for i in range(1, len(items)):
+            if items[i] in selected_items and items[i - 1] not in selected_items:
+                tmp = items[i]
+                items[i] = items[i - 1]
+                items[i - 1] = tmp
+        for item in items:
+            self.scene.addItem(item)
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
