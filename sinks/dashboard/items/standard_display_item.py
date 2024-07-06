@@ -171,7 +171,7 @@ class StandardDisplayItem(DashboardItem):
         self.plot.setYRange(min_point, max_point, padding=0.1)
 
         limit = self.parameters.param('limit').value()
-        if limit != 0:
+        if limit != 0.0:
             # plot the warning line, using two points (start and end)
             self.warning_line.setData(
                 [self.times[stream][0], self.times[stream][-1]], [limit] * 2)
