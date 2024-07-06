@@ -77,8 +77,8 @@ class StandardDisplayItem(DashboardItem):
                                           type='list',
                                           value=[],
                                           limits=publisher.get_all_streams())
-        limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
-        offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
+        limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
+        offset_param = {'name': 'offset', 'type': 'float', 'value': 0.0}
         display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': False}
         return [text_param, series_param, limit_param, offset_param, display_sparkline_param]
 
