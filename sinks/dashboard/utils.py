@@ -65,9 +65,9 @@ class EventTracker(QObject):
                     self.open_file_keys_pressed.emit()
                 case KeyEvent(Qt.Key_D, Qt.ControlModifier):
                     self.duplicate.emit()
-                case KeyEvent(Qt.Key_L, modifiers) if (modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) == (Qt.ControlModifier | Qt.ShiftModifier):
-                    self.lock_dashboard.emit()
                 case KeyEvent(Qt.Key_L, Qt.ControlModifier):
+                    self.lock_dashboard.emit()
+                case KeyEvent(Qt.Key_L):
                     self.lock_selected.emit()
                 case KeyEvent(Qt.Key_BracketRight, Qt.ControlModifier):
                     self.send_to_front.emit()
