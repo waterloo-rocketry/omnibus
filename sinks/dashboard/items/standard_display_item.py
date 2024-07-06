@@ -1,6 +1,6 @@
 from publisher import publisher
 from pyqtgraph.Qt.QtWidgets import QGridLayout, QLabel
-from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
+from pyqtgraph.parametertree.parameterTypes import ListParameter
 from pyqtgraph.Qt.QtGui import QFont
 from pyqtgraph.Qt.QtCore import Qt
 import pyqtgraph as pg
@@ -29,11 +29,11 @@ class StandardDisplayItem(DashboardItem):
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
-        self.parameters.param('text').sigValueChanged.connect(self.on_label_change)
+        self.parameters.param('label').sigValueChanged.connect(self.on_label_change)
         self.parameters.param('display-sparkline').sigValueChanged.connect(self.on_display_sparkline_change)
 
 
-        self.series = self.parameters.param('series').value()
+        self.series = [self.parameters.param('series').value()]
         # just a single global offset for now
         self.offset = self.parameters.param('offset').value()
 
@@ -63,7 +63,7 @@ class StandardDisplayItem(DashboardItem):
         label_font.setPointSize(15)
         self.label.setFont(label_font)
         num_read_font = QFont()
-        num_read_font.setPointSize(45)
+        num_read_font.setPointSize(30)
         self.numRead.setFont(num_read_font)
 
         # add it to the layout
@@ -71,28 +71,29 @@ class StandardDisplayItem(DashboardItem):
         self.layout.addWidget(self.label, 1, 0)
         self.layout.addWidget(self.widget, 2, 0)
         
-        self.resize(400,250)
+        self.resize(300,200)
 
     def add_parameters(self):
-        text_param = {'name': 'text', 'type': 'str', 'value': ''}
-        series_param = ChecklistParameter(name='series',
-                                          type='list',
-                                          value=[],
-                                          limits=publisher.get_all_streams())
+        text_param = {'name': 'label', 'type': 'str', 'value': ''}
+        series_param = ListParameter(name='series',
+                                    type='list',
+                                    value=[],
+                                    limits=publisher.get_all_streams())
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0.0}
         display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': True}
         return [text_param, series_param, limit_param, offset_param, display_sparkline_param]
 
     def on_series_change(self, param, value):
-        if len(value) > 6:
-            self.parameters.param('series').setValue(value[:6])
-        self.series = self.parameters.param('series').childrenValue()
-        # resubscribe to the new streams
+        self.series = [value]
+        # resubscribe to the new stream
         publisher.unsubscribe_from_all(self.on_data_update)
         for series in self.series:
             publisher.subscribe(series, self.on_data_update)
         # recreate the plot with new series and add it to the layout
+        self.layout.removeWidget(self.widget)
+        self.plot.close()
+        self.widget.close()
         self.plot = self.create_plot()
         self.widget = pg.PlotWidget(plotItem=self.plot)
         self.layout.addWidget(self.widget, 2, 0)
@@ -118,7 +119,7 @@ class StandardDisplayItem(DashboardItem):
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
         plot.setMouseEnabled(x=False, y=False)
         plot.hideButtons()
-        plot.setMinimumSize(300, 95)
+        plot.setMinimumSize(200, 50)
         if (len(self.series) > 1):
             plot.addLegend()
          # hide the axes
@@ -202,4 +203,6 @@ class StandardDisplayItem(DashboardItem):
 
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)
+        self.plot.close()
+        self.widget.close()
 
