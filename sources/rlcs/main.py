@@ -13,15 +13,16 @@ def reader(port: str):
     s = serial.Serial(port, 115200)  # listen on the RLCS port
 
     def _reader():
-        while s.read() != b'W':
-            pass
+        while True:
+            if s.read() != b'W':
+                continue
 
-        output = b'W' + s.read(rlcs.EXPECTED_SIZE - 1)
+            output = b'W' + s.read(rlcs.EXPECTED_SIZE - 1)
 
-        if output[-1] != ord('R'):
-            return None
+            if output[-1] != ord('R'):
+                continue
 
-        return output
+            return output
 
     return _reader
 
