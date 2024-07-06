@@ -27,6 +27,11 @@ class EventTracker(QObject):
     open_file_keys_pressed = Signal()
     duplicate = Signal()
     lock_dashboard = Signal()
+    lock_selected = Signal()
+    send_forward = Signal()
+    send_backward = Signal()
+    send_to_front = Signal()
+    send_to_back = Signal()
 
     def eventFilter(self, widget, event):
         """
@@ -36,6 +41,7 @@ class EventTracker(QObject):
         """
         if event.type() == QEvent.KeyPress:
             key_press = KeyEvent(event.key(), event.modifiers())
+            print(key_press)
             match key_press:
                 case KeyEvent(Qt.Key_Backspace, _) | KeyEvent(Qt.Key_Delete, _):
                     self.backspace_pressed.emit(widget)
@@ -61,6 +67,16 @@ class EventTracker(QObject):
                     self.duplicate.emit()
                 case KeyEvent(Qt.Key_L, modifiers) if (modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) == (Qt.ControlModifier | Qt.ShiftModifier):
                     self.lock_dashboard.emit()
+                case KeyEvent(Qt.Key_L, Qt.ControlModifier):
+                    self.lock_selected.emit()
+                case KeyEvent(Qt.Key_BracketRight, Qt.ControlModifier):
+                    self.send_to_front.emit()
+                case KeyEvent(Qt.Key_BracketRight):
+                    self.send_forward.emit()
+                case KeyEvent(Qt.Key_BracketLeft, Qt.ControlModifier):
+                    self.send_to_back.emit()
+                case KeyEvent(Qt.Key_BracketLeft):
+                    self.send_backward.emit()
         return super().eventFilter(widget, event)
 
 

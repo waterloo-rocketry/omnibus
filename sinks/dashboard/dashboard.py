@@ -290,6 +290,11 @@ class Dashboard(QWidget):
         self.key_press_signals.open_file_keys_pressed.connect(self.open)
         self.key_press_signals.duplicate.connect(self.on_duplicate)
         self.key_press_signals.lock_dashboard.connect(self.toggle_lock)
+        self.key_press_signals.lock_selected.connect(self.lock_selected)
+        self.key_press_signals.send_forward.connect(self.send_forward)
+        self.key_press_signals.send_backward.connect(self.send_backward)
+        self.key_press_signals.send_to_front.connect(self.send_to_front)
+        self.key_press_signals.send_to_back.connect(self.send_to_back)
         self.installEventFilter(self.key_press_signals)
 
     def select_instance(self, name):
