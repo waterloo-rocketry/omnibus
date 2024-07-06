@@ -1,8 +1,5 @@
 import time
-from typing import Union
 from omnibus import Sender
-#from parsley import Number FIX ME
-Number=Union[int,float]
 sender = Sender()
 
 
@@ -20,7 +17,7 @@ def send_actuator(actuator: str, state: bool):
     sender.send("CAN/Commands", message)
 
 
-def command(state: dict[str, str | Number]):
+def command(state: dict[str, str | int | float]):
     if "Injector Valve Command" in state:
         if state["Injector Valve Command"] == "OPEN":
             send_actuator("ACTUATOR_INJECTOR_VALVE", True)
