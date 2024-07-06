@@ -114,7 +114,7 @@ class DashboardItem(QWidget):
         Notes:
             if the mouse is not in the corner, the event is passed to the base class method for normal processing.
         """
-        if self.corner_hit(event.pos()):
+        if self.corner_hit(event.pos()) and not self.dashboard.locked:
             self.corner_grabbed = True
             self.grab_start_pos = self.dashboard.view.mapToScene(event.globalPos())
             self.start_rect = self.rect()
