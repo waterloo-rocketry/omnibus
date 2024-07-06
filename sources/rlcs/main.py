@@ -16,10 +16,7 @@ def reader(port: str):
         while s.read() != b'W':
             pass
 
-        output = b'W'
-
-        for i in range(rlcs.EXPECTED_SIZE - 1):
-            output += s.read()
+        output = b'W' + s.read(rlcs.EXPECTED_SIZE - 1)
 
         if int(output[-1]) != ord('R'):
             return None
