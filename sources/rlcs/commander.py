@@ -1,8 +1,5 @@
 import time
-
 from omnibus import Sender
-from parsley import Number
-
 sender = Sender()
 
 
@@ -20,7 +17,7 @@ def send_actuator(actuator: str, state: bool):
     sender.send("CAN/Commands", message)
 
 
-def command(state: dict[str, str | Number]):
+def command(state: dict[str, str | int | float]):
     if "Injector Valve Command" in state:
         if state["Injector Valve Command"] == "OPEN":
             send_actuator("ACTUATOR_INJECTOR_VALVE", True)
@@ -28,6 +25,11 @@ def command(state: dict[str, str | Number]):
             send_actuator("ACTUATOR_INJECTOR_VALVE", False)
     if "Vent Valve Command" in state:
         if state["Vent Valve Command"] == "OPEN":
-            send_actuator("ACTUATOR_VENT_VALVE", False)
-        if state["Vent Valve Command"] == "CLOSED":
             send_actuator("ACTUATOR_VENT_VALVE", True)
+        if state["Vent Valve Command"] == "CLOSED":
+            send_actuator("ACTUATOR_VENT_VALVE", False)
+    if "Fill Dump Valve Command" in state:
+        if state["Fill Dump Valve Command"] == "OPEN":
+            send_actuator("ACTUATOR_FILL_DUMP_VALVE", True)
+        if state["Fill Dump Valve Command"] == "CLOSED":
+            send_actuator("ACTUATOR_FILL_DUMP_VALVE", False)
