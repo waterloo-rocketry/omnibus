@@ -164,13 +164,13 @@ class Dashboard(QWidget):
         # Open loads the layout of the dashboard
         add_file_menu = menubar.addMenu("File")
 
-        file_save_layout_action = add_file_menu.addAction("Save")
+        file_save_layout_action = add_file_menu.addAction("Save (^s)")
         file_save_layout_action.triggered.connect(self.save)
 
-        file_save_as_layout_action = add_file_menu.addAction("Save As")
+        file_save_as_layout_action = add_file_menu.addAction("Save As (^S)")
         file_save_as_layout_action.triggered.connect(self.save_as)
 
-        file_open_layout_action = add_file_menu.addAction("Open")
+        file_open_layout_action = add_file_menu.addAction("Open (^o)")
         file_open_layout_action.triggered.connect(self.open)
 
         self.lockableActions.append(file_save_layout_action)
@@ -208,12 +208,12 @@ class Dashboard(QWidget):
         # Add an action to the menu bar to lock/unlock
         # the dashboard
         add_lock_menu = menubar.addMenu("Lock")
-        lock_action = add_lock_menu.addAction("Lock Dashboard")
+        lock_action = add_lock_menu.addAction("Lock Dashboard (^l)")
         lock_action.triggered.connect(self.lock)
         self.lockableActions.append(lock_action)
-        unlock_action = add_lock_menu.addAction("Unlock Dashboard")
+        unlock_action = add_lock_menu.addAction("Unlock Dashboard (^l)")
         unlock_action.triggered.connect(self.unlock)
-        lock_selected = add_lock_menu.addAction("Lock Selected")
+        lock_selected = add_lock_menu.addAction("Lock Selected (l)")
         lock_selected.triggered.connect(self.lock_selected)
         self.lockableActions.append(lock_selected)
         self.unlock_items_menu = add_lock_menu.addMenu("Unlock Items")
@@ -229,23 +229,23 @@ class Dashboard(QWidget):
         # An action to the to the menu bar to duplicate
         # the selected item
         duplicate_item_menu = menubar.addMenu("Duplicate")
-        duplicate_action = duplicate_item_menu.addAction("Duplicate Item")
+        duplicate_action = duplicate_item_menu.addAction("Duplicate Item (^d)")
         duplicate_action.triggered.connect(self.on_duplicate)
         self.lockableActions.append(duplicate_action)
 
         # We have a menu in the top to allow users to change the stacking order
         # of the selected items.
         order_menu = menubar.addMenu("Order")
-        send_to_front_action = order_menu.addAction("Send to Front")
+        send_to_front_action = order_menu.addAction("Send to Front (^])")
         send_to_front_action.triggered.connect(self.send_to_front)
         self.lockableActions.append(send_to_front_action)
-        send_to_back_action = order_menu.addAction("Send to Back")
+        send_to_back_action = order_menu.addAction("Send to Back (^[)")
         send_to_back_action.triggered.connect(self.send_to_back)
         self.lockableActions.append(send_to_back_action)
-        send_forward_action = order_menu.addAction("Send Forward")
+        send_forward_action = order_menu.addAction("Send Forward (])")
         send_forward_action.triggered.connect(self.send_forward)
         self.lockableActions.append(send_forward_action)
-        send_backward_action = order_menu.addAction("Send Backward")
+        send_backward_action = order_menu.addAction("Send Backward ([)")
         send_backward_action.triggered.connect(self.send_backward)
         self.lockableActions.append(send_backward_action)
 
@@ -735,6 +735,18 @@ class Dashboard(QWidget):
             - Control/CMD + scrolling zooms in and out
             - Control/CMD + "=" or "-" also zooms in and out
             - Control/CMD + 0 resets the view to the middle
+
+            Keyboard shortcuts:
+            - Ctrl+S - Save
+            - Ctrl+Shift+S - Save As
+            - Ctrl+O - Open
+            - Ctrl+L - Toggle Lock the Dashboard
+            - L - Lock Selected
+            - Ctrl+D - Duplicate Item
+            - Ctrl+] - Send to Front
+            - Ctrl+[ - Send to Back
+            - ] - Send Forward
+            - [ - Send Backward
         """
         help_box = ConfirmDialog("Omnibus Help", message)
         help_box.exec()

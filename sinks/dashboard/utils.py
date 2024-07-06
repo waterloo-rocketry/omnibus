@@ -41,7 +41,6 @@ class EventTracker(QObject):
         """
         if event.type() == QEvent.KeyPress:
             key_press = KeyEvent(event.key(), event.modifiers())
-            print(key_press)
             match key_press:
                 case KeyEvent(Qt.Key_Backspace, _) | KeyEvent(Qt.Key_Delete, _):
                     self.backspace_pressed.emit(widget)
