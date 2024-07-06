@@ -1,8 +1,7 @@
 import parsley
-from typing import Union #Remove this line
-from parsley.fields import Enum, Numeric #FIX ME
-#from parsley.fields import Enum, Number, Numeric #FIX ME
-Number = Union[int, float] #Remove this line 
+from parsley.fields import Enum, Numeric
+
+Number = int | float 
 
 VALVE_COMMAND = {"CLOSED": 0, "OPEN": 1}
 BOOLEAN = {"FALSE": 0, "TRUE": 1}
