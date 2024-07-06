@@ -45,6 +45,7 @@ from items.text_dash_item import TextDashItem
 from items.dynamic_text import DynamicTextItem
 from items.periodic_can_sender import PeriodicCanSender
 from items.can_sender import CanSender
+from items.standard_display_item import StandardDisplayItem
 
 
 pyqtgraph.setConfigOption('background', 'w')
