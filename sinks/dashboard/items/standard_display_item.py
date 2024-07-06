@@ -81,7 +81,7 @@ class StandardDisplayItem(DashboardItem):
                                           limits=publisher.get_all_streams())
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0.0}
-        display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': False}
+        display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': True}
         return [text_param, series_param, limit_param, offset_param, display_sparkline_param]
 
     def on_series_change(self, param, value):
