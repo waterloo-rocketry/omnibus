@@ -1,10 +1,9 @@
 from publisher import publisher
-from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu, QLabel
+from pyqtgraph.Qt.QtWidgets import QGridLayout, QLabel
 from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 from pyqtgraph.Qt.QtGui import QFont
 from pyqtgraph.Qt.QtCore import Qt
 import pyqtgraph as pg
-import numpy as np
 
 from .dashboard_item import DashboardItem
 import config
