@@ -1,7 +1,7 @@
 import parsley
 from parsley.fields import Enum, Numeric
 
-Number = int | float 
+Number = int | float
 
 VALVE_COMMAND = {"CLOSED": 0, "OPEN": 1}
 BOOLEAN = {"FALSE": 0, "TRUE": 1}
@@ -52,8 +52,8 @@ def print_data(parsed: dict[str, str | Number]):
 
 
 def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
-    '''parses data as well as checks for data validity 
-        returns none if data is invalid 
+    '''parses data as well as checks for data validity
+        returns none if data is invalid
     '''
     if not check_data_is_valid(line):
         return None
@@ -68,16 +68,18 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
 
 def check_data_is_valid(line: str | bytes) -> bool:
     '''
-    Checks whether or not line is valid RLCS data. 
+    Checks whether or not line is valid RLCS data.
     If it is, returns True. If not, returns False.
     A valid line looks like W[xxxx]R where xxxx are data bytes.
-    The line must also begin with W and end with R. 
+    The line must also begin with W and end with R.
     '''
 
     expected_size = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
     if len(line) != expected_size:
-        print("Warning: Format of data {} is wrong. Expected {} characters, got {}".format(
-            line, expected_size, len(line)))
+        if len(line) > expected_size:
+            # If the length is less, we attempt to recover so no warning
+            print("Warning: Format of data {} is wrong. Expected {} characters, got {}".format(
+                line, expected_size, len(line)))
         return False
         # In the future, we may want to extract information from the message despite poor formatting
 

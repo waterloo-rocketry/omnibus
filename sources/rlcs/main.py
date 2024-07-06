@@ -30,16 +30,25 @@ def main():
         sender = Sender()
         CHANNEL = "RLCS"
 
-    while True:
-        line = readline()
+    line = b''
 
-        if not line:
+    while True:
+        old_len = len(line)
+        line += readline()
+
+        if old_len == len(line):
             continue
 
         parsed_data = rlcs.parse_rlcs(line)
 
         if not parsed_data:
+            if int(line[-1]) == ord('R'):
+                line = b''
+            else:
+                line += b'\n'
             continue
+
+        line = b''
 
         commander.command(parsed_data)
 
