@@ -71,7 +71,7 @@ class StandardDisplayItem(DashboardItem):
         self.layout.addWidget(self.label, 1, 0)
         self.layout.addWidget(self.widget, 2, 0)
         
-        self.resize(400,100)
+        self.resize(400,250)
 
     def add_parameters(self):
         text_param = {'name': 'text', 'type': 'str', 'value': ''}
