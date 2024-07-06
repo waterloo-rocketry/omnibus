@@ -25,8 +25,8 @@ class EventTracker(QObject):
     save_file_keys_pressed = Signal()
     save_as_file_keys_pressed = Signal()
     open_file_keys_pressed = Signal()
-    CTRL_D_pressed = Signal()  # Signal for Ctrl+D
-    CTRL_L_pressed = Signal()  # Signal for Ctrl+L
+    duplicate = Signal()
+    lock_dashboard = Signal()
 
     def eventFilter(self, widget, event):
         """
@@ -58,9 +58,9 @@ class EventTracker(QObject):
                 case KeyEvent(Qt.Key_O, Qt.ControlModifier):
                     self.open_file_keys_pressed.emit()
                 case KeyEvent(Qt.Key_D, Qt.ControlModifier):
-                    self.CTRL_D_pressed.emit()
-                case KeyEvent(Qt.Key_L, Qt.ControlModifier):
-                    self.CTRL_L_pressed.emit()
+                    self.duplicate.emit()
+                case KeyEvent(Qt.Key_L, modifiers) if (modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) == (Qt.ControlModifier | Qt.ShiftModifier):
+                    self.lock_dashboard.emit()
         return super().eventFilter(widget, event)
 
 
