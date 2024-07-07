@@ -68,6 +68,7 @@ class DynamicTextItem(DashboardItem):
         publisher.subscribe(series, self.on_data_update)
 
         self.widget = QLabel()
+        self.widget.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(self.widget)
 
         # Apply initial stylesheet
@@ -119,7 +120,7 @@ class DynamicTextItem(DashboardItem):
 
         self.expired_timeout.stop()
         self.expired_timeout.start(int(EXPIRED_TIME * 1000))
-        self.resize(10, 10)  # trigger size update
+        # self.resize(10, 10)  # trigger size update
 
     def condition_true(self, condition: GroupParameter):
         comparison = condition.childs[0].value()
