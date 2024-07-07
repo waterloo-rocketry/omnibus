@@ -6,9 +6,9 @@ sender = Sender()
 def send_actuator(actuator: str, state: bool):
     message = {
         "parsley": "DESKTOP-6LBH021/usb/COM3",
-            "data": {
-                "time": time.time(),
-                "can_msg": {
+        "data": {
+            "time": time.time(),
+            "can_msg": {
                 "msg_type": "ACTUATOR_CMD",
                 "board_id": "ANY",
                 "time": 0,
