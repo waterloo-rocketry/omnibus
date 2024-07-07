@@ -4,16 +4,19 @@ sender = Sender()
 
 
 def send_actuator(actuator: str, state: bool):
-    message = {"data": {
-        "time": time.time(),
-        "can_msg": {
-            "msg_type": "ACTUATOR_CMD",
-            "board_id": "ANY",
-            "time": 0,
-            "actuator": actuator,
-            "req_state": 'ACTUATOR_ON' if state else 'ACTUATOR_OFF'
+    message = {
+        "parsley": "DESKTOP-6LBH021/usb/COM3",
+            "data": {
+                "time": time.time(),
+                "can_msg": {
+                "msg_type": "ACTUATOR_CMD",
+                "board_id": "ANY",
+                "time": 0,
+                "actuator": actuator,
+                "req_state": 'ACTUATOR_ON' if state else 'ACTUATOR_OFF'
+            }
         }
-    }}
+    }
     sender.send("CAN/Commands", message)
 
 
