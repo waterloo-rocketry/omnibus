@@ -78,7 +78,8 @@ class DynamicTextItem(DashboardItem):
 
     def add_parameters(self):
         font_param = {'name': 'font size', 'type': 'int', 'value': 12}
-        series_param = SimpleParameter(name='series', type='str', default="", itemClass=AutocompleteParameterItem)
+        series_param = SimpleParameter(name='series', type='str', default="")
+        series_param.itemClass = AutocompleteParameterItem
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         buffer_size_param = {'name': 'buffer size', 'type': 'int', 'value': 1}
         new_param_button = ActionParameter(name='add_new',
