@@ -150,15 +150,21 @@ class DashboardItem(QWidget):
         """
         self.corner_grabbed = False
         self.corner_in = False
+        # corner_size is updated to be proportional to the widget size
+        self.corner_size = min(100, max(min(self.width(), self.height())/10,1))
 
     def corner_hit(self, pos):
         """ 
         Checks if the mouse is in the corner and updates the corner_index.
         """
+        right_down_corner = pos.x() >= self.width() - self.corner_size and pos.y() >= self.height() - self.corner_size
+        # For Small widgets, the corner grabber is only in the bottom right corner
+        if self.corner_size < 15:
+            self.corner_index = 3
+            return right_down_corner
         left_up_corner = pos.x() <= self.corner_size and pos.y() <= self.corner_size
         right_up_corner = pos.x() >= self.width() - self.corner_size and pos.y() <= self.corner_size
         left_down_corner = pos.x() <= self.corner_size and pos.y() >= self.height() - self.corner_size
-        right_down_corner = pos.x() >= self.width() - self.corner_size and pos.y() >= self.height() - self.corner_size
         index_list = [left_up_corner, right_up_corner, left_down_corner, right_down_corner]
         if any(index_list):
             self.corner_index = index_list.index(True)
