@@ -23,7 +23,7 @@ class DashboardItem(QWidget):
         self.setMouseTracking(True)
         self.corner_grabbed = False
         self.corner_in = False
-        self.corner_size = 40
+        self.corner_size = self.dynamic_corner_size()
         self.corner_index = 0
         self.dashboard = dashboard
         self.resize_callback = dashboard.on_item_resize
@@ -108,6 +108,9 @@ class DashboardItem(QWidget):
         pass
     
     # The following functions are used to make the widget resizable by dragging the bottom right corner.
+    
+    def dynamic_corner_size(self)-> int | float :
+        return min(100, max(min(self.width(), self.height())/10,1))    
 
     def mousePressEvent(self, event):
         """ Starts resizing the widget when the mouse is pressed in the bottom right corner.
@@ -151,7 +154,7 @@ class DashboardItem(QWidget):
         self.corner_grabbed = False
         self.corner_in = False
         # corner_size is updated to be proportional to the widget size
-        self.corner_size = min(100, max(min(self.width(), self.height())/10,1))
+        self.corner_size = self.dynamic_corner_size()
 
     def corner_hit(self, pos):
         """ 
