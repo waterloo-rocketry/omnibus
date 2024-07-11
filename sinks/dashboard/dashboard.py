@@ -6,7 +6,7 @@ import signal
 
 import pyqtgraph
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.Qt.QtGui import QPainter, QAction
+from pyqtgraph.Qt.QtGui import QPainter, QAction, QPalette, QColor
 from pyqtgraph.Qt.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -25,7 +25,7 @@ from pyqtgraph.Qt.QtWidgets import (
     QCheckBox,
     QHBoxLayout,
     QPushButton,
-    QGraphicsProxyWidget
+    QGraphicsProxyWidget,
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
@@ -208,6 +208,27 @@ class Dashboard(QWidget):
         remove_dashitems_action = remove_dashitems.addAction("Remove all the dashitems")
         remove_dashitems_action.triggered.connect(self.remove_all)
         self.lockableActions.append(remove_dashitems_action)
+        
+        # read current theme of the dashboard
+        initial_theme = QApplication.styleHints().colorScheme()
+        # initialize variable to keep track of the current theme
+        if initial_theme == Qt.ColorScheme.Dark:
+            self.is_dark = True
+        else:
+            self.is_dark = False
+
+        #apply user's OS theme to omnibus dashboard
+        self.apply_color_theme(initial_theme)
+        
+
+        # adding a button to toggle the theme of the dashboard
+        toggle_theme = menubar.addMenu("Theme")
+        toggle_theme_action = toggle_theme.addAction("Toggle Light/Dark Mode")
+        toggle_theme_action.triggered.connect(self.toggle_theme)
+        self.lockableActions.append(toggle_theme_action)
+        
+        
+        
 
         # adding a button to switch instances of parsley
         self.can_selector = menubar.addMenu("Parsley")
@@ -617,6 +638,61 @@ class Dashboard(QWidget):
         for widget in self.scene.selectedItems():
             self.lock_widget(widget)
 
+    # switches to the other colour theme of the dashboard
+    def toggle_theme(self):
+        if self.is_dark == True:
+            self.set_light_theme()
+            
+        else:
+            self.set_dark_theme()
+        self.is_dark = not self.is_dark
+
+    # Method to apply the initial colour theme
+    def apply_color_theme(self, color_scheme):
+        if color_scheme == Qt.ColorScheme.Dark:
+            self.set_dark_theme()
+        else:
+            self.set_light_theme()
+
+    # Method to set the light theme
+    def set_light_theme(self):
+        QApplication.setStyle('Fusion')
+        palette = QPalette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(255, 255, 255))
+        palette.setColor(QPalette.ColorRole.WindowText, QColor(0, 0, 0))
+        palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
+        palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 240, 240))
+        palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+        palette.setColor(QPalette.ColorRole.ToolTipText, QColor(0, 0, 0))
+        palette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
+        palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
+        palette.setColor(QPalette.ColorRole.ButtonText, QColor(0, 0, 0))
+        palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+        palette.setColor(QPalette.ColorRole.Link, QColor(0, 0, 255))
+        palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 120, 215))
+        palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+        QApplication.instance().setPalette(palette)
+
+    # Method to set the dark theme
+    def set_dark_theme(self):
+        QApplication.setStyle('Fusion')
+        palette = QPalette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+        palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+        palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))
+        palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+        palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
+        palette.setColor(QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
+        palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
+        palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+        palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
+        palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+        palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+        palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+        palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+        QApplication.instance().setPalette(palette)
+
+
     # Method to handle exit
     def closeEvent(self, event):
         # Get data from savefile.
@@ -875,3 +951,4 @@ def dashboard_driver(callback):
     dash.show()
     dash.load()
     app.exec()
+
