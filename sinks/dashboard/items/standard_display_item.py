@@ -70,6 +70,7 @@ class StandardDisplayItem(DashboardItem):
         self.layout.addWidget(self.numRead, 0, 1)
         self.layout.addWidget(self.widget, 1, 0, 1, 2)
         
+        self.original_size = (500,200)
         self.resize(500,200)
 
     def add_parameters(self):
@@ -123,10 +124,13 @@ class StandardDisplayItem(DashboardItem):
         if value:
             self.widget.show()
             self.layout.addWidget(self.widget, 1, 0, 1, 2)
+            self.layout.addWidget(self.numRead, 0, 1)
+            self.resize(500,200)
         else:
             self.widget.hide()
             self.layout.addWidget(self.label, 0, 0)
-            self.layout.addWidget(self.numRead, 0, 1)
+            self.layout.addWidget(self.numRead, 1, 0)
+            self.resize(250, 116)
 
     # Create the plot item
     def create_plot(self):
