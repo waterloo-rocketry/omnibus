@@ -24,7 +24,8 @@ class DashboardItem(QWidget):
         self.corner_grabbed = False
         self.corner_in = False
         self.corner_size = 40
-        self.corner_index = 0
+        self.corner_index = 3 # 0: left up, 1: right up, 2: left down, 3: right down
+        self.temp_pos = None # Used to store the temp position of the widget when resizing
         self.dashboard = dashboard
         self.resize_callback = dashboard.on_item_resize
         """
@@ -70,8 +71,8 @@ class DashboardItem(QWidget):
     def resizeEvent(self, _):
         # These will trigger our lambdas above, but that's not an issue.
         self.parameters.child("width").setValue(self.size().width())
-        self.parameters.child("height").setValue(self.size().height())
-        self.resize_callback(self)
+        self.parameters.child("height").setValue(self.size().height()) 
+        self.resize_callback(self, anchor=self.corner_index)
 
     def add_parameters(self) -> list[Parameter]:
         """
@@ -139,17 +140,30 @@ class DashboardItem(QWidget):
             self.corner_in = False      
 
         if self.corner_grabbed:
+            if self.temp_pos is None:
+                self.temp_pos = self.pos()
             delta = self.dashboard.view.mapToScene(event.globalPos()) - self.grab_start_pos
-            new_width = max(self.start_rect.width() + delta.x(), self.minimumWidth())
-            new_height = max(self.start_rect.height() + delta.y(), self.minimumHeight())
-            self.resize(new_width, new_height)
+            
+            new_width =  max(self.start_rect.width() + delta.x(), self.minimumWidth()) if self.corner_index == 1 or self.corner_index == 3 else max(self.start_rect.width() - delta.x(), self.minimumWidth())
+            new_height = max(self.start_rect.height() + delta.y(), self.minimumHeight()) if self.corner_index == 2 or self.corner_index == 3 else max(self.start_rect.height() - delta.y(), self.minimumHeight())
+            
+            if self.corner_index == 0:
+                self.setGeometry(self.temp_pos.x() + delta.x(), self.temp_pos.y() + delta.y(), new_width, new_height)
+            elif self.corner_index == 1:
+                self.setGeometry(self.pos().x(), self.temp_pos.y() + delta.y(), new_width, new_height)
+            elif self.corner_index == 2:
+                self.setGeometry(self.temp_pos.x() + delta.x(), self.pos().y(), new_width, new_height)
+            elif self.corner_index == 3:
+                self.setGeometry(self.pos().x(), self.pos().y(), new_width, new_height)
 
     def mouseReleaseEvent(self, event):
         """ 
         Stops resizing the widget when the mouse is released.
         """
+        # Reset all the states
         self.corner_grabbed = False
         self.corner_in = False
+        self.temp_pos = None
 
     def corner_hit(self, pos):
         """ 
