@@ -1,5 +1,6 @@
 import parsley
 from parsley.fields import Enum, Numeric
+import math
 
 Number = int | float
 
@@ -58,7 +59,38 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     '''
     bit_str = parsley.BitString(data=line[1:-1])
     try:
-        return parsley.parse_fields(bit_str, MESSAGE_FORMAT)
+        res=parsley.parse_fields(bit_str, MESSAGE_FORMAT)
+        res["Heater Thermistor 1"]=parse_thermistor(res["Heater Thermistor 1"], 10, 4.096)
+        res["Heater Thermistor 2"]=parse_thermistor(res["Heater Thermistor 2"], 10, 4.096)
     except ValueError as e:
         print("Invalid data: " + str(e))
-        return None
+        return 
+    
+def parse_thermistor(adc_value, adc_bits,vref):
+    #Second resistor in voltage divider
+    voltage_divider_resistor=float(5000)
+    #resistance of the thermistor
+    set_resistance=float(10000)
+    #beta value of the thermistor
+    beta_value=3950
+    #temperature of the thermistor resistance
+    set_temp_cel=25
+    #input voltage to the thermistor voltage divider
+    input_voltage=5
+
+    #convert the adc output to voltage output
+    thermistor_voltage=float(adc_value)/(2**adc_bits)*vref
+    #resistance of the thermistor calculated using voltage divider
+    thermistor_resistance=(voltage_divider_resistor*input_voltage/thermistor_voltage)-voltage_divider_resistor
+    #uses thermistor beta value to convert 
+    # Formula: Beta=(ln(R1/R2))/((1/T1)-(1/T2))
+    therm_temp_cel=((math.log(thermistor_resistance/set_resistance)/beta_value)+float(1)/set_temp_cel)**-1
+    return therm_temp_cel
+    
+
+    
+    
+
+
+
+
