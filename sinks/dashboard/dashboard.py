@@ -309,6 +309,11 @@ class Dashboard(QWidget):
         self.current_data = self.get_data()["widgets"]
         self.unsave_indicator = False
         
+        # For every 5 second, check if there are any changes
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.change_detector)
+        self.timer.start(1000)  # Check every second
+        
 
     def select_instance(self, name):
         self.parsley_instance = name
@@ -322,13 +327,14 @@ class Dashboard(QWidget):
             return True
         return False
 
-    def every_second(self, payload, stream):
-        # For every second, check if there are any changes
+    def change_detector(self):
         if self.check_for_changes():
             self.setWindowTitle("Omnibus Dashboard ⏺")
         else:
             self.setWindowTitle("Omnibus Dashboard")
+            self.old_data = self.get_data()
 
+    def every_second(self, payload, stream):
         def on_select(string):
             def retval():
                 self.select_instance(string)
