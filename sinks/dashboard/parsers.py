@@ -87,6 +87,7 @@ splits = {
     "ALT_ARM_STATUS": "altimeter",
     "SENSOR_TEMP": "sensor_id",
     "SENSOR_ANALOG": "sensor_id",
+    "STATE_EST_DATA": "state_id",
 }
 last_timestamp = {}  # Last timestamp seen for each board + message type
 offset_timestamp = {}  # per-board-and-message offset to account for time rollovers
