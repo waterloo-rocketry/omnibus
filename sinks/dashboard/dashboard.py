@@ -332,7 +332,6 @@ class Dashboard(QWidget):
             self.setWindowTitle("Omnibus Dashboard ⏺")
         else:
             self.setWindowTitle("Omnibus Dashboard")
-            self.old_data = self.get_data()
 
     def every_second(self, payload, stream):
         def on_select(string):
