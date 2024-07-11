@@ -59,9 +59,16 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     '''
     bit_str = parsley.BitString(data=line[1:-1])
     try:
+        key_list_therm=["Heater Thermistor 1","Heater Thermistor 2"]
+        key_list_kelvin=["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage"
+                  "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage"]
         res=parsley.parse_fields(bit_str, MESSAGE_FORMAT)
-        res["Heater Thermistor 1"]=parse_thermistor(res["Heater Thermistor 1"], 10, 4.096)
-        res["Heater Thermistor 2"]=parse_thermistor(res["Heater Thermistor 2"], 10, 4.096)
+        for x in range(0,len(key_list_therm)):
+            res[key_list_therm[x]]=parse_thermistor(res[key_list_therm[x]],10,4.096)
+        for x in range(0,len(key_list_kelvin)):
+            res[key_list_kelvin[x]]=parse_kelvin_sensor(key_list_kelvin[x],10,4.096)
+        return res
+        
     except ValueError as e:
         print("Invalid data: " + str(e))
         return 
@@ -79,13 +86,21 @@ def parse_thermistor(adc_value, adc_bits,vref):
     input_voltage=5
 
     #convert the adc output to voltage output
-    thermistor_voltage=float(adc_value)/(2**adc_bits)*vref
+    thermistor_voltage=parse_adc_to_voltage(adc_value,adc_bits,vref)
     #resistance of the thermistor calculated using voltage divider
     thermistor_resistance=(voltage_divider_resistor*input_voltage/thermistor_voltage)-voltage_divider_resistor
     #uses thermistor beta value to convert 
     # Formula: Beta=(ln(R1/R2))/((1/T1)-(1/T2))
     therm_temp_cel=((math.log(thermistor_resistance/set_resistance)/beta_value)+float(1)/set_temp_cel)**-1
     return therm_temp_cel
+
+def parse_kelvin_sensor(adc_value,adc_bit,vref):
+    parse_adc_to_voltage(adc_value,adc_bit,vref)
+
+
+def parse_adc_to_voltage(adc_value,adc_bits, vref):
+    return float(adc_value)/(2**adc_bits)*vref
+
     
 
     
