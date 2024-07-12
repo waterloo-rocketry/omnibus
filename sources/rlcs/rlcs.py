@@ -44,6 +44,8 @@ MESSAGE_FORMAT = [
     Numeric("Heater Kelvin Low 2 Voltage", 16, scale=1/1000, big_endian=False),
     Numeric("Heater Kelvin High 1 Voltage", 16, scale=1/1000, big_endian=False),
     Numeric("Heater Kelvin High 2 Voltage", 16, scale=1/1000, big_endian=False),
+    Numeric("Heater Resistance 1", 16, scale=1,big_endian=False),
+    Numeric("Heater Resistance 2", 16, scale=1,big_endian=False),
 ]
 
 EXPECTED_SIZE = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
@@ -59,14 +61,18 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     '''
     bit_str = parsley.BitString(data=line[1:-1])
     try:
+        key_list_current=["Heater Current 1","Heater Current 2"]
         key_list_therm=["Heater Thermistor 1","Heater Thermistor 2"]
         key_list_kelvin=["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage"
                   "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage"]
+        key_list_resistance=["Heater Resistance 1","Heater Resistance 2"]
         res=parsley.parse_fields(bit_str, MESSAGE_FORMAT)
         for x in range(0,len(key_list_therm)):
             res[key_list_therm[x]]=parse_thermistor(res[key_list_therm[x]],10,4.096)
         for x in range(0,len(key_list_kelvin)):
             res[key_list_kelvin[x]]=parse_kelvin_sensor(key_list_kelvin[x],10,4.096)
+        for x in range(0,len(key_list_resistance)):
+            res[key_list_resistance[x]]=parse_kelvin_resistance(res[key_list_kelvin[x+2]],res[key_list_kelvin[x]],res[key_list_current[x]])
         return res
         
     except ValueError as e:
@@ -97,6 +103,8 @@ def parse_thermistor(adc_value, adc_bits,vref):
 def parse_kelvin_sensor(adc_value,adc_bit,vref):
     parse_adc_to_voltage(adc_value,adc_bit,vref)
 
+def parse_kelvin_resistance(voltageP,voltageN,current):
+    return (voltageP-voltageN)/(current)
 
 def parse_adc_to_voltage(adc_value,adc_bits, vref):
     return float(adc_value)/(2**adc_bits)*vref
