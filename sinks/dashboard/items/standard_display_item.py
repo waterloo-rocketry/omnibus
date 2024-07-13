@@ -59,10 +59,10 @@ class StandardDisplayItem(DashboardItem):
         self.numRead = QLabel("Not Connected")
         
         label_font = QFont()
-        label_font.setPointSize(25)
+        label_font.setPointSize(15)
         self.label.setFont(label_font)
         num_read_font = QFont()
-        num_read_font.setPointSize(25)
+        num_read_font.setPointSize(15)
         self.numRead.setFont(num_read_font)
 
         
@@ -70,8 +70,9 @@ class StandardDisplayItem(DashboardItem):
         self.layout.addWidget(self.numRead, 0, 1)
         self.layout.addWidget(self.widget, 1, 0, 1, 2)
         
-        self.original_size = (500,200)
-        self.resize(500,200)
+        self.resize(300,100)
+        self.show_size = self.size()
+        self.hide_size = self.size()
 
     def add_parameters(self):
         text_param = {'name': 'label', 'type': 'str', 'value': ''}
@@ -81,7 +82,7 @@ class StandardDisplayItem(DashboardItem):
                                     limits=publisher.get_all_streams())
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0.0}
-        font_size_param = {'name': 'font-size', 'type': 'int', 'value': 25, 'limits': (10, 30)}
+        font_size_param = {'name': 'font-size', 'type': 'int', 'value': 15, 'limits': (10, 30)}
         display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': True}
         return [text_param, series_param, limit_param, offset_param, display_sparkline_param, font_size_param]
 
@@ -122,15 +123,13 @@ class StandardDisplayItem(DashboardItem):
 
     def on_display_sparkline_change(self, param, value):
         if value:
+            self.hide_size = self.size()
             self.widget.show()
-            self.layout.addWidget(self.widget, 1, 0, 1, 2)
-            self.layout.addWidget(self.numRead, 0, 1)
-            self.resize(500,200)
+            self.resize(self.show_size)
         else:
+            self.show_size = self.size()
             self.widget.hide()
-            self.layout.addWidget(self.label, 0, 0)
-            self.layout.addWidget(self.numRead, 1, 0)
-            self.resize(250, 116)
+            self.resize(self.hide_size)
 
     # Create the plot item
     def create_plot(self):
