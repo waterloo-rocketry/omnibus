@@ -165,7 +165,7 @@ def main():
             # Checking parsley instance
             parsley_instance = msg.payload['parsley']
 
-            if parsley_instance == sender_id:
+            if parsley_instance in [sender_id, 'ALL']:
                 formatted_msg = f"m{msg_sid:03X}"
                 if msg_data:
                     formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
