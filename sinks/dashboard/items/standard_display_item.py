@@ -31,6 +31,7 @@ class StandardDisplayItem(DashboardItem):
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
         self.parameters.param('label').sigValueChanged.connect(self.on_label_change)
         self.parameters.param('font-size').sigValueChanged.connect(self.on_font_size_change)
+        self.parameters.param('num-decimals').sigValueChanged.connect(self.on_decimal_change)
         self.parameters.param('display-sparkline').sigValueChanged.connect(self.on_display_sparkline_change)
 
 
@@ -55,8 +56,9 @@ class StandardDisplayItem(DashboardItem):
         # Medium Text Label
         self.label = QLabel("Label")
 
-        #Big numerical readout
+        # Big numerical readout
         self.numRead = QLabel("Not Connected")
+        self.decimals = 2
         
         label_font = QFont()
         label_font.setPointSize(15)
@@ -83,8 +85,9 @@ class StandardDisplayItem(DashboardItem):
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0.0}
         font_size_param = {'name': 'font-size', 'type': 'int', 'value': 15, 'limits': (10, 30)}
+        num_decimals_param = {'name': 'num-decimals', 'type': 'int', 'value': 2, 'limits': (0, 6)}
         display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': True}
-        return [text_param, series_param, limit_param, offset_param, display_sparkline_param, font_size_param]
+        return [text_param, series_param, limit_param, offset_param, display_sparkline_param, font_size_param, num_decimals_param]
 
     def on_series_change(self, param, value):
         self.series = [value]
@@ -120,6 +123,8 @@ class StandardDisplayItem(DashboardItem):
         num_read_font.setPointSize(value)
         self.numRead.setFont(num_read_font)
 
+    def on_decimal_change(self, param, value):
+        self.decimals = value
 
     def on_display_sparkline_change(self, param, value):
         if value:
@@ -137,7 +142,6 @@ class StandardDisplayItem(DashboardItem):
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
         plot.setMouseEnabled(x=False, y=False)
         plot.hideButtons()
-        plot.setMinimumSize(200, 50)
         if (len(self.series) > 1):
             plot.addLegend()
          # hide the axes
@@ -212,7 +216,7 @@ class StandardDisplayItem(DashboardItem):
 
         # For the numerical readout label
         self.data = float(point)
-        self.numRead.setText(f"{self.data:.6f}")
+        self.numRead.setText(f"{self.data:.{self.decimals}f}")
 
 
     @staticmethod
