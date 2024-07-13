@@ -60,62 +60,57 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
         returns none if data is invalid
     '''
     bit_str = parsley.BitString(data=line[1:-1])
-    try:
-        key_list_current=["Heater Current 1","Heater Current 2"]
-        key_list_therm=["Heater Thermistor 1","Heater Thermistor 2"]
-        key_list_kelvin=["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage"
+    key_list_therm=["Heater Thermistor 1","Heater Thermistor 2"]
+    key_list_kelvin=["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage"
                   "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage"]
-        key_list_resistance=["Heater Resistance 1","Heater Resistance 2"]
+    key_list_resistance=["Heater Resistance 1","Heater Resistance 2"]
+    try:
         res=parsley.parse_fields(bit_str, MESSAGE_FORMAT)
-        for x in range(0,len(key_list_therm)):
-            res[key_list_therm[x]]=parse_thermistor(res[key_list_therm[x]],10,4.096)
-        for x in range(0,len(key_list_kelvin)):
-            res[key_list_kelvin[x]]=parse_kelvin_sensor(key_list_kelvin[x],10,4.096)
-            #relavant calcuation logic (sorry for no dict comprehension, maybe after wdr)
-        for x in range(0,len(key_list_resistance)):
-            res[key_list_resistance[x]]=parse_kelvin_resistance(res[key_list_kelvin[x+2]],res[key_list_kelvin[x]],res[key_list_current[x]])
-        return res
-        
     except ValueError as e:
         print("Invalid data: " + str(e))
         return 
     
+    for key in ["Heater Current 1","Heater Current 2"]:
+        res[key] = parse_thermistor(res[key],10,4.096)
+
+    #Convert adc bits to voltage to allow for kelvin resistance calculation
+    for key in ["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage"
+                  "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage"]:
+        res[key] = parse_adc_to_voltage(res[key],10,4.096)
+
+    for key in ["Heater Resistance 1","Heater Resistance 2"]:
+        res[key] = parse_kelvin_resistance(res[key],10,4.096)
+
+    return res
+        
+ 
+    
 def parse_thermistor(adc_value, adc_bits,vref):
     #Second resistor in voltage divider
-    voltage_divider_resistor=float(5000)
+    vlt_dvdr_rstr=5000.0
     #resistance of the thermistor
-    set_resistance=float(10000)
+    st_rstnce=10000.0
     #beta value of the thermistor
-    beta_value=3950
+    beta_value=3950.0
     #temperature of the thermistor resistance
-    set_temp_cel=25
+    st_tmp_cel=25.0
     #input voltage to the thermistor voltage divider
-    input_voltage=5
+    inpt_vlt=5.0
 
     #convert the adc output to voltage output
-    thermistor_voltage=parse_adc_to_voltage(adc_value,adc_bits,vref)
+    thrmstr_vlt= parse_adc_to_voltage(adc_value,adc_bits,vref)
+
     #resistance of the thermistor calculated using voltage divider
-    thermistor_resistance=(voltage_divider_resistor*input_voltage/thermistor_voltage)-voltage_divider_resistor
+    thrmstr_rstnce=vlt_dvdr_rstr * inpt_vlt / thrmstr_vlt - vlt_dvdr_rstr
+    
     #uses thermistor beta value to convert 
     # Formula: Beta=(ln(R1/R2))/((1/T1)-(1/T2))
-    therm_temp_cel=((math.log(thermistor_resistance/set_resistance)/beta_value)+float(1)/set_temp_cel)**-1
+    therm_temp_cel = ((math.log (thrmstr_rstnce / st_rstnce) / beta_value)+ 1.0 / st_tmp_cel)**-1
     return therm_temp_cel
-
-def parse_kelvin_sensor(adc_value,adc_bit,vref):
-    parse_adc_to_voltage(adc_value,adc_bit,vref)
 
 # resistance calculation is performed with voltages taken in from parsley
 def parse_kelvin_resistance(voltageP,voltageN,current):
-    return (voltageP-voltageN)/(current)
+    return (voltageP - voltageN) / current 
 
 def parse_adc_to_voltage(adc_value,adc_bits, vref):
-    return float(adc_value)/(2**adc_bits)*vref
-
-    
-
-    
-    
-
-
-
-
+    return float(adc_value) / (2**adc_bits) * vref
