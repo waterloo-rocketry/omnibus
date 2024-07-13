@@ -304,6 +304,9 @@ class Dashboard(QWidget):
         self.key_press_signals.send_to_back.connect(self.send_to_back)
         self.installEventFilter(self.key_press_signals)
 
+        self.view.setFocusPolicy(Qt.StrongFocus)
+        self.view.setFocus()
+
     def select_instance(self, name):
         self.parsley_instance = name
         self.refresh_track = True
@@ -775,9 +778,11 @@ class Dashboard(QWidget):
         self.view.centerOn(scene_width/2, scene_height/2)
 
     def remove_selected(self):
+        print("AM GOING HERE")
         if self.locked:
             return
         for item in self.scene.selectedItems():
+            print(item, " YAAAAAA")
             self.remove(item)
             self.widgets.pop(item)
 

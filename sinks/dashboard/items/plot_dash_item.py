@@ -2,8 +2,10 @@ from publisher import publisher
 from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu
 from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 from pyqtgraph.Qt.QtCore import QEvent
+from utils import EventTracker
 import pyqtgraph as pg
 import numpy as np
+from pyqtgraph.Qt.QtCore import Qt
 
 from .dashboard_item import DashboardItem
 import config
@@ -47,9 +49,22 @@ class PlotDashItem(DashboardItem):
 
         # create the plot widget
         self.widget = pg.PlotWidget(plotItem=self.plot)
+        #self.widget.setFocusPolicy(Qt.ClickFocus)
+        #self.widget.setAttribute(Qt.WA_TransparentForMouseEvents, False)
+
+        # Set focus policy
+        self.widget.setFocusPolicy(Qt.StrongFocus)
+        self.setFocusPolicy(Qt.StrongFocus)
+
+        # Install event filter
+        self.event_filter = EventTracker()
+        self.widget.installEventFilter(self.event_filter)
 
         # add it to the layout
         self.layout.addWidget(self.widget, 0, 0)
+
+        # Reimplement mouse event handlers
+        #self.widget.installEventFilter(self)
 
     def add_parameters(self):
         series_param = ChecklistParameter(name='series',
@@ -102,6 +117,10 @@ class PlotDashItem(DashboardItem):
         self.warning_line = plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
 
         return plot
+    
+    def mouse_clicked(self, mouseClickEvent):
+        # mouseClickEvent is a pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
+        print('clicked plot 0x{:x}, event: {}'.format(id(self), mouseClickEvent))
 
     def on_data_update(self, stream, payload):
         time, point = payload
