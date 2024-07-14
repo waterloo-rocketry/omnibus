@@ -8,6 +8,7 @@ import pyqtgraph as pg
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
+from .series_parameter import SeriesListParameter
 
 EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
 
@@ -83,10 +84,7 @@ class StandardDisplayItem(DashboardItem):
 
     def add_parameters(self):
         text_param = {'name': 'label', 'type': 'str', 'value': ''}
-        series_param = ListParameter(name='series',
-                                    type='list',
-                                    value=[],
-                                    limits=publisher.get_all_streams())
+        series_param = SeriesListParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0.0}
         font_size_param = {'name': 'font-size', 'type': 'int', 'value': 15, 'limits': (10, 30)}
