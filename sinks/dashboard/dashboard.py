@@ -779,11 +779,9 @@ class Dashboard(QWidget):
         self.view.centerOn(scene_width/2, scene_height/2)
 
     def remove_selected(self):
-        print("AM GOING HERE")
         if self.locked:
             return
         for item in self.scene.selectedItems():
-            print(item, " YAAAAAA")
             self.remove(item)
             self.widgets.pop(item)
 

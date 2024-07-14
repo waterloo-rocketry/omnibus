@@ -118,17 +118,13 @@ class DashboardItem(QWidget):
             # Check item itself isn't locked
             for rect, pair in self.dashboard.widgets.items():
                 if pair[1] == self and rect in [widget[0] for widget in self.dashboard.locked_widgets]:
-                    print("MOUSE PRESSED1.0")
                     super().mousePressEvent(event)
                     return
-                
-            print("MOUSE PRESSED1.1")
 
             self.corner_grabbed = True
             self.grab_start_pos = self.dashboard.view.mapToScene(event.globalPos())
             self.start_rect = self.rect()
         else:
-            print("MOUSE PRESSED2")
             super().mousePressEvent(event)  # Call the base class method for normal processing
 
     def mouseMoveEvent(self, event): # This function is called when the mouse is move in the widget

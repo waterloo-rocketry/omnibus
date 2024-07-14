@@ -41,16 +41,9 @@ class EventTracker(QObject):
         """
         if event.type() == QEvent.KeyPress:
             key_press = KeyEvent(event.key(), event.modifiers())
-            print(key_press)
             match key_press:
                 case KeyEvent(Qt.Key_Backspace, _) | KeyEvent(Qt.Key_Delete, _):
-                    print("BACKSPACE PRESSED 1")
-                    #self.backspace_pressed.emit(widget)
-                    parent_item = getattr(widget, 'parent_plot_dash_item', widget)
-                    self.backspace_pressed.emit(parent_item)
-
-                    print("BACKSPACE PRESSED 2")
-                    print("this is widget: ", parent_item)
+                    self.backspace_pressed.emit(widget)
                 case KeyEvent(Qt.Key_Backtab, _):
                     self.reverse_tab_pressed.emit(widget)
                 case KeyEvent(Qt.Key_Tab, _):
@@ -83,8 +76,6 @@ class EventTracker(QObject):
                     self.send_to_back.emit()
                 case KeyEvent(Qt.Key_BracketLeft):
                     self.send_backward.emit()
-                case _:
-                    print("AHHHHHHHHHH")
         return super().eventFilter(widget, event)
 
 
