@@ -113,7 +113,7 @@ def parse_kelvin_resistance(voltageP,voltageN,current):
     try:
         return (voltageP - voltageN) / current 
     except ZeroDivisionError as e:
-        print(e+". No current is flowing")
+        return 0.0
 
 
 def parse_adc_to_voltage(adc_value,adc_bits, vref):
