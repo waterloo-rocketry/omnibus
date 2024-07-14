@@ -68,7 +68,7 @@ class CanSender(DashboardItem):
         self.installEventFilter(self.send_signals)
 
         # text field regular expression input mask (won't accept characters not defined here)
-        self.numeric_mask = '[\.\-0-9]'  # allows numbers, periods, and minus sign
+        self.numeric_mask = r'[\.\-0-9]'  # allows numbers, periods, and minus sign
         self.ascii_mask = '[\x00-\x7F]'  # allows all ASCII characters
 
         # preallocate the arrays since the length of a CAN message is dynamic
