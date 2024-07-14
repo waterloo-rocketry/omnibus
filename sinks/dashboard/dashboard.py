@@ -549,6 +549,8 @@ class Dashboard(QWidget):
         os.makedirs(os.path.dirname(self.file_location), exist_ok=True)
         with open(self.file_location, "w") as savefile:
             json.dump(data, savefile)
+        
+        self.change_detector()
 
     # Method to save file with a custom chosen name
     def save_as(self):
