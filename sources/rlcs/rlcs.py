@@ -60,10 +60,8 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
         returns none if data is invalid
     '''
     bit_str = parsley.BitString(data=line[1:-1])
-    key_list_therm=["Heater Thermistor 1","Heater Thermistor 2"]
     key_list_kelvin=["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage"
                   "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage"]
-    key_list_resistance=["Heater Resistance 1","Heater Resistance 2"]
     try:
         res=parsley.parse_fields(bit_str, MESSAGE_FORMAT)
     except ValueError as e:
