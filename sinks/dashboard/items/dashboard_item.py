@@ -107,7 +107,7 @@ class DashboardItem(QWidget):
         remove subscriptions from series
         """
         pass
-    
+
     # The following functions are used to make the widget resizable by dragging the bottom right corner.
     
     def dynamic_corner_size(self)-> int | float :
@@ -132,7 +132,7 @@ class DashboardItem(QWidget):
             super().mousePressEvent(event)  # Call the base class method for normal processing
 
     def mouseMoveEvent(self, event): # This function is called when the mouse is move in the widget
-        """ 
+        """
         When the mouse is move in the corner, the cursor shape is changed to indicate that the widget can be resized
         """
         if self.corner_hit(event.pos()):
@@ -140,7 +140,7 @@ class DashboardItem(QWidget):
             self.corner_in = True
         else:
             self.setCursor(Qt.ArrowCursor)
-            self.corner_in = False      
+            self.corner_in = False
 
         if self.corner_grabbed:
             if self.temp_pos is None:
@@ -160,7 +160,7 @@ class DashboardItem(QWidget):
                 self.setGeometry(self.pos().x(), self.pos().y(), new_width, new_height)
 
     def mouseReleaseEvent(self, event):
-        """ 
+        """
         Stops resizing the widget when the mouse is released.
         """
         # Reset all the states
@@ -171,7 +171,7 @@ class DashboardItem(QWidget):
         self.corner_size = self.dynamic_corner_size()
 
     def corner_hit(self, pos):
-        """ 
+        """
         Checks if the mouse is in the corner and updates the corner_index.
         """
         right_down_corner = pos.x() >= self.width() - self.corner_size and pos.y() >= self.height() - self.corner_size
@@ -188,7 +188,7 @@ class DashboardItem(QWidget):
             return True
         else:
             return False
-    
+
     def paintEvent(self, event):
         painter = QPainter(self)
         if self.corner_in: # Draw the corner grabber when the mouse is in the corner
@@ -196,7 +196,7 @@ class DashboardItem(QWidget):
 
 
     def draw_corner(self, painter):
-        """ 
+        """
         Draws a corner grabber in the bottom right corner of the widget.
         """
 
@@ -216,5 +216,5 @@ class DashboardItem(QWidget):
 
         if self.corner_in:
             painter.setBrush(QColor(100, 100, 100))
-            painter.drawRect(rect_lst[self.corner_index]) 
+            painter.drawRect(rect_lst[self.corner_index])
 
