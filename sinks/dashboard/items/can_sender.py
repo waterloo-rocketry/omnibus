@@ -69,7 +69,7 @@ class CanSender(DashboardItem):
 
         # text field regular expression input mask (won't accept characters not defined here)
         self.numeric_mask = r'[\.\-0-9]'  # allows numbers, periods, and minus sign
-        self.ascii_mask = '[\x00-\x7F]'  # allows all ASCII characters
+        self.ascii_mask = r'[\x00-\x7F]'  # allows all ASCII characters
 
         # preallocate the arrays since the length of a CAN message is dynamic
         self.fields = [None] * 16  # stores the parsley fields
