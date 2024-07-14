@@ -78,8 +78,8 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
                   "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage"]:
         res[key] = parse_adc_to_voltage(res[key],10,4.096)
 
-    for key in ["Heater Resistance 1","Heater Resistance 2"]:
-        res[key] = parse_kelvin_resistance(res[key],10,4.096)
+    for index, key in enumerate(["Heater Resistance 1","Heater Resistance 2"]):
+        res[key] = parse_kelvin_resistance(res[key],key_list_kelvin[2+index],key_list_kelvin[index])
 
     return res
         
@@ -110,7 +110,11 @@ def parse_thermistor(adc_value, adc_bits,vref):
 
 # resistance calculation is performed with voltages taken in from parsley
 def parse_kelvin_resistance(voltageP,voltageN,current):
-    return (voltageP - voltageN) / current 
+    try:
+        return (voltageP - voltageN) / current 
+    except ZeroDivisionError as e:
+        print(e+". No current is flowing")
+
 
 def parse_adc_to_voltage(adc_value,adc_bits, vref):
     return float(adc_value) / (2**adc_bits) * vref
