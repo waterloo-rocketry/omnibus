@@ -292,6 +292,7 @@ class Dashboard(QWidget):
         self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))
         self.key_press_signals.zoom_reset.connect(self.reset_zoom)
         self.key_press_signals.backspace_pressed.connect(self.remove_selected)
+
         self.key_press_signals.save_file_keys_pressed.connect(self.save)
         self.key_press_signals.save_as_file_keys_pressed.connect(self.save_as)
         self.key_press_signals.open_file_keys_pressed.connect(self.open)

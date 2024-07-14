@@ -49,8 +49,9 @@ class PlotDashItem(DashboardItem):
 
         # create the plot widget
         self.widget = pg.PlotWidget(plotItem=self.plot)
-        #self.widget.setFocusPolicy(Qt.ClickFocus)
-        #self.widget.setAttribute(Qt.WA_TransparentForMouseEvents, False)
+
+        # Set parent reference
+        self.widget.parent_plot_dash_item = self
 
         # Set focus policy
         self.widget.setFocusPolicy(Qt.StrongFocus)
@@ -74,6 +75,12 @@ class PlotDashItem(DashboardItem):
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         return [series_param, limit_param, offset_param]
+    
+    def handle_custom_delete(self, widget):
+        print("Custom delete action triggered in PlotDashItem for widget:", widget)
+        # Implement delete logic here
+        self.dashboard.remove_selected()
+
 
     def on_series_change(self, param, value):
         if len(value) > 6:
