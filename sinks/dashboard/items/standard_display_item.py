@@ -8,6 +8,7 @@ import pyqtgraph as pg
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
+from .series_parameter import SeriesListParameter
 
 
 @Register
@@ -75,10 +76,7 @@ class StandardDisplayItem(DashboardItem):
 
     def add_parameters(self):
         text_param = {'name': 'label', 'type': 'str', 'value': ''}
-        series_param = ListParameter(name='series',
-                                    type='list',
-                                    value=[],
-                                    limits=publisher.get_all_streams())
+        series_param = SeriesListParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0.0}
         display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': True}
