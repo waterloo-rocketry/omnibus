@@ -8,6 +8,7 @@ import numpy as np
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
+from .series_parameter import SeriesChecklistParameter
 
 
 @Register
@@ -52,10 +53,7 @@ class PlotDashItem(DashboardItem):
         self.layout.addWidget(self.widget, 0, 0)
 
     def add_parameters(self):
-        series_param = ChecklistParameter(name='series',
-                                          type='list',
-                                          value=[],
-                                          limits=publisher.get_all_streams())
+        series_param = SeriesChecklistParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         return [series_param, limit_param, offset_param]
