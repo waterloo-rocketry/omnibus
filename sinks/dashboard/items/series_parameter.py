@@ -5,9 +5,8 @@ from pyqtgraph.parametertree.parameterTypes import ChecklistParameter, ListParam
 class SeriesListParameter(ListParameter):
     """A ListParameter for data series."""
 
-    limits: list[str] = publisher.get_all_streams()
-
     def __init__(self):
+        self.limits: list[str] = publisher.get_all_streams()
         super().__init__(name='series',
                          type='list',
                          value=[],
@@ -27,9 +26,8 @@ class SeriesListParameter(ListParameter):
 class SeriesChecklistParameter(ChecklistParameter):
     """A ChecklistParameter for data series."""
     
-    limits: list[str] = publisher.get_all_streams()
-
     def __init__(self):
+        self.limits: list[str] = publisher.get_all_streams()
         super().__init__(name='series',
                          type='list',
                          value=[],
