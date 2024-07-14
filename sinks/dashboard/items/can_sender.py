@@ -106,7 +106,7 @@ class CanSender(DashboardItem):
                 # you can't hover and scroll over the contents (it'll be one huge list when expanded)
                 # see: https://doc.qt.io/qt-5/qcombobox.html#maxVisibleItems-prop
                 dropdown.setMaxVisibleItems(15)
-                dropdown.setFocusPolicy(Qt.StrongFocus)  # allows tabbing between widgets
+                # dropdown.setFocusPolicy(Qt.StrongFocus)  # allows tabbing between widgets
                 # calculate the width of the widget
                 max_text_width = self.get_widget_text_width(dropdown, dropdown_max_length)
                 self.widget_widths[self.widget_index] = max_text_width + self.WIDGET_TEXT_PADDING
