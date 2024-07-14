@@ -2,13 +2,14 @@ from publisher import publisher
 from pyqtgraph.Qt.QtWidgets import QGridLayout, QLabel
 from pyqtgraph.parametertree.parameterTypes import ListParameter
 from pyqtgraph.Qt.QtGui import QFont
-from pyqtgraph.Qt.QtCore import Qt
+from pyqtgraph.Qt.QtCore import Qt, QTimer
 import pyqtgraph as pg
 
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
 
+EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
 
 @Register
 class StandardDisplayItem(DashboardItem):
@@ -34,6 +35,10 @@ class StandardDisplayItem(DashboardItem):
         self.parameters.param('num-decimals').sigValueChanged.connect(self.on_decimal_change)
         self.parameters.param('display-sparkline').sigValueChanged.connect(self.on_display_sparkline_change)
 
+        self.expired_timeout = QTimer()
+        self.expired_timeout.setSingleShot(True)
+        self.expired_timeout.timeout.connect(self.expire)
+        self.expired_timeout.start(int(EXPIRED_TIME * 1000))
 
         self.series = [self.parameters.param('series').value()]
         # just a single global offset for now
@@ -165,7 +170,6 @@ class StandardDisplayItem(DashboardItem):
 
     def on_data_update(self, stream, payload):
         time, point = payload
-
         point += self.offset
 
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
@@ -173,7 +177,6 @@ class StandardDisplayItem(DashboardItem):
             return
 
         self.last[stream] = time
-
         self.times[stream].append(time)
         self.points[stream].append(point)
 
@@ -182,9 +185,7 @@ class StandardDisplayItem(DashboardItem):
             self.points[stream].pop(0)
 
         # get the min/max point in the whole data set
-
         values = list(self.points.values())
-
         if not any(values):
             min_point = 0
             max_point = 0
@@ -194,7 +195,6 @@ class StandardDisplayItem(DashboardItem):
 
         # set the displayed range of Y axis
         self.plot.setYRange(min_point, max_point, padding=0.1)
-
         limit = self.parameters.param('limit').value()
         if limit != 0.0:
             # plot the warning line, using two points (start and end)
@@ -208,16 +208,20 @@ class StandardDisplayItem(DashboardItem):
 
         # update the data curve
         self.curves[stream].setData(self.times[stream], self.points[stream])
-
         # round the time to the nearest GRAPH_STEP
         t = round(self.times[stream][-1] / config.GRAPH_STEP) * config.GRAPH_STEP
         self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
                             t + config.GRAPH_STEP, padding=0)
-
         # For the numerical readout label
         self.data = float(point)
         self.numRead.setText(f"{self.data:.{self.decimals}f}")
+        # Restart timer
+        self.setStyleSheet("")
+        self.expired_timeout.stop()
+        self.expired_timeout.start(int(EXPIRED_TIME * 1000))
 
+    def expire(self):
+        self.setStyleSheet("color: red")
 
     @staticmethod
     def get_name():
