@@ -101,6 +101,7 @@ class CanSender(DashboardItem):
                 dropdown_max_length = max(len(item) for item in dropdown_items)
 
                 dropdown = QComboBox()
+                print(dropdown_items)
                 dropdown.addItems(dropdown_items)
                 # unfortunately on Mac, you aren't able to customize the dropdown which means that
                 # you can't hover and scroll over the contents (it'll be one huge list when expanded)
