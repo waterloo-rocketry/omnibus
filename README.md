@@ -38,3 +38,7 @@ Start the Omnibus server by activating your `venv`, then running `python -m omni
 ### Sources/Sinks
 
 Depending on your configuration, you'll need to run one or more sources or sinks. Each one is started independently in the same way: `python <sources-or-sinks>/<name>/main.py`. For example, you can start the Dashboard by running `python sinks/dashboard/main.py`.
+
+### Theme
+
+Omnibus uses the same theme as your operating system's default theme (light or dark). If you would like to switch themes, consider changing the theme of your system accordingly. 

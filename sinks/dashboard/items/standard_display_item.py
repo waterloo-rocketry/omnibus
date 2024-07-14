@@ -31,6 +31,8 @@ class StandardDisplayItem(DashboardItem):
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
         self.parameters.param('label').sigValueChanged.connect(self.on_label_change)
+        self.parameters.param('font-size').sigValueChanged.connect(self.on_font_size_change)
+        self.parameters.param('num-decimals').sigValueChanged.connect(self.on_decimal_change)
         self.parameters.param('display-sparkline').sigValueChanged.connect(self.on_display_sparkline_change)
 
         self.expired_timeout = QTimer()
@@ -58,25 +60,26 @@ class StandardDisplayItem(DashboardItem):
 
         # Medium Text Label
         self.label = QLabel("Label")
-        self.label.setAlignment(Qt.AlignCenter)
 
-        #Big numerical readout
+        # Big numerical readout
         self.numRead = QLabel("Not Connected")
-        self.numRead.setAlignment(Qt.AlignCenter)
-
+        self.decimals = 2
+        
         label_font = QFont()
         label_font.setPointSize(15)
         self.label.setFont(label_font)
         num_read_font = QFont()
-        num_read_font.setPointSize(30)
+        num_read_font.setPointSize(15)
         self.numRead.setFont(num_read_font)
 
-        # add it to the layout
-        self.layout.addWidget(self.numRead, 0, 0)
-        self.layout.addWidget(self.label, 1, 0)
-        self.layout.addWidget(self.widget, 2, 0)
         
-        self.resize(300,200)
+        self.layout.addWidget(self.label, 0, 0)
+        self.layout.addWidget(self.numRead, 0, 1)
+        self.layout.addWidget(self.widget, 1, 0, 1, 2)
+        
+        self.resize(300,100)
+        self.show_size = self.size()
+        self.hide_size = self.size()
 
     def add_parameters(self):
         text_param = {'name': 'label', 'type': 'str', 'value': ''}
@@ -86,8 +89,10 @@ class StandardDisplayItem(DashboardItem):
                                     limits=publisher.get_all_streams())
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0.0}
+        font_size_param = {'name': 'font-size', 'type': 'int', 'value': 15, 'limits': (10, 30)}
+        num_decimals_param = {'name': 'num-decimals', 'type': 'int', 'value': 2, 'limits': (0, 6)}
         display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': True}
-        return [text_param, series_param, limit_param, offset_param, display_sparkline_param]
+        return [text_param, series_param, limit_param, offset_param, display_sparkline_param, font_size_param, num_decimals_param]
 
     def on_series_change(self, param, value):
         self.series = [value]
@@ -101,7 +106,7 @@ class StandardDisplayItem(DashboardItem):
         self.widget.close()
         self.plot = self.create_plot()
         self.widget = pg.PlotWidget(plotItem=self.plot)
-        self.layout.addWidget(self.widget, 2, 0)
+        self.layout.addWidget(self.widget, 1, 0, 1, 2)
         self.resize(self.parameters.param('width').value(),
                     self.parameters.param('height').value())
 
@@ -112,11 +117,29 @@ class StandardDisplayItem(DashboardItem):
         self.text = value
         self.label.setText(self.text)
     
+    def on_font_size_change(self, param, value):
+        # Change font size for label
+        label_font = self.label.font()
+        label_font.setPointSize(value)
+        self.label.setFont(label_font)
+
+        # Change font size for numerical readout
+        num_read_font = self.numRead.font()
+        num_read_font.setPointSize(value)
+        self.numRead.setFont(num_read_font)
+
+    def on_decimal_change(self, param, value):
+        self.decimals = value
+
     def on_display_sparkline_change(self, param, value):
         if value:
+            self.hide_size = self.size()
             self.widget.show()
+            self.resize(self.show_size)
         else:
+            self.show_size = self.size()
             self.widget.hide()
+            self.resize(self.hide_size)
 
     # Create the plot item
     def create_plot(self):
@@ -124,7 +147,6 @@ class StandardDisplayItem(DashboardItem):
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
         plot.setMouseEnabled(x=False, y=False)
         plot.hideButtons()
-        plot.setMinimumSize(200, 50)
         if (len(self.series) > 1):
             plot.addLegend()
          # hide the axes
@@ -192,7 +214,7 @@ class StandardDisplayItem(DashboardItem):
                             t + config.GRAPH_STEP, padding=0)
         # For the numerical readout label
         self.data = float(point)
-        self.numRead.setText(f"{self.data:.6f}")
+        self.numRead.setText(f"{self.data:.{self.decimals}f}")
         # Restart timer
         self.setStyleSheet("")
         self.expired_timeout.stop()

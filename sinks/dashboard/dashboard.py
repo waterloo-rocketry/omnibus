@@ -141,6 +141,7 @@ class Dashboard(QWidget):
 
         # Keep track on whether the save popup should be shown on exit.
         self.should_show_save_popup = True
+        
         # Create a GUI
         self.width = 1100
         self.height = 700
@@ -303,10 +304,34 @@ class Dashboard(QWidget):
         self.key_press_signals.send_to_front.connect(self.send_to_front)
         self.key_press_signals.send_to_back.connect(self.send_to_back)
         self.installEventFilter(self.key_press_signals)
+        
+        # Data used to check unsaved changes and indicate on the window title
+        self.current_data = self.get_data()["widgets"]
+        self.unsave_indicator = False
+        
+        # For every 5 second, check if there are any changes
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.change_detector)
+        self.timer.start(100)  # Check every 0.1 seconds
+        
 
     def select_instance(self, name):
         self.parsley_instance = name
         self.refresh_track = True
+
+    def check_for_changes(self):
+        if self.unsave_indicator:
+            return True
+        elif (self.current_data != self.get_data()["widgets"]):
+            self.unsave_indicator = True
+            return True
+        return False
+
+    def change_detector(self):
+        if self.check_for_changes():
+            self.setWindowTitle("Omnibus Dashboard ⏺")
+        else:
+            self.setWindowTitle("Omnibus Dashboard")
 
     def every_second(self, payload, stream):
         def on_select(string):
@@ -315,7 +340,7 @@ class Dashboard(QWidget):
             return retval
 
         parsley_streams = [e[15:]
-                           for e in publisher.get_all_streams() if e.startswith("Parsley health")]
+                            for e in publisher.get_all_streams() if e.startswith("Parsley health")]
 
         parsley_streams.append("None")
 
@@ -386,7 +411,7 @@ class Dashboard(QWidget):
                 params = item.get_serialized_parameters()
 
                 self.add(type(item)(self, params),
-                         (viewpos.x() + 20, viewpos.y() + 20))
+                            (viewpos.x() + 20, viewpos.y() + 20))
 
                 break
 
@@ -510,14 +535,22 @@ class Dashboard(QWidget):
         for _index, rect in locked_item_pairs:
             self.lock_widget(rect)
 
+        self.current_data = data["widgets"]
+        self.unsave_indicator = False
+
     # Method to save current layout to file
     def save(self):
         data = self.get_data()
+        
+        self.current_data = data["widgets"]
+        self.unsave_indicator = False
                     
         # Write data to savefile
         os.makedirs(os.path.dirname(self.file_location), exist_ok=True)
         with open(self.file_location, "w") as savefile:
             json.dump(data, savefile)
+        
+        self.change_detector()
 
     # Method to save file with a custom chosen name
     def save_as(self):
@@ -537,7 +570,7 @@ class Dashboard(QWidget):
 
     # Method to switch to a layout in a different file
     def open(self):
-         # Ensure the save directory exists, if not, create it
+        # Ensure the save directory exists, if not, create it
         if not os.path.exists(self.save_directory):
             os.makedirs(self.save_directory)
             
@@ -809,7 +842,7 @@ class Dashboard(QWidget):
         # go with manually adding/removing all the items that are not supposed
         # to be at the back
         readd_items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
-                       if isinstance(item, QGraphicsRectItem) and item not in selected_items]
+                        if isinstance(item, QGraphicsRectItem) and item not in selected_items]
         for item in readd_items:
             self.scene.removeItem(item)
             self.scene.addItem(item)
@@ -827,7 +860,7 @@ class Dashboard(QWidget):
         # Too complicated to figure out what to add and remove. Just do it for
         # all in a virtual array first
         items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
-                 if isinstance(item, QGraphicsRectItem)]
+                    if isinstance(item, QGraphicsRectItem)]
         for item in items:
             self.scene.removeItem(item)
         for i in reversed(range(len(items) - 1)):
@@ -849,7 +882,7 @@ class Dashboard(QWidget):
             return
         
         items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
-                 if isinstance(item, QGraphicsRectItem)]
+                    if isinstance(item, QGraphicsRectItem)]
         for item in items:
             self.scene.removeItem(item)
         for i in range(1, len(items)):
