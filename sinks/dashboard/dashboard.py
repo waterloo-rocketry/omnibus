@@ -313,7 +313,8 @@ class Dashboard(QWidget):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.change_detector)
         self.timer.start(100)  # Check every 0.1 seconds
-        
+
+        QApplication.setStyle('Fusion')
 
     def select_instance(self, name):
         self.parsley_instance = name
