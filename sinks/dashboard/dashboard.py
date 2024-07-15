@@ -314,6 +314,8 @@ class Dashboard(QWidget):
         self.timer.timeout.connect(self.change_detector)
         self.timer.start(100)  # Check every 0.1 seconds
 
+        self.file_name = None # Current file name
+
         QApplication.setStyle('Fusion')
 
     def select_instance(self, name):
@@ -329,10 +331,17 @@ class Dashboard(QWidget):
         return False
 
     def change_detector(self):
-        if self.check_for_changes():
-            self.setWindowTitle("Omnibus Dashboard ⏺")
+        title_string = "Omnibus Dashboard"
+        
+        if self.file_name is not None:
+            title_string += f" - {self.file_name}"
         else:
-            self.setWindowTitle("Omnibus Dashboard")
+            title_string += " - Untitled"
+            
+        if self.check_for_changes():
+            title_string += " ⏺"
+
+        self.setWindowTitle(title_string)
 
     def every_second(self, payload, stream):
         def on_select(string):
@@ -536,6 +545,7 @@ class Dashboard(QWidget):
         for _index, rect in locked_item_pairs:
             self.lock_widget(rect)
 
+        self.file_name = os.path.basename(self.file_location)
         self.current_data = data["widgets"]
         self.unsave_indicator = False
 
@@ -550,6 +560,8 @@ class Dashboard(QWidget):
         os.makedirs(os.path.dirname(self.file_location), exist_ok=True)
         with open(self.file_location, "w") as savefile:
             json.dump(data, savefile)
+
+        self.file_name = os.path.basename(self.file_location)
         
         self.change_detector()
 
@@ -907,5 +919,4 @@ def dashboard_driver(callback):
 
     dash.update()
     dash.show()
-    dash.load()
     app.exec()
