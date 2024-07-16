@@ -118,7 +118,7 @@ class DashboardItem(QWidget):
         Notes:
             if the mouse is not in the corner, the event is passed to the base class method for normal processing.
         """
-        if self.corner_hit(event.pos()) and not self.dashboard.locked:
+        if self.corner_hit(event.pos()) and not self.dashboard.locked and self.dashboard.mouse_resize:
             # Check item itself isn't locked
             for rect, pair in self.dashboard.widgets.items():
                 if pair[1] == self and rect in [widget[0] for widget in self.dashboard.locked_widgets]:
