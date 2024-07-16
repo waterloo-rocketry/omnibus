@@ -84,27 +84,30 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
  
     
 def parse_thermistor(adc_value, adc_bits,vref):
-    #Second resistor in voltage divider
-    vlt_dvdr_rstr=5000.0
-    #resistance of the thermistor
-    st_rstnce=10000.0
-    #beta value of the thermistor
-    beta_value=3950.0
-    #temperature of the thermistor resistance
-    st_tmp_cel=25.0
-    #input voltage to the thermistor voltage divider
-    inpt_vlt=5.0
+    try:
+        #Second resistor in voltage divider
+        vlt_dvdr_rstr=5000.0
+        #resistance of the thermistor
+        st_rstnce=10000.0
+        #beta value of the thermistor
+        beta_value=3950.0
+        #temperature of the thermistor resistance
+        st_tmp_cel=25.0
+        #input voltage to the thermistor voltage divider
+        inpt_vlt=5.0
 
-    #convert the adc output to voltage output
-    thrmstr_vlt= parse_adc_to_voltage(adc_value,adc_bits,vref)
+        #convert the adc output to voltage output
+        thrmstr_vlt= parse_adc_to_voltage(adc_value,adc_bits,vref)
 
-    #resistance of the thermistor calculated using voltage divider
-    thrmstr_rstnce=vlt_dvdr_rstr * inpt_vlt / thrmstr_vlt - vlt_dvdr_rstr
-    
-    #uses thermistor beta value to convert 
-    # Formula: Beta=(ln(R1/R2))/((1/T1)-(1/T2))
-    therm_temp_cel = ((math.log (thrmstr_rstnce / st_rstnce) / beta_value)+ 1.0 / st_tmp_cel)**-1
-    return therm_temp_cel
+        #resistance of the thermistor calculated using voltage divider
+        thrmstr_rstnce=vlt_dvdr_rstr * inpt_vlt / thrmstr_vlt - vlt_dvdr_rstr
+        
+        #uses thermistor beta value to convert 
+        # Formula: Beta=(ln(R1/R2))/((1/T1)-(1/T2))
+        therm_temp_cel = ((math.log (thrmstr_rstnce / st_rstnce) / beta_value)+ 1.0 / st_tmp_cel)**-1
+        return therm_temp_cel
+    except ZeroDivisionError as e:
+        return 0.0
 
 # resistance calculation is performed with voltages taken in from parsley
 def parse_kelvin_resistance(voltageP,voltageN,current):
