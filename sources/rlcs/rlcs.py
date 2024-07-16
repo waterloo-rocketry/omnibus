@@ -44,8 +44,6 @@ MESSAGE_FORMAT = [
     Numeric("Heater Kelvin Low 2 Voltage", 16, scale=1/1000, big_endian=False),
     Numeric("Heater Kelvin High 1 Voltage", 16, scale=1/1000, big_endian=False),
     Numeric("Heater Kelvin High 2 Voltage", 16, scale=1/1000, big_endian=False),
-    Numeric("Heater Resistance 1", 16, scale=1,big_endian=False),#new field declaration to send these fields over omnibus
-    Numeric("Heater Resistance 2", 16, scale=1,big_endian=False),#new field declaration to send these fields over omnibus
 ]
 
 EXPECTED_SIZE = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
