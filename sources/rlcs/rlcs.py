@@ -81,6 +81,16 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
         if key in res and 2+index < len(key_list_kelvin):
             res[key] = parse_kelvin_resistance(res[key],key_list_kelvin[2+index],key_list_kelvin[index])
 
+    if res["Heater Current 1"] != 0:
+        res["Heater resistance 1"] = (res["Heater Kelvin High 1 Voltage"] - res["Heater Kelvin Low 1 Voltage"])/res["Heater Current 1"]
+    else:
+        res["Heater resistance 1"] = 0
+
+    if res["Heater Current 2"] != 0:
+        res["Heater resistance 2"] = (res["Heater Kelvin High 2 Voltage"] - res["Heater Kelvin Low 2 Voltage"])/res["Heater Current 2"]
+    else:
+        res["Heater resistance 2"] = 0
+
     return res
         
  
