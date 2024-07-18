@@ -922,8 +922,6 @@ class Dashboard(QWidget):
                 items[i - 1] = tmp
         for item in items:
             self.scene.addItem(item)
-class RightClickMenu(QWidget):
-    pass
 
     def toggle_mouse(self):
         self.mouse_resize = not self.mouse_resize
@@ -944,4 +942,3 @@ def dashboard_driver(callback):
     dash.show()
     dash.load()
     app.exec()
-
