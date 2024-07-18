@@ -336,8 +336,6 @@ class Dashboard(QWidget):
         sendBackward = self.context_menu.addAction("Send Backward")
 
         # Assigning each option to an action
-
-        # Perhaps assign the onclick handler to already existing functions
         save.triggered.connect(self.save)
         saveAs.triggered.connect(self.save_as)
         open.triggered.connect(self.open)
