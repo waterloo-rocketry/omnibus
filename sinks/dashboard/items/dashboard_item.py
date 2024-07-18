@@ -23,8 +23,9 @@ class DashboardItem(QWidget):
         self.setMouseTracking(True)
         self.corner_grabbed = False
         self.corner_in = False
-        self.corner_size = 40
-        self.corner_index = 0
+        self.corner_size = self.dynamic_corner_size()
+        self.corner_index = 3 # 0: left up, 1: right up, 2: left down, 3: right down
+        self.temp_pos = None # Used to store the temp position of the widget when resizing
         self.dashboard = dashboard
         self.resize_callback = dashboard.on_item_resize
         """
@@ -106,8 +107,11 @@ class DashboardItem(QWidget):
         remove subscriptions from series
         """
         pass
-    
+
     # The following functions are used to make the widget resizable by dragging the bottom right corner.
+    
+    def dynamic_corner_size(self)-> int | float :
+        return min(100, max(min(self.width(), self.height())/10,1))    
 
     def mousePressEvent(self, event):
         """ Starts resizing the widget when the mouse is pressed in the bottom right corner.
@@ -128,7 +132,7 @@ class DashboardItem(QWidget):
             super().mousePressEvent(event)  # Call the base class method for normal processing
 
     def mouseMoveEvent(self, event): # This function is called when the mouse is move in the widget
-        """ 
+        """
         When the mouse is move in the corner, the cursor shape is changed to indicate that the widget can be resized
         """
         if self.corner_hit(event.pos()):
@@ -136,36 +140,55 @@ class DashboardItem(QWidget):
             self.corner_in = True
         else:
             self.setCursor(Qt.ArrowCursor)
-            self.corner_in = False      
+            self.corner_in = False
 
         if self.corner_grabbed:
+            if self.temp_pos is None:
+                self.temp_pos = self.pos()
             delta = self.dashboard.view.mapToScene(event.globalPos()) - self.grab_start_pos
-            new_width = max(self.start_rect.width() + delta.x(), self.minimumWidth())
-            new_height = max(self.start_rect.height() + delta.y(), self.minimumHeight())
-            self.resize(new_width, new_height)
+            
+            new_width =  max(self.start_rect.width() + delta.x(), self.minimumWidth()) if self.corner_index == 1 or self.corner_index == 3 else max(self.start_rect.width() - delta.x(), self.minimumWidth())
+            new_height = max(self.start_rect.height() + delta.y(), self.minimumHeight()) if self.corner_index == 2 or self.corner_index == 3 else max(self.start_rect.height() - delta.y(), self.minimumHeight())
+            
+            if self.corner_index == 0:
+                self.setGeometry(self.temp_pos.x() + delta.x(), self.temp_pos.y() + delta.y(), new_width, new_height)
+            elif self.corner_index == 1:
+                self.setGeometry(self.pos().x(), self.temp_pos.y() + delta.y(), new_width, new_height)
+            elif self.corner_index == 2:
+                self.setGeometry(self.temp_pos.x() + delta.x(), self.pos().y(), new_width, new_height)
+            elif self.corner_index == 3:
+                self.setGeometry(self.pos().x(), self.pos().y(), new_width, new_height)
 
     def mouseReleaseEvent(self, event):
-        """ 
+        """
         Stops resizing the widget when the mouse is released.
         """
+        # Reset all the states
         self.corner_grabbed = False
         self.corner_in = False
+        self.temp_pos = None
+        # corner_size is updated to be proportional to the widget size
+        self.corner_size = self.dynamic_corner_size()
 
     def corner_hit(self, pos):
-        """ 
+        """
         Checks if the mouse is in the corner and updates the corner_index.
         """
+        right_down_corner = pos.x() >= self.width() - self.corner_size and pos.y() >= self.height() - self.corner_size
+        # For Small widgets, the corner grabber is only in the bottom right corner
+        if self.corner_size < 15:
+            self.corner_index = 3
+            return right_down_corner
         left_up_corner = pos.x() <= self.corner_size and pos.y() <= self.corner_size
         right_up_corner = pos.x() >= self.width() - self.corner_size and pos.y() <= self.corner_size
         left_down_corner = pos.x() <= self.corner_size and pos.y() >= self.height() - self.corner_size
-        right_down_corner = pos.x() >= self.width() - self.corner_size and pos.y() >= self.height() - self.corner_size
         index_list = [left_up_corner, right_up_corner, left_down_corner, right_down_corner]
         if any(index_list):
             self.corner_index = index_list.index(True)
             return True
         else:
             return False
-    
+
     def paintEvent(self, event):
         painter = QPainter(self)
         if self.corner_in: # Draw the corner grabber when the mouse is in the corner
@@ -173,7 +196,7 @@ class DashboardItem(QWidget):
 
 
     def draw_corner(self, painter):
-        """ 
+        """
         Draws a corner grabber in the bottom right corner of the widget.
         """
 
@@ -193,5 +216,5 @@ class DashboardItem(QWidget):
 
         if self.corner_in:
             painter.setBrush(QColor(100, 100, 100))
-            painter.drawRect(rect_lst[self.corner_index]) 
+            painter.drawRect(rect_lst[self.corner_index])
 
