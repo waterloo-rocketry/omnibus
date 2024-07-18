@@ -925,8 +925,6 @@ class Dashboard(QWidget):
                 items[i - 1] = tmp
         for item in items:
             self.scene.addItem(item)
-class RightClickMenu(QWidget):
-    pass
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
@@ -943,4 +941,3 @@ def dashboard_driver(callback):
     dash.show()
     dash.load()
     app.exec()
-
