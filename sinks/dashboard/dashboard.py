@@ -4,6 +4,7 @@ import sys
 import json
 import signal
 
+from PySide6.QtGui import QContextMenuEvent
 import pyqtgraph
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QPainter, QAction
@@ -25,7 +26,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QCheckBox,
     QHBoxLayout,
     QPushButton,
-    QGraphicsProxyWidget
+    QGraphicsProxyWidget,
+    QMenu
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
@@ -303,6 +305,38 @@ class Dashboard(QWidget):
         self.key_press_signals.send_to_front.connect(self.send_to_front)
         self.key_press_signals.send_to_back.connect(self.send_to_back)
         self.installEventFilter(self.key_press_signals)
+
+        # Right click menu
+        self.context_menu = QMenu(self)
+        # Creating the options for the right click menu
+        save = self.context_menu.addAction("Save")
+        saveAs = self.context_menu.addAction("Save As")
+        open = self.context_menu.addAction("Open")
+        lockDashboard = self.context_menu.addAction("Lock Dashboard")
+        duplicateItem = self.context_menu.addAction("Duplicate")
+        sendFront = self.context_menu.addAction("Send to Front")
+        sendBack = self.context_menu.addAction("Send to Back")
+        sendForward = self.context_menu.addAction("Send Forward")
+        sendBackward = self.context_menu.addAction("Send Backward")
+
+        # Assigning each option to an action
+
+        # Perhaps assign the onclick handler to already existing functions
+        save.triggered.connect(self.save)
+        saveAs.triggered.connect(self.save_as)
+        open.triggered.connect(self.open)
+        lockDashboard.triggered.connect(self.toggle_lock)
+        duplicateItem.triggered.connect(self.on_duplicate)
+        sendFront.triggered.connect(self.send_to_front)
+        sendBack.triggered.connect(self.send_to_back)
+        sendForward.triggered.connect(self.send_forward)
+        sendBackward.triggered.connect(self.send_backward)
+
+        self.show()
+    
+    # Right click menu
+    def contextMenuEvent(self, event):
+        self.context_menu.exec(event.globalPos())
 
     def select_instance(self, name):
         self.parsley_instance = name
@@ -859,6 +893,8 @@ class Dashboard(QWidget):
                 items[i - 1] = tmp
         for item in items:
             self.scene.addItem(item)
+class RightClickMenu(QWidget):
+    pass
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
@@ -875,3 +911,4 @@ def dashboard_driver(callback):
     dash.show()
     dash.load()
     app.exec()
+
