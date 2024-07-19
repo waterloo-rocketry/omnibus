@@ -11,7 +11,7 @@ class SeriesListParameter(ListParameter):
                          type='list',
                          value=[],
                          limits=self.limits)
-        publisher.register_stream_callback(self.setLimits)
+        # publisher.register_stream_callback(self.setLimits)
     
     def setValue(self, value, blockSignal=None):
         if value != [] and value not in self.limits:
@@ -32,7 +32,7 @@ class SeriesChecklistParameter(ChecklistParameter):
                          type='list',
                          value=[],
                          limits=self.limits)
-        publisher.register_stream_callback(self.setLimits)
+        # publisher.register_stream_callback(self.setLimits)
     
     def setValue(self, values, blockSignal=None):
         if not isinstance(values, list):

@@ -21,6 +21,7 @@ MESSAGE_FORMAT = [
     Enum("Tank Heating 2 Command", 8, VALVE_COMMAND),
     Enum("Ignition Primary Command", 8, VALVE_COMMAND),
     Enum("Ignition Secondary Command", 8, VALVE_COMMAND),
+    Enum("Rocket Power", 8, VALVE_COMMAND),
 
     Numeric("Towerside Main Batt Voltage", 16, scale=1/1000, big_endian=False),
     Numeric("Towerside Actuator Batt Voltage", 16, scale=1/1000, big_endian=False),
@@ -44,8 +45,6 @@ MESSAGE_FORMAT = [
     Numeric("Heater Kelvin Low 2 Voltage", 16, scale=1/1000, big_endian=False),
     Numeric("Heater Kelvin High 1 Voltage", 16, scale=1/1000, big_endian=False),
     Numeric("Heater Kelvin High 2 Voltage", 16, scale=1/1000, big_endian=False),
-    Numeric("Heater Resistance 1", 16, scale=1,big_endian=False),#new field declaration to send these fields over omnibus
-    Numeric("Heater Resistance 2", 16, scale=1,big_endian=False),#new field declaration to send these fields over omnibus
 ]
 
 EXPECTED_SIZE = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
@@ -69,48 +68,64 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
         return 
     
     for key in ["Heater Current 1","Heater Current 2"]:
-        res[key] = parse_thermistor(res[key],10,4.096)
+        if key in res:
+            res[key] = parse_thermistor(res[key],10,4.096)
 
     #Convert adc bits to voltage to allow for kelvin resistance calculation
     for key in ["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage"
                   "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage"]:
-        res[key] = parse_adc_to_voltage(res[key],10,4.096)
+        if key in res:
+            res[key] = parse_adc_to_voltage(res[key],10,4.096)
 
     for index, key in enumerate(["Heater Resistance 1","Heater Resistance 2"]):
-        res[key] = parse_kelvin_resistance(res[key],key_list_kelvin[2+index],key_list_kelvin[index])
+        if key in res and 2+index < len(key_list_kelvin):
+            res[key] = parse_kelvin_resistance(res[key],key_list_kelvin[2+index],key_list_kelvin[index])
+
+    if res["Heater Current 1"] != 0:
+        res["Heater resistance 1"] = (res["Heater Kelvin High 1 Voltage"] - res["Heater Kelvin Low 1 Voltage"])/res["Heater Current 1"]
+    else:
+        res["Heater resistance 1"] = 0
+
+    if res["Heater Current 2"] != 0:
+        res["Heater resistance 2"] = (res["Heater Kelvin High 2 Voltage"] - res["Heater Kelvin Low 2 Voltage"])/res["Heater Current 2"]
+    else:
+        res["Heater resistance 2"] = 0
 
     return res
         
  
     
 def parse_thermistor(adc_value, adc_bits,vref):
-    #Second resistor in voltage divider
+    # Second resistor in voltage divider
     vlt_dvdr_rstr=5000.0
-    #resistance of the thermistor
+    # resistance of the thermistor
     st_rstnce=10000.0
-    #beta value of the thermistor
+    # beta value of the thermistor
     beta_value=3950.0
-    #temperature of the thermistor resistance
+    # temperature of the thermistor resistance
     st_tmp_cel=25.0
-    #input voltage to the thermistor voltage divider
+    # input voltage to the thermistor voltage divider
     inpt_vlt=5.0
 
     #convert the adc output to voltage output
-    thrmstr_vlt= parse_adc_to_voltage(adc_value,adc_bits,vref)
+    thrmstr_vlt = parse_adc_to_voltage(adc_value,adc_bits,vref)
 
-    #resistance of the thermistor calculated using voltage divider
-    thrmstr_rstnce=vlt_dvdr_rstr * inpt_vlt / thrmstr_vlt - vlt_dvdr_rstr
-    
-    #uses thermistor beta value to convert 
-    # Formula: Beta=(ln(R1/R2))/((1/T1)-(1/T2))
-    therm_temp_cel = ((math.log (thrmstr_rstnce / st_rstnce) / beta_value)+ 1.0 / st_tmp_cel)**-1
-    return therm_temp_cel
+    if 0.0 < thrmstr_vlt < inpt_vlt:
+        #resistance of the thermistor calculated using voltage divider
+        thrmstr_rstnce = vlt_dvdr_rstr * (inpt_vlt / thrmstr_vlt - 1.0)
+        
+        # uses thermistor beta value to convert 
+        # Formula: Beta=(ln(R1/R2))/((1/T1)-(1/T2))
+        therm_temp_cel = ((math.log(thrmstr_rstnce / st_rstnce) / beta_value) + 1.0 / st_tmp_cel) ** -1
+        return therm_temp_cel
+    else:
+        return 0.0
 
 # resistance calculation is performed with voltages taken in from parsley
 def parse_kelvin_resistance(voltageP,voltageN,current):
-    try:
+    if current != 0:
         return (voltageP - voltageN) / current 
-    except ZeroDivisionError as e:
+    else:
         return 0.0
 
 
