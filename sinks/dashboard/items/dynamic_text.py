@@ -12,6 +12,7 @@ from pyqtgraph.parametertree.parameterTypes import (
 from publisher import publisher
 from .dashboard_item import DashboardItem
 from .registry import Register
+from .series_parameter import SeriesListParameter
 
 EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
 
@@ -79,8 +80,7 @@ class DynamicTextItem(DashboardItem):
 
     def add_parameters(self):
         font_param = {'name': 'font size', 'type': 'int', 'value': 12}
-        series_param = SimpleParameter(name='series', type='str', default="")
-        series_param.itemClass = AutocompleteParameterItem
+        series_param = SeriesListParameter()
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         buffer_size_param = {'name': 'buffer size', 'type': 'int', 'value': 1}
         new_param_button = ActionParameter(name='add_new',

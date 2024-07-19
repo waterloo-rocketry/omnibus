@@ -175,3 +175,6 @@ class PlotDashItem(DashboardItem):
 
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)
+
+    def dynamic_corner_size(self)-> int | float :
+        return 0
