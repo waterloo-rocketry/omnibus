@@ -61,7 +61,6 @@ def main():
         rlcs.print_data(parsed_data) 
 
 
-
 if __name__ == '__main__':
     try:
         main()

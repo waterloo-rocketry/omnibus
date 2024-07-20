@@ -49,7 +49,7 @@ MESSAGE_FORMAT = [
     Numeric("Heater Kelvin High 2 Voltage", 16, scale=1/1000, big_endian=False),
 ]
 
-EXPECTED_SIZE = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) 
+EXPECTED_SIZE = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) /8
 
 def print_data(parsed: dict[str, str | Number]):
     for k, v in parsed.items():
@@ -111,11 +111,9 @@ def parse_thermistor(adc_value, adc_bits,vref):
 
     #convert the adc output to voltage output
     thrmstr_vlt = parse_adc_to_voltage(adc_value,adc_bits,vref)
-    print("This is thermistor voltage " + str(thrmstr_vlt))
     if 0.0 < thrmstr_vlt < inpt_vlt:
         #resistance of the thermistor calculated using voltage divider
         thrmstr_rstnce = (thrmstr_vlt*vlt_dvdr_rstr) / (inpt_vlt - thrmstr_vlt)
-        print("This is therm res "+str(thrmstr_rstnce))
         # uses thermistor beta value to convert 
         # Formula: Beta=(ln(R1/R2))/((1/T1)-(1/T2))
         therm_temp_cel = ((math.log(thrmstr_rstnce / st_rstnce) / beta_value) + 1.0 / st_tmp_kel) ** -1 - 273.15
