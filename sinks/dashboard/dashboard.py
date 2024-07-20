@@ -314,8 +314,6 @@ class Dashboard(QWidget):
         self.timer.timeout.connect(self.change_detector)
         self.timer.start(100)  # Check every 0.1 seconds
 
-        self.file_name = None # Current file name
-
         QApplication.setStyle('Fusion')
 
     def select_instance(self, name):
@@ -331,12 +329,9 @@ class Dashboard(QWidget):
         return False
 
     def change_detector(self):
-        title_string = "Omnibus Dashboard"
+        title_string = "Omnibus Dashboard - "
         
-        if self.file_name is not None:
-            title_string += f" - {self.file_name}"
-        else:
-            title_string += " - Untitled"
+        title_string += os.path.basename(self.file_location)
             
         if self.check_for_changes():
             title_string += " ⏺"
@@ -545,7 +540,6 @@ class Dashboard(QWidget):
         for _index, rect in locked_item_pairs:
             self.lock_widget(rect)
 
-        self.file_name = os.path.basename(self.file_location)
         self.current_data = data["widgets"]
         self.unsave_indicator = False
 
@@ -561,8 +555,6 @@ class Dashboard(QWidget):
         with open(self.file_location, "w") as savefile:
             json.dump(data, savefile)
 
-        self.file_name = os.path.basename(self.file_location)
-        
         self.change_detector()
 
     # Method to save file with a custom chosen name
@@ -917,6 +909,6 @@ def dashboard_driver(callback):
     timer.timeout.connect(dash.update)
     timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
-    dash.update()
+    dash.update() # This will default load the savefile.json if it exists
     dash.show()
     app.exec()
