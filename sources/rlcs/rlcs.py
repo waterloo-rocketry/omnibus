@@ -66,16 +66,12 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     except ValueError as e:
         print("Invalid data: " + str(e))
         return
-    for key in ["Heater Current 1","Heater Current 2"]:
-        if key in res:
-            res[key] = parse_thermistor(res[key])
 
     #Convert adc bits to voltage to allow for kelvin resistance calculation
     for key in ["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage"
                   "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage","Heater Thermistor Voltage 1","Heater Thermistor Voltage 2"]:
         if key in res:
-            if key=="Heater Thermistor Voltage 1":
-                res[key] = parse_adc_to_voltage(res[key],10,4.096)
+            res[key] = parse_adc_to_voltage(res[key],10,4.096)
     for index, key in enumerate(["Heater Resistance 1","Heater Resistance 2"]):
         if key in res and 2+index < len(key_list_kelvin):
             res[key] = parse_kelvin_resistance(res[key],key_list_kelvin[2+index],key_list_kelvin[index])
