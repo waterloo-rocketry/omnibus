@@ -21,7 +21,6 @@ MESSAGE_FORMAT = [
     Enum("Tank Heating 2 Command", 8, VALVE_COMMAND),
     Enum("Ignition Primary Command", 8, VALVE_COMMAND),
     Enum("Ignition Secondary Command", 8, VALVE_COMMAND),
-    #Enum("Rocket Power", 8, VALVE_COMMAND),
 
     Numeric("Towerside Main Batt Voltage", 16, scale=1/1000, big_endian=False),
     Numeric("Towerside Actuator Batt Voltage", 16, scale=1/1000, big_endian=False),
