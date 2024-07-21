@@ -9,7 +9,7 @@ BOOLEAN = {"FALSE": 0, "TRUE": 1}
 LIMIT_SWITCHES = {"UNKNOWN": 0, "OPEN": 1, "CLOSED": 2, "ERROR": 3}
 
 MESSAGE_FORMAT = [
-Enum("OV101 Command", 8, VALVE_COMMAND),
+    Enum("OV101 Command", 8, VALVE_COMMAND),
     Enum("OV102 Command", 8, VALVE_COMMAND),
     Enum("NV201 Command", 8, VALVE_COMMAND),
     Enum("NV202 Command", 8, VALVE_COMMAND),
@@ -41,10 +41,10 @@ Enum("OV101 Command", 8, VALVE_COMMAND),
     Numeric("Heater Current 2", 16, scale=1/1000, big_endian=False),
     Numeric("Heater Battery 1 Voltage", 16, scale=1/1000, big_endian=False),
     Numeric("Heater Battery 2 Voltage", 16, scale=1/1000, big_endian=False),
-    Numeric("Heater Kelvin Low 1 Voltage", 16, big_endian=False),
-    Numeric("Heater Kelvin Low 2 Voltage", 16, big_endian=False),
-    Numeric("Heater Kelvin High 1 Voltage", 16, big_endian=False),
-    Numeric("Heater Kelvin High 2 Voltage", 16, big_endian=False),
+    Numeric("Heater Kelvin Low 1 Voltage", 16, scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin Low 2 Voltage", 16, scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin High 1 Voltage", 16, scale=1/1000, big_endian=False),
+    Numeric("Heater Kelvin High 2 Voltage", 16, scale=1/1000, big_endian=False),
 ]
 
 EXPECTED_SIZE = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
