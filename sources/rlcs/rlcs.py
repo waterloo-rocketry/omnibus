@@ -82,12 +82,12 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     if res["Heater Current 1"] != 0:
         res.update({"Heater Resistance 1": (res["Heater Kelvin High 1 Voltage"] - res["Heater Kelvin Low 1 Voltage"])/res["Heater Current 1"]})
     else:
-        res.update({"Heater Resistance 1":0})  
+        res.update({"Heater Resistance 1": 0.0})  
 
     if res["Heater Current 2"] != 0:
         res.update({"Heater Resistance 2": (res["Heater Kelvin High 2 Voltage"] - res["Heater Kelvin Low 2 Voltage"])/res["Heater Current 2"]})
     else:
-        res.update({"Heater Resistance 2":0})    
+        res.update({"Heater Resistance 2": 0.0})    
 
     return res
         
