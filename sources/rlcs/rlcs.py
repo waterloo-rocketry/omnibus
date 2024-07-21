@@ -69,7 +69,7 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     #Convert adc bits to voltage to allow for kelvin resistance calculation
     for key in ["Heater Thermistor Voltage 1","Heater Thermistor Voltage 2"]:
         if key in res:
-            res[key] = parse_adc_to_voltage(res[key],10,4.096)
+            res[key] = parse_adc_to_voltage(res[key], 10, 4.096)
     for index, key in enumerate(["Heater Resistance 1","Heater Resistance 2"]):
         if key in res and 2+index < len(key_list_kelvin):
             res[key] = parse_kelvin_resistance(res[key],key_list_kelvin[2+index],key_list_kelvin[index])
@@ -95,23 +95,22 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     
 def parse_thermistor(divider_vlt):
     # Second resistor in voltage divider
-    vlt_dvdr_rstr=5000.0
+    VOLTAGE_DIVIDER_RES = 5000.0
     # resistance of the thermistor
-    st_rstnce=10000.0
+    ST_RES = 10000.0
     # beta value of the thermistor
-    beta_value=3950.0
+    BETA_VALUE = 3950.0
     # temperature of the thermistor resistance
-    st_tmp_kel=298.15
+    ST_TEMP_KEL = 298.15
     # input voltage to the thermistor voltage divider
-    inpt_vlt=5.0
+    INPUT_VLT = 5.0
 
-    #convert the adc output to voltage output
-    if 0.0 < divider_vlt < inpt_vlt:
+    if 0.0 < divider_vlt < INPUT_VLT:
         #resistance of the thermistor calculated using voltage divider
-        thrmstr_rstnce = (vlt_dvdr_rstr*inpt_vlt/divider_vlt)-vlt_dvdr_rstr
+        thrmstr_rstnce = (VOLTAGE_DIVIDER_RES * INPUT_VLT / divider_vlt) - VOLTAGE_DIVIDER_RES
         # uses thermistor beta value to convert 
         # Formula: Beta=(ln(R1/R2))/((1/T1)-(1/T2))
-        therm_temp_cel = ((math.log(thrmstr_rstnce / st_rstnce) / beta_value) + 1.0 / st_tmp_kel) ** -1 - 273.15
+        therm_temp_cel = ((math.log(thrmstr_rstnce / ST_RES) / BETA_VALUE) + 1.0 / ST_TEMP_KEL) ** -1 - 273.15
         return therm_temp_cel
     else:
         return 0.0
@@ -125,4 +124,4 @@ def parse_kelvin_resistance(voltageP,voltageN,current):
 
 
 def parse_adc_to_voltage(adc_value,adc_bits, vref):
-    return float(adc_value) / (2**adc_bits) * vref
+    return float(adc_value) / (2 ** adc_bits) * vref
