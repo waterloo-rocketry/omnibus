@@ -543,6 +543,8 @@ class Dashboard(QWidget):
         self.current_data = data["widgets"]
         self.unsave_indicator = False
 
+        self.change_detector()
+
     # Method to save current layout to file
     def save(self):
         data = self.get_data()
@@ -587,6 +589,8 @@ class Dashboard(QWidget):
         
         self.file_location = filename
         self.load()
+        
+        self.change_detector()
 
     # Method to lock dashboard
     def lock(self):
@@ -909,6 +913,7 @@ def dashboard_driver(callback):
     timer.timeout.connect(dash.update)
     timer.start(16)  # Capped at 60 Fps, 1000 ms / 16 ~= 60
 
-    dash.update() # This will default load the savefile.json if it exists
+    dash.update()
     dash.show()
+    dash.load() # This will default load the savefile.json if it exists
     app.exec()
