@@ -1,6 +1,6 @@
 # Data Processing Tool
 
-A tool to extract meaninful data streams from DAQ and CAN channels from test or flight logs comming from globallogger.
+A tool to extract meaninful data streams from DAQ, RLCS, and CAN channels from test or flight logs comming from globallogger.
 
 ## Usage
 
@@ -12,7 +12,8 @@ A tool to extract meaninful data streams from DAQ and CAN channels from test or 
   - One of:
     - `-d` to only deal with DAQ data
     - `-c` to only deal with CAN data
-    - `-a` to deal with both DAQ and CAN data
+    - `-r` to deal with only with RLCS data
+    - `-a` to deal with both DAQ, RLCS and CAN data
     - `-b` extract behind stream for can messages. This might be useufl if there were two sources of CAN data in the logs with conflicting timestamps. Ommiting this takes the forward stream, and putting it takes the behind stream.
 - When choosing colums or timestamps, you can just leave them empty to get everything
 
