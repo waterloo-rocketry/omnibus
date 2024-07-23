@@ -20,6 +20,7 @@ def parseArguments():
     parser.add_argument("-a", "--all", help="Plot all data", action="store_true")
     parser.add_argument("-d", "--daq", help="Plot only daq data", action="store_true")
     parser.add_argument("-c", "--can", help="Plot only can data", action="store_true")
+    parser.add_argument("-r", "--rlcs", help="Plot only rlcs data", action="store_true")
 
     parser.add_argument(
         "-b", "--behind", help="Take the behind stream for CAN exporting", action="store_true")
@@ -47,6 +48,8 @@ def parseArguments():
         data_mode = "d"
     elif args.can:
         data_mode = "c"
+    elif args.rlcs:
+        data_mode = "r"
     else:
         print("Defaulting to all data sources")
 

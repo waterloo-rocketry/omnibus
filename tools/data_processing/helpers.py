@@ -1,23 +1,19 @@
-from typing import List, Any, Union
+from typing import List, Union
 import pandas as pd
 
-def offset_timestamps(data1: Union[pd.DataFrame,None], data2: Union[pd.DataFrame,None]) -> int:
-    """Offset the timestamps of the two data sources so that they start at 0, and return the time offset that was applied to both data sources. If the data source is empty (None), it will be ignored."""
+def offset_timestamps(dataframes: List[Union[pd.DataFrame, None]]) -> int:
+    """Offset the timestamps of the data sources so that they start at 0, and return the time offset that was applied. If a data source is empty (None), it will be ignored."""
     
-    # we need logic to handle the case where one of the data sources is empty, becuase a recording might only have CAN data
-    if data1 is not None and data2 is not None:
-        time_offset = min(data1["timestamp"].min(), data2["timestamp"].min())
-    elif data1 is not None:
-        time_offset = data1["timestamp"].min()
-    elif data2 is not None:
-        time_offset = data2["timestamp"].min()
-    else:
-        raise ValueError("Both data sources are empty, can't offset timestamps.")
-
-    if data1 is not None:
-        data1["timestamp"] -= time_offset
-    if data2 is not None:
-        data2["timestamp"] -= time_offset
+    # Find the minimum timestamp across all non-empty dataframes
+    min_timestamps = [df["timestamp"].min() for df in dataframes if df is not None]
+    if not min_timestamps:
+        raise ValueError("All data sources are empty, can't offset timestamps.")
+    time_offset = min(min_timestamps)
+    
+    # Adjust the timestamps in each non-empty dataframe
+    for df in dataframes:
+        if df is not None:
+            df["timestamp"] -= time_offset
 
     return time_offset
 

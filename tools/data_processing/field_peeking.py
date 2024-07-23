@@ -34,8 +34,13 @@ def process_DAQ_message(channel: str, payload: dict) -> None:
     for field in payload["data"]:
         messages[(channel, field)] = payload["data"][(field)][0]
 
+def process_RLCS_message(channel: str, payload: dict) -> None:
+    """For each of the RLCS values, get the name of the field and the last value"""
+    for name in payload:
+        messages[(channel, name)] = payload[name]
 
-def process_file(args: Namespace, process_func: Callable[[str, Any]], headers: list[str]) -> None:
+
+def process_file(args: Namespace, process_func: Callable[[str, Any],None], headers: list[str]) -> None:
     """Process the file with the given function and headers, and write the results to a csv file. The args are used to get the log file, and the type of channel being processed."""
 
     with open(args.file, "rb") as infile:
@@ -44,14 +49,16 @@ def process_file(args: Namespace, process_func: Callable[[str, Any]], headers: l
             if channel.startswith(args.channel): # check the message is in the channel we want
                 process_func(channel, payload)
 
-    with open(f"unique_messages_{args.file.split('.log')[0]}_{args.channel}.csv", "w") as outfile:
+    raw_file_name = args.file.split('.log')[0]
+    output_path = f"{raw_file_name}_unique_messages_{args.channel}.csv"
+    with open(output_path, "w") as outfile:
         writer = csv.writer(outfile)
         writer.writerow(headers)
         for key, value in messages.items():
             row = [k for k in key] + [value]
             writer.writerow(row)
 
-    print(f"Unique messages written to {output_path}")
+        print(f"Unique messages written to {output_path}")
 
 
 def main():
@@ -66,6 +73,8 @@ def main():
                      "channel", "board_id", "msg_type", "sensor_id", "actuator", "signature", "sample"])
     elif args.channel.startswith("DAQ"):
         process_file(args, process_DAQ_message, ["channel", "field", "sample"])
+    elif args.channel.startswith("RLCS"):
+        process_file(args, process_RLCS_message, ["channel", "field", "sample"])
     else:
         print("We don't support that channel yet, use dump_whole_log.py to dump the whole log file and figure out what's in it. ")
 
