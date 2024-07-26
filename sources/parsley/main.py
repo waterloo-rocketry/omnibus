@@ -121,10 +121,7 @@ def main():
     else:
         parser = parsley.parse_usb_debug
 
-    if args.format == "telemetry":
-        channel = "telemetry/" + RECEIVE_CHANNEL
-    else:
-        channel = RECEIVE_CHANNEL
+    channel = RECEIVE_CHANNEL
 
     sender_id = f"{gethostname()}/{args.format}/{args.port}"
 
