@@ -121,8 +121,6 @@ def main():
     else:
         parser = parsley.parse_usb_debug
 
-    channel = RECEIVE_CHANNEL
-
     sender_id = f"{gethostname()}/{args.format}/{args.port}"
 
     if args.solo:
@@ -131,10 +129,10 @@ def main():
     elif args.fake:
         print("Parsley started in fake mode")
         sender = Sender()
-        receiver = Receiver(channel)
+        receiver = Receiver(RECEIVE_CHANNEL)
     else:
         sender = Sender()
-        receiver = Receiver(channel)
+        receiver = Receiver(RECEIVE_CHANNEL)
 
     last_valid_message_time = 0
     last_heartbeat_time = time.time()
