@@ -98,7 +98,7 @@ class QGraphicsViewWrapper(QGraphicsView):
             #else close the property panel
             self.dashboard.open_property_panel(None)
         super().mouseDoubleClickEvent(event)  # Call the superclass implementation
-    
+
     # we define a function for zooming since keyboard zooming needs a function
     def zoom(self, angle: int):
         zoomFactor = 1 + angle*0.001  # create adjusted zoom factor
