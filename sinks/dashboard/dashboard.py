@@ -492,7 +492,18 @@ class Dashboard(QWidget):
         dashitem.on_delete()
 
     # Method to remove all widgets
-    def remove_all(self):
+    def remove_all(self, hide_confirm=False):
+        if len(self.widgets) == 0:
+            return
+
+        # Make sure the user actually wants to do this
+        if not hide_confirm:
+            confirm = ConfirmDialog("Remove All", "Are you sure you want to remove all widgets?")
+            confirm.exec()
+            # 0 = rejected, 1 = accepted
+            if confirm.result() == 0:
+                return
+
         for item in self.widgets:
             self.remove(item)
 
@@ -651,7 +662,7 @@ class Dashboard(QWidget):
         new_data = self.get_data()
         # Automatically exit if user has clicked "Dont ask again checkbox" or no new changes are made.
         if not self.should_show_save_popup or new_data["widgets"] == old_data["widgets"]:
-            self.remove_all()
+            self.remove_all(True)
         else:
             # Execute save popup dialog.
             self.show_save_popup(old_data, event)
