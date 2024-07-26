@@ -11,12 +11,14 @@ class SeriesListParameter(ListParameter):
                          type='list',
                          value=[],
                          limits=self.limits)
-        # publisher.register_stream_callback(self.setLimits)
-    
+
+    def refresh_limits(self):
+        self.setLimits(publisher.get_all_streams())
+
     def setValue(self, value, blockSignal=None):
         if value != [] and value not in self.limits:
             publisher.ensure_exists(value)
-            self.setLimits(publisher.get_all_streams())
+            self.refresh_limits()
         return super().setValue(value, blockSignal)
     
     def setLimits(self, limits):
@@ -32,15 +34,17 @@ class SeriesChecklistParameter(ChecklistParameter):
                          type='list',
                          value=[],
                          limits=self.limits)
-        # publisher.register_stream_callback(self.setLimits)
     
+    def refresh_limits(self):
+        self.setLimits(publisher.get_all_streams())
+
     def setValue(self, values, blockSignal=None):
         if not isinstance(values, list):
             values = [values]
         for value in values:
             if value not in self.limits:
                 publisher.ensure_exists(value)
-                self.setLimits(publisher.get_all_streams())
+                self.refresh_limits()
         return super().setValue(values, blockSignal)
     
     def setLimits(self, limits):
