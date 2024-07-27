@@ -98,7 +98,7 @@ class QGraphicsViewWrapper(QGraphicsView):
             #else close the property panel
             self.dashboard.open_property_panel(None)
         super().mouseDoubleClickEvent(event)  # Call the superclass implementation
-    
+
     # we define a function for zooming since keyboard zooming needs a function
     def zoom(self, angle: int):
         zoomFactor = 1 + angle*0.001  # create adjusted zoom factor
@@ -131,6 +131,9 @@ class Dashboard(QWidget):
 
         # Keep track of if editing is allowed
         self.locked = False
+
+        # Keep track of whether mouse resizing is allowed
+        self.mouse_resize = False
 
         # Determine the specific directory you want to always open
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -204,27 +207,15 @@ class Dashboard(QWidget):
             new_action.triggered.connect(create_registry_trigger(i))
             self.lockableActions.append(new_action)
 
-        # adding a button to the dashboard that removes all dashitems on the screen
-        remove_dashitems = menubar.addMenu("Clear")
-        remove_dashitems_action = remove_dashitems.addAction("Remove all the dashitems")
-        remove_dashitems_action.triggered.connect(self.remove_all)
-        self.lockableActions.append(remove_dashitems_action)
-
-        # adding a button to switch instances of parsley
-        self.can_selector = menubar.addMenu("Parsley")
-
         # Add an action to the menu bar to lock/unlock
         # the dashboard
-        add_lock_menu = menubar.addMenu("Lock")
-        lock_action = add_lock_menu.addAction("Lock Dashboard (^l)")
-        lock_action.triggered.connect(self.lock)
-        self.lockableActions.append(lock_action)
-        unlock_action = add_lock_menu.addAction("Unlock Dashboard (^l)")
-        unlock_action.triggered.connect(self.unlock)
-        lock_selected = add_lock_menu.addAction("Lock Selected (l)")
+        editing_menu = menubar.addMenu("Editing")
+        self.lock_action = editing_menu.addAction("Lock Dashboard (^l)")
+        self.lock_action.triggered.connect(self.toggle_lock)
+        lock_selected = editing_menu.addAction("Lock Selected (l)")
         lock_selected.triggered.connect(self.lock_selected)
         self.lockableActions.append(lock_selected)
-        self.unlock_items_menu = add_lock_menu.addMenu("Unlock Items")
+        self.unlock_items_menu = editing_menu.addMenu("Unlock Items")
         """Menu containing actions to unlock items that are locked, in the order
         in which they were locked.
         """
@@ -233,13 +224,21 @@ class Dashboard(QWidget):
         were locked.
         
         Includes the rect item and the unlock action."""
+        self.mouse_resize_action = editing_menu.addAction("Mouse Resizing (^m)")
+        self.mouse_resize_action.setCheckable(True)
+        self.mouse_resize_action.setChecked(False)
+        self.mouse_resize_action.triggered.connect(self.toggle_mouse)
+        self.lockableActions.append(self.mouse_resize_action)
 
         # An action to the to the menu bar to duplicate
         # the selected item
-        duplicate_item_menu = menubar.addMenu("Duplicate")
-        duplicate_action = duplicate_item_menu.addAction("Duplicate Item (^d)")
+        items_menu = menubar.addMenu("Items")
+        duplicate_action = items_menu.addAction("Duplicate Item (^d)")
         duplicate_action.triggered.connect(self.on_duplicate)
         self.lockableActions.append(duplicate_action)
+        remove_action = items_menu.addAction("Remove All (^r)")
+        remove_action.triggered.connect(self.remove_all)
+        self.lockableActions.append(remove_action)
 
         # We have a menu in the top to allow users to change the stacking order
         # of the selected items.
@@ -256,6 +255,9 @@ class Dashboard(QWidget):
         send_backward_action = order_menu.addAction("Send Backward ([)")
         send_backward_action.triggered.connect(self.send_backward)
         self.lockableActions.append(send_backward_action)
+
+        # Add a button to switch instances of parsley
+        self.can_selector = menubar.addMenu("Parsley")
 
         # Add an action to the menu bar to display a
         # help box
@@ -303,6 +305,8 @@ class Dashboard(QWidget):
         self.key_press_signals.send_backward.connect(self.send_backward)
         self.key_press_signals.send_to_front.connect(self.send_to_front)
         self.key_press_signals.send_to_back.connect(self.send_to_back)
+        self.key_press_signals.remove_all.connect(self.remove_all)
+        self.key_press_signals.mouse_resize.connect(self.toggle_mouse)
         self.installEventFilter(self.key_press_signals)
         
         # Data used to check unsaved changes and indicate on the window title
@@ -329,10 +333,13 @@ class Dashboard(QWidget):
         return False
 
     def change_detector(self):
-        if self.check_for_changes():
-            self.setWindowTitle("Omnibus Dashboard ⏺")
-        else:
-            self.setWindowTitle("Omnibus Dashboard")
+        title = self.windowTitle()
+        unsaved_symbol = "⏺"
+        changed = self.check_for_changes()
+        if changed and unsaved_symbol not in title:
+            self.setWindowTitle(f"{title} {unsaved_symbol}")
+        elif not changed and unsaved_symbol in title:
+            self.setWindowTitle(title[:-2])
 
     def every_second(self, payload, stream):
         def on_select(string):
@@ -485,7 +492,18 @@ class Dashboard(QWidget):
         dashitem.on_delete()
 
     # Method to remove all widgets
-    def remove_all(self):
+    def remove_all(self, hide_confirm=False):
+        if len(self.widgets) == 0:
+            return
+
+        # Make sure the user actually wants to do this
+        if not hide_confirm:
+            confirm = ConfirmDialog("Remove All", "Are you sure you want to remove all widgets?")
+            confirm.exec()
+            # 0 = rejected, 1 = accepted
+            if confirm.result() == 0:
+                return
+
         for item in self.widgets:
             self.remove(item)
 
@@ -584,50 +602,29 @@ class Dashboard(QWidget):
         self.file_location = filename
         self.load()
 
-    # Method to lock dashboard
-    def lock(self):
-        self.locked = True
-        self.setWindowTitle("Omnibus Dashboard - LOCKED")
-
-        # Disable menu actions
-        for menu_item in self.lockableActions:
-            menu_item.setEnabled(False)
-
-        for _rect, action in self.locked_widgets:
-            action.setEnabled(False)
-
-        # Disable selecting and moving plots
-        for rect in self.widgets:
-            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
-            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
-        
-        self.scene.clearSelection()
-        
     def toggle_lock(self):
         """Toggle lock/unlock state of the dashboard"""
-        if self.locked:
-            self.unlock()
-        else:
-            self.lock()
+        self.locked = not self.locked
+        title = "Omnibus Dashboard - LOCKED" if self.locked else "Omnibus Dashboard"
+        self.setWindowTitle(title)
 
-    # Method to unlock dashboard
-    def unlock(self):
-        self.locked = False
-        self.setWindowTitle("Omnibus Dashboard")
-
-        # Enable menu actions
         for menu_item in self.lockableActions:
-            menu_item.setEnabled(True)
-            
+            menu_item.setEnabled(not self.locked)
         for _rect, action in self.locked_widgets:
-            action.setEnabled(True)
+            action.setEnabled(not self.locked)
 
-        # Enable selecting and moving plots
         for rect in self.widgets:
-            individually_locked = any(rect == pair[0] for pair in self.locked_widgets)
-            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=not individually_locked)
-            rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=not individually_locked)
-            
+            if self.locked:
+                rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
+                rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=False)
+                self.lock_action.setText("Unlock Dashboard (^l)")
+                self.scene.clearSelection()
+            else:
+                individually_locked = any(rect == pair[0] for pair in self.locked_widgets)
+                rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=not individually_locked)
+                rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=not individually_locked)
+                self.lock_action.setText("Lock Dashboard (^l)")
+
     def lock_widget(self, rect: QGraphicsRectItem):
         """Mark a widget rect as locked."""
         rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=False)
@@ -665,7 +662,7 @@ class Dashboard(QWidget):
         new_data = self.get_data()
         # Automatically exit if user has clicked "Dont ask again checkbox" or no new changes are made.
         if not self.should_show_save_popup or new_data["widgets"] == old_data["widgets"]:
-            self.remove_all()
+            self.remove_all(True)
         else:
             # Execute save popup dialog.
             self.show_save_popup(old_data, event)
@@ -893,6 +890,10 @@ class Dashboard(QWidget):
                 items[i - 1] = tmp
         for item in items:
             self.scene.addItem(item)
+
+    def toggle_mouse(self):
+        self.mouse_resize = not self.mouse_resize
+        self.mouse_resize_action.setChecked(self.mouse_resize)
 
 # Function to launch the dashboard
 def dashboard_driver(callback):
