@@ -20,13 +20,13 @@ class DashboardItem(QWidget):
 
     def __init__(self, dashboard, params=None):
         super().__init__()
+        self.dashboard = dashboard
         self.setMouseTracking(True)
         self.corner_grabbed = False
         self.corner_in = False
         self.corner_size = self.dynamic_corner_size()
         self.corner_index = 3 # 0: left up, 1: right up, 2: left down, 3: right down
         self.temp_pos = None # Used to store the temp position of the widget when resizing
-        self.dashboard = dashboard
         self.resize_callback = dashboard.on_item_resize
         """
         We use pyqtgraph's ParameterTree functionality to make an easy interface for setting
@@ -111,14 +111,17 @@ class DashboardItem(QWidget):
     # The following functions are used to make the widget resizable by dragging the bottom right corner.
     
     def dynamic_corner_size(self)-> int | float :
-        return min(100, max(min(self.width(), self.height())/10,1))    
+        if self.dashboard.mouse_resize:
+            return min(100, max(min(self.width(), self.height())/10,1))
+        else:
+            return 0
 
     def mousePressEvent(self, event):
         """ Starts resizing the widget when the mouse is pressed in the bottom right corner.
         Notes:
             if the mouse is not in the corner, the event is passed to the base class method for normal processing.
         """
-        if self.corner_hit(event.pos()) and not self.dashboard.locked:
+        if self.dashboard.mouse_resize and not self.dashboard.locked and self.corner_hit(event.pos()):
             # Check item itself isn't locked
             for rect, pair in self.dashboard.widgets.items():
                 if pair[1] == self and rect in [widget[0] for widget in self.dashboard.locked_widgets]:
@@ -135,8 +138,8 @@ class DashboardItem(QWidget):
         """
         When the mouse is move in the corner, the cursor shape is changed to indicate that the widget can be resized
         """
-        if self.corner_hit(event.pos()):
-            self.setCursor(Qt.SizeFDiagCursor)
+        if self.dashboard.mouse_resize and not self.dashboard.locked and self.corner_hit(event.pos()):
+            self.setCursor(Qt.SizeAllCursor)
             self.corner_in = True
         else:
             self.setCursor(Qt.ArrowCursor)
@@ -158,17 +161,22 @@ class DashboardItem(QWidget):
                 self.setGeometry(self.temp_pos.x() + delta.x(), self.pos().y(), new_width, new_height)
             elif self.corner_index == 3:
                 self.setGeometry(self.pos().x(), self.pos().y(), new_width, new_height)
+        else:
+            super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         """
         Stops resizing the widget when the mouse is released.
         """
         # Reset all the states
-        self.corner_grabbed = False
-        self.corner_in = False
-        self.temp_pos = None
-        # corner_size is updated to be proportional to the widget size
-        self.corner_size = self.dynamic_corner_size()
+        if self.dashboard.mouse_resize and not self.dashboard.locked:
+            self.corner_grabbed = False
+            self.corner_in = False
+            self.temp_pos = None
+            # corner_size is updated to be proportional to the widget size
+            self.corner_size = self.dynamic_corner_size()
+        else:
+            super().mouseReleaseEvent(event)
 
     def corner_hit(self, pos):
         """
