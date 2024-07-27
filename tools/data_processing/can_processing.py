@@ -3,28 +3,55 @@ import msgpack
 import pandas as pd
 from typing import List, Union, IO
 
-from tools.data_processing.can_field_definitions import CAN_FIELDS
+# from tools.data_processing.can_field_definitions import CAN_FIELDS
 from tools.data_processing.msgpack_sorter_unpacker import msgpackFilterUnpacker
 
 from can_field_definitions import CAN_FIELDS
 from msgpack_sorter_unpacker import msgpackFilterUnpacker
 
+EXTRA_DISCRIMINATOR_FIELDS = ["sensor_id", "state_id", "actuator"]
+
+def yeild_signatures(payload):
+    board_id = payload["board_id"]
+    msg_type = payload["msg_type"]
+    extra_discriminator = None
+
+    data = payload["data"]
+
+    for field in EXTRA_DISCRIMINATOR_FIELDS:
+        if field in data:
+            if extra_discriminator is not None:
+                raise ValueError("Multiple extra discriminators found in data")
+            extra_discriminator = data[field]
+
+    for value in data:
+        if value != "time" and value not in EXTRA_DISCRIMINATOR_FIELDS:
+            signature = f"{board_id}-{msg_type}{'-' + extra_discriminator if extra_discriminator is not None else ''}-{value}"
+            yield signature, value
 
 def get_can_cols(infile: IO) -> List[str]:
     """Get the columns that are present in the CAN data in the file"""
 
     cols = []  # the colums in the order they're encountered
     cols_set = set()
+
     # we don't need to use the filtered source, as we're just looking for the message types
     for full_data in msgpack.Unpacker(infile):
         channel, timestamp, payload = full_data  # extract the three parts of the message packed data
         if channel.startswith("CAN/Parsley"):  # CAN messages come over parsely
-            # try and match the message to a field given the field's matching pattern definition
-            for field in CAN_FIELDS:
-                if field.match(payload) and field.csv_name not in cols_set:
-                    cols_set.add(field.csv_name)
-                    cols.append(field.csv_name)
-                continue
+            # board_id = payload["board_id"]
+            # msg_type = payload["msg_type"]
+            # data = payload["data"]
+            # for value in data:
+            #     if value != "time":
+            #         signature = (board_id, msg_type, value)
+            #         if signature not in cols_set:
+            #             cols_set.add(signature)
+            #             cols.append(signature)
+            for signature, _ in yeild_signatures(payload):
+                if signature not in cols_set:
+                    cols_set.add(signature)
+                    cols.append(signature)
 
     infile.seek(0)
     return cols
@@ -38,14 +65,31 @@ def get_can_lines(infile: IO, cols=[],msg_packed_filtering="behind_stream",place
     current_info = {col: placeholder for col in cols}
     output_lines = []
     # we use the filtered source to ensure the timestamps are in order for the output data (see msgpack_sorter_unpacker.py for more info on this method and it's FIXME)
-    for full_data in msgpackFilterUnpacker(infile,msg_packed_filtering):
+    for full_data in msgpack.Unpacker(infile):
         channel, timestamp, payload = full_data
         if channel.startswith("CAN/Parsley"):
+            # print(channel,timestamp,payload)
+
             # we check if the payload matches any of the fields we're tracking, and if it does, we update the current_info dictionary
             matched = False
-            for field in CAN_FIELDS:
-                if field.match(payload) and field.csv_name in cols_set:
-                    current_info[field.csv_name] = field.read(payload)
+            # for field in CAN_FIELDS:
+            #     if field.match(payload) and field.csv_name in cols_set:
+            #         current_info[field.csv_name] = field.read(payload)
+            #         matched = True
+
+            # board_id = payload["board_id"]
+            # msg_type = payload["msg_type"]
+            # data = payload["data"]
+            # for value in data:
+            #     if value != "time":
+            #         signature = (board_id, msg_type, value)
+            #         if signature in cols_set:
+            #             current_info[signature] = data[value]
+            #             matched = True
+
+            for signature, value_key in yeild_signatures(payload):
+                if signature in cols_set:
+                    current_info[signature] = payload["data"][value_key]
                     matched = True
 
             # no need for an updated line if we didnt update any of the values we're tracking, we don't want to output a line with no new up to date info
@@ -54,6 +98,8 @@ def get_can_lines(infile: IO, cols=[],msg_packed_filtering="behind_stream",place
 
             # if we've matched, we should output the current info and write a new line
             output_lines.append({"timestamp": timestamp, **current_info})
+
+            # print(current_info)
 
     output_df = pd.DataFrame(columns=["timestamp"] + cols, data=output_lines)
 
