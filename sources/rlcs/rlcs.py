@@ -80,14 +80,20 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
 
     if res["Heater Current 1"] != 0:
         res.update({"Heater Resistance 1": (res["Heater Kelvin High 1 Voltage"] - res["Heater Kelvin Low 1 Voltage"])/res["Heater Current 1"]})
+        res.update({"Thermistor Temp 1 Predict":prdict_temp1(res["Heater Resistance 1"])})
+        res.update({"Thermistor Temp 1 Predict Gen":prdict_temp_gen(res["Heater Resistance 1"])})
     else:
         res.update({"Heater Resistance 1": 0.0})  
-
+        res.update({"Thermistor Temp 1 Predict": -100})
+        res.update({"Thermistor Temp 1 Predict Gen":-100})
     if res["Heater Current 2"] != 0:
         res.update({"Heater Resistance 2": (res["Heater Kelvin High 2 Voltage"] - res["Heater Kelvin Low 2 Voltage"])/res["Heater Current 2"]})
+        res.update({"Thermistor Temp 2 Predict":prdict_temp2(res["Heater Resistance 2"])})
+        res.update({"Thermistor Temp 2 Predict Gen":prdict_temp_gen(res["Heater Resistance 2"])})
     else:
-        res.update({"Heater Resistance 2": 0.0})    
-
+        res.update({"Heater Resistance 2": 0.0})   
+        res.update({"Thermistor Temp 2 Predict":-100})
+        res.update({"Thermistor Temp 1 Predict Gen":-100})
     return res
         
  
@@ -123,4 +129,19 @@ def parse_kelvin_resistance(voltageP,voltageN,current):
 
 
 def parse_adc_to_voltage(adc_value,adc_bits, vref):
-    return float(adc_value) / (2 ** adc_bits) * vref
+     return float(adc_value) / (2 ** adc_bits) * vref
+
+# general function interpolate from all data
+def prdict_temp_gen(resistance):
+    return 4398.3*resistance**2 -7147.6*resistance+2910.9
+
+def prdict_temp1(resistance):
+    # experimentally determined relationship between resistance and temperature heater 1
+    # Temperature = (Resistance-0.874)/0.0026
+    return (resistance-0.822)/0.0021
+
+def prdict_temp2(resistance):
+    # experimentally determined relationship between resistance and temperature heater 2
+    # Temperature = (Resistance-0.874)/0.0026
+    return (resistance-0.874)/0.0026
+    
