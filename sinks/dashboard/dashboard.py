@@ -133,7 +133,7 @@ class Dashboard(QWidget):
         self.locked = False
 
         # Keep track of whether mouse resizing is allowed
-        self.mouse_resize = True
+        self.mouse_resize = False
 
         # Determine the specific directory you want to always open
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -226,7 +226,7 @@ class Dashboard(QWidget):
         Includes the rect item and the unlock action."""
         self.mouse_resize_action = editing_menu.addAction("Mouse Resizing (^m)")
         self.mouse_resize_action.setCheckable(True)
-        self.mouse_resize_action.setChecked(True)
+        self.mouse_resize_action.setChecked(False)
         self.mouse_resize_action.triggered.connect(self.toggle_mouse)
         self.lockableActions.append(self.mouse_resize_action)
 
