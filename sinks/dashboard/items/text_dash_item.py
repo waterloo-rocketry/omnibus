@@ -28,6 +28,8 @@ class TextDashItem(DashboardItem):
 
         self.parameters.param('text').sigValueChanged.connect(self.on_text_change)
         self.parameters.param('fsize').sigValueChanged.connect(self.on_fsize_change)
+        self.parameters.param('vertical padding').sigValueChanged.connect(self.on_vpad_change)
+        self.parameters.param('horizontal padding').sigValueChanged.connect(self.on_hpad_change)
 
         self.layout.addWidget(self.widget)
 
@@ -38,7 +40,9 @@ class TextDashItem(DashboardItem):
     def add_parameters(self):
         text_param = {'name': 'text', 'type': 'str', 'value': ''}
         fsize_param = {'name': 'fsize', 'type': 'int', 'value': 12}
-        return [text_param, fsize_param]
+        vpad_param = {'name': 'vertical padding', 'type': 'int', 'value': 10}
+        hpad_param = {'name': 'horizontal padding', 'type': 'int', 'value': 10}
+        return [text_param, fsize_param, vpad_param, hpad_param]
 
     def on_text_change(self, param, value):
         self.text = value
@@ -47,6 +51,16 @@ class TextDashItem(DashboardItem):
 
     def on_fsize_change(self, param, value):
         self.setFontSize(value)
+
+    def on_vpad_change(self, param, value):
+        hpad = self.parameters.param('horizontal padding').value()
+        # int left, int top, int right, int bottom
+        self.layout.setContentsMargins(hpad, value, hpad, value)
+    
+    def on_hpad_change(self, param, value):
+        vpad = self.parameters.param('vertical padding').value()
+        # int left, int top, int right, int bottom
+        self.layout.setContentsMargins(value, vpad, value, vpad)
 
     @staticmethod
     def get_name():

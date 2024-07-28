@@ -21,7 +21,8 @@ from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from omnibus.util import TickCounter
 from utils import ConfirmDialog, EventTracker
-# These need to be imported to be added to the registry
+# These need to be imported to be added to the registry 
+# (i.e. so that their decorators can execute)
 from items.plot_dash_item import PlotDashItem
 from items.dynamic_text import DynamicTextItem
 from items.periodic_can_sender import PeriodicCanSender
@@ -31,6 +32,8 @@ from items.can_sender import CanSender
 from items.plot_3D_orientation import Orientation3DDashItem
 from items.plot_3D_position import Position3DDashItem
 from items.table_view import TableViewItem
+from items.actuator_can_sender import ActuatorCanSender
+from items.actuator_dynamic_text import ActuatorDynamicTextItem
 from publisher import publisher
 
 from omnibus import Sender

@@ -113,8 +113,20 @@ CAN_FIELDS = [
                     'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'P503'}, "data.pressure"),
     CanProcessingField("P504", {
                     'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'P504'}, "data.pressure"),
+    CanProcessingField("P505", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'P505'}, "data.pressure"),
+    CanProcessingField("P506", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'P506'}, "data.pressure"),
     CanProcessingField("P301", {
                        'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'P301'}, "data.pressure"),
+    CanProcessingField("D501", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'D501'}, "data.displacement"),
+    CanProcessingField("D502", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'D502'}, "data.displacement"),
+    CanProcessingField("D501_MAX", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'D501_MAX'}, "data.displacement"),
+    CanProcessingField("D502_MAX", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'D502_MAX'}, "data.displacement"),
 
     CanProcessingField("T501", {
                        'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T501'}, "data.temperature"),
@@ -126,11 +138,32 @@ CAN_FIELDS = [
                        'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T504'}, "data.temperature"),
     CanProcessingField("T505", {
                        'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T505'}, "data.temperature"),
+    CanProcessingField("T510", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T510'}, "data.temperature"),
+    CanProcessingField("T507", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T507'}, "data.temperature"),
+    CanProcessingField("T509", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_TEMP', 'data.sensor_id': 'T509'}, "data.temperature"),
 
     CanProcessingField("RPM501_S", {
                        'board_id': 'ANY', 'msg_type': 'SENSOR_RPM', 'data.sensor_id': 'RPM501_S'}, "data.RPM_S"),
     CanProcessingField("RPM502_S", {
                        'board_id': 'ANY', 'msg_type': 'SENSOR_RPM', 'data.sensor_id': 'RPM502_S'}, "data.RPM_S"),
+    CanProcessingField("RPM501_H", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_RPM', 'data.sensor_id': 'RPM501_H'}, "data.RPM_H"),
+    CanProcessingField("RPM502_H", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_RPM', 'data.sensor_id': 'RPM502_H'}, "data.RPM_H"),
+    CanProcessingField("RPM501_MAX", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_RPM', 'data.sensor_id': 'RPM501_MAX'}, "data.RPM_H_MAX"),
+    CanProcessingField("RPM502_MAX", {
+                       'board_id': 'ANY', 'msg_type': 'SENSOR_RPM', 'data.sensor_id': 'RPM502_MAX'}, "data.RPM_H_MAX"),
+
+    CanProcessingField("L401", {
+                        'board_id': 'ANY', 'msg_type': 'SENSOR_LEVEL', 'data.sensor_id': 'L401'}, "data.level_status"),
+
+    CanProcessingField("TRANSITION_SRC_ID", {
+                    'board_id': 'ANY', 'msg_type': 'SENSOR_VIRTUAL', 'data.sensor_id': 'TRANSITION_SRC_ID'}, "data.source_sensor_id"),
+
 ]
 
 
