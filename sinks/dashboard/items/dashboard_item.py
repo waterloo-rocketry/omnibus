@@ -8,6 +8,7 @@ from collections import OrderedDict
 import json
 
 from .no_text_action_parameter import NoTextActionParameter
+from .series_parameter import SeriesChecklistParameter, SeriesListParameter
 
 
 class DashboardItem(QWidget):
@@ -46,9 +47,21 @@ class DashboardItem(QWidget):
         ])
 
         # add widget specific parameters
-        self.parameters.addChildren(self.add_parameters())
+        parameters = self.add_parameters()
+        self.parameters.addChildren(parameters)
 
-        self.parameter_tree = ParameterTree(showHeader=True)
+        refreshable = [p for p in parameters if isinstance(p, SeriesListParameter) or isinstance(p, SeriesChecklistParameter)]
+
+        class CustomParameterTree(ParameterTree):
+            def __init__(self):
+                super().__init__(showHeader=True)
+
+            def show(self):
+                super().show()
+                for r in refreshable:
+                    r.refresh_limits()            
+
+        self.parameter_tree = CustomParameterTree()
         self.parameter_tree.setParameters(self.parameters, showTop=False)
         self.parameter_tree.header().setSectionResizeMode(QHeaderView.ResizeToContents)
 
