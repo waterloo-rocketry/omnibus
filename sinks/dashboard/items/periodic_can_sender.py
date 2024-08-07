@@ -23,13 +23,17 @@ class PeriodicCanSender(DashboardItem):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self.status_label = QLabel("INACTIVE")
-        self.status_label.setAlignment(Qt.AlignCenter)
-
-        self.label = QLabel("Periodic CAN Sender")
+        self.label = QLabel(self.actuator)
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setStyleSheet("font-size: 17px;")
         self.layout.addWidget(self.label)
+
+        self.title = QLabel("Periodic CAN Sender")
+        self.title.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.title)
+        self.status_label = QLabel("INACTIVE")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.status_label)
 
         self.radio_on = QRadioButton("ON")
         self.radio_off = QRadioButton("OFF")
@@ -48,7 +52,6 @@ class PeriodicCanSender(DashboardItem):
         self.h_layout.addWidget(self.radio_on)
         self.h_layout.addSpacing(20)
         self.h_layout.addWidget(self.radio_off)
-        self.layout.addWidget(self.status_label)
         self.h_layout.setAlignment(Qt.AlignCenter)
 
         # Add the horizontal layout to the main vertical layout
@@ -99,8 +102,11 @@ class PeriodicCanSender(DashboardItem):
 
     def pulse_widgets(self):
         if self.pulse_count > 0:
-            if self.period != 0 and self.pulse_count % 2 == 0 and self.radio_on.isChecked():
-                self.setStyleSheet("background-color: red;")
+            if self.period != 0 and self.pulse_count % 2 == 0:
+                if self.radio_on.isChecked():
+                    self.setStyleSheet("background-color: green;")
+                else:
+                    self.setStyleSheet("background-color: red;")
             else:
                 self.setStyleSheet("")
             self.pulse_count -= 1
