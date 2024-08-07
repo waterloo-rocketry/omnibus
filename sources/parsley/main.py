@@ -36,23 +36,23 @@ class FakeSerialCommunicator:
     def __init__(self):
         # Fake messages to cycle through
         self.fake_msgs = [
-            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG',
+            {'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG',
                 'time': 0, 'sensor_id': 'SENSOR_BATT_CURR', 'value': 0},
-            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_BUS_CURR', 'value': 0},
-            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG',
+            {'board_id': 'CHARGING_PAYLOAD', 'msg_type': 'SENSOR_ANALOG',
+                'time': 0, 'sensor_id': 'SENSOR_5V_CURR', 'value': 0},
+            {'board_id': 'CHARGING_AIRBRAKE', 'msg_type': 'SENSOR_ANALOG',
                 'time': 0, 'sensor_id': 'SENSOR_CHARGE_CURR', 'value': 0},
-            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG',
+            {'board_id': 'CHARGING_CAN', 'msg_type': 'SENSOR_ANALOG',
                 'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
-            {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG',
+            {'board_id': 'CHARGING_PAYLOAD', 'msg_type': 'SENSOR_ANALOG',
                 'time': 0, 'sensor_id': 'SENSOR_GROUND_VOLT', 'value': 0},
-            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'SENSOR_ANALOG',
+            {'board_id': 'PROPULSION_INJ', 'msg_type': 'SENSOR_ANALOG',
                 'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
-            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'GENERAL_BOARD_STATUS',
+            {'board_id': 'PROPULSION_VENT', 'msg_type': 'GENERAL_BOARD_STATUS',
                 'time': 0, 'status': 'E_NOMINAL'},
-            {'board_id': 'ACTUATOR_INJ', 'msg_type': 'ACTUATOR_STATUS', 'time': 0,
+            {'board_id': 'PROPULSION_INJ', 'msg_type': 'ACTUATOR_STATUS', 'time': 0,
                 'actuator': 'ACTUATOR_INJECTOR_VALVE', 'req_state': 'ACTUATOR_UNK', 'cur_state': 'ACTUATOR_OFF'},
-            {'board_id': 'CHARGING', 'msg_type': 'GENERAL_BOARD_STATUS', 'time': 0, 'status': 'E_NOMINAL'},
+            {'board_id': 'DAQ', 'msg_type': 'GENERAL_BOARD_STATUS', 'time': 0, 'status': 'E_NOMINAL'},
         ]
         self.fake_msg_index = 0
         self.last_fake_zero_time = 0
