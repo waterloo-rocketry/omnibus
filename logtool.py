@@ -35,7 +35,7 @@ class Logger():
         if process.args[-1] == "omnibus":
             self.loggers["core_library"].info(f"From{process.args}:{output}")
         else:
-            self.loggers[process.args[-1].split("/")[1]].info(f"From {process.args}:{output}")
+            self.loggers[process.args[1].split("/")[1]].info(f"From {process.args}:{output}")
         print(f"Output from {process.args} logged")
 
     # Logs output from a process with its respective logger, or core if it is from core-library
