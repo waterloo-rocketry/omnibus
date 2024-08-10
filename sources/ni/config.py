@@ -6,10 +6,10 @@ READ_BULK = 20  # Number of samples to read at once for better performance
 # Mapping between briefcase ports and ai channels such that you can do ports[1] through ports[12]
 ports = [
     None,  # port 0
-    "ai16", "ai17", "ai18",  # Differental channels 1-3
-    "ai19", "ai27", "ai20",  # Direct voltage channels 4-6. NOTE: Channel 6 is +24V!
-    "ai28", "ai21", "ai29",  # 4-20 mA channels 7-9
-    "ai15", "ai7",  "ai14",  # 4-20 mA channels 10-12
+    "ai16", None, "ai18",  # Differental channels 1-3  # 2 used to be ai17
+    "ai19", "ai27", "ai20", # 4-20 mA channels 4,6 and 0-5V channel 5
+    "ai28",  "ai21", "ai29", # 4-20 mA channels 7-9
+    "ai15",  "ai7", "ai14"  # 4-20 mA channels 10-12
 ]
 
 thermo_ports = [
@@ -18,92 +18,98 @@ thermo_ports = [
     "ai8", "ai0"                  # Ports 5-6
 ]
 
-
 def setup():
     """
     Test Values
     """
+    
+    
     Sensor("Power in", "ai31", 10, Connection.SINGLE,
            LinearCalibration(3, 0, "V"))
     Sensor("+12V", "ai23", 10, Connection.SINGLE,
            LinearCalibration(3, 0, "V"))
-    Sensor("+10V", "ai30", 10, Connection.SINGLE,
-           LinearCalibration(3, 0, "V"))
     Sensor("+5V", "ai22", 10, Connection.SINGLE,
            LinearCalibration(3, 0, "V"))
-
+ 
     """
     Sensor Configs, will change from test to test
     """
+    # IFM PT5402: 4-20mA 0-1540 psi
+    # top resistor on ancient thermistor board is 82.1 ohms 
+    #Sensor("example", ports[6], 10, Connection.SINGLE,
+    #       LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+
+    #Sensor("FPT-301 Fuel Tank", ports[11], 10, Connection.SINGLE,
+    #       LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+           
+    Sensor("OPT-102 Ox Fill Downstream", ports[9], 10, Connection.SINGLE,
+           LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+    Sensor("NPT-201 Nitrogen Fill", ports[8], 10, Connection.SINGLE,
+           LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
 
     # Standard TDL35 and TDM51 transducers: 4-20mA 0-3000 psi
-    Sensor("PT-2 Ox Tank", ports[7], 10, Connection.SINGLE,
-           LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-    Sensor("PT-3 CC", ports[8], 10, Connection.SINGLE,
-           LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
-    Sensor("PT-5 Nitrogen", ports[9], 10, Connection.SINGLE,
-           LinearCalibration(1/98.0*3000/0.016, -0.004*3000/0.016, "psi"))
+    #Sensor("example", ports[4], 10, Connection.SINGLE,
+    #       LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
 
-    # PSE540-R06 pneumatic transducer. 1-5V output for 0-1 MPa
-    Sensor("PT-6 Pneumatics", ports[4], 10, Connection.SINGLE,
-           LinearCalibration(145 / (5 - 1), -145 / (5 - 1), "psi"))
-
-    # BSP008Z transducer with display
-    Sensor("PT-1 Ox Fill", ports[6], 10, Connection.SINGLE,
-           LinearCalibration(5800 / 10, 0, "psi"))
-
-    # Perseus, 1500 psi with a FSO@10V of 75 mV, but we're running it at 12V.
-    Sensor("PT-4 Perseus", ports[3], 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration(1500 / (0.075 / 10 * 12), 0, "psi"))
-
-    # Omega LCEC-250lb smol tower load cell (divide by 2.2 to kg), 3 mv/v, 12v excitation
+    Sensor("OPT-101 Ox Fill Upstream", ports[7], 10, Connection.SINGLE,
+           LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
+           
+    # Mystery tower disk load cell, ~1 mv/v, 12v excitation, offset unclear 
+    # calculations here https://docs.google.com/spreadsheets/d/1CjHpVej8-5QckUuJ_1ToOswU6ueGZGIw2nW77NxCvWc/edit#gid=0
     Sensor("Rocket Mass", ports[1], 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration((250 / 2.205) / (3/1000*12), 0, "kg"))
+        LinearCalibration((200) / (1/1000*12), 0, "kg"))
 
-    # CAS BSA-5KLB 5000 lbf (divide by 2.2 to kg), 3 mv/v, 12v excitation
-    Sensor("Thrust", ports[2], 0.2, Connection.DIFFERENTIAL,
-           LinearCalibration((5000/2.205) / (3/1000*12), -20, "kg"))
-
-    # Vent Thermistor with a 10k resistor divider between it and ground
-    Sensor("Vent Thermistor", ports[12], 10, Connection.SINGLE,
-           ThermistorCalibration(5, 10000, 3434, 0.099524))  # Calibration pulled from LabVIEW
-
-    # +12V Sense through a 7.5k / 100R resistor divider.
-    Sensor("GSPD +12V", ports[11], 2, Connection.SINGLE,
-           LinearCalibration((7500+100)/100, 0, "V"))
-
-    # GSPD's current and temperature sensing
-    Sensor("GSPD Total Current", "ai4", 10, Connection.SINGLE,
-           LinearCalibration(1/(100*0.0016), 0, "A"))
-    Sensor("GSPD +5V Current", "ai12", 10, Connection.SINGLE,
-           LinearCalibration(1/(100*0.01), 0, "A"))
-    Sensor("GSPD +24V Current", "ai11", 10, Connection.SINGLE,
-           LinearCalibration(1/(100*0.04), 0, "A"))
-    Sensor("GSPD Temperature", "ai3", 10, Connection.SINGLE,
-           LinearCalibration(1, 0, "V"))
-
-    Sensor("Injector Valve", "ai6", 5, Connection.SINGLE,
-           LinearCalibration(1, 0, "V"))
-
-    # Thermocouples using Spidey Sense R3 and 0-5V converter boards
-    Sensor("Thermocouple 1", thermo_ports[1], 5, Connection.SINGLE,
-           LinearCalibration(1200/5, -100 + (23.4 - -18), "C"))
-    Sensor("Thermocouple 2", thermo_ports[2], 5, Connection.SINGLE,
-           LinearCalibration(1200/5, -100 + (23.4 - -3), "C"))
-    Sensor("Thermocouple 3", thermo_ports[3], 5, Connection.SINGLE,
-           LinearCalibration(1200/5, -100 + (23.4 - -24), "C"))
-    Sensor("Thermocouple 4", thermo_ports[4], 5, Connection.SINGLE,
-           LinearCalibration(1200/5, -100, "C"))
-
-    # Thermocouples using the blue 4-20mA converters.
-    Sensor("Thermocouple 5", thermo_ports[5], 5, Connection.SINGLE,
-           LinearCalibration(1/220*1300/0.016, -0.004*1300/0.016, "C"))
-    Sensor("Thermocouple 6", thermo_ports[6], 5, Connection.SINGLE,
-           LinearCalibration(1/220*1300/0.016, -0.004*1300/0.016, "C"))
-
+    # +12V Sense through a 7.5k / 10k resistor divider
+    Sensor("GSPD +12V", "ai3", 10, Connection.SINGLE,
+           LinearCalibration((7470+10100)/10100, 0, "V"))
+           
+    # Adafruit anemometer. 0.4 - 2V mapping to 0-32.4 m/s
+    Sensor("Anemometer", ports[5], 10, Connection.SINGLE,
+            LinearCalibration(32.4 / (2 - 0.4) / 0.725, -0.4 * 32.4 / (2 - 0.4) / 0.725, "m/s"))
+           
     """
     Everything below here is just for documentation purposes
     """
+
+    # Honeywell S-type, 1000 N (divide by 9.81 to kg) an 2.002 mv/V at 12V
+    #Sensor("Ox Tank - Honeytype S-Type", ports[2], 0.2, Connection.DIFFERENTIAL,
+    #       LinearCalibration((1000/9.81)/(2.002/1000*12), -0.7, "kg"))
+    
+    # Mystery tower disk load cell, ~1 mv/v, 12v excitation, offset unclear 
+    # calculations here https://docs.google.com/spreadsheets/d/1CjHpVej8-5QckUuJ_1ToOswU6ueGZGIw2nW77NxCvWc/edit#gid=0
+    #Sensor("Rocket Mass", ports[3], 0.2, Connection.DIFFERENTIAL,
+    #    LinearCalibration((200) / (1/1000*12), 0, "kg"))
+
+    # Omega S-type (LC-103B), 200 lb (divide by 2.2 to kg), 3 mV/V at 12V
+    #Sensor("Tank Mass - Omega S-Type", ports[3], 0.2, Connection.DIFFERENTIAL,
+    #       LinearCalibration((200/2.205) / (3/1000*12), -1.9, "kg"))
+
+    # CAS BSA-5KLB 5000 lbf (divide by 2.2 to kg), 3 mv/v, 12v excitation
+    #Sensor("Thrust - CAS BSA-5KLB", ports[1], 0.2, Connection.DIFFERENTIAL,
+    #       LinearCalibration((5000/2.205) / (3/1000*12), -20, "kg"))
+
+    # Thermocouples using Spidey Sense R3 and 0-5V converter boards
+    #Sensor("TC 1 - Vent TC", thermo_ports[1], 5, Connection.SINGLE,
+    #       LinearCalibration(1200/5, -100 + (23.4 - -18), "C"))
+    #Sensor("TC 2 - CC Temp A", thermo_ports[2], 5, Connection.SINGLE,
+    #       LinearCalibration(1200/5, -100 + (23.4 - -3), "C"))
+    #Sensor("TC 3 - CC Temp B", thermo_ports[3], 5, Connection.SINGLE,
+    #       LinearCalibration(1200/5, -100 + (23.4 - -24), "C"))
+    #Sensor("TC 4 - CC Temp C", thermo_ports[4], 5, Connection.SINGLE,
+    #       LinearCalibration(1200/5, -100, "C"))
+
+    # Thermocouples using the blue 4-20mA converters.
+    #Sensor("TC 5 - CC Temp D", thermo_ports[5], 5, Connection.SINGLE,
+    #       LinearCalibration(1/220*1300/0.016, -0.004*1300/0.016, "C"))
+    #Sensor("TC 6 - CC Temp E", thermo_ports[6], 5, Connection.SINGLE,
+    #       LinearCalibration(1/220*1300/0.016, -0.004*1300/0.016, "C"))
+
+    
+
+    # Perseus, 1500 psi with a FSO@10V of 75 mV, but we're running it at 12V.
+    # Sensor("PT-7 CC 1 Perseus", ports[4], 0.2, Connection.DIFFERENTIAL,
+    #        LinearCalibration(1500 / (0.075 / 10 * 12), 0, "psi"))
+    
     # Sensor("Honeywell S-Type - Fuel Tank Mass", "ai17", 0.2, Connection.DIFFERENTIAL,
     #        LinearCalibration(5116, -0.94, "kg"))  # calibrated 13/3/2022
 
@@ -141,14 +147,33 @@ def setup():
     # Sensor("T8 - Tank Heating", "ai23", 10, Connection.SINGLE,
     #        ThermistorCalibration(10000, 3434, 0.099524))  # Calibration pulled from LabVIEW
 
-    # Honeywell S-type, 1000 N (divide by 9.81 to kg) an 2.002 mv/V at 12V
-    # Sensor("Honeywell S-type - Ox Tank", ports[1], 0.2, Connection.DIFFERENTIAL,
-    #       LinearCalibration((1000/9.81)/(2.002/1000*12), -0.7, "kg"))
-
-    # Omega S-type (LC-103B), 200 lb (divide by 2.2 to kg), 3 mV/V at 12V
-    # Sensor("Omega S-Type - Fuel Tank", ports[2], 0.2, Connection.DIFFERENTIAL,
-    #        LinearCalibration((200/2.205) / (3/1000*12), -1.9, "kg"))
-
+    #Sensor("Injector Valve", "ai6", 5, Connection.SINGLE,
+    #       LinearCalibration(1, 0, "V"))
+    # BSP008Z transducer with display
+    # Sensor("PT-1 Ox Supply", ports[6], 10, Connection.SINGLE,
+    #       LinearCalibration(5800 / 10, 0, "psi"))
     # Omega LC501 2000 lbf (divide by 2.2 to kg), 3 mv/v, 12v excitation
     # Sensor("Thrust", ports[3], 0.2, Connection.DIFFERENTIAL,
     #        LinearCalibration((2000/2.205) / (3/1000*12), -7.4, "kg"))
+
+    # Omega LCEC-250lb smol tower load cell (divide by 2.2 to kg), 3 mv/v, 12v excitation
+    # Sensor("Rocket Mass", ports[1], 0.2, Connection.DIFFERENTIAL,
+    #        LinearCalibration((250 / 2.205) / (3/1000*12), 0, "kg"))
+
+
+    # GSPD's current and temperature sensing
+    #Sensor("GSPD Total Current", "ai4", 10, Connection.SINGLE,
+    #       LinearCalibration(1/(100*0.0016), 0, "A"))
+    #Sensor("GSPD +5V Current", "ai12", 10, Connection.SINGLE,
+    #       LinearCalibration(1/(100*0.01), 0, "A"))
+    #Sensor("GSPD +24V Current", "ai11", 10, Connection.SINGLE,
+    #       LinearCalibration(1/(100*0.04), 0, "A"))
+    #Sensor("GSPD Temperature", "ai3", 10, Connection.SINGLE,
+    #       LinearCalibration(1, 0, "V"))
+ 
+    # Adafruit anemometer. 0.4 - 2V mapping to 0-32.4 m/s
+    # Sensor("Anemometer", ports[5], 10, Connection.SINGLE,
+    #        LinearCalibration(32.4 / (2 - 0.4) / 0.725, -0.4 * 32.4 / (2 - 0.4) / 0.725, "m/s"))
+    # Vent Thermistor with a 10k resistor divider between it and ground
+    #Sensor("Vent Thermistor", ports[12], 10, Connection.SINGLE,
+    #       ThermistorCalibration(5, 10000, 3434, 0.099524))  # Calibration pulled from LabVIEW
