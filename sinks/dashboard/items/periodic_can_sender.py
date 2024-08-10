@@ -128,6 +128,7 @@ class PeriodicCanSender(DashboardItem):
 
     def on_actuator_change(self, _, value):
         self.actuator = value
+        self.label.setText(self.actuator)
 
     @staticmethod
     def get_name():
