@@ -32,6 +32,8 @@ class EventTracker(QObject):
     send_backward = Signal()
     send_to_front = Signal()
     send_to_back = Signal()
+    remove_all = Signal()
+    mouse_resize = Signal()
 
     def eventFilter(self, widget, event):
         """
@@ -76,6 +78,10 @@ class EventTracker(QObject):
                     self.send_to_back.emit()
                 case KeyEvent(Qt.Key_BracketLeft):
                     self.send_backward.emit()
+                case KeyEvent(Qt.Key_R, Qt.ControlModifier):
+                    self.remove_all.emit()
+                case KeyEvent(Qt.Key_M, Qt.ControlModifier):
+                    self.mouse_resize.emit()
         return super().eventFilter(widget, event)
 
 
