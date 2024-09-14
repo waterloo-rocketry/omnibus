@@ -231,4 +231,5 @@ class StandardDisplayItem(DashboardItem):
         publisher.unsubscribe_from_all(self.on_data_update)
         self.plot.close()
         self.widget.close()
+        super().on_delete()
 
