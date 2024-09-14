@@ -333,13 +333,14 @@ class Dashboard(QWidget):
         return False
 
     def change_detector(self):
-        title = self.windowTitle()
+        title = "Omnibus Dashboard - "
+        title += os.path.basename(self.file_location)
         unsaved_symbol = "⏺"
         changed = self.check_for_changes()
         if changed and unsaved_symbol not in title:
             self.setWindowTitle(f"{title} {unsaved_symbol}")
-        elif not changed and unsaved_symbol in title:
-            self.setWindowTitle(title[:-2])
+        elif not changed and unsaved_symbol in self.windowTitle():
+            self.setWindowTitle(title)
 
     def every_second(self, payload, stream):
         def on_select(string):
