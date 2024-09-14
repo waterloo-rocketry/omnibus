@@ -175,3 +175,4 @@ class PlotDashItem(DashboardItem):
 
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)
+        super().on_delete()
