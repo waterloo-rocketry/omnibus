@@ -1,10 +1,21 @@
 import geocoder
 from PySide6.QtWidgets import (
-    QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QPushButton, QSizePolicy, QLineEdit, QLabel, QSplitter
+    QMainWindow,
+    QVBoxLayout,
+    QWidget,
+    QHBoxLayout,
+    QPushButton,
+    QSizePolicy,
+    QLineEdit,
+    QLabel,
+    QSplitter,
+    QComboBox,
+    QFileDialog,
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from src.map_view import MapView
+
 
 class MapWindow(QMainWindow):
     def __init__(self):
@@ -13,27 +24,50 @@ class MapWindow(QMainWindow):
         self.setGeometry(100, 100, 1200, 600)  # Set initial size of the window
         self.setWindowIcon(QIcon("resources/icons/rocket_icon.ico"))  # Set the app icon
 
+        self.data_sources = {
+            value: key
+            for key, value in enumerate(
+                ["None", "Real-time Data Source", "Load KMZ File"]
+            )
+        }
+        self.data_source = 0
+        self.start_index_to_feature_ui = 3  # index to insert the feature of the data source ui, should use get_current_index_to_feature_ui() to get the index
+        self.kmz_file_label = ""
+
         # Set up the central widget and layout
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
 
         # Main layout for the window (using QSplitter for 80% - 20% split)
-        main_splitter = QSplitter(Qt.Horizontal, self.main_widget)
+        self.main_splitter = QSplitter(Qt.Horizontal, self.main_widget)
         main_layout = QHBoxLayout(self.main_widget)
-        main_layout.addWidget(main_splitter)
+        main_layout.addWidget(self.main_splitter)
 
         # Initialize the map view and set it to expand
         self.map_view = MapView(self)
         self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         # Add the map view to the splitter
-        main_splitter.addWidget(self.map_view)
+        self.main_splitter.addWidget(self.map_view)
 
+        self.init_side_toolbar()
+
+        # Add the toolbar to the splitter
+        self.main_splitter.addWidget(self.side_toolbar)
+
+        # Set the sizes of the splitter to achieve an 80-20 ratio
+        self.main_splitter.setSizes(
+            [800, 200]
+        )  # Adjust these values to set the initial sizes
+
+    def init_side_toolbar(self):
+        """Initialize the side toolbar with buttons and input fields."""
         # Add the side toolbar layout (Vertical Layout inside QWidget)
+        self.start_index_to_feature_ui = 3
         self.side_toolbar = QWidget(self)
-        toolbar_layout = QVBoxLayout(self.side_toolbar)
-        toolbar_layout.setContentsMargins(10, 10, 10, 10)  # Add some padding
-        toolbar_layout.setSpacing(10)  # Add some spacing between buttons
+        self.toolbar_layout = QVBoxLayout(self.side_toolbar)
+        self.toolbar_layout.setContentsMargins(10, 10, 10, 10)  # Add some padding
+        self.toolbar_layout.setSpacing(10)  # Add some spacing between buttons
 
         # Custom Toggle Button for Dark Mode
         self.toggle_button = QPushButton(self)
@@ -41,45 +75,120 @@ class MapWindow(QMainWindow):
         self.toggle_button.setIcon(QIcon("resources/icons/moon.png"))
         self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
         self.toggle_button.setFixedSize(60, 30)  # Set fixed size for the toggle button
-        self.toggle_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)  # Prevent the button from expanding
+        self.toggle_button.setSizePolicy(
+            QSizePolicy.Fixed, QSizePolicy.Fixed
+        )  # Prevent the button from expanding
         self.toggle_button.clicked.connect(self.toggle_dark_mode)
 
         # Create a container layout to align the toggle button to the left
-        toggle_container = QHBoxLayout()
-        toggle_container.addWidget(self.toggle_button, alignment=Qt.AlignLeft)  # Align the button to the left
-        toolbar_layout.addLayout(toggle_container)  # Add the container layout to the toolbar layout
+        self.toggle_container = QHBoxLayout()
+        self.toggle_container.addWidget(
+            self.toggle_button, alignment=Qt.AlignLeft
+        )  # Align the button to the left
+        self.toolbar_layout.addLayout(
+            self.toggle_container
+        )  # Add the container layout to the toolbar layout
+
+        # Add a combo box to choose the data source
+        self.data_source_ui = QComboBox(self)
+        self.data_source_ui.addItem("None")
+        self.data_source_ui.addItem("Real-time Data Source")
+        self.data_source_ui.addItem("Load KMZ File")
+        self.data_source_ui.setCurrentIndex(self.data_source)
+        self.data_source_ui.currentIndexChanged.connect(self.toggle_data_source)
+        self.toolbar_layout.addWidget(QLabel("Data Source:"))
+        self.toolbar_layout.addWidget(self.data_source_ui)
 
         # Input fields for latitude and longitude
         self.lat_input = QLineEdit(self)
         self.lat_input.setPlaceholderText("Enter Latitude")
-        toolbar_layout.addWidget(QLabel("Latitude:"))
-        toolbar_layout.addWidget(self.lat_input)
+        self.toolbar_layout.addWidget(QLabel("Latitude:"))
+        self.toolbar_layout.addWidget(self.lat_input)
 
         self.lon_input = QLineEdit(self)
         self.lon_input.setPlaceholderText("Enter Longitude")
-        toolbar_layout.addWidget(QLabel("Longitude:"))
-        toolbar_layout.addWidget(self.lon_input)
+        self.toolbar_layout.addWidget(QLabel("Longitude:"))
+        self.toolbar_layout.addWidget(self.lon_input)
 
         # Add button to add marker at the specified coordinates
-        add_marker_button = QPushButton("Add Marker", self)
-        add_marker_button.clicked.connect(self.add_marker)
-        toolbar_layout.addWidget(add_marker_button)
+        self.add_marker_button = QPushButton("Add Marker", self)
+        self.add_marker_button.clicked.connect(self.add_marker)
+        self.toolbar_layout.addWidget(self.add_marker_button)
 
         # Add button to mark the current location
-        mark_current_location_button = QPushButton("Mark Current Location", self)
-        mark_current_location_button.clicked.connect(self.mark_current_location)
-        toolbar_layout.addWidget(mark_current_location_button)
+        self.mark_current_location_button = QPushButton("Mark Current Location", self)
+        self.mark_current_location_button.clicked.connect(self.mark_current_location)
+        self.toolbar_layout.addWidget(self.mark_current_location_button)
 
         # Add button to clear all markers
-        clear_markers_button = QPushButton("Clear Markers", self)
-        clear_markers_button.clicked.connect(self.clear_markers)
-        toolbar_layout.addWidget(clear_markers_button)
+        self.clear_markers_button = QPushButton("Clear Markers", self)
+        self.clear_markers_button.clicked.connect(self.clear_markers)
+        self.toolbar_layout.addWidget(self.clear_markers_button)
 
-        # Add the toolbar to the splitter
-        main_splitter.addWidget(self.side_toolbar)
+        return self.side_toolbar
 
-        # Set the sizes of the splitter to achieve an 80-20 ratio
-        main_splitter.setSizes([800, 200])  # Adjust these values to set the initial sizes
+    def get_current_index_to_feature_ui(self):
+        self.start_index_to_feature_ui += 1
+        return self.start_index_to_feature_ui - 1
+
+    def toggle_data_source(self):
+        """Toggle between None, Real-time Data Source, and Load KMZ File."""
+
+        # enum for data sources
+        self.data_source = self.data_sources.get(self.data_source_ui.currentText())
+        self.reset_data_source_ui()
+
+        if self.data_source == 1:  # Real-time Data Source
+            # if is real-time data source selected, then add the following
+            # Create buttons for starting/stopping real-time data and loading data
+            start_stop_button = QPushButton("Start/Stop Real-time Data", self)
+            # start_stop_button.clicked.connect(self.start_stop_realtime_data) #TODO: Implement this function
+
+            self.toolbar_layout.insertWidget(
+                self.start_index_to_feature_ui, start_stop_button
+            )
+
+            fake_data_options = [
+                "Option 1",
+                "Option 2",
+                "Option 3",
+            ]  # TODO: Connect to the source of data with the real-time data
+            fake_data_combo = QComboBox(self)
+            fake_data_combo.addItems(fake_data_options)
+            self.toolbar_layout.insertWidget(
+                self.get_current_index_to_feature_ui(), QLabel("Fake Data Options:")
+            )
+            self.toolbar_layout.insertWidget(
+                self.get_current_index_to_feature_ui(), fake_data_combo
+            )
+
+        elif self.data_source == 2:  # Load KMZ File
+            # if is load KMZ file selected, then add the following
+            load_kmz_button = QPushButton("Load KMZ File", self)
+            load_kmz_button.clicked.connect(self.load_kmz_file)
+            self.toolbar_layout.insertWidget(
+                self.get_current_index_to_feature_ui(),
+                QLabel("KMZ File:" + self.kmz_file_label),
+            )
+            self.toolbar_layout.insertWidget(
+                self.get_current_index_to_feature_ui(), load_kmz_button
+            )
+
+    def reset_data_source_ui(self):
+        """Reset the data source UI to default state."""
+
+        # reset the data source UI to default state
+        self.init_side_toolbar()
+        self.main_splitter.replaceWidget(1, self.side_toolbar)
+
+    def load_kmz_file(self):
+        """Function to load a KMZ file and display it on the map."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Open KMZ File", "", "KMZ Files (*.kmz)"
+        )
+        if file_path:
+            self.kmz_file_label.setText(file_path)
+            # TODO: self.map_view.load_kmz_file(file_path)
 
     def toggle_dark_mode(self):
         """Toggle between Dark Mode and Light Mode."""
@@ -139,13 +248,15 @@ class MapWindow(QMainWindow):
             lon = float(self.lon_input.text())
             self.map_view.add_marker_to_map([lat, lon], "New Marker", "red")
         except ValueError:
-            print("Invalid input for latitude or longitude. Please enter valid numbers.")
+            print(
+                "Invalid input for latitude or longitude. Please enter valid numbers."
+            )
 
     def mark_current_location(self):
         """Function to get the current location using geocoder and mark it on the map."""
         try:
             # Get the current location using geocoder (based on IP)
-            g = geocoder.ip('me')
+            g = geocoder.ip("me")
             if g.ok:
                 lat, lon = g.latlng
                 self.map_view.add_marker_to_map([lat, lon], "Current Location", "blue")
