@@ -1,6 +1,5 @@
-### Interamap - A sink for omnibus systems
 
-To start the Interamap, run the following command (Currently, on develop stage):
+### Interamap - A sink for omnibus systems
 
 ```bash
 cd interamap
@@ -45,3 +44,4 @@ Requirements:
     python main.py
     ```
     (Note: For offline mode, dark mode is not available)
+
