@@ -11,6 +11,8 @@ idna==3.10
 Jinja2==3.1.4
 MarkupSafe==2.1.5
 numpy==2.1.1
+offline_folium==0.1.2
+osmium==3.7.0
 pygeoif==0.7
 PyQt6==6.7.1
 PyQt6-Qt6==6.7.2
