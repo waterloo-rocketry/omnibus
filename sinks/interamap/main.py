@@ -1,15 +1,20 @@
-from omnibus import Receiver
+from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QIcon
+from src.main_window import MapWindow
+import sys
 
-# import parsers
-from interamap import interamap_driver
+def load_stylesheet(file_name):
+    """Load QSS stylesheet from the provided file."""
+    with open(file_name, "r") as file:
+        return file.read()
 
-receiver = Receiver("")  # subscribe to all channels
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
 
-# def update():  # gets called every frame
-#     # read all the messages in the queue and no more (zero timeout)
-#     while msg := receiver.recv_message(0):
-#         # updates streams, which them updates the dashitems
-#         parsers.parse(msg.channel, msg.payload)
+    # Load and apply QSS stylesheet
+    stylesheet = load_stylesheet("resources/styles/lightmode.qss")
+    app.setStyleSheet(stylesheet)
 
-
-interamap_driver(None)
+    window = MapWindow()
+    window.show()
+    sys.exit(app.exec())
