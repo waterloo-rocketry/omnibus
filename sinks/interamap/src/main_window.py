@@ -1,3 +1,5 @@
+import os
+
 import geocoder
 from PySide6.QtWidgets import (
     QMainWindow,
@@ -20,9 +22,12 @@ from src.map_view import MapView
 class MapWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        
+        self.relative_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        
         self.setWindowTitle("Interactive Map with Folium")
         self.setGeometry(100, 100, 1200, 600)  # Set initial size of the window
-        self.setWindowIcon(QIcon("resources/icons/rocket_icon.ico"))  # Set the app icon
+        self.setWindowIcon(QIcon(self.relative_path+"/resources/icons/rocket_icon.ico"))  # Set the app icon
 
         self.data_sources = {
             value: key
@@ -72,7 +77,7 @@ class MapWindow(QMainWindow):
         # Custom Toggle Button for Dark Mode
         self.toggle_button = QPushButton(self)
         self.toggle_button.setCheckable(True)
-        self.toggle_button.setIcon(QIcon("resources/icons/moon.png"))
+        self.toggle_button.setIcon(QIcon(self.relative_path+"/resources/icons/moon.png"))
         self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
         self.toggle_button.setFixedSize(60, 30)  # Set fixed size for the toggle button
         self.toggle_button.setSizePolicy(
@@ -194,14 +199,14 @@ class MapWindow(QMainWindow):
         """Toggle between Dark Mode and Light Mode."""
         if self.toggle_button.isChecked():
             # Switch to Dark Mode
-            self.load_stylesheet("resources/styles/darkmode.qss")
-            self.toggle_button.setIcon(QIcon("resources/icons/sun.png"))
+            self.load_stylesheet(self.relative_path+"/resources/styles/darkmode.qss")
+            self.toggle_button.setIcon(QIcon(self.relative_path+"/resources/icons/sun.png"))
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(True))
             self.map_view.toggle_map_theme(True)  # Enable dark mode tiles for the map
         else:
             # Switch to Light Mode
-            self.load_stylesheet("resources/styles/lightmode.qss")
-            self.toggle_button.setIcon(QIcon("resources/icons/moon.png"))
+            self.load_stylesheet(self.relative_path+"/resources/styles/lightmode.qss")
+            self.toggle_button.setIcon(QIcon(self.relative_path+"/resources/icons/moon.png"))
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
             self.map_view.toggle_map_theme(False)  # Enable light mode tiles for the map
 
@@ -252,7 +257,7 @@ class MapWindow(QMainWindow):
                 "Invalid input for latitude or longitude. Please enter valid numbers."
             )
 
-    def mark_current_location(self):
+    def mark_current_location(self): # TODO: Only test function, not used in the final code
         """Function to get the current location using geocoder and mark it on the map."""
         try:
             # Get the current location using geocoder (based on IP)
