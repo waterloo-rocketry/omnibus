@@ -1,6 +1,5 @@
 from config import ONLINE_MODE
 
-import os
 from typing import List
 
 from PySide6.QtWebEngineWidgets import QWebEngineView

@@ -1,6 +1,5 @@
 import os
 
-import geocoder
 from PySide6.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
