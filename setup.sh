@@ -12,6 +12,8 @@ echo "\n----- Installing Parsley source requirements -----"
 pip install -r sources/parsley/requirements.txt || return
 echo "\n----- Installing Dashboard sink requirements -----"
 pip install -r sinks/dashboard/requirements.txt || return
+echo "\n----- Installing Interamap sink requirements -----"
+pip install -r sinks/interamap/requirements.txt || return
 
 # Install local libraries
 echo "\n----- Installing Omnibus library -----"
