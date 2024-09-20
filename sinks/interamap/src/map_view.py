@@ -1,4 +1,11 @@
 from config import ONLINE_MODE
+
+import os
+from typing import List
+
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWidgets import QSizePolicy
+
 if not ONLINE_MODE:
     """
     Need to run the following command to download required js and css files (only once, with internet connection):
@@ -6,8 +13,13 @@ if not ONLINE_MODE:
     """
     import offline_folium
 import folium
-from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWidgets import QSizePolicy
+from fastkml import kml
+
+from src.kmz_parser import KMZParser
+from src.data_struct import Point_GPS, LineString_GPS
+
+from src.tools.current_location import get_current_location
+
 
 
 class MapView(QWebEngineView):
@@ -16,6 +28,10 @@ class MapView(QWebEngineView):
 
         # Online Mode
         self.online = ONLINE_MODE
+
+        self.kmz_parser = None
+        
+        self.coordinate = get_current_location()
         
         print("Online Mode:", self.online)
 
@@ -33,15 +49,21 @@ class MapView(QWebEngineView):
     def create_map(self):
         """Create a folium map with the current tile style."""
         
+        if self.kmz_parser is not None:
+            self.coordinate = [self.kmz_parser.gps_data[0].lat, self.kmz_parser.gps_data[0].lon]
+        
+        if self.coordinate is None:
+            self.coordinate = [43.4643, -80.5204] # Default to Waterloo, Ontario
+        
         self.m = folium.Map(
-            location=[43.4643, -80.5204],  # Center of the map
+            location=self.coordinate,  # Center of the map
             zoom_start=12,
             tiles=None,  # Set the tile style dynamically
             width="100%",  # Ensure map width is 100%
             height="100%",  # Ensure map height is 100%
         )
 
-        # Online folium
+        # Add a bottom layer with the default tile style (If online, it will use CartoDB tiles)
         folium.TileLayer(
             tiles=(
                 "cartodbpositron" if not self.is_dark_mode else "cartodbdark_matter"
@@ -81,6 +103,7 @@ class MapView(QWebEngineView):
             ).add_to(self.m)
 
     def update_map(self):
+        self.draw_gps_data()
         """Renders the map and updates the QWebEngineView."""
         self.map_html = (
             self.m.get_root()
@@ -113,3 +136,40 @@ class MapView(QWebEngineView):
         # Only working for online mode
         self.is_dark_mode = is_dark_mode
         self.create_map()
+
+    def load_kmz_file(self, kmz_file_path):
+        """Load a KMZ file and display the contents on the map."""
+        self.kmz_parser = KMZParser(kmz_file_path)
+        self.clear_all_markers()
+        self.update_map()
+
+    def set_map_center(self, coord: List[float]):
+        """Set the center of the map to the given latitude and longitude."""
+        # self.create_map()
+        self.add_marker_to_map(coord, "Current Location", "blue")
+
+    def draw_gps_data(self):
+        if self.kmz_parser is None:
+            return
+        total_points = len(self.kmz_parser.gps_data)
+        step = max(total_points // 500, 1)  # Ensure at least one point is drawn
+
+        for i in range(0, total_points, step):
+            data = self.kmz_parser.gps_data[i]
+            if isinstance(data, Point_GPS):
+                folium.CircleMarker(
+                    location=[data.lat, data.lon],
+                    radius=3,  # Small radius for the marker
+                    color="blue",
+                    fill=True,
+                    fill_color="blue",
+                    popup=f"Height: {data.he}m, Timestamp: {data.time_stamp}",
+                ).add_to(self.m)
+            elif isinstance(data, LineString_GPS):
+                line = folium.PolyLine(
+                    locations=[[point.lat, point.lon] for point in data.points],
+                    color="red",
+                )
+                line.add_to(self.m)
+            else:
+                print("Unhandled data type:", type(data))

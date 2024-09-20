@@ -1,3 +1,5 @@
+import os
+
 import geocoder
 from PySide6.QtWidgets import (
     QMainWindow,
@@ -14,15 +16,20 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
+
 from src.map_view import MapView
+from src.tools.current_location import get_current_location
 
 
 class MapWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        
+        self.relative_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        
         self.setWindowTitle("Interactive Map with Folium")
         self.setGeometry(100, 100, 1200, 600)  # Set initial size of the window
-        self.setWindowIcon(QIcon("resources/icons/rocket_icon.ico"))  # Set the app icon
+        self.setWindowIcon(QIcon(self.relative_path+"/resources/icons/rocket_icon.ico"))  # Set the app icon
 
         self.data_sources = {
             value: key
@@ -72,7 +79,7 @@ class MapWindow(QMainWindow):
         # Custom Toggle Button for Dark Mode
         self.toggle_button = QPushButton(self)
         self.toggle_button.setCheckable(True)
-        self.toggle_button.setIcon(QIcon("resources/icons/moon.png"))
+        self.toggle_button.setIcon(QIcon(self.relative_path+"/resources/icons/moon.png"))
         self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
         self.toggle_button.setFixedSize(60, 30)  # Set fixed size for the toggle button
         self.toggle_button.setSizePolicy(
@@ -187,21 +194,21 @@ class MapWindow(QMainWindow):
             self, "Open KMZ File", "", "KMZ Files (*.kmz)"
         )
         if file_path:
-            self.kmz_file_label.setText(file_path)
-            # TODO: self.map_view.load_kmz_file(file_path)
+            self.kmz_file_label = file_path # TODO: Update the label with the file name
+            self.map_view.load_kmz_file(file_path)
 
     def toggle_dark_mode(self):
         """Toggle between Dark Mode and Light Mode."""
         if self.toggle_button.isChecked():
             # Switch to Dark Mode
-            self.load_stylesheet("resources/styles/darkmode.qss")
-            self.toggle_button.setIcon(QIcon("resources/icons/sun.png"))
+            self.load_stylesheet(self.relative_path+"/resources/styles/darkmode.qss")
+            self.toggle_button.setIcon(QIcon(self.relative_path+"/resources/icons/sun.png"))
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(True))
             self.map_view.toggle_map_theme(True)  # Enable dark mode tiles for the map
         else:
             # Switch to Light Mode
-            self.load_stylesheet("resources/styles/lightmode.qss")
-            self.toggle_button.setIcon(QIcon("resources/icons/moon.png"))
+            self.load_stylesheet(self.relative_path+"/resources/styles/lightmode.qss")
+            self.toggle_button.setIcon(QIcon(self.relative_path+"/resources/icons/moon.png"))
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
             self.map_view.toggle_map_theme(False)  # Enable light mode tiles for the map
 
@@ -252,18 +259,9 @@ class MapWindow(QMainWindow):
                 "Invalid input for latitude or longitude. Please enter valid numbers."
             )
 
-    def mark_current_location(self):
-        """Function to get the current location using geocoder and mark it on the map."""
-        try:
-            # Get the current location using geocoder (based on IP)
-            g = geocoder.ip("me")
-            if g.ok:
-                lat, lon = g.latlng
-                self.map_view.add_marker_to_map([lat, lon], "Current Location", "blue")
-            else:
-                print("Unable to determine current location.")
-        except Exception as e:
-            print(f"Error fetching current location: {e}")
+    def mark_current_location(self): # TODO: Only test function, not used in the final code
+        current_location = get_current_location()
+        self.map_view.set_map_center(current_location)
 
     def clear_markers(self):
         """Function to clear all markers from the map."""
