@@ -21,6 +21,8 @@ def start_tileserver(mbtiles_path):
     # Start the subprocess
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+    print(f"Starting tileserver-gl with {mbtiles_path}...")
+
     # Capture the output and errors
     stdout, stderr = process.communicate()
 
