@@ -16,7 +16,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
+
 from src.map_view import MapView
+from src.tools.current_location import get_current_location
 
 
 class MapWindow(QMainWindow):
@@ -192,8 +194,8 @@ class MapWindow(QMainWindow):
             self, "Open KMZ File", "", "KMZ Files (*.kmz)"
         )
         if file_path:
-            self.kmz_file_label.setText(file_path)
-            # TODO: self.map_view.load_kmz_file(file_path)
+            self.kmz_file_label = file_path # TODO: Update the label with the file name
+            self.map_view.load_kmz_file(file_path)
 
     def toggle_dark_mode(self):
         """Toggle between Dark Mode and Light Mode."""
@@ -258,17 +260,8 @@ class MapWindow(QMainWindow):
             )
 
     def mark_current_location(self): # TODO: Only test function, not used in the final code
-        """Function to get the current location using geocoder and mark it on the map."""
-        try:
-            # Get the current location using geocoder (based on IP)
-            g = geocoder.ip("me")
-            if g.ok:
-                lat, lon = g.latlng
-                self.map_view.add_marker_to_map([lat, lon], "Current Location", "blue")
-            else:
-                print("Unable to determine current location.")
-        except Exception as e:
-            print(f"Error fetching current location: {e}")
+        current_location = get_current_location()
+        self.map_view.set_map_center(current_location)
 
     def clear_markers(self):
         """Function to clear all markers from the map."""
