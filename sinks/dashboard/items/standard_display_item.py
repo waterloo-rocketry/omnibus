@@ -81,6 +81,8 @@ class StandardDisplayItem(DashboardItem):
         self.resize(300,100)
         self.show_size = self.size()
         self.hide_size = self.size()
+        
+        self.on_label_change(self.parameters.param('label'), self.parameters.param('label').value())
 
     def add_parameters(self):
         text_param = {'name': 'label', 'type': 'str', 'value': ''}
@@ -229,4 +231,5 @@ class StandardDisplayItem(DashboardItem):
         publisher.unsubscribe_from_all(self.on_data_update)
         self.plot.close()
         self.widget.close()
+        super().on_delete()
 
