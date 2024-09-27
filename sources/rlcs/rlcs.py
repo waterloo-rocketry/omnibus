@@ -27,7 +27,7 @@ MESSAGE_FORMAT = [
     Numeric("Ignition Secondary Current", 16, scale=1/1000, big_endian=False),
     Enum("OV101 Lims", 8, LIMIT_SWITCHES),
     Enum("OV102 Lims", 8, LIMIT_SWITCHES),
-    Enum("NV103 Lims", 8, LIMIT_SWITCHES),
+    Enum("OV103 Lims", 8, LIMIT_SWITCHES),
     Numeric("Heater Thermistor Voltage 1", 16, big_endian=False),
     Numeric("Heater Thermistor Voltage 2", 16, big_endian=False),
     Numeric("Heater Current 1", 16, scale=1/1000, big_endian=False),
