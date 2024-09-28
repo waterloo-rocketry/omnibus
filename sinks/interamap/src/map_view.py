@@ -4,6 +4,7 @@ from typing import List
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
+from src.real_time_parser import RTParser
 
 if not ONLINE_MODE:
     """
@@ -141,6 +142,18 @@ class MapView(QWebEngineView):
         self.kmz_parser = KMZParser(kmz_file_path)
         self.clear_all_markers()
         self.update_map()
+    
+    def start_stop_realtime_data(self):
+        self.rt_parser = RTParser()
+        self.rt_parser.gps_RT_data.connect(self.draw_point)
+        self.rt_parser.start()
+    
+    def draw_point(self, point): # TODO: Given the info below, draw the point to the grid
+        print(f"Timestamp: {point.time_stamp}")
+        print(f"Longitude: {point.lon}")
+        print(f"Latitude: {point.lat}")
+        print(f"Height: {point.he}")
+
 
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
