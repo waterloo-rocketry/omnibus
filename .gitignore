@@ -42,3 +42,6 @@ htmlcov
 # Data export manifests
 *_manifest.txt
 all_messages_*.txt
+
+# Do not ignore any jsons in interamap-web
+!/sinks/interamap-web/*/*.json
