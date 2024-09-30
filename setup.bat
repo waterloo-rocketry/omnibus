@@ -1,43 +1,86 @@
-# Ensure this script is run as a PowerShell script
-if (-not $IsWindows) {
-    Write-Host "This script is intended for Windows environments only."
-    exit
-}
+@echo off
+SETLOCAL ENABLEDELAYEDEXPANSION
 
-Write-Host "`n----- Upgrading pip -----"
+REM Upgrade pip
+echo.
+echo ----- Upgrading pip -----
 pip install --upgrade pip
-if ($LASTEXITCODE -ne 0) { exit }
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error upgrading pip.
+    exit /b %ERRORLEVEL%
+)
 
-Write-Host "`n----- Installing tools -----"
+REM Install wheel
+echo.
+echo ----- Installing tools -----
 pip install wheel
-if ($LASTEXITCODE -ne 0) { exit }
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error installing wheel.
+    exit /b %ERRORLEVEL%
+)
 
-# Install requirements
-Write-Host "`n----- Installing global requirements -----"
+REM Install global requirements
+echo.
+echo ----- Installing global requirements -----
 pip install -r requirements.txt
-if ($LASTEXITCODE -ne 0) { exit }
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error installing global requirements.
+    exit /b %ERRORLEVEL%
+)
 
-Write-Host "`n----- Installing NI source requirements -----"
+REM Install NI source requirements
+echo.
+echo ----- Installing NI source requirements -----
 pip install -r sources/ni/requirements.txt
-if ($LASTEXITCODE -ne 0) { exit }
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error installing NI source requirements.
+    exit /b %ERRORLEVEL%
+)
 
-Write-Host "`n----- Installing Parsley source requirements -----"
+REM Install Parsley source requirements
+echo.
+echo ----- Installing Parsley source requirements -----
 pip install -r sources/parsley/requirements.txt
-if ($LASTEXITCODE -ne 0) { exit }
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error installing Parsley source requirements.
+    exit /b %ERRORLEVEL%
+)
 
-Write-Host "`n----- Installing Dashboard sink requirements -----"
+REM Install Dashboard sink requirements
+echo.
+echo ----- Installing Dashboard sink requirements -----
 pip install -r sinks/dashboard/requirements.txt
-if ($LASTEXITCODE -ne 0) { exit }
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error installing Dashboard sink requirements.
+    exit /b %ERRORLEVEL%
+)
 
-# Install local libraries
-Write-Host "`n----- Installing Omnibus library -----"
+REM Install Omnibus library
+echo.
+echo ----- Installing Omnibus library -----
 pip install -e .
-if ($LASTEXITCODE -ne 0) { exit }
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error installing Omnibus library.
+    exit /b %ERRORLEVEL%
+)
 
-Write-Host "`n----- Installing Parsley library -----"
+REM Install Parsley library
+echo.
+echo ----- Initializing Git submodules -----
 git submodule update --init --recursive
-if ($LASTEXITCODE -ne 0) { exit }
-pip install -e ./parsley
-if ($LASTEXITCODE -ne 0) { exit }
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error initializing Git submodules.
+    exit /b %ERRORLEVEL%
+)
 
-Write-Host "`n----- Omnibus setup successfully -----"
+echo.
+echo ----- Installing Parsley library -----
+pip install -e ./parsley
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error installing Parsley library.
+    exit /b %ERRORLEVEL%
+)
+
+echo.
+echo ----- Omnibus setup successfully -----
+exit /b 0
