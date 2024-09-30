@@ -4,7 +4,7 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 REM Upgrade pip
 echo.
 echo ----- Upgrading pip -----
-pip install --upgrade pip
+python -m pip install --upgrade pip
 IF %ERRORLEVEL% NEQ 0 (
     echo Error upgrading pip.
     exit /b %ERRORLEVEL%
