@@ -333,6 +333,7 @@ class Dashboard(QWidget):
         sendBack_menu = self.context_menu.addAction("Send to Back")
         sendForward_menu = self.context_menu.addAction("Send Forward")
         sendBackward_menu = self.context_menu.addAction("Send Backward")
+        regrid_menu = self.context_menu.addAction("Snap Items to Grid")
 
         # Assigning each option to an action
         save_menu.triggered.connect(self.save)
@@ -344,6 +345,7 @@ class Dashboard(QWidget):
         sendBack_menu.triggered.connect(self.send_to_back)
         sendForward_menu.triggered.connect(self.send_forward)
         sendBackward_menu.triggered.connect(self.send_backward)
+        regrid_menu.triggered.connect(self.regrid_items_auto)
 
     # Right click menu
     def contextMenuEvent(self, event):
@@ -451,6 +453,50 @@ class Dashboard(QWidget):
                             (viewpos.x() + 20, viewpos.y() + 20))
 
                 break
+
+    # method to snap the widget to the grid
+
+    def regrid_items_auto(self,spacing=2):
+        """
+        Re-arrange items in the scene in a grid layout based on the width of the scene or view.
+        The number of columns will be adjusted automatically based on available space.
+        """
+        widgets = self.widgets.values() # Get all widgets in the scene
+        items = self.scene.items()  # Get all items in the scene
+        
+        # Define initial parameters
+        scene_width = self.scene.width()  # Get the width of the scene
+        if scene_width == 0:  # If scene width is not set, use a default value
+            scene_width = 800
+
+        # Calculate item dimensions and positions
+        item_width = items[0].boundingRect().width() if items else 0
+        item_height = items[0].boundingRect().height() if items else 0
+
+        # Calculate how many items can fit in a row
+        items_per_row = min(5, max(1, int((scene_width - spacing) / (item_width + spacing))))
+
+        # # Position items based on grid layout
+        # for index, (proxy, _) in enumerate(widgets):
+        #     row = index // items_per_row
+        #     col = index % items_per_row
+        #     x = col * (item_width + spacing)
+        #     y = row * (item_height + spacing)
+        #     proxy.setPos(x, y)
+        #     return
+
+        # Position items based on grid layout
+        for index, item in enumerate(items):
+            row = index // items_per_row
+            col = index % items_per_row
+            x = col * (item_width + spacing)
+            y = row * (item_height + spacing)
+            # self.scene.removeItem(item)
+            item.setPos(x, y)
+            # self.scene.addItem(item)
+            
+        self.scene.update()
+
 
     # method to handle dimension changes in parameter tree
 
