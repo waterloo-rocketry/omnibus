@@ -4,6 +4,7 @@ from typing import List
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
+from src.real_time_parser import RTParser
 
 if not ONLINE_MODE:
     """
@@ -43,6 +44,10 @@ class MapView(QWebEngineView):
 
         # Initialize the map with a default tile style
         self.is_dark_mode = False
+        
+        # Initialize Real-time Parser
+        self.rt_parser = RTParser()
+
         self.create_map()
 
     def create_map(self):
@@ -141,6 +146,12 @@ class MapView(QWebEngineView):
         self.kmz_parser = KMZParser(kmz_file_path)
         self.clear_all_markers()
         self.update_map()
+    
+    def start_stop_realtime_data(self):
+        if not self.rt_parser.running:
+            self.rt_parser.start()
+        else:
+            self.rt_parser.stop()
 
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""

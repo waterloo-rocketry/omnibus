@@ -148,7 +148,7 @@ class MapWindow(QMainWindow):
             # if is real-time data source selected, then add the following
             # Create buttons for starting/stopping real-time data and loading data
             start_stop_button = QPushButton("Start/Stop Real-time Data", self)
-            # start_stop_button.clicked.connect(self.start_stop_realtime_data) #TODO: Implement this function
+            start_stop_button.clicked.connect(self.start_stop_realtime_data) #TODO: Implement this function
 
             self.toolbar_layout.insertWidget(
                 self.start_index_to_feature_ui, start_stop_button
@@ -246,6 +246,16 @@ class MapWindow(QMainWindow):
         """Load and apply the stylesheet from the provided path."""
         with open(stylesheet_path, "r") as file:
             self.setStyleSheet(file.read())
+    
+    def start_stop_realtime_data(self):
+        self.map_view.start_stop_realtime_data()
+    
+    def update_display(self, point):
+        # Update your display with the new Point_GPS data
+        print(f"Timestamp: {point.time_stamp}")
+        print(f"Longitude: {point.lon}")
+        print(f"Latitude: {point.lat}")
+        print(f"Height: {point.he}")
 
     def add_marker(self):
         """Function to add a marker on the map at specified coordinates."""
