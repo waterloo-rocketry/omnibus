@@ -2,3 +2,4 @@ numpy
 PySide6
 pyqtgraph
 pyopengl
+lxml
