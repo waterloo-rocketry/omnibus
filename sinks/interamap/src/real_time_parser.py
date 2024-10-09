@@ -1,5 +1,6 @@
 import queue
 import sys
+import time
 from omnibus import Receiver
 from PyQt6.QtCore import pyqtSignal, QThread, QObject
 
@@ -13,9 +14,10 @@ class RTParser(QThread, QObject):
         QObject.__init__(self)
 
         self.receiver = Receiver("")
-        self.running = True
+        self.running = False
 
     def run(self):
+        self.running = True
         self.extract_gps_data()
 
     def stop(self):
@@ -25,6 +27,10 @@ class RTParser(QThread, QObject):
     def extract_gps_data(self):
         gps = {}
         while True:
+            # If stop() was called
+            if not self.running:
+                break
+
             data = self.receiver.recv()
             msgtype = data.get("msg_type")
             
@@ -37,6 +43,7 @@ class RTParser(QThread, QObject):
                 latitude = gps.get("GPS_LATITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "N"})
                 longitude = gps.get("GPS_LONGITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "E"})
                 altitude = gps.get("GPS_ALTITUDE", {"altitude": 0, "daltitude": 0})
+                boardId = None # TODO
 
                 # Convert latitude and longitude to decimal degrees
                 lat = latitude["degs"] + latitude["mins"] / 60 + latitude["dmins"] / 3600
@@ -59,5 +66,6 @@ class RTParser(QThread, QObject):
                 # Clear the gps dictionary for the next set of data
                 gps = {}
 
-                return point # Return the GPS_Point
+                print(point) # Print the GPS_Point // TODO: output to screen
+
             

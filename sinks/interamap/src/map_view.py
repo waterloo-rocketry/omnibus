@@ -44,6 +44,10 @@ class MapView(QWebEngineView):
 
         # Initialize the map with a default tile style
         self.is_dark_mode = False
+        
+        # Initialize Real-time Parser
+        self.rt_parser = RTParser()
+
         self.create_map()
 
     def create_map(self):
@@ -144,9 +148,10 @@ class MapView(QWebEngineView):
         self.update_map()
     
     def start_stop_realtime_data(self):
-        self.rt_parser = RTParser()
-        self.rt_parser.gps_RT_data.connect(self.draw_point)
-        self.rt_parser.start()
+        if not self.rt_parser.running:
+            self.rt_parser.start()
+        else:
+            self.rt_parser.stop()
     
     def draw_point(self, point): # TODO: Given the info below, draw the point to the grid
         print(f"Timestamp: {point.time_stamp}")
