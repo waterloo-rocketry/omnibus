@@ -89,7 +89,11 @@ class Launcher():
     def construct_commands_cli(self, src_list, sink_list):
         if src_list:
             for selection in src_list:
-                source=[python_executable, f"sources/{self.modules['sources'][selection - 1]}/main.py"]
+                # Special case for fake parsley
+                if self.modules['sources'][int(selection)-1] == "fake_parsley":
+                    source = [python_executable, "sources/parsley/main.py", "--fake"]
+                else:
+                    source = [python_executable, f"sources/{self.modules['sources'][int(selection) - 1]}/main.py"]
                 self.commands.append(source)
 
         if sink_list:
@@ -150,7 +154,11 @@ class Launcher():
     def logging(self):
         self.logger = Logger()
         for src in self.src_selected:
-            self.logger.add_logger(f"sources/{self.modules['sources'][src - 1]}")
+            # Special case for fake parsley
+            if self.modules['sources'][src-1] == "fake_parsley":
+                self.logger.add_logger(f"sources/parsley")
+            else:
+                self.logger.add_logger(f"sources/{self.modules['sources'][src - 1]}")
         for sink in self.sink_selected:
             self.logger.add_logger(f"sinks/{self.modules['sinks'][sink - 1]}")
         print("Loggers Initiated")
@@ -221,6 +229,7 @@ class GUILauncher(Launcher, QDialog):
         for checkbox, args in self.src_widgets:
             args.setPlaceholderText("CLI args")
         self.src_selected = []
+
         
         #Layout for source checkboxes
         self.src_layout = QGridLayout()
@@ -263,7 +272,6 @@ class GUILauncher(Launcher, QDialog):
         self.sink_dict = {sink: i + 1 for i, sink in enumerate(up_sink)}
         self.sink_checkboxes = [QCheckBox(f"{sink}") for sink in up_sink]
         
-        # self.sink_selected = [] # Don't need to reset agagin
         #Layout for sink checkboxes
         self.sink_layout=QGridLayout()
         row = 0
@@ -301,17 +309,19 @@ class GUILauncher(Launcher, QDialog):
         self.omnibus = [python_executable, "-m", "omnibus"]
         self.commands.append(self.omnibus)
         
-        for (source_name, (checked, args)) in zip(self.sources, self.src_state):
-            if checked:
-                # TODO args is wrong here
-                source = [python_executable, f"sources/{source_name}/main.py", args]
+        if self.src_selected:
+            for selection in self.src_selected:
+                # Special case for fake parsley
+                if self.modules['sources'][int(selection)-1] == "fake_parsley":
+                    source = [python_executable, "sources/parsley/main.py", "--fake"]
+                else:
+                    source = [python_executable, f"sources/{self.modules['sources'][int(selection)-1]}/main.py"]
                 self.commands.append(source)    
         if self.sink_selected:
             for selection in self.sink_selected:
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection)-1]}/main.py"]
                 self.commands.append(sink)
         self.close()
-        
 
     def update_selected(self, state):
         checkbox = self.sender()

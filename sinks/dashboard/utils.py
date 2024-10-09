@@ -25,6 +25,15 @@ class EventTracker(QObject):
     save_file_keys_pressed = Signal()
     save_as_file_keys_pressed = Signal()
     open_file_keys_pressed = Signal()
+    duplicate = Signal()
+    lock_dashboard = Signal()
+    lock_selected = Signal()
+    send_forward = Signal()
+    send_backward = Signal()
+    send_to_front = Signal()
+    send_to_back = Signal()
+    remove_all = Signal()
+    mouse_resize = Signal()
 
     def eventFilter(self, widget, event):
         """
@@ -55,6 +64,24 @@ class EventTracker(QObject):
                     self.save_as_file_keys_pressed.emit()
                 case KeyEvent(Qt.Key_O, Qt.ControlModifier):
                     self.open_file_keys_pressed.emit()
+                case KeyEvent(Qt.Key_D, Qt.ControlModifier):
+                    self.duplicate.emit()
+                case KeyEvent(Qt.Key_L, Qt.ControlModifier):
+                    self.lock_dashboard.emit()
+                case KeyEvent(Qt.Key_L):
+                    self.lock_selected.emit()
+                case KeyEvent(Qt.Key_BracketRight, Qt.ControlModifier):
+                    self.send_to_front.emit()
+                case KeyEvent(Qt.Key_BracketRight):
+                    self.send_forward.emit()
+                case KeyEvent(Qt.Key_BracketLeft, Qt.ControlModifier):
+                    self.send_to_back.emit()
+                case KeyEvent(Qt.Key_BracketLeft):
+                    self.send_backward.emit()
+                case KeyEvent(Qt.Key_R, Qt.ControlModifier):
+                    self.remove_all.emit()
+                case KeyEvent(Qt.Key_M, Qt.ControlModifier):
+                    self.mouse_resize.emit()
         return super().eventFilter(widget, event)
 
 
