@@ -152,13 +152,6 @@ class MapView(QWebEngineView):
             self.rt_parser.start()
         else:
             self.rt_parser.stop()
-    
-    def draw_point(self, point): # TODO: Given the info below, draw the point to the grid
-        print(f"Timestamp: {point.time_stamp}")
-        print(f"Longitude: {point.lon}")
-        print(f"Latitude: {point.lat}")
-        print(f"Height: {point.he}")
-
 
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""

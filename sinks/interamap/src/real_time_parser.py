@@ -65,6 +65,6 @@ class RTParser(QThread, QObject):
                 # Clear the gps dictionary for the next set of data
                 gps = {}
 
-                print(point) # Print the GPS_Point // TODO: output to screen
+                print(point) # TODO: output to screen or store somewhere(instead of printing)
 
             
