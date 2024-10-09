@@ -136,8 +136,7 @@ class Receiver(OmnibusCommunicator):
         """
         Receive the payload of one message from a sender, discarding metadata.
 
-        If timeout is None this blocks until a message is r
-        eceived. Otherwise it
+        If timeout is None this blocks until a message is received. Otherwise it
         waits for timeout milliseconds to receive a message and returns None. A
         zero timeout is supported for nonblocking operation.
         """

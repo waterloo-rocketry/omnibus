@@ -1,6 +1,5 @@
 import queue
 import sys
-import time
 from omnibus import Receiver
 from PyQt6.QtCore import pyqtSignal, QThread, QObject
 
