@@ -1,32 +1,34 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: "[BUG]"
+title: "[BUG] - [Short Description]"
 labels: bug, help wanted
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+# Bug Report
+- **Describe the bug**
+> A clear and concise description of what the bug is.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+- **To Reproduce**
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+    Steps to reproduce the behavior:
+    > 1. Go to '...'
+    > 2. Click on '....'
+    > 3. Scroll down to '....'
+    > 4. See error`
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+- **Expected behavior**
+> A clear and concise description of what you expected to happen.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+- **Screenshots**
+> If applicable, add screenshots to help explain your problem.
 
-**Additional context**
-Add any other context about the problem here.
+- **Environment:**
+   - OS Version: [e.g. MacOS 10.15.7]
+   - CPU Architecture: [e.g. ARM / x86]
+   - Python Version [e.g. cpython 3.12.3]
+
+- **Additional context**
+    > Add any other context about the problem here.
