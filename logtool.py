@@ -43,5 +43,5 @@ class Logger():
         if process.args[-1] == "omnibus":
             self.loggers["core_library"].error(f"From{process.args}:{err}")
         else:
-            self.loggers[process.args[-1].split("/")[1]].error(f"From {process.args}:{err}")
+            self.loggers[process.args[1].split("/")[1]].error(f"From {process.args}:{err}")
         print(f"Error from {process.args} logged")

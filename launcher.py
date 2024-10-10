@@ -40,6 +40,7 @@ class Launcher():
 
         # Parse folders for sources and sinks
         self.modules = {"sources": os.listdir('sources'), "sinks": os.listdir('sinks')}
+        self.src_state = [[False,""] for _ in self.modules.get("sources")]
 
         # Remove dot files
         for module in self.modules.keys():
@@ -56,7 +57,7 @@ class Launcher():
             return
         with open('lastrun.json', 'r') as fp:
             data = json.load(fp)
-            self.src_selected = data['Sources']
+            self.src_state = data['Sources']
             self.sink_selected = data['Sinks']
             fp.close()
 
@@ -73,7 +74,9 @@ class Launcher():
         if not self.load_last:
             #Source selection
             self.src_selected  = self.validate_inputs(self.modules['sources'], "Source")
-            
+
+            self.construct_argus(self.src_selected)
+
             #Sink selection 
             self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
 
@@ -82,18 +85,20 @@ class Launcher():
         #Command construction
         omnibus = [python_executable, "-m", "omnibus"]
         self.commands.append(omnibus)
-        self.construct_commands_cli(self.src_selected, self.sink_selected)
-       
+        self.construct_commands_cli(self.src_state, self.sink_selected)
+        
+    def construct_argus(self, src_list):
+        for src in src_list:
+            arg = input(f"Enter the arguments for the source {src}: ")
+            self.src_state[src-1] = [True, arg]
 
     #Construct commands for the selection
     def construct_commands_cli(self, src_list, sink_list):
-        if src_list:
-            for selection in src_list:
-                # Special case for fake parsley
-                if self.modules['sources'][int(selection)-1] == "fake_parsley":
-                    source = [python_executable, "sources/parsley/main.py", "--fake"]
-                else:
-                    source = [python_executable, f"sources/{self.modules['sources'][int(selection) - 1]}/main.py"]
+        for src in src_list:
+            if src[0]:
+                source = [python_executable, f"sources/{self.modules['sources'][self.src_state.index(src)]}/main.py"]
+                if src[1] != "":
+                    source.append(src[1])
                 self.commands.append(source)
 
         if sink_list:
@@ -153,19 +158,20 @@ class Launcher():
     # Create loggers
     def logging(self):
         self.logger = Logger()
-        for src in self.src_selected:
-            # Special case for fake parsley
-            if self.modules['sources'][src-1] == "fake_parsley":
-                self.logger.add_logger(f"sources/parsley")
-            else:
-                self.logger.add_logger(f"sources/{self.modules['sources'][src - 1]}")
+        for idx, (select, _) in enumerate(self.src_state):
+            if select:
+                src = self.modules['sources'][idx]
+                if src == "fake_parsley":
+                    self.logger.add_logger(f"sources/parsley")
+                else:
+                    self.logger.add_logger(f"sources/{src}")
         for sink in self.sink_selected:
             self.logger.add_logger(f"sinks/{self.modules['sinks'][sink - 1]}")
         print("Loggers Initiated")
     
     def save_selected_to_config(self):
         data = {}
-        data ['Sources'] = self.src_selected
+        data ['Sources'] = self.src_state
         data ['Sinks'] = self.sink_selected
         with open('lastrun.json', 'w+') as fp:
             json.dump(data, fp)
@@ -228,7 +234,7 @@ class GUILauncher(Launcher, QDialog):
         self.src_widgets = [(QCheckBox(f"{src}"), QLineEdit()) for src in up_source]
         for checkbox, args in self.src_widgets:
             args.setPlaceholderText("CLI args")
-        self.src_selected = []
+        self.src_state = [[False, ""] for _ in sources]
 
         
         #Layout for source checkboxes
@@ -247,7 +253,6 @@ class GUILauncher(Launcher, QDialog):
         source_list.setLayout(self.src_layout)
         source_list.setContentsMargins(0, 0, 0, 0)
 
-        self.src_state = [[False, ""] for _ in sources]
 
         #Connect checkbox state to signals to detect which sources were selected 
         for i, (checkbox, args) in enumerate(self.src_widgets):
@@ -308,15 +313,13 @@ class GUILauncher(Launcher, QDialog):
         self.selected_ok = True
         self.omnibus = [python_executable, "-m", "omnibus"]
         self.commands.append(self.omnibus)
-        
-        if self.src_selected:
-            for selection in self.src_selected:
-                # Special case for fake parsley
-                if self.modules['sources'][int(selection)-1] == "fake_parsley":
-                    source = [python_executable, "sources/parsley/main.py", "--fake"]
-                else:
-                    source = [python_executable, f"sources/{self.modules['sources'][int(selection)-1]}/main.py"]
-                self.commands.append(source)    
+
+        for src in self.src_state:
+            if src[0]:
+                source = [python_executable, f"sources/{self.modules['sources'][self.src_state.index(src)]}/main.py"]
+                if src[1] != "":
+                    source.append(src[1])
+                self.commands.append(source)
         if self.sink_selected:
             for selection in self.sink_selected:
                 sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection)-1]}/main.py"]
