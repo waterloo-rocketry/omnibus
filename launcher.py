@@ -72,14 +72,16 @@ class Launcher():
         
         if not self.load_last:
             #Source selection
-            self.src_selected  = self.validate_inputs(self.modules['sources'], "Source")
+            src_selected  = self.validate_inputs(self.modules['sources'], "Source")
 
-            self.construct_argus(self.src_selected) # Construct arguments for sources
+            self.construct_argus(src_selected) # Construct arguments for sources
 
             #Sink selection 
-            self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
-            for sink in self.sink_selected:
+            sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
+            
+            for sink in sink_selected:
                 self.sink_state[sink-1][0] = True
+                self.sink_state[sink-1][1] = True # Default stdout flag is True in CLI mode
 
             self.save_selected_to_config()
 
