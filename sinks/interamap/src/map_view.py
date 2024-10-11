@@ -45,10 +45,15 @@ class MapView(QWebEngineView):
         # Initialize the map with a default tile style
         self.is_dark_mode = False
         
-        # Initialize Real-time Parser
+        # Initialize Real-time Parser and Real-time data handler
         self.rt_parser = RTParser()
+        self.rt_parser.gps_RT_data.connect(self.draw_rt_point)
 
         self.create_map()
+        
+    def __del__(self):
+        self.rt_parser.stop()
+        self.rt_parser.terminate()
 
     def create_map(self):
         """Create a folium map with the current tile style."""
@@ -152,7 +157,10 @@ class MapView(QWebEngineView):
             self.rt_parser.start()
         else:
             self.rt_parser.stop()
-
+    
+    def draw_rt_point(self, point): # TODO: Draw point to window instead of printing
+        print(point)
+    
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
         # self.create_map()
