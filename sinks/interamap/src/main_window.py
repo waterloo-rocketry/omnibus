@@ -249,13 +249,6 @@ class MapWindow(QMainWindow):
     
     def start_stop_realtime_data(self):
         self.map_view.start_stop_realtime_data()
-    
-    def update_display(self, point):
-        # Update your display with the new Point_GPS data
-        print(f"Timestamp: {point.time_stamp}")
-        print(f"Longitude: {point.lon}")
-        print(f"Latitude: {point.lat}")
-        print(f"Height: {point.he}")
 
     def add_marker(self):
         """Function to add a marker on the map at specified coordinates."""

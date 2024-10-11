@@ -1,16 +1,16 @@
 import queue
 import sys
 from omnibus import Receiver
-from PyQt6.QtCore import pyqtSignal, QThread, QObject
+from PySide6.QtCore import QThread, Signal, QObject
 
 from src.data_struct import Point_GPS, LineString_GPS
 
 
-class RTParser(QThread, QObject):
-    gps_RT_data = pyqtSignal(object)
+class RTParser(QThread):
+    gps_RT_data = Signal(object)
 
     def __init__(self):
-        QObject.__init__(self)
+        QThread.__init__(self)
 
         self.receiver = Receiver("")
         self.running = False
@@ -21,7 +21,9 @@ class RTParser(QThread, QObject):
 
     def stop(self):
         self.running = False
-        self.wait()
+
+    def __del__(self):
+        self.stop()
 
     def extract_gps_data(self):
         gps = {}
@@ -42,7 +44,7 @@ class RTParser(QThread, QObject):
                 latitude = gps.get("GPS_LATITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "N"})
                 longitude = gps.get("GPS_LONGITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "E"})
                 altitude = gps.get("GPS_ALTITUDE", {"altitude": 0, "daltitude": 0})
-                boardId = None # TODO
+                boardId = None # TODO 
 
                 # Convert latitude and longitude to decimal degrees
                 lat = latitude["degs"] + latitude["mins"] / 60 + latitude["dmins"] / 3600
@@ -64,7 +66,5 @@ class RTParser(QThread, QObject):
                 
                 # Clear the gps dictionary for the next set of data
                 gps = {}
-
-                print(point) # TODO: output to screen or store somewhere(instead of printing)
 
             
