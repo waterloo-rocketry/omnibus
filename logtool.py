@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 
 # Dynamically generates logger objects and log files based on the number of sources and sinks and stores all loggers in a dictionary accessed with the filename without .py
 # so for example the file "sinks/dashboard/main.py" would be accessed with "dashboard"
@@ -19,11 +20,13 @@ class Logger():
             file_name, file_dir = file_ref[-1], file_ref[-2]
         else:
             file_name, file_dir = "core_library", ""
-        os.makedirs(os.path.dirname(f'logs/{file_dir}/{file_name}.log'), exist_ok=True)
+        current_time = datetime.now().strftime("%Y%m%d_%H%M")
+        log_file_name = f"{file_name}_{current_time}.log"
+        os.makedirs(os.path.dirname(f'logs/{file_dir}/{log_file_name}'), exist_ok=True)
         logger = logging.getLogger(file_name)
         logger.setLevel("INFO")
 
-        handler = logging.FileHandler(f"logs/{file_dir}/{file_name}.log", mode='w')
+        handler = logging.FileHandler(f"logs/{file_dir}/{log_file_name}", mode='w')
         formatter = logging.Formatter('%(levelname)s:%(name)s:\n%(message)s')
         handler.setFormatter(formatter)
 
