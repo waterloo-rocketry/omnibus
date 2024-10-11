@@ -33,14 +33,13 @@ class Launcher():
     def __init__(self) -> None:
         super().__init__()
         self.commands = []
-        self.src_selected = []
-        self.sink_selected = []
         self.processes = []
         self.load_last: bool = False
 
         # Parse folders for sources and sinks
         self.modules = {"sources": os.listdir('sources'), "sinks": os.listdir('sinks')}
-        self.src_state = [[False,""] for _ in self.modules.get("sources")]
+        self.src_state = [[False,""] for _ in self.modules.get("sources")] # Selected, args
+        self.sink_state = [[False, False] for _ in self.modules.get("sources")] # Selected, stdout flag
 
         # Remove dot files
         for module in self.modules.keys():
@@ -58,7 +57,7 @@ class Launcher():
         with open('lastrun.json', 'r') as fp:
             data = json.load(fp)
             self.src_state = data['Sources']
-            self.sink_selected = data['Sinks']
+            self.sink_state = data['Sinks']
             fp.close()
 
     # Print list of sources and sinks
@@ -79,13 +78,15 @@ class Launcher():
 
             #Sink selection 
             self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
+            for sink in self.sink_selected:
+                self.sink_state[sink-1][0] = True
 
             self.save_selected_to_config()
 
         #Command construction
         omnibus = [python_executable, "-m", "omnibus", False]
         self.commands.append(omnibus)
-        self.construct_commands_cli(self.src_state, self.sink_selected)
+        self.construct_commands_cli(self.src_state, self.sink_state)
         
     def construct_argus(self, src_list):
         for src in src_list:
@@ -102,10 +103,10 @@ class Launcher():
                 source.append(False)
                 self.commands.append(source)
 
-        if sink_list:
-            for selection in sink_list:
-                sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
-                sink.append(False)
+        for snk in sink_list:
+            if snk[0]:
+                sink = [python_executable, f"sinks/{self.modules['sinks'][self.sink_state.index(snk)]}/main.py"]
+                sink.append(snk[1])
                 self.commands.append(sink)
         
         return self.commands
@@ -144,23 +145,23 @@ class Launcher():
 
     # Execute commands as subprocesses
     def subprocess(self):
-        print("Launching... ", end="")
+        print(f"Launching... Run commands: {self.commands}")
         for command in self.commands:
             launch_command = command[:-1]
             std_flag = command[-1]
             if sys.platform == "win32":
                 if std_flag:
-                    process = subprocess.Popen(launch_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    process = subprocess.Popen(launch_command, stderr=subprocess.PIPE,
                                            creationflags=CREATE_NEW_PROCESS_GROUP)
                 else:
-                    process = subprocess.Popen(launch_command, stderr=subprocess.PIPE,
+                    process = subprocess.Popen(launch_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                             creationflags=CREATE_NEW_PROCESS_GROUP)
                 time.sleep(0.5)
             else:
                 if std_flag:
-                    process = subprocess.Popen(launch_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                else:
                     process = subprocess.Popen(launch_command, stderr=subprocess.PIPE)
+                else:
+                    process = subprocess.Popen(launch_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(0.5)
             self.processes.append(process)
 
@@ -176,14 +177,18 @@ class Launcher():
                     self.logger.add_logger(f"sources/parsley")
                 else:
                     self.logger.add_logger(f"sources/{src}")
-        for sink in self.sink_selected:
-            self.logger.add_logger(f"sinks/{self.modules['sinks'][sink - 1]}")
+        
+        for idx, (select, _) in enumerate(self.sink_state):
+            if select:
+                sink = self.modules['sinks'][idx]
+                self.logger.add_logger(f"sinks/{sink}")            
+        
         print("Loggers Initiated")
     
     def save_selected_to_config(self): # TODO: Add stdout flag to the config file
         data = {}
         data ['Sources'] = self.src_state
-        data ['Sinks'] = self.sink_selected
+        data ['Sinks'] = self.sink_state
         with open('lastrun.json', 'w+') as fp:
             json.dump(data, fp)
 
@@ -287,7 +292,6 @@ class GUILauncher(Launcher, QDialog):
         up_sink = [sink.capitalize() for sink in sinks]
         self.sink_dict = {sink: i + 1 for i, sink in enumerate(up_sink)}
         self.sinks_widgets = [(QCheckBox(f"{sink}"), QCheckBox(f"stdout?")) for sink in up_sink]
-        self.sink_state = [[False, False] for _ in sinks]
         
         #Layout for sink checkboxes
         self.sink_layout=QGridLayout()
@@ -351,7 +355,7 @@ class GUILauncher(Launcher, QDialog):
             if snk[0]:
                 sink = [python_executable, f"sinks/{self.modules['sinks'][self.sink_state.index(snk)]}/main.py"]
                 if snk[1]:
-                    sink.append(False) # stdout flag
+                    sink.append(True) # stdout flag
                 else:
                     sink.append(False)
                 self.commands.append(sink)
