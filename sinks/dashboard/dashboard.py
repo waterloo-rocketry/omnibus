@@ -362,13 +362,14 @@ class Dashboard(QWidget):
         return False
 
     def change_detector(self):
-        title = self.windowTitle()
+        title = "Omnibus Dashboard - "
+        title += os.path.basename(self.file_location)
         unsaved_symbol = "⏺"
         changed = self.check_for_changes()
         if changed and unsaved_symbol not in title:
             self.setWindowTitle(f"{title} {unsaved_symbol}")
-        elif not changed and unsaved_symbol in title:
-            self.setWindowTitle(title[:-2])
+        elif not changed and unsaved_symbol in self.windowTitle():
+            self.setWindowTitle(title)
 
     def every_second(self, payload, stream):
         def on_select(string):
@@ -586,6 +587,8 @@ class Dashboard(QWidget):
         self.current_data = data["widgets"]
         self.unsave_indicator = False
 
+        self.change_detector()
+
     # Method to save current layout to file
     def save(self):
         data = self.get_data()
@@ -597,7 +600,7 @@ class Dashboard(QWidget):
         os.makedirs(os.path.dirname(self.file_location), exist_ok=True)
         with open(self.file_location, "w") as savefile:
             json.dump(data, savefile)
-        
+
         self.change_detector()
 
     # Method to save file with a custom chosen name
@@ -633,6 +636,8 @@ class Dashboard(QWidget):
         
         self.file_location = filename
         self.load()
+        
+        self.change_detector()
 
     def toggle_lock(self):
         """Toggle lock/unlock state of the dashboard"""
@@ -940,5 +945,5 @@ def dashboard_driver(callback):
 
     dash.update()
     dash.show()
-    dash.load()
+    dash.load() # This will default load the savefile.json if it exists
     app.exec()
