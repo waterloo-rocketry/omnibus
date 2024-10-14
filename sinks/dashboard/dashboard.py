@@ -807,14 +807,14 @@ class Dashboard(QWidget):
         
         if result == Event.SAVE_CHANGES.value:
             self.save()
-            self.remove_all()
+            self.remove_all(True)
         elif result == Event.DISCARD_CHANGES.value:
             if not self.should_show_save_popup:
                 # Persist old data to JSON file.
                 old_data["should_show_save_popup"] = False
                 with open(self.file_location, "w") as savefile:
                     json.dump(old_data, savefile)
-            self.remove_all()
+            self.remove_all(True)
         else:
             event.ignore()
 
