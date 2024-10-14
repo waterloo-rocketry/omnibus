@@ -631,7 +631,10 @@ class Dashboard(QWidget):
 
     # Method to save file with a custom chosen name
     def save_as(self):
-        self.file_location = os.path.join(self.save_directory, self.show_save_as_prompt())
+        file_name = self.show_save_as_prompt()
+        if not file_name:
+            return
+        self.file_location = os.path.join(self.save_directory, file_name)
         self.save()
 
     # Method to allow user to choose name of the file of the configuration they would like to save
