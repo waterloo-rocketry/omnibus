@@ -13,6 +13,7 @@ from pyqtgraph.Qt.QtWidgets import (
     QApplication, QDialog, QLabel, QDialogButtonBox, QVBoxLayout,
     QWidget, QCheckBox, QGridLayout, QLineEdit
 )
+from dataclasses import dataclass
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
     from subprocess import CREATE_NEW_PROCESS_GROUP
@@ -26,13 +27,17 @@ else:
 class Finished(Exception):
     pass
 
+@dataclass
+class CommandStruct:
+    command: list[str]
+    stdout: bool = False
+    stderr: bool = False # stderr is not used in this version
+
 # CLI Launcher
-
-
 class Launcher():
     def __init__(self) -> None:
         super().__init__()
-        self.commands = []
+        self.commands: list[CommandStruct] = []
         self.processes = []
         self.load_last: bool = False
 
@@ -86,7 +91,8 @@ class Launcher():
             self.save_selected_to_config()
 
         #Command construction
-        omnibus = [python_executable, "-m", "omnibus", False]
+        # omnibus = [python_executable, "-m", "omnibus", False]
+        omnibus = CommandStruct(command=[python_executable, "-m", "omnibus"], stdout=False)
         self.commands.append(omnibus)
         self.construct_commands_cli(self.src_state, self.sink_state)
         
@@ -99,16 +105,16 @@ class Launcher():
     def construct_commands_cli(self, src_list, sink_list): # This is not support for stdout flag 
         for src in src_list:
             if src[0]:
-                source = [python_executable, f"sources/{self.modules['sources'][self.src_state.index(src)]}/main.py"]
+                command = [python_executable, f"sources/{self.modules['sources'][self.src_state.index(src)]}/main.py"]
                 if src[1] != "":
-                    source.append(src[1])
-                source.append(False)
+                    command.append(src[1])
+                source = CommandStruct(command=command, stdout=False)
                 self.commands.append(source)
 
         for snk in sink_list:
             if snk[0]:
-                sink = [python_executable, f"sinks/{self.modules['sinks'][self.sink_state.index(snk)]}/main.py"]
-                sink.append(snk[1])
+                command = [python_executable, f"sinks/{self.modules['sinks'][self.sink_state.index(snk)]}/main.py"]
+                sink = CommandStruct(command=command, stdout=snk[1])
                 self.commands.append(sink)
         
         return self.commands
@@ -149,22 +155,15 @@ class Launcher():
     def subprocess(self):
         print(f"Launching... Run commands: {self.commands}")
         for command in self.commands:
-            launch_command = command[:-1]
-            std_flag = command[-1]
+            launch_command = command.command
+            stdout = subprocess.PIPE if command.stdout else None
+            stderr = subprocess.PIPE if command.stderr else None
             if sys.platform == "win32":
-                if std_flag:
-                    process = subprocess.Popen(launch_command, stderr=subprocess.PIPE,
-                                           creationflags=CREATE_NEW_PROCESS_GROUP)
-                else:
-                    process = subprocess.Popen(launch_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                process = subprocess.Popen(launch_command, stdout=stdout, stderr=stderr,
                                             creationflags=CREATE_NEW_PROCESS_GROUP)
-                time.sleep(0.5)
             else:
-                if std_flag:
-                    process = subprocess.Popen(launch_command, stderr=subprocess.PIPE)
-                else:
-                    process = subprocess.Popen(launch_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                time.sleep(0.5)
+                process = subprocess.Popen(launch_command, stdout=stdout, stderr=stderr)
+            time.sleep(0.8)
             self.processes.append(process)
 
         print("Done!")
@@ -187,7 +186,7 @@ class Launcher():
         
         print("Loggers Initiated")
     
-    def save_selected_to_config(self): # TODO: Add stdout flag to the config file
+    def save_selected_to_config(self):
         data = {}
         data ['Sources'] = self.src_state
         data ['Sinks'] = self.sink_state
@@ -259,11 +258,12 @@ class GUILauncher(Launcher, QDialog):
         self.src_layout = QGridLayout()
         row = 0
         col = 0
+        col_max = len(self.src_widgets) // 3 + 1 # Maximum 3 lines of checkboxes
         for checkbox, args in self.src_widgets:
             self.src_layout.addWidget(checkbox, row, col)
             self.src_layout.addWidget(args, row + 1, col)
             col += 1
-            if col == 3:  # Three checkboxes per row
+            if col == col_max: 
                 col = 0
                 row += 2
 
@@ -342,24 +342,24 @@ class GUILauncher(Launcher, QDialog):
 
     def construct_commands(self):
         self.selected_ok = True
-        self.omnibus = [python_executable, "-m", "omnibus", False] # False is for stdout flag
-        self.commands.append(self.omnibus)
+        omnibus = CommandStruct(command=[python_executable, "-m", "omnibus"], stdout=False) # False is for stdout flag
+        self.commands.append(omnibus)
 
         for src in self.src_state:
             if src[0]:
-                source = [python_executable, f"sources/{self.modules['sources'][self.src_state.index(src)]}/main.py"]
+                command = [python_executable, f"sources/{self.modules['sources'][self.src_state.index(src)]}/main.py"]
                 if src[1] != "":
-                    source.append(src[1])
-                source.append(False)
+                    command.append(src[1])
+                source = CommandStruct(command=command, stdout=False)
                 self.commands.append(source)
 
         for snk in self.sink_state:
             if snk[0]:
-                sink = [python_executable, f"sinks/{self.modules['sinks'][self.sink_state.index(snk)]}/main.py"]
-                if snk[1]:
-                    sink.append(True) # stdout flag
+                command = [python_executable, f"sinks/{self.modules['sinks'][self.sink_state.index(snk)]}/main.py"]
+                if snk[1]: # Check stdout flag
+                    sink = CommandStruct(command=command, stdout=True)
                 else:
-                    sink.append(False)
+                    sink = CommandStruct(command=command, stdout=False)
                 self.commands.append(sink)
         self.close()
 
