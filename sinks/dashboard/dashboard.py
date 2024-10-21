@@ -25,7 +25,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QCheckBox,
     QHBoxLayout,
     QPushButton,
-    QGraphicsProxyWidget
+    QGraphicsProxyWidget,
+    QMenu
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
@@ -319,6 +320,34 @@ class Dashboard(QWidget):
         self.timer.start(100)  # Check every 0.1 seconds
 
         QApplication.setStyle('Fusion')
+
+        # Right click menu
+        self.context_menu = QMenu(self)
+        # Creating the options for the right click menu
+        save_menu = self.context_menu.addAction("Save")
+        saveAs_menu = self.context_menu.addAction("Save As")
+        open_menu = self.context_menu.addAction("Open")
+        lockDashboard_menu = self.context_menu.addAction("Lock Dashboard")
+        duplicateItem_menu = self.context_menu.addAction("Duplicate")
+        sendFront_menu = self.context_menu.addAction("Send to Front")
+        sendBack_menu = self.context_menu.addAction("Send to Back")
+        sendForward_menu = self.context_menu.addAction("Send Forward")
+        sendBackward_menu = self.context_menu.addAction("Send Backward")
+
+        # Assigning each option to an action
+        save_menu.triggered.connect(self.save)
+        saveAs_menu.triggered.connect(self.save_as)
+        open_menu.triggered.connect(self.open)
+        lockDashboard_menu.triggered.connect(self.toggle_lock)
+        duplicateItem_menu.triggered.connect(self.on_duplicate)
+        sendFront_menu.triggered.connect(self.send_to_front)
+        sendBack_menu.triggered.connect(self.send_to_back)
+        sendForward_menu.triggered.connect(self.send_forward)
+        sendBackward_menu.triggered.connect(self.send_backward)
+
+    # Right click menu
+    def contextMenuEvent(self, event):
+        self.context_menu.exec(event.globalPos())
 
     def select_instance(self, name):
         self.parsley_instance = name

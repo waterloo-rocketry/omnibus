@@ -24,7 +24,8 @@ Python 3.10 or newer is required. For Linux users, a python package with C heade
    - For windows: `venv\Scripts\activate`
 5. There are two ways to install Omnibus. The setup script is the easiest method, but if it doesn't work you can manually install the required packages
    1. Setup script:
-      - `source setup.sh`
+      - For osx/linux: `source setup.sh`
+      - For windows: `setup.bat` 
    2. Manual installation:
       - Upgrade pip version: `pip install --upgrade pip`
       - Run `pip install wheel`, which will help install the rest of the packages more quickly
