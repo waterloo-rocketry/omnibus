@@ -35,16 +35,16 @@ class RTParser(QThread):
             data = self.receiver.recv()
             msgtype = data.get("msg_type")
             
-            if msgtype in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE", "board_id"]:
+            if msgtype in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]:
                 gps[msgtype] = data["data"]
 
-            if all(key in gps for key in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # Didnt include 'board_id' => doesnt work with it
-                timestamp = "{hrs:02}:{mins:02}:{secs:02}.{dsecs:02}".format(                                # => most likely because either omnibus doesn't broadcast it, or its not the correct name
+            if all(key in gps for key in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]):
+                timestamp = "{hrs:02}:{mins:02}:{secs:02}.{dsecs:02}".format(                                
                     **gps.get("GPS_TIMESTAMP", {"hrs": 0, "mins": 0, "secs": 0, "dsecs": 0}))
                 latitude = gps.get("GPS_LATITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "N"})
                 longitude = gps.get("GPS_LONGITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "E"})
                 altitude = gps.get("GPS_ALTITUDE", {"altitude": 0, "daltitude": 0})
-                boardId = gps.get("board_id", None)
+                boardId = data.get("board_id")
 
                 # Convert latitude and longitude to decimal degrees
                 lat = latitude["degs"] + latitude["mins"] / 60 + latitude["dmins"] / 3600
