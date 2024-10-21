@@ -6,7 +6,7 @@ class Point_GPS():
         self.lon = lon
         self.lat = lat
         self.he = he
-        self.board_id = None
+        self.board_id = board_id
 
     def __str__(self):
         return f"Point: {self.lon}, {self.lat}, {self.he}, At {self.time_stamp}, from {self.board_id}"
