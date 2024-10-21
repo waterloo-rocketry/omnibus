@@ -1,14 +1,15 @@
 from typing import List, Optional
 
 class Point_GPS():
-    def __init__(self, lon: float, lat: float, he: float, time_stamp: Optional[str] = None):
+    def __init__(self, lon: float, lat: float, he: float, time_stamp, board_id: Optional[str] = None):
         self.time_stamp = time_stamp
         self.lon = lon
         self.lat = lat
         self.he = he
+        self.board_id = None
 
     def __str__(self):
-        return f"Point: {self.lon}, {self.lat}, {self.he}, At {self.time_stamp}"
+        return f"Point: {self.lon}, {self.lat}, {self.he}, At {self.time_stamp}, from {self.board_id}"
 
 
 class LineString_GPS():
