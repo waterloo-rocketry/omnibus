@@ -19,6 +19,11 @@ def parse_gps_data(gps, data):
     # Convert latitude and longitude to decimal degrees
     lat = convert_to_decimal_degrees(latitude)
     lon = convert_to_decimal_degrees(longitude)
+
+    if boardId == "PROCESSOR":
+        # If the board ID is PROCESSOR, the timestamp is not available
+        timestamp = None
+        lon, lat = switch_numbers_keep_sign(lon, lat) # NOTE: This is for fix a mistake in the PROCESSOR data
         
     # Combine altitude and decimal altitude
     he = altitude["altitude"] + altitude["daltitude"] / 100
@@ -26,6 +31,12 @@ def parse_gps_data(gps, data):
     point = Point_GPS(lon=lon, lat=lat, he=he, time_stamp=timestamp, board_id=boardId)
 
     return point
+
+def switch_numbers_keep_sign(a, b):
+    # Swap absolute values without changing signs
+    new_a = abs(b) if a >= 0 else -abs(b)
+    new_b = abs(a) if b >= 0 else -abs(a)
+    return new_a, new_b
 
 def convert_to_decimal_degrees(coord):
     degs = coord["degs"]
@@ -56,7 +67,9 @@ class RTParser(QThread):
         self.stop()
 
     def extract_gps_data(self):
-        gps = {}
+        boardIds = ["GPS", "PROCESSOR"] # List of board IDs
+        gps = [{} for _ in boardIds]
+
         while True:
             # If stop() was called
             if not self.running:
@@ -67,16 +80,16 @@ class RTParser(QThread):
                 msgtype = data.get("msg_type")
                 
                 if msgtype in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]:
-                    gps[msgtype] = data["data"]
-
-                if all(key in gps for key in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]):
-                    point = parse_gps_data(gps, data)
-
-                    # Notification of new data point available
-                    self.gps_RT_data.emit(point)
+                    board_id = data.get("board_id")
+                    gps[boardIds.index(board_id)][msgtype] = data["data"]
+                
+                if all(key in gps[0] for key in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # GPS 
+                    print(parse_gps_data(gps[0], data))
+                    gps[0].clear()
                     
-                    # Clear the gps dictionary for the next set of data
-                    gps.clear()
+                if all(key in gps[1] for key in ["GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # PROCESSOR (does not have GPS_TIMESTAMP)
+                    print(parse_gps_data(gps[1], data))
+                    gps[1].clear()
 
             except queue.Empty: # Handle empty case 
                 continue
@@ -87,15 +100,22 @@ class RTParser(QThread):
 
             
 if __name__ == "__main__":
-    gps = {}
+    boardIds = ["GPS", "PROCESSOR"] # List of board IDs
+    gps = [{} for _ in boardIds]
     receiver = Receiver("")
     while True:
         data = receiver.recv()
         msgtype = data.get("msg_type")
         
         if msgtype in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]:
-            gps[msgtype] = data["data"]
+            board_id = data.get("board_id")
+            gps[boardIds.index(board_id)][msgtype] = data["data"]
+        
+        if all(key in gps[0] for key in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # GPS 
+            print(parse_gps_data(gps[0], data))
+            gps[0].clear()
+            
+        if all(key in gps[1] for key in ["GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # PROCESSOR (does not have GPS_TIMESTAMP)
+            print(parse_gps_data(gps[1], data))
+            gps[1].clear()
 
-        if all(key in gps for key in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]):
-            print(parse_gps_data(gps, data))
-            gps.clear()
