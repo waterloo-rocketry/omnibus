@@ -4,9 +4,9 @@ from omnibus import Receiver
 from PySide6.QtCore import QThread, Signal
 
 try:
-    from src.data_struct import Point_GPS
+    from src.data_struct import Point_GPS, Info_GPS
 except ImportError:
-    from data_struct import Point_GPS
+    from data_struct import Point_GPS, Info_GPS
 
 def parse_gps_data(gps, data):
     timestamp = "{hrs:02}:{mins:02}:{secs:02}.{dsecs:02}".format(                                
@@ -14,6 +14,7 @@ def parse_gps_data(gps, data):
     latitude = gps.get("GPS_LATITUDE", {"degs": 0, "mins": 0, "dmins": 0})
     longitude = gps.get("GPS_LONGITUDE", {"degs": 0, "mins": 0, "dmins": 0})
     altitude = gps.get("GPS_ALTITUDE", {"altitude": 0, "daltitude": 0})
+    num_sats = gps.get("GPS_INFO", {"num_sats": 0})["num_sats"]
     boardId = data.get("board_id")
 
     # Convert latitude and longitude to decimal degrees
@@ -28,9 +29,19 @@ def parse_gps_data(gps, data):
     # Combine altitude and decimal altitude
     he = altitude["altitude"] + altitude["daltitude"] / 100
 
-    point = Point_GPS(lon=lon, lat=lat, he=he, time_stamp=timestamp, board_id=boardId)
+    point = Point_GPS(lon=lon, lat=lat, he=he, num_sats=num_sats, time_stamp=timestamp, board_id=boardId)
 
     return point
+
+def parse_gps_info(data):
+    info = data.get("data",{"num_sats": 0, "quality": 0})
+    num_sats = info["num_sats"]
+    quality = info["quality"]
+    boardId = data.get("board_id")
+
+    info = Info_GPS(num_sats=num_sats, quality=quality, board_id=boardId)
+
+    return info
 
 def switch_numbers_keep_sign(a, b):
     # Swap absolute values without changing signs
@@ -79,16 +90,18 @@ class RTParser(QThread):
                 data = self.receiver.recv()
                 msgtype = data.get("msg_type")
                 
-                if msgtype in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]:
+                if msgtype in ["GPS_INFO", "GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]:
                     board_id = data.get("board_id")
                     gps[boardIds.index(board_id)][msgtype] = data["data"]
                 
-                if all(key in gps[0] for key in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # GPS 
-                    print(parse_gps_data(gps[0], data))
+                if all(key in gps[0] for key in ["GPS_INFO", "GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # GPS 
+                    point = parse_gps_data(gps[0], data)
+                    self.gps_RT_data.emit(point)
                     gps[0].clear()
                     
-                if all(key in gps[1] for key in ["GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # PROCESSOR (does not have GPS_TIMESTAMP)
-                    print(parse_gps_data(gps[1], data))
+                if all(key in gps[1] for key in ["GPS_INFO", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # PROCESSOR (does not have GPS_TIMESTAMP)
+                    point = parse_gps_data(gps[1], data)
+                    self.gps_RT_data.emit(point)
                     gps[1].clear()
 
             except queue.Empty: # Handle empty case 
@@ -107,15 +120,17 @@ if __name__ == "__main__":
         data = receiver.recv()
         msgtype = data.get("msg_type")
         
-        if msgtype in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]:
+        if msgtype in ["GPS_INFO", "GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]:
+            if msgtype == "GPS_INFO":
+                print(parse_gps_info(data))
             board_id = data.get("board_id")
             gps[boardIds.index(board_id)][msgtype] = data["data"]
         
-        if all(key in gps[0] for key in ["GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # GPS 
+        if all(key in gps[0] for key in ["GPS_INFO", "GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # GPS 
             print(parse_gps_data(gps[0], data))
             gps[0].clear()
             
-        if all(key in gps[1] for key in ["GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # PROCESSOR (does not have GPS_TIMESTAMP)
+        if all(key in gps[1] for key in ["GPS_INFO", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]): # PROCESSOR (does not have GPS_TIMESTAMP)
             print(parse_gps_data(gps[1], data))
             gps[1].clear()
 
