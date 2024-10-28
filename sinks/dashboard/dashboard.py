@@ -602,7 +602,10 @@ class Dashboard(QWidget):
 
     # Method to save file with a custom chosen name
     def save_as(self):
-        self.file_location = os.path.join(self.save_directory, self.show_save_as_prompt())
+        file_name = self.show_save_as_prompt()
+        if not file_name:
+            return
+        self.file_location = os.path.join(self.save_directory, file_name)
         self.save()
 
     # Method to allow user to choose name of the file of the configuration they would like to save
@@ -778,14 +781,14 @@ class Dashboard(QWidget):
         
         if result == Event.SAVE_CHANGES.value:
             self.save()
-            self.remove_all()
+            self.remove_all(True)
         elif result == Event.DISCARD_CHANGES.value:
             if not self.should_show_save_popup:
                 # Persist old data to JSON file.
                 old_data["should_show_save_popup"] = False
                 with open(self.file_location, "w") as savefile:
                     json.dump(old_data, savefile)
-            self.remove_all()
+            self.remove_all(True)
         else:
             event.ignore()
 

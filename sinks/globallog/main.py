@@ -1,5 +1,7 @@
 # Global logger - Saves messages passed through bus to asc-time.log
 
+import signal
+import sys
 from datetime import datetime
 
 import msgpack
@@ -16,18 +18,32 @@ receiver = Receiver(CHANNEL)
 
 dots = 0
 counter = 0
+exit_program = False  # Exit flag
+
+
+# Define a handler for graceful exit
+def graceful_exit(signum, frame):
+    global exit_program
+    print("\nSignal received (SIGINT), exiting gracefully...")
+    exit_program = True
+
+
+# Set up signal handlers for SIGINT (Ctrl + C) and SIGTERM
+signal.signal(signal.SIGINT, graceful_exit)  # Handles Ctrl + C
+signal.signal(signal.SIGTERM, graceful_exit)  # Handles termination signal
 
 # Creates new file
 with open(fname, "wb") as f:
     print(f"Data will be logged to {fname}")
     # Hides cursor for continous print
-    print('\033[?25l', end="")
+    print("\033[?25l", end="")
 
     try:
-        while True:
+        while not exit_program:
             # Cool continuously updating print statment
-            print("\rLogging", end="")
-            if counter % (20*5) == 0:
+            print("\rLogging... (Press Ctrl + C to stop)", end="")
+
+            if counter % (20 * 5) == 0:
                 print("   ", end="")
             elif counter % 20 == 0:
                 for i in range(dots):
@@ -39,9 +55,15 @@ with open(fname, "wb") as f:
 
             counter += 1
 
-            # Receives message and writes it to file
-            msg = receiver.recv_message()
-            f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
+            # Try receiving message with timeout (if possible) to avoid blocking
+            msg = receiver.recv_message(timeout=10)  # 10 ms timeout
+            if msg:
+                f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
+
     finally:
+        f.close()
         # Shows cursor
-        print('\033[?25h', end="")
+        print("\033[?25h", end="")
+        print("Program has exited gracefully.")
+        print(f"Data has been logged to {fname}")
+        sys.exit(0)  # Exit the program
