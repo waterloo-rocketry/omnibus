@@ -7,13 +7,17 @@ import argparse
 import sys
 import logging
 import json
-from logtool import Logger
+from functools import partial
+from dataclasses import dataclass
+
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt.QtWidgets import (
     QApplication, QDialog, QLabel, QDialogButtonBox, QVBoxLayout,
     QWidget, QCheckBox, QGridLayout, QLineEdit
 )
-from dataclasses import dataclass
+
+from logtool import Logger
+
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
     from subprocess import CREATE_NEW_PROCESS_GROUP
@@ -275,13 +279,12 @@ class GUILauncher(Launcher, QDialog):
         #Connect checkbox state to signals to detect which sources were selected 
         for i, (checkbox, args) in enumerate(self.src_widgets):
             # https://docs.python.org/3/faq/programming.html#why-do-lambdas-defined-in-a-loop-with-different-values-all-return-the-same-result
-            def stateChanged(state, i=i):
-                self.src_state[i][0] = True if state == 2 else False
-            def textChanged(text, i=i):
-                # print(f"text change {i}")
-                self.src_state[i][1] = text
-            checkbox.stateChanged.connect(stateChanged)
-            args.textChanged.connect(textChanged)
+            def stateChanged(state, index):
+                self.src_state[index][0] = state == 2
+            def textChanged(text, index):
+                self.src_state[index][1] = text
+            checkbox.stateChanged.connect(partial(stateChanged,index = i))
+            args.textChanged.connect(partial(textChanged,index = i))
 
         #Create a sink label
         sink = QLabel(self)
@@ -317,14 +320,14 @@ class GUILauncher(Launcher, QDialog):
         
         #Connect checkbox state to signals to detect which sink were selected 
         for i, (checkbox, std_out) in enumerate(self.sinks_widgets):
-            def stateChanged(state, i=i):
-                self.sink_state[i][0] = True if state == 2 else False
-            def stdOutChanged(state, i=i):
-                self.sinks_widgets[i][0].setChecked(True if state == 2 else False)
-                self.sinks_widgets[i][0].setEnabled(False if state == 2 else True)
-                self.sink_state[i][1] = True if state == 2 else False
-            checkbox.stateChanged.connect(stateChanged)
-            std_out.stateChanged.connect(stdOutChanged)
+            def stateChanged(state, index):
+                self.sink_state[index][0] = state == 2
+            def stdOutChanged(state, index):
+                self.sinks_widgets[index][0].setChecked(True if state == 2 else False)
+                self.sinks_widgets[index][0].setEnabled(False if state == 2 else True)
+                self.sink_state[index][1] = True if state == 2 else False
+            checkbox.stateChanged.connect(partial(stateChanged,index = i))
+            std_out.stateChanged.connect(partial(stdOutChanged,index = i))
 
         self.button_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok
