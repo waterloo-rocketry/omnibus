@@ -4,6 +4,7 @@ from typing import List
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
+from src.real_time_parser import RTParser
 
 if not ONLINE_MODE:
     """
@@ -43,7 +44,16 @@ class MapView(QWebEngineView):
 
         # Initialize the map with a default tile style
         self.is_dark_mode = False
+        
+        # Initialize Real-time Parser and Real-time data handler
+        self.rt_parser = RTParser()
+        self.rt_parser.gps_RT_data.connect(self.draw_rt_point)
+
         self.create_map()
+        
+    def __del__(self):
+        self.rt_parser.stop()
+        self.rt_parser.terminate()
 
     def create_map(self):
         """Create a folium map with the current tile style."""
@@ -141,7 +151,16 @@ class MapView(QWebEngineView):
         self.kmz_parser = KMZParser(kmz_file_path)
         self.clear_all_markers()
         self.update_map()
-
+    
+    def start_stop_realtime_data(self):
+        if not self.rt_parser.running:
+            self.rt_parser.start()
+        else:
+            self.rt_parser.stop()
+    
+    def draw_rt_point(self, point): # TODO: Draw point to window instead of printing
+        print(point)
+    
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
         # self.create_map()
@@ -162,7 +181,7 @@ class MapView(QWebEngineView):
                     color="blue",
                     fill=True,
                     fill_color="blue",
-                    popup=f"Height: {data.he}m, Timestamp: {data.time_stamp}",
+                    popup=f"Height: {data.alt}m, Timestamp: {data.time_stamp}",
                 ).add_to(self.m)
             elif isinstance(data, LineString_GPS):
                 line = folium.PolyLine(

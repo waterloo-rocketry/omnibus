@@ -44,8 +44,8 @@ class KMZParser:
             else None
         )
         if geom_type == "Point":
-            lon, lat, he = geom.coords[0]
-            return Point_GPS(lon, lat, he, timestamp)
+            lon, lat, alt = geom.coords[0]
+            return Point_GPS(lon, lat, alt, timestamp)
         elif geom_type == "LineString":
             linestring = LineString_GPS()
             coords = [coord[:3] for coord in geom.coords]  # Extract lon and lat
