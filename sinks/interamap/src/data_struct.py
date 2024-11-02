@@ -1,16 +1,16 @@
 from typing import List, Optional
 
 class Point_GPS():
-    def __init__(self, lon: float, lat: float, he: float, num_sats: int, time_stamp, board_id: Optional[str] = None):
+    def __init__(self, lon: float, lat: float, alt: float, num_sats: int, time_stamp, board_id: Optional[str] = None):
         self.time_stamp = time_stamp
         self.num_sats = num_sats
         self.lon = lon
         self.lat = lat
-        self.he = he
+        self.alt = alt
         self.board_id = board_id
 
     def __str__(self):
-        return f"Point: {self.lat}, {self.lon}, {self.he}, At {self.time_stamp}, With {self.num_sats} satellites, from {self.board_id}"
+        return f"Point: {self.lat}, {self.lon}, {self.alt}, At {self.time_stamp}, With {self.num_sats} satellites, from {self.board_id}"
 
 
 class LineString_GPS():

@@ -181,7 +181,7 @@ class MapView(QWebEngineView):
                     color="blue",
                     fill=True,
                     fill_color="blue",
-                    popup=f"Height: {data.he}m, Timestamp: {data.time_stamp}",
+                    popup=f"Height: {data.alt}m, Timestamp: {data.time_stamp}",
                 ).add_to(self.m)
             elif isinstance(data, LineString_GPS):
                 line = folium.PolyLine(
