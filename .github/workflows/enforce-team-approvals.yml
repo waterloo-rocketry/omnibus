@@ -34,6 +34,12 @@ jobs:
             
             let defaultApproved = false;
             let omnibusApproved = false;
+
+            github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug: defaultTeam,
+                  'zangjiucheng',
+            );
             
             for (const username of approvedUsers) {
               console.log(`\nChecking approvals from user: ${username}`);
@@ -46,7 +52,7 @@ jobs:
                   username,
                 });
                 defaultApproved = true;
-                console.log(`✅ ${username} approved from team ${defaultTeam}`);
+                console.log(`✅ ${username} approved PR ${pull_number} in ${defaultTeam} team`);
               } catch (error) {
                 // User is not in default-reviewers team
               }
@@ -59,7 +65,7 @@ jobs:
                   username,
                 });
                 omnibusApproved = true;
-                console.log(`✅ ${username} approved from team ${omnibusTeam}`);
+                console.log(`✅ ${username} approved PR ${pull_number} in ${omnibusTeam} team`);
               } catch (error) {
                 // User is not in omnibus-reviewers team
               }
