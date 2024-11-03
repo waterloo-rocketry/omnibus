@@ -36,6 +36,13 @@ jobs:
             
             let defaultApproved = false;
             let omnibusApproved = false;
+
+            const membership = await github.rest.teams.getMembershipForUserInOrg({
+              org,
+              team_slug: defaultTeam,
+              username: 'zangjiucheng'
+            });
+            console.log(membership);
             
             for (const username of approvedUsers) {
               console.log(`\nChecking approvals from user: ${username}`);
