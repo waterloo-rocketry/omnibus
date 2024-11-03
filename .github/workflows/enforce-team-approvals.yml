@@ -39,7 +39,7 @@ jobs:
                   org,
                   team_slug: defaultTeam,
                   'zangjiucheng',
-            );
+            });
             
             for (const username of approvedUsers) {
               console.log(`\nChecking approvals from user: ${username}`);
