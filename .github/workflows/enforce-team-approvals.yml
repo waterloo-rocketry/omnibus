@@ -1,0 +1,39 @@
+name: Enforce Team Approvals
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  enforce-approvals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for approvals from default-reviewers and omnibus-reviewers
+        id: check_approvals
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { owner, repo, number: pull_number } = context.issue;
+            const { data: reviews } = await github.pulls.listReviews({
+              owner,
+              repo,
+              pull_number,
+            });
+
+            const defaultApproved = reviews.some(
+              (review) =>
+                review.state === 'APPROVED' &&
+                review.user.login.includes('default-reviewers')
+            );
+
+            const omnibusApproved = reviews.some(
+              (review) =>
+                review.state === 'APPROVED' &&
+                review.user.login.includes('omnibus-reviewers')
+            );
+
+            if (!defaultApproved || !omnibusApproved) {
+              core.setFailed(
+                'Pull request must be approved by at least one member from both default-reviewers and omnibus-reviewers.'
+              );
+            }
