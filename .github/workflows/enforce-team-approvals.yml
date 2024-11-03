@@ -35,11 +35,12 @@ jobs:
             let defaultApproved = false;
             let omnibusApproved = false;
 
-            github.rest.teams.getMembershipForUserInOrg({
-                  org,
-                  team_slug: defaultTeam,
-                  'zangjiucheng',
+            const membership = await github.rest.teams.getMembershipForUserInOrg({
+              org,
+              team_slug: defaultTeam,
+              username: 'zangjiucheng'
             });
+            console.log(membership);
             
             for (const username of approvedUsers) {
               console.log(`\nChecking approvals from user: ${username}`);
@@ -49,7 +50,7 @@ jobs:
                 await github.rest.teams.getMembershipForUserInOrg({
                   org,
                   team_slug: defaultTeam,
-                  username,
+                  username
                 });
                 defaultApproved = true;
                 console.log(`✅ ${username} approved PR ${pull_number} in ${defaultTeam} team`);
@@ -62,7 +63,7 @@ jobs:
                 await github.rest.teams.getMembershipForUserInOrg({
                   org,
                   team_slug: omnibusTeam,
-                  username,
+                  username
                 });
                 omnibusApproved = true;
                 console.log(`✅ ${username} approved PR ${pull_number} in ${omnibusTeam} team`);
