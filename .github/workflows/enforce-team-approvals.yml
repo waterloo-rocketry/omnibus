@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Check for approvals from default-reviewers and omnibus-reviewers
         id: check_approvals
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           token: ${{ secrets.PAT_TOKEN }} 
           script: |
@@ -36,26 +36,11 @@ jobs:
             let defaultApproved = false;
             let omnibusApproved = false;
 
-            async function isUserInTeam(org, teamSlug, username) {
-              try {
-                const response = await github.request('GET /orgs/{org}/teams/{team_slug}/memberships/{username}', {
-                  org,
-                  team_slug: teamSlug,
-                  username
-                });
-                return response.status === 200;
-              } catch (error) {
-                if (error.status === 404) {
-                  // User is not a member of the team
-                  return false;
-                } else {
-                  // Handle other errors
-                  throw error;
-                }
-              }
-            }
-
-            const membership = await isUserInTeam(org, defaultTeam, 'zangjiucheng');
+            const membership = await github.rest.teams.getMembershipForUserInOrg({
+              org,
+              team_slug: defaultTeam,
+              username: 'zangjiucheng'
+            });
             console.log(membership);
 
             for (const username of approvedUsers) {
