@@ -41,7 +41,8 @@ class EventTracker(QObject):
         chain so that we don't disturb any default behaviours or return True
         if we don't want any widgets to further handle the event.
         """
-        if event.type() == QEvent.KeyPress:
+
+        if event.type() == QEvent.KeyPress or (event.type() == QEvent.ShortcutOverride and event.key() == Qt.Key_Backspace):
             key_press = KeyEvent(event.key(), event.modifiers())
             match key_press:
                 case KeyEvent(Qt.Key_Backspace, _) | KeyEvent(Qt.Key_Delete, _):
