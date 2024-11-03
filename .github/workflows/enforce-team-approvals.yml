@@ -10,10 +10,9 @@ jobs:
     steps:
       - name: Check for approvals from default-reviewers and omnibus-reviewers
         id: check_approvals
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         uses: actions/github-script@v6
         with:
+          token: ${{ secrets.PAT_TOKEN }} 
           script: |
             const { owner, repo, number: pull_number } = context.issue;
             
@@ -43,7 +42,7 @@ jobs:
               username: 'zangjiucheng'
             });
             console.log(membership);
-            
+
             for (const username of approvedUsers) {
               console.log(`\nChecking approvals from user: ${username}`);
 
