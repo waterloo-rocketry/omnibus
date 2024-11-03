@@ -30,12 +30,14 @@ jobs:
             
             const defaultTeam = 'default-reviewers'; // team slug
             const omnibusTeam = 'omnibus-reviewers'; // team slug
-            const org = owner; // set repo owner is the org
+            const org = 'waterloo-rocketry';
             
             let defaultApproved = false;
             let omnibusApproved = false;
             
             for (const username of approvedUsers) {
+              console.log(`\nChecking approvals from user: ${username}`);
+
               try {
                 // Check if the user is a member of the default-reviewers team
                 await github.rest.teams.getMembershipForUserInOrg({
@@ -44,6 +46,7 @@ jobs:
                   username,
                 });
                 defaultApproved = true;
+                console.log(`✅ ${username} approved from team ${defaultTeam}`);
               } catch (error) {
                 // User is not in default-reviewers team
               }
@@ -56,6 +59,7 @@ jobs:
                   username,
                 });
                 omnibusApproved = true;
+                console.log(`✅ ${username} approved from team ${omnibusTeam}`);
               } catch (error) {
                 // User is not in omnibus-reviewers team
               }
