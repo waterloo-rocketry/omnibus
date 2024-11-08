@@ -23,12 +23,13 @@ from src.tools.current_location import get_current_location
 class MapWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        
-        self.relative_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        
+
+        self.relative_path = os.path.dirname(
+            os.path.dirname(os.path.realpath(__file__))
+        )
+
         self.setWindowTitle("Interactive Map with Folium")
         self.setGeometry(100, 100, 1200, 600)  # Set initial size of the window
-        self.setWindowIcon(QIcon(self.relative_path+"/resources/icons/rocket_icon.ico"))  # Set the app icon
 
         self.data_sources = {
             value: key
@@ -78,7 +79,9 @@ class MapWindow(QMainWindow):
         # Custom Toggle Button for Dark Mode
         self.toggle_button = QPushButton(self)
         self.toggle_button.setCheckable(True)
-        self.toggle_button.setIcon(QIcon(self.relative_path+"/resources/icons/moon.png"))
+        self.toggle_button.setIcon(
+            QIcon(self.relative_path + "/resources/icons/moon.png")
+        )
         self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
         self.toggle_button.setFixedSize(60, 30)  # Set fixed size for the toggle button
         self.toggle_button.setSizePolicy(
@@ -121,11 +124,6 @@ class MapWindow(QMainWindow):
         self.add_marker_button.clicked.connect(self.add_marker)
         self.toolbar_layout.addWidget(self.add_marker_button)
 
-        # Add button to mark the current location
-        self.mark_current_location_button = QPushButton("Mark Current Location", self)
-        self.mark_current_location_button.clicked.connect(self.mark_current_location)
-        self.toolbar_layout.addWidget(self.mark_current_location_button)
-
         # Add button to clear all markers
         self.clear_markers_button = QPushButton("Clear Markers", self)
         self.clear_markers_button.clicked.connect(self.clear_markers)
@@ -148,24 +146,26 @@ class MapWindow(QMainWindow):
             # if is real-time data source selected, then add the following
             # Create buttons for starting/stopping real-time data and loading data
             start_stop_button = QPushButton("Start/Stop Real-time Data", self)
-            start_stop_button.clicked.connect(self.start_stop_realtime_data) #TODO: Implement this function
+            start_stop_button.clicked.connect(
+                self.start_stop_realtime_data
+            )  # TODO: Implement this function
 
             self.toolbar_layout.insertWidget(
                 self.start_index_to_feature_ui, start_stop_button
             )
 
-            fake_data_options = [
-                "Option 1",
-                "Option 2",
-                "Option 3",
+            data_options = [
+                "GPS Board",
+                "Processor Board",
+                "Fake Data Generator",
             ]  # TODO: Connect to the source of data with the real-time data
-            fake_data_combo = QComboBox(self)
-            fake_data_combo.addItems(fake_data_options)
+            data_combo = QComboBox(self)
+            data_combo.addItems(data_options)
             self.toolbar_layout.insertWidget(
-                self.get_current_index_to_feature_ui(), QLabel("Fake Data Options:")
+                self.get_current_index_to_feature_ui(), QLabel("Sources Options:")
             )
             self.toolbar_layout.insertWidget(
-                self.get_current_index_to_feature_ui(), fake_data_combo
+                self.get_current_index_to_feature_ui(), data_combo
             )
 
         elif self.data_source == 2:  # Load KMZ File
@@ -193,21 +193,25 @@ class MapWindow(QMainWindow):
             self, "Open KMZ File", "", "KMZ Files (*.kmz)"
         )
         if file_path:
-            self.kmz_file_label = file_path # TODO: Update the label with the file name
+            self.kmz_file_label = file_path  # TODO: Update the label with the file name
             self.map_view.load_kmz_file(file_path)
 
     def toggle_dark_mode(self):
         """Toggle between Dark Mode and Light Mode."""
         if self.toggle_button.isChecked():
             # Switch to Dark Mode
-            self.load_stylesheet(self.relative_path+"/resources/styles/darkmode.qss")
-            self.toggle_button.setIcon(QIcon(self.relative_path+"/resources/icons/sun.png"))
+            self.load_stylesheet(self.relative_path + "/resources/styles/darkmode.qss")
+            self.toggle_button.setIcon(
+                QIcon(self.relative_path + "/resources/icons/sun.png")
+            )
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(True))
             self.map_view.toggle_map_theme(True)  # Enable dark mode tiles for the map
         else:
             # Switch to Light Mode
-            self.load_stylesheet(self.relative_path+"/resources/styles/lightmode.qss")
-            self.toggle_button.setIcon(QIcon(self.relative_path+"/resources/icons/moon.png"))
+            self.load_stylesheet(self.relative_path + "/resources/styles/lightmode.qss")
+            self.toggle_button.setIcon(
+                QIcon(self.relative_path + "/resources/icons/moon.png")
+            )
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
             self.map_view.toggle_map_theme(False)  # Enable light mode tiles for the map
 
@@ -246,7 +250,7 @@ class MapWindow(QMainWindow):
         """Load and apply the stylesheet from the provided path."""
         with open(stylesheet_path, "r") as file:
             self.setStyleSheet(file.read())
-    
+
     def start_stop_realtime_data(self):
         self.map_view.start_stop_realtime_data()
 
@@ -260,10 +264,6 @@ class MapWindow(QMainWindow):
             print(
                 "Invalid input for latitude or longitude. Please enter valid numbers."
             )
-
-    def mark_current_location(self): # TODO: Only test function, not used in the final code
-        current_location = get_current_location()
-        self.map_view.set_map_center(current_location)
 
     def clear_markers(self):
         """Function to clear all markers from the map."""
