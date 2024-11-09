@@ -4,6 +4,8 @@ from typing import List
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
+
+from src.gps_cache import GPS_Cache
 from src.real_time_parser import RTParser
 
 if not ONLINE_MODE:
@@ -39,15 +41,15 @@ class MapView(QWebEngineView):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setMinimumSize(0, 0)  # Allow it to shrink completely
 
-        # Initialize a list to store added markers
-        self.markers = []
-
         # Initialize the map with a default tile style
         self.is_dark_mode = False
         
         # Initialize Real-time Parser and Real-time data handler
         self.rt_parser = RTParser()
-        self.rt_parser.gps_RT_data.connect(self.draw_rt_point)
+        self.rt_parser.gps_RT_data.connect(self.storage_rt_info)
+
+        # Initialize a Point Storage object to store GPS points
+        self.point_storage = GPS_Cache()
 
         self.create_map()
         
@@ -131,14 +133,13 @@ class MapView(QWebEngineView):
             popup=popup_text,
             icon=folium.Icon(color=color, icon="info-sign"),
         )
-        self.markers.append(marker)
         marker.add_to(self.m)
         self.update_map()
 
     def clear_all_markers(self):
         """Clear all markers from the map."""
         self.create_map()
-        self.markers.clear()
+        self.point_storage.clear_points()
 
     def toggle_map_theme(self, is_dark_mode):
         """Toggle the map theme between light and dark mode."""
@@ -157,9 +158,11 @@ class MapView(QWebEngineView):
             self.rt_parser.start()
         else:
             self.rt_parser.stop()
+            print(self.point_storage)
     
-    def draw_rt_point(self, point): # TODO: Draw point to window instead of printing
-        print(point)
+    def storage_rt_info(self, info): 
+        self.point_storage.store_info(info)
+        # TODO: update the map 
     
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
