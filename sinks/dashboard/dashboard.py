@@ -454,31 +454,74 @@ class Dashboard(QWidget):
 
                 break
 
-    # method to snap the widget to the grid
+    # def map_to_scene(self, x, y):
+    #     return x - self.scene.width() / 3, y - self.scene.height() / 3
 
-    def regrid_items_auto(self,spacing=7):
+    def regrid_items_auto(self):
         """
-        Re-arrange items in the scene in a grid layout based on the width of the scene or view.
-        The number of columns will be adjusted automatically based on available space.
+        Arrange items in a flow layout with variable sizes, including margins and centering.
+        Automatically wraps items to the next row when reaching the available width.
         """
-
-        # Calculate how many items can fit in a row
-        items_per_row = 5
-        # min(5, max(1, int((scene_width - spacing) / (item_width + spacing))))
         
-        for index, (item, (proxy, dashitem)) in enumerate(self.widgets.copy().items()):
-                row = index // items_per_row
-                col = index % items_per_row
-                item_height = proxy.size().height()
-                item_width = proxy.size().width()
-                xpos = col * (item_width + spacing)
-                ypos = row * (item_height + spacing)
-                params = dashitem.get_serialized_parameters()
-                self.add(type(dashitem)(self, params),
-                            (xpos, ypos))
-                self.scene.removeItem(item)
-                proxy.deleteLater()
-                dashitem.on_delete()
+        for item, (proxy, _) in self.widgets.items():
+            proxy_pos = proxy.pos()
+            view_pos = self.view.mapFromScene(proxy_pos)
+            adj_x = round(view_pos.x() / 50) * 50
+            adj_y = round(view_pos.y() / 50) * 50
+            
+            # print(proxy_pos.x(), proxy_pos.y())
+            item.setPos(adj_x, adj_y)
+        # spacing = max(1, spacing)
+        # margin = max(0, margin)
+
+        # view_rect = self.view.mapToScene(self.view.viewport().rect()).boundingRect()
+        # max_width = view_rect.x() + view_rect.width() - 2 * margin  # Adjust for left and right margins
+
+        # x = view_rect.x() + margin
+        # y = view_rect.y() + margin
+        # row_height = 0
+        # row_items = []
+
+        # # print(view_rect.x(), view_rect.y(), view_rect.width(), view_rect.height(), max_width)
+
+        # for item, (proxy, _) in self.widgets.items():
+        #     item_width = proxy.size().width()
+        #     item_height = proxy.size().height()
+
+        #     # Check if the item fits in the current row
+        #     if x + item_width > max_width + margin:
+        #         # Center the items in the current row
+        #         total_row_width = sum([i[1] for i in row_items]) + spacing * (len(row_items) - 1)
+        #         start_x = margin + (max_width - total_row_width) / 2
+        #         current_x = start_x
+
+        #         for row_item, width in row_items:
+        #             # adjx, adjy =self.map_to_scene(current_x, y)
+        #             row_item.setPos(current_x, y)
+        #             current_x += width + spacing
+
+        #         # Move to the next row
+        #         x = view_rect.x() + margin
+        #         y += row_height + spacing
+        #         row_height = 0
+        #         row_items = []
+
+        #     row_items.append((item, item_width))
+        #     x += item_width + spacing
+        #     row_height = max(row_height, item_height)
+
+        # # Position the last row
+        # if row_items:
+        #     total_row_width = sum([i[1] for i in row_items]) + spacing * (len(row_items) - 1)
+        #     start_x = margin + (max_width - total_row_width) / 2
+        #     current_x = start_x
+
+        #     for row_item, width in row_items:
+        #         # adjx, adjy =self.map_to_scene(current_x, y)
+        #         row_item.setPos(current_x, y)
+        #         current_x += width + spacing
+
+
 
 
     # method to handle dimension changes in parameter tree
