@@ -5,7 +5,7 @@ from PySide6.QtCore import QThread, Signal
 from src.data_struct import Point_GPS, Info_GPS, LineString_GPS
 
 
-class GPS_Info_Storage(QThread):
+class GPS_Cache(QThread):
     """
     Stores GPS points and emits a signal when the storage is updated.
     """

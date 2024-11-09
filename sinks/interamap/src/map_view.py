@@ -5,7 +5,7 @@ from typing import List
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
 
-from src.gps_cache import GPS_Info_Storage
+from src.gps_cache import GPS_Cache
 from src.real_time_parser import RTParser
 
 if not ONLINE_MODE:
@@ -49,7 +49,7 @@ class MapView(QWebEngineView):
         self.rt_parser.gps_RT_data.connect(self.storage_rt_info)
 
         # Initialize a Point Storage object to store GPS points
-        self.point_storage = GPS_Info_Storage()
+        self.point_storage = GPS_Cache()
 
         self.create_map()
         

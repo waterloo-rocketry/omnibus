@@ -3,10 +3,10 @@ import time
 import pytest
 
 from src.data_struct import Point_GPS
-from src.gps_cache import GPS_Info_Storage
+from src.gps_cache import GPS_Cache
 
 
-class TestPointStorage():
+class TestGPSCache():
     mock_gps_point_1 = Point_GPS(
         lon=1.0,
         lat=2.0,
@@ -36,7 +36,7 @@ class TestPointStorage():
         self.received_point = point
 
     def test_storage_add(self):
-        point_storage = GPS_Info_Storage()
+        point_storage = GPS_Cache()
 
         point_storage.storage_update.connect(self.receive_point)
 
@@ -46,7 +46,7 @@ class TestPointStorage():
         assert [self.mock_gps_point_1] == point_storage.get_gps_points()
 
     def test_storage_remove(self):
-        point_storage = GPS_Info_Storage()
+        point_storage = GPS_Cache()
 
         point_storage.storage_update.connect(self.receive_point)
         
@@ -60,7 +60,7 @@ class TestPointStorage():
         assert [self.mock_gps_point_1] == point_storage.get_gps_points()
 
     def test_storage_clear(self):
-        point_storage = GPS_Info_Storage()
+        point_storage = GPS_Cache()
 
         point_storage.storage_update.connect(self.receive_point)
 
