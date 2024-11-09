@@ -28,6 +28,9 @@ jobs:
             
             // Extract usernames of reviewers who approved
             const approvedUsers = [...new Set(approvedReviews.map(review => review.user.login))];
+
+            // PR Author
+            const authorName = context.payload.pull_request.user.login;
             
             const defaultTeam = 'default-reviewers'; // team slug
             const omnibusTeam = 'omnibus-reviewers'; // team slug
@@ -35,6 +38,18 @@ jobs:
             
             let defaultApproved = false;
             let omnibusApproved = false;
+
+            try {
+              await github.rest.teams.getMembershipForUserInOrg({
+                org,
+                team_slug: defaultTeam,
+                authorName
+              });
+              return { defaultApproved: true };
+              console.log(`✅ ${authorName} is in ${defaultTeam} team pass ${defaultTeam} check`);
+            } catch (error) {
+              // Author is not in default-reviewers team
+            }
 
             for (const username of approvedUsers) {
               console.log(`\nChecking approvals from user: ${username}`);
@@ -66,8 +81,14 @@ jobs:
               }
             }
             
-            if (!defaultApproved || !omnibusApproved) {
+            if (!defaultApproved) {
               core.setFailed(
-                'Pull request must be approved by at least one member from both default-reviewers and omnibus-reviewers.'
+                '❌ Pull request must be approved by at least one member from default-reviewers.'
+              );
+            }
+
+            if (!omnibusApproved) or () {
+              core.setFailed(
+                '❌ Pull request must be approved by at least one member from omnibus-reviewers.'
               );
             }
