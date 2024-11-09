@@ -5,7 +5,7 @@ from typing import List
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
 
-from src.point_storage import Point_Storage
+from src.gps_cache import GPS_Info_Storage
 from src.real_time_parser import RTParser
 
 if not ONLINE_MODE:
@@ -46,10 +46,10 @@ class MapView(QWebEngineView):
         
         # Initialize Real-time Parser and Real-time data handler
         self.rt_parser = RTParser()
-        self.rt_parser.gps_RT_data.connect(self.draw_rt_point)
+        self.rt_parser.gps_RT_data.connect(self.storage_rt_info)
 
         # Initialize a Point Storage object to store GPS points
-        self.point_storage = Point_Storage(self.rt_parser.gps_RT_data)
+        self.point_storage = GPS_Info_Storage()
 
         self.create_map()
         
@@ -158,9 +158,11 @@ class MapView(QWebEngineView):
             self.rt_parser.start()
         else:
             self.rt_parser.stop()
+            print(self.point_storage)
     
-    def draw_rt_point(self, point): # TODO: Draw point to window instead of printing
-        print(point)
+    def storage_rt_info(self, info): 
+        self.point_storage.store_info(info)
+        # TODO: update the map 
     
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
