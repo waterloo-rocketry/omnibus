@@ -23,7 +23,6 @@ from src.data_struct import Point_GPS, LineString_GPS
 from src.tools.current_location import get_current_location
 
 
-
 class MapView(QWebEngineView):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -32,9 +31,9 @@ class MapView(QWebEngineView):
         self.online = ONLINE_MODE
 
         self.kmz_parser = None
-        
+
         self.coordinate = get_current_location()
-        
+
         print("Online Mode:", self.online)
 
         # Set the size policy to make the widget expand to fill space
@@ -43,7 +42,7 @@ class MapView(QWebEngineView):
 
         # Initialize the map with a default tile style
         self.is_dark_mode = False
-        
+
         # Initialize Real-time Parser and Real-time data handler
         self.rt_parser = RTParser()
         self.rt_parser.gps_RT_data.connect(self.storage_rt_info)
@@ -52,20 +51,23 @@ class MapView(QWebEngineView):
         self.point_storage = GPS_Cache()
 
         self.create_map()
-        
+
     def __del__(self):
         self.rt_parser.stop()
         self.rt_parser.terminate()
 
     def create_map(self):
         """Create a folium map with the current tile style."""
-        
+
         if self.kmz_parser is not None:
-            self.coordinate = [self.kmz_parser.gps_data[0].lat, self.kmz_parser.gps_data[0].lon]
-        
+            self.coordinate = [
+                self.kmz_parser.gps_data[0].lat,
+                self.kmz_parser.gps_data[0].lon,
+            ]
+
         if self.coordinate is None:
-            self.coordinate = [43.4643, -80.5204] # Default to Waterloo, Ontario
-        
+            self.coordinate = [43.4643, -80.5204]  # Default to Waterloo, Ontario
+
         self.m = folium.Map(
             location=self.coordinate,  # Center of the map
             zoom_start=12,
@@ -84,7 +86,7 @@ class MapView(QWebEngineView):
             overlay=False,
         ).add_to(self.m)
 
-        self.add_tile_layer()
+        self.add_offline_layer()
 
         # For Debugging
         # self.m.save('offline_map.html')
@@ -92,20 +94,11 @@ class MapView(QWebEngineView):
         # Save the folium map to an HTML string with a responsive style
         self.update_map()
 
-    def add_tile_layer(self):
-        """Add a custom tile layer to the map."""
+    def add_offline_layer(self):
+        """Add a offline tile layer to the map."""
 
         # Note: If local server is not running, and internet is available, it will use online tiles
-        if self.online:
-            folium.TileLayer(
-                tiles=(
-                    "cartodbpositron" if not self.is_dark_mode else "cartodbdark_matter"
-                ),
-                attr="CartoDB or OpenStreetMap",
-                name="CartoDB or OpenStreetMap (Online)",
-                overlay=False,
-            ).add_to(self.m)
-        else:
+        if not self.online:
             folium.TileLayer(
                 tiles="http://localhost:8080/styles/basic-preview/{z}/{x}/{y}.png",
                 attr="Local OSM Tiles",
@@ -152,7 +145,7 @@ class MapView(QWebEngineView):
         self.kmz_parser = KMZParser(kmz_file_path)
         self.clear_all_markers()
         self.update_map()
-    
+
     def start_stop_realtime_data(self):
         if not self.rt_parser.running:
             self.rt_parser.start()
@@ -164,6 +157,7 @@ class MapView(QWebEngineView):
         self.point_storage.store_info(info)
         # TODO: update the map 
     
+
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
         # self.create_map()
