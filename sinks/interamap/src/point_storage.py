@@ -26,9 +26,20 @@ class Point_Storage(QThread):
         if isinstance(point, Point_GPS):
             self.gps_points.append(point)
         elif isinstance(point, LineString_GPS):
+            print("LineString not stored", point)
             pass  # to be implemented
+        else:
+            print("Unknown point type", point)
+            pass
 
         self.storage_update.emit((self.StorageUpdateType.ADD, point))
+
+    def store_points(self, points):
+        """
+        Store a list of points
+        """
+        for point in points:
+            self.store_point(point)
 
     def get_gps_points(self):
         return self.gps_points
@@ -46,8 +57,13 @@ class Point_Storage(QThread):
             if isinstance(point, Point_GPS):
                 self.gps_points.remove(point)
             elif isinstance(point, LineString_GPS):
+                print("LineString not removed", point)
+                pass
+            else:
+                print("Unknown point type", point)
                 pass
 
             self.storage_update.emit((self.StorageUpdateType.REMOVE, point))
         except KeyError:
+            print("Unstored point to be removed", point)
             pass
