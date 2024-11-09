@@ -87,7 +87,7 @@ jobs:
               );
             }
 
-            if (!omnibusApproved) or () {
+            if (!omnibusApproved) {
               core.setFailed(
                 '❌ Pull request must be approved by at least one member from omnibus-reviewers.'
               );
