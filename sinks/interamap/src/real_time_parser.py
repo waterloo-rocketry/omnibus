@@ -87,6 +87,8 @@ class RTParser(QThread):
     def extract_gps_data(self):
         gps = [{} for _ in BoardID]
 
+        self.receiver.recv() # Clear the buffer
+
         while True:
             # If stop() was called
             if not self.running:

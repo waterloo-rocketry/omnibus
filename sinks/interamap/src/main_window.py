@@ -142,6 +142,9 @@ class MapWindow(QMainWindow):
         self.data_source = self.data_sources.get(self.data_source_ui.currentText())
         self.reset_data_source_ui()
 
+        if self.map_view.rt_parser.running:
+            self.map_view.rt_parser.stop()
+
         if self.data_source == 1:  # Real-time Data Source
             # if is real-time data source selected, then add the following
             # Create buttons for starting/stopping real-time data and loading data
