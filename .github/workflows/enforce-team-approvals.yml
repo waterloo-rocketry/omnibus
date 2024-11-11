@@ -3,6 +3,7 @@ name: Enforce Team Approvals
 on:
   pull_request_review:
     types: [submitted]
+  workflow_dispatch:
 
 jobs:
   enforce-approvals:
