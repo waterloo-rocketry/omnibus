@@ -46,6 +46,7 @@ class QRCodeWindow(QMainWindow):
         central_widget.setLayout(layout)
 
         # Minimum size for the QR code image
+        self.setMinimumSize(400, 400)
         self.minimum_width = 400
         self.minimum_height = 400
 
@@ -62,8 +63,12 @@ class QRCodeWindow(QMainWindow):
         available_size = self.label.size()
 
         # Determining size wrt, minimums
-        width = max(available_size.width(), self.minimum_width)
-        height = max(available_size.height(), self.minimum_height)
+        width = available_size.width()
+        height = available_size.height()
+
+        if width < self.minimum_width or height < self.minimum_height:
+            width = self.minimum_width
+            height = self.minimum_height
         # make a scaled copy
         scaled_pixmap = self.pixmap.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         # replace original with scaled copy
