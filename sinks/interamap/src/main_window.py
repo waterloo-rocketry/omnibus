@@ -53,6 +53,7 @@ class MapWindow(QMainWindow):
         # Initialize the map view and set it to expand
         self.map_view = MapView(self)
         self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.map_view.update_gps_label.connect(self.update_gps_status)
 
         # Add the map view to the splitter
         self.main_splitter.addWidget(self.map_view)
@@ -89,13 +90,23 @@ class MapWindow(QMainWindow):
         )  # Prevent the button from expanding
         self.toggle_button.clicked.connect(self.toggle_dark_mode)
 
+        # Display GPS satellite connection status (satellite number and quality)
+        self.gps_status_label = QLabel("GPS Status: Not Connected")
+        self.gps_status_label.setFixedWidth(80)  # Set fixed width for the label
+        self.gps_status_label.setSizePolicy(
+            QSizePolicy.Fixed, QSizePolicy.Fixed
+        )
+
         # Create a container layout to align the toggle button to the left
-        self.toggle_container = QHBoxLayout()
-        self.toggle_container.addWidget(
+        self.top_bar = QHBoxLayout()
+        self.top_bar.addWidget(
             self.toggle_button, alignment=Qt.AlignLeft
         )  # Align the button to the left
+        self.top_bar.addWidget(
+            self.gps_status_label, alignment=Qt.AlignLeft
+        )
         self.toolbar_layout.addLayout(
-            self.toggle_container
+            self.top_bar
         )  # Add the container layout to the toolbar layout
 
         # Add a combo box to choose the data source
@@ -130,6 +141,11 @@ class MapWindow(QMainWindow):
         self.toolbar_layout.addWidget(self.clear_markers_button)
 
         return self.side_toolbar
+    
+    def update_gps_status(self, gps_status):
+        # Slot to handle the update for MainWindow's label
+        self.gps_status_label.setText(gps_status)
+        # self.gps_status_label.adjustSize()
 
     def get_current_index_to_feature_ui(self):
         self.start_index_to_feature_ui += 1
@@ -143,7 +159,7 @@ class MapWindow(QMainWindow):
         self.reset_data_source_ui()
 
         if self.map_view.rt_parser.running:
-            self.map_view.rt_parser.stop()
+            self.map_view.stop_realtime_data()
 
         if self.data_source == 1:  # Real-time Data Source
             # if is real-time data source selected, then add the following
