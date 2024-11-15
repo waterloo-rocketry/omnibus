@@ -308,7 +308,7 @@ class Dashboard(QWidget):
         self.key_press_signals.send_to_back.connect(self.send_to_back)
         self.key_press_signals.remove_all.connect(self.remove_all)
         self.key_press_signals.mouse_resize.connect(self.toggle_mouse)
-        self.key_press_signals.escape_pressed.connect(self.on_selection_changed)
+        self.key_press_signals.escape_pressed.connect(self.close_property_tree)
         self.installEventFilter(self.key_press_signals)
         
         # Data used to check unsaved changes and indicate on the window title
@@ -427,6 +427,9 @@ class Dashboard(QWidget):
 
     # On selection changed, hide the parameter tree
     def on_selection_changed(self):
+        self.close_property_tree()
+
+    def close_property_tree(self):
         current_widget = self.splitter.widget(1)
         if current_widget is not self.parameter_tree_placeholder:
             self.splitter.replaceWidget(1, self.parameter_tree_placeholder)
