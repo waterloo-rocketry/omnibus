@@ -5,4 +5,5 @@ PySide6
 offline_folium
 PyQt6
 lxml
-
+qrcode
+pillow
