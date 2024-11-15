@@ -308,6 +308,7 @@ class Dashboard(QWidget):
         self.key_press_signals.send_to_back.connect(self.send_to_back)
         self.key_press_signals.remove_all.connect(self.remove_all)
         self.key_press_signals.mouse_resize.connect(self.toggle_mouse)
+        self.key_press_signals.escape_pressed.connect(self.on_selection_changed)
         self.installEventFilter(self.key_press_signals)
         
         # Data used to check unsaved changes and indicate on the window title
