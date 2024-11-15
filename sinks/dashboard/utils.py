@@ -34,6 +34,7 @@ class EventTracker(QObject):
     send_to_back = Signal()
     remove_all = Signal()
     mouse_resize = Signal()
+    escape_pressed = Signal(QtWidgets.QWidget)
 
     def eventFilter(self, widget, event):
         """
@@ -83,6 +84,8 @@ class EventTracker(QObject):
                     self.remove_all.emit()
                 case KeyEvent(Qt.Key_M, Qt.ControlModifier):
                     self.mouse_resize.emit()
+                case KeyEvent(Qt.Key_Escape, _):
+                    self.escape_pressed.emit(widget)
         return super().eventFilter(widget, event)
 
 
