@@ -3,6 +3,7 @@ from pyqtgraph.Qt.QtCore import QRect, QRectF
 from pyqtgraph.Qt.QtGui import QImage, QPainter
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
 from pyqtgraph.parametertree.parameterTypes import FileParameter
+from PySide6.QtSvg import QSvgRenderer
 
 from .dashboard_item import DashboardItem
 from .no_text_action_parameter import NoTextActionParameter
@@ -27,6 +28,8 @@ class ImageDashItem(DashboardItem):
 
         self.image_path = self.parameters.child("file").value()
         self.image = None
+        self.is_svg = False
+        self.svg_renderer = None  
 
         if self.image_path:
             self.on_file_change()
@@ -44,13 +47,24 @@ class ImageDashItem(DashboardItem):
 
     def on_file_change(self):
         self.image_path = self.parameters.child("file").value()
-        self.image = QImage(self.image_path)
+        if self.image_path.endswith(".svg"):
+            # allow file to be rendered as an SVG
+            self.is_svg = True
+            self.svg_renderer = QSvgRenderer(self.image_path)
+            self.image = None
+        else:
+            self.is_svg = False
+            self.svg_renderer = None
+            self.image = QImage(self.image_path)
         self.set_original_size()
         self.widget.update()
 
     def set_original_size(self):
         if self.image is not None:
             self.resize(self.image.width(), self.image.height())
+        elif self.svg_renderer is not None:
+            default_size = self.svg_renderer.defaultSize()
+            self.resize(default_size.width(), default_size.height())
         else:
             self.resize(100, 100)
 
@@ -65,16 +79,21 @@ class ImageWidget(QWidget):
         self.item: ImageDashItem = item
 
     def paintEvent(self, paintEvent):
-        if self.item.image is None:
-            return
-        
-        width = self.width()
-        height = self.height()
-        image_width = self.item.image.width()
-        image_height = self.item.image.height()
+        if self.item.is_svg and self.item.svg_renderer is not None:
+            painter = QPainter(self)
+            self.item.svg_renderer.render(painter)
+            painter.end()
+        elif self.item.image is not None:
+            width = self.width()
+            height = self.height()
+            image_width = self.item.image.width()
+            image_height = self.item.image.height()
 
-        render_width = min(width, height / image_height * image_width)
-        render_height = min(height, width / image_width * image_height)
-        
-        with QPainter(self) as painter:
-            painter.drawImage(QRectF((width - render_width) / 2, (height - render_height) / 2, render_width, render_height), self.item.image, QRect(0, 0, image_width, image_height))
+            render_width = min(width, height / image_height * image_width)
+            render_height = min(height, width / image_width * image_height)
+
+            painter = QPainter(self)
+            painter.drawImage(QRectF((width - render_width) / 2, (height - render_height) / 2, render_width, render_height),
+                              self.item.image, QRect(0, 0, image_width, image_height))
+            painter.end()
+            
