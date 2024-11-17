@@ -119,10 +119,10 @@ class PlotDashItem(DashboardItem):
             self.times[stream].pop(0)
             self.points[stream].pop(0)
 
+        # Filter out the points that are in the series
+        values = [ self.points[v] for v in self.points.keys() if v in self.series]
+        
         # get the min/max point in the whole data set
-
-        values = list(self.points.values())
-
         if not any(values):
             min_point = 0
             max_point = 0
