@@ -9,7 +9,7 @@ ports = [
     "ai16", None, "ai18",  # Differental channels 1-3  # 2 used to be ai17
     "ai19", "ai27", "ai20", # 4-20 mA channels 4,6 and 0-5V channel 5
     "ai28",  "ai21", "ai29", # 4-20 mA channels 7-9
-    "ai15",  "ai7", "ai14"  # 4-20 mA channels 10-12
+    "ai11",  "ai4", "ai12"  # 4-20 mA channels 10-12
 ]
 
 thermo_ports = [
@@ -26,7 +26,7 @@ def setup():
     
     Sensor("Power in", "ai31", 10, Connection.SINGLE,
            LinearCalibration(3, 0, "V"))
-    Sensor("+12V", "ai23", 10, Connection.SINGLE,
+    Sensor("+12V", "ai30", 10, Connection.SINGLE,
            LinearCalibration(3, 0, "V"))
     Sensor("+5V", "ai22", 10, Connection.SINGLE,
            LinearCalibration(3, 0, "V"))
@@ -35,54 +35,82 @@ def setup():
     Sensor Configs, will change from test to test
     """
     # IFM PT5402: 4-20mA 0-1540 psi
-    # top resistor on ancient thermistor board is 82.1 ohms 
-    #Sensor("example", ports[6], 10, Connection.SINGLE,
-    #       LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+    # top resistor on ancient thermistor board is 82.1 ohms
+    #Sensor("Testing IFM PT-4", ports[4], 10, Connection.SINGLE,
+           #LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+    #Sensor("Testing IFM PT-6", ports[6], 10, Connection.SINGLE,
+           #LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+    Sensor("NPT201 - Nitrogen Fill", ports[7], 10, Connection.SINGLE,
+           LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
+    Sensor("NPT202 - Pneumatics", ports[8], 10, Connection.SINGLE,
+           LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+    Sensor("OPT101 - Fill Pressure", ports[9], 10, Connection.SINGLE,
+           LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
+    Sensor("OPT102 - Ox Tank", ports[10], 10, Connection.SINGLE,
+           LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+    Sensor("OPT103 - Ox Injector", ports[11], 10, Connection.SINGLE,
+           LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+    Sensor("FPT101 - Fill Injector", ports[12], 10, Connection.SINGLE,
+           LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
 
     #Sensor("FPT-301 Fuel Tank", ports[11], 10, Connection.SINGLE,
     #       LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
            
-    Sensor("OPT-102 Ox Fill Downstream", ports[9], 10, Connection.SINGLE,
-           LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
-    Sensor("NPT-201 Nitrogen Fill", ports[8], 10, Connection.SINGLE,
-           LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+    #Sensor("OPT-102 Ox Fill Downstream", ports[9], 10, Connection.SINGLE,
+           #LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+    #Sensor("NPT-201 Nitrogen Fill", ports[8], 10, Connection.SINGLE,
+           #LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+
+    #Omega S-type (LC-103B), 200 lb (divide by 2.2 to kg), 3 mV/V at 12V
+    Sensor("Tank Mass - Omega S-Type", ports[3], 0.2, Connection.DIFFERENTIAL,
+           LinearCalibration((200/2.205) / (3/1000*12), -1.9, "kg"))
+    
+           
+    #Omega S-type (LC-103B), 1000  kg, 3 mV/V at 12V
+    Sensor("Tank Mass - Omega S-Type-1000", ports[1], 0.2, Connection.DIFFERENTIAL,
+        LinearCalibration((1000) / (3/1000*12), 0, "kg"))
+        #Omega S-type (LC-103B), 1000  kg, 3 mV/V at 12V
+    #Sensor("Tank Mass Test -1000", ports[3], 0.2, Connection.DIFFERENTIAL,
+           #LinearCalibration((1000) / (3/1000*12), 0, "kg"))
 
     # Standard TDL35 and TDM51 transducers: 4-20mA 0-3000 psi
-    #Sensor("example", ports[4], 10, Connection.SINGLE,
-    #       LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
+    #Sensor("example", ports[12], 10, Connection.SINGLE,
+           #LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
 
-    Sensor("OPT-101 Ox Fill Upstream", ports[7], 10, Connection.SINGLE,
-           LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
+    #Sensor("OPT-101 Ox Fill Upstream", ports[7], 10, Connection.SINGLE,
+           #LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
            
     # Mystery tower disk load cell, ~1 mv/v, 12v excitation, offset unclear 
     # calculations here https://docs.google.com/spreadsheets/d/1CjHpVej8-5QckUuJ_1ToOswU6ueGZGIw2nW77NxCvWc/edit#gid=0
-    Sensor("Rocket Mass", ports[1], 0.2, Connection.DIFFERENTIAL,
-        LinearCalibration((200) / (1/1000*12), 0, "kg"))
+    #Sensor("Rocket Mass", ports[1], 0.2, Connection.DIFFERENTIAL,
+        #LinearCalibration((200) / (1/1000*12), 0, "kg"))
 
     # +12V Sense through a 7.5k / 10k resistor divider
-    Sensor("GSPD +12V", "ai3", 10, Connection.SINGLE,
-           LinearCalibration((7470+10100)/10100, 0, "V"))
+    #Sensor("GSPD +12V", "ai3", 10, Connection.SINGLE,
+           #LinearCalibration((7470+10100)/10100, 0, "V"))
            
     # Adafruit anemometer. 0.4 - 2V mapping to 0-32.4 m/s
-    Sensor("Anemometer", ports[5], 10, Connection.SINGLE,
-            LinearCalibration(32.4 / (2 - 0.4) / 0.725, -0.4 * 32.4 / (2 - 0.4) / 0.725, "m/s"))
+    #Sensor("Anemometer m/s", ports[5], 10, Connection.SINGLE,
+    #        LinearCalibration(32.4 / (2 - 0.4) / 0.725, -0.4 * 32.4 / (2 - 0.4) / 0.725, "m/s"))
+    #Sensor("Anemometer mi/hr", ports[5], 10, Connection.SINGLE,
+            #LinearCalibration((32.4 / (2 - 0.4) / 0.725)*2.24, (-0.4 * 32.4 / (2 - 0.4) / 0.725)*2.24, "mi/hr"))
            
     """
     Everything below here is just for documentation purposes
     """
 
     # Honeywell S-type, 1000 N (divide by 9.81 to kg) an 2.002 mv/V at 12V
-    #Sensor("Ox Tank - Honeytype S-Type", ports[2], 0.2, Connection.DIFFERENTIAL,
-    #       LinearCalibration((1000/9.81)/(2.002/1000*12), -0.7, "kg"))
+    # checked the datasheet, it says that honeywell S-type 1000N has power range 5-10V
+    # also applied 1.6 corrective factor for linearity (experiementally determined)
+    #Sensor("Ox Tank - Honeytype S-Type", ports[1], 0.2, Connection.DIFFERENTIAL,
+           #LinearCalibration(1.6*(1000/9.81)/(2.002/1000*10), -0.7, "kg"))
     
     # Mystery tower disk load cell, ~1 mv/v, 12v excitation, offset unclear 
     # calculations here https://docs.google.com/spreadsheets/d/1CjHpVej8-5QckUuJ_1ToOswU6ueGZGIw2nW77NxCvWc/edit#gid=0
     #Sensor("Rocket Mass", ports[3], 0.2, Connection.DIFFERENTIAL,
     #    LinearCalibration((200) / (1/1000*12), 0, "kg"))
 
-    # Omega S-type (LC-103B), 200 lb (divide by 2.2 to kg), 3 mV/V at 12V
-    #Sensor("Tank Mass - Omega S-Type", ports[3], 0.2, Connection.DIFFERENTIAL,
-    #       LinearCalibration((200/2.205) / (3/1000*12), -1.9, "kg"))
+
 
     # CAS BSA-5KLB 5000 lbf (divide by 2.2 to kg), 3 mv/v, 12v excitation
     #Sensor("Thrust - CAS BSA-5KLB", ports[1], 0.2, Connection.DIFFERENTIAL,
