@@ -7,12 +7,17 @@ import argparse
 import sys
 import logging
 import json
-from logtool import Logger
+from functools import partial
+from dataclasses import dataclass
+
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt.QtWidgets import (
     QApplication, QDialog, QLabel, QDialogButtonBox, QVBoxLayout,
-    QWidget, QCheckBox, QGridLayout
+    QWidget, QCheckBox, QGridLayout, QLineEdit
 )
+
+from logtool import Logger
+
 # Some specific commands are needed for Windows vs macOS/Linux
 if sys.platform == "win32":
     from subprocess import CREATE_NEW_PROCESS_GROUP
@@ -26,20 +31,24 @@ else:
 class Finished(Exception):
     pass
 
+@dataclass
+class CommandStruct:
+    command: list[str]
+    stdout: bool = False
+    stderr: bool = False # stderr is not used in this version
+
 # CLI Launcher
-
-
 class Launcher():
     def __init__(self) -> None:
         super().__init__()
-        self.commands = []
-        self.src_selected = []
-        self.sink_selected = []
+        self.commands: list[CommandStruct] = []
         self.processes = []
         self.load_last: bool = False
 
         # Parse folders for sources and sinks
         self.modules = {"sources": os.listdir('sources'), "sinks": os.listdir('sinks')}
+        self.src_state = [[False,""] for _ in self.modules.get("sources")] # Selected, args
+        self.sink_state = [[False, False] for _ in self.modules.get("sources")] # Selected, stdout flag
 
         # Remove dot files
         for module in self.modules.keys():
@@ -56,8 +65,8 @@ class Launcher():
             return
         with open('lastrun.json', 'r') as fp:
             data = json.load(fp)
-            self.src_selected = data['Sources']
-            self.sink_selected = data['Sinks']
+            self.src_state = data['Sources']
+            self.sink_state = data['Sinks']
             fp.close()
 
     # Print list of sources and sinks
@@ -72,33 +81,44 @@ class Launcher():
         
         if not self.load_last:
             #Source selection
-            self.src_selected  = self.validate_inputs(self.modules['sources'], "Source")
-            
+            src_selected  = self.validate_inputs(self.modules['sources'], "Source")
+
+            self.construct_argus(src_selected) # Construct arguments for sources
+
             #Sink selection 
-            self.sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
+            sink_selected = self.validate_inputs(self.modules['sinks'], "Sink")
+            
+            for sink in sink_selected:
+                self.sink_state[sink-1][0] = True
+                self.sink_state[sink-1][1] = True # Default stdout flag is True in CLI mode
 
             self.save_selected_to_config()
 
         #Command construction
-        omnibus = [python_executable, "-m", "omnibus"]
+        # omnibus = [python_executable, "-m", "omnibus", False]
+        omnibus = CommandStruct(command=[python_executable, "-m", "omnibus"], stdout=False)
         self.commands.append(omnibus)
-        self.construct_commands_cli(self.src_selected, self.sink_selected)
-       
+        self.construct_commands_cli(self.src_state, self.sink_state)
+        
+    def construct_argus(self, src_list):
+        for src in src_list:
+            arg = input(f"Enter the arguments for the source {self.modules['sources'][src-1]} (default \"\"): ")
+            self.src_state[src-1] = [True, arg]
 
     #Construct commands for the selection
-    def construct_commands_cli(self, src_list, sink_list):
-        if src_list:
-            for selection in src_list:
-                # Special case for fake parsley
-                if self.modules['sources'][int(selection)-1] == "fake_parsley":
-                    source = [python_executable, "sources/parsley/main.py", "--fake"]
-                else:
-                    source = [python_executable, f"sources/{self.modules['sources'][int(selection) - 1]}/main.py"]
+    def construct_commands_cli(self, src_list, sink_list): # This is not support for stdout flag 
+        for src in src_list:
+            if src[0]:
+                command = [python_executable, f"sources/{self.modules['sources'][self.src_state.index(src)]}/main.py"]
+                if src[1] != "":
+                    command.append(src[1])
+                source = CommandStruct(command=command, stdout=False)
                 self.commands.append(source)
 
-        if sink_list:
-            for selection in sink_list:
-                sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection) - 1]}/main.py"]
+        for snk in sink_list:
+            if snk[0]:
+                command = [python_executable, f"sinks/{self.modules['sinks'][self.sink_state.index(snk)]}/main.py"]
+                sink = CommandStruct(command=command, stdout=snk[1])
                 self.commands.append(sink)
         
         return self.commands
@@ -137,15 +157,17 @@ class Launcher():
 
     # Execute commands as subprocesses
     def subprocess(self):
-        print("Launching... ", end="")
+        print(f"Launching... Run commands: {self.commands}")
         for command in self.commands:
+            launch_command = command.command
+            stdout = subprocess.PIPE if command.stdout else None
+            stderr = subprocess.PIPE if command.stderr else None
             if sys.platform == "win32":
-                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                           creationflags=CREATE_NEW_PROCESS_GROUP)
-                time.sleep(0.5)
+                process = subprocess.Popen(launch_command, stdout=stdout, stderr=stderr,
+                                            creationflags=CREATE_NEW_PROCESS_GROUP)
             else:
-                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                time.sleep(0.5)
+                process = subprocess.Popen(launch_command, stdout=stdout, stderr=stderr)
+            time.sleep(0.8)
             self.processes.append(process)
 
         print("Done!")
@@ -153,20 +175,25 @@ class Launcher():
     # Create loggers
     def logging(self):
         self.logger = Logger()
-        for src in self.src_selected:
-            # Special case for fake parsley
-            if self.modules['sources'][src-1] == "fake_parsley":
-                self.logger.add_logger(f"sources/parsley")
-            else:
-                self.logger.add_logger(f"sources/{self.modules['sources'][src - 1]}")
-        for sink in self.sink_selected:
-            self.logger.add_logger(f"sinks/{self.modules['sinks'][sink - 1]}")
+        for idx, (select, _) in enumerate(self.src_state):
+            if select:
+                src = self.modules['sources'][idx]
+                if src == "fake_parsley":
+                    self.logger.add_logger(f"sources/parsley")
+                else:
+                    self.logger.add_logger(f"sources/{src}")
+        
+        for idx, (select, _) in enumerate(self.sink_state):
+            if select:
+                sink = self.modules['sinks'][idx]
+                self.logger.add_logger(f"sinks/{sink}")            
+        
         print("Loggers Initiated")
     
     def save_selected_to_config(self):
         data = {}
-        data ['Sources'] = self.src_selected
-        data ['Sinks'] = self.sink_selected
+        data ['Sources'] = self.src_state
+        data ['Sinks'] = self.sink_state
         with open('lastrun.json', 'w+') as fp:
             json.dump(data, fp)
 
@@ -213,7 +240,7 @@ class GUILauncher(Launcher, QDialog):
         self.selected_ok = False
 
         self.setGeometry(300, 300, 500, 230)
-        self.setFixedSize(500, 400)
+        self.setFixedSize(700, 500)
         self.setWindowTitle("Omnibus Launcher")
 
         source_label = QLabel(self)
@@ -222,58 +249,85 @@ class GUILauncher(Launcher, QDialog):
 
         #Create checkboxes for each source option
         sources = self.modules.get("sources")
+        self.sources = sources
         up_source = [source.capitalize() for source in sources]
         self.src_dict = {source: i + 1 for i, source in enumerate(up_source)}
-        self.src_checkboxes = [QCheckBox(f"{src}") for src in up_source]
+        self.src_widgets = [(QCheckBox(f"{src}"), QLineEdit()) for src in up_source]
+        for checkbox, args in self.src_widgets:
+            args.setPlaceholderText("CLI args")
+        self.src_state = [[False, ""] for _ in sources]
+
         
         #Layout for source checkboxes
         self.src_layout = QGridLayout()
         row = 0
         col = 0
-        for checkbox in self.src_checkboxes:
+        col_max = len(self.src_widgets) // 3 + 1 # Maximum 3 lines of checkboxes
+        for checkbox, args in self.src_widgets:
             self.src_layout.addWidget(checkbox, row, col)
+            self.src_layout.addWidget(args, row + 1, col)
             col += 1
-            if col == 3:  # Three checkboxes per row
+            if col == col_max: 
                 col = 0
-                row += 1
+                row += 2
 
         source_list = QWidget()
         source_list.setLayout(self.src_layout)
         source_list.setContentsMargins(0, 0, 0, 0)
 
+
         #Connect checkbox state to signals to detect which sources were selected 
-        for checkbox in self.src_checkboxes:
-            checkbox.stateChanged.connect(self.update_selected)
+        for i, (checkbox, args) in enumerate(self.src_widgets):
+            # https://docs.python.org/3/faq/programming.html#why-do-lambdas-defined-in-a-loop-with-different-values-all-return-the-same-result
+            def stateChanged(state, index):
+                self.src_state[index][0] = state == 2
+            def textChanged(text, index):
+                self.src_state[index][1] = text
+            checkbox.stateChanged.connect(partial(stateChanged,index = i))
+            args.textChanged.connect(partial(textChanged,index = i))
 
         #Create a sink label
         sink = QLabel(self)
         sink.setText("Sinks:")
-        sink.setGeometry(20, 200, 50, 10)
+        sink.setGeometry(20, 230, 50, 10)
         sink.setContentsMargins(0,0,0,0)
 
         #Create checkboxes for each sink option 
         sinks = self.modules.get("sinks")
         up_sink = [sink.capitalize() for sink in sinks]
         self.sink_dict = {sink: i + 1 for i, sink in enumerate(up_sink)}
-        self.sink_checkboxes = [QCheckBox(f"{sink}") for sink in up_sink]
+        self.sinks_widgets = [(QCheckBox(f"{sink}"), QCheckBox(f"stdout?")) for sink in up_sink]
         
         #Layout for sink checkboxes
         self.sink_layout=QGridLayout()
         row = 0
         col = 0
-        for checkbox in self.sink_checkboxes:
-            self.sink_layout.addWidget(checkbox, row, col)
+        for checkbox, std_out in self.sinks_widgets:
+            group_widget = QWidget()
+            group_layout = QVBoxLayout()
+            group_layout.addWidget(checkbox)
+            group_layout.addWidget(std_out)
+            group_widget.setLayout(group_layout)
+            group_widget.setStyleSheet("border: 1px solid black; padding: 5px;")
+            self.sink_layout.addWidget(group_widget, row, col)
             col += 1
-            if col == 3:
+            if col == 5:  # Three groups per row
                 col = 0
                 row += 1
         sink_list = QWidget()
         sink_list.setLayout(self.sink_layout)
-        sink_list.setContentsMargins(0,0,0,0)
+        sink_list.setContentsMargins(0, 0, 0, 0)
         
-        #Connect checkbox state to signals to detect which sources were selected 
-        for checkbox in self.sink_checkboxes:
-            checkbox.stateChanged.connect(self.update_selected)
+        #Connect checkbox state to signals to detect which sink were selected 
+        for i, (checkbox, std_out) in enumerate(self.sinks_widgets):
+            def stateChanged(state, index):
+                self.sink_state[index][0] = state == 2
+            def stdOutChanged(state, index):
+                self.sinks_widgets[index][0].setChecked(True if state == 2 else False)
+                self.sinks_widgets[index][0].setEnabled(False if state == 2 else True)
+                self.sink_state[index][1] = True if state == 2 else False
+            checkbox.stateChanged.connect(partial(stateChanged,index = i))
+            std_out.stateChanged.connect(partial(stdOutChanged,index = i))
 
         self.button_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok
@@ -291,38 +345,26 @@ class GUILauncher(Launcher, QDialog):
 
     def construct_commands(self):
         self.selected_ok = True
-        self.omnibus = [python_executable, "-m", "omnibus"]
-        self.commands.append(self.omnibus)
+        omnibus = CommandStruct(command=[python_executable, "-m", "omnibus"], stdout=False) # False is for stdout flag
+        self.commands.append(omnibus)
 
-        if self.src_selected:
-            for selection in self.src_selected:
-                # Special case for fake parsley
-                if self.modules['sources'][int(selection)-1] == "fake_parsley":
-                    source = [python_executable, "sources/parsley/main.py", "--fake"]
+        for src in self.src_state:
+            if src[0]:
+                command = [python_executable, f"sources/{self.modules['sources'][self.src_state.index(src)]}/main.py"]
+                if src[1] != "":
+                    command.append(src[1])
+                source = CommandStruct(command=command, stdout=False)
+                self.commands.append(source)
+
+        for snk in self.sink_state:
+            if snk[0]:
+                command = [python_executable, f"sinks/{self.modules['sinks'][self.sink_state.index(snk)]}/main.py"]
+                if snk[1]: # Check stdout flag
+                    sink = CommandStruct(command=command, stdout=True)
                 else:
-                    source = [python_executable, f"sources/{self.modules['sources'][int(selection)-1]}/main.py"]
-                self.commands.append(source)    
-        if self.sink_selected:
-            for selection in self.sink_selected:
-                sink = [python_executable, f"sinks/{self.modules['sinks'][int(selection)-1]}/main.py"]
+                    sink = CommandStruct(command=command, stdout=False)
                 self.commands.append(sink)
         self.close()
-
-    def update_selected(self, state):
-        checkbox = self.sender()
-        text = checkbox.text()
-        
-        if checkbox in self.src_checkboxes:
-            selected_list = self.src_selected
-            index = self.src_dict[text]
-        else:
-            selected_list = self.sink_selected
-            index = self.sink_dict[text]
-        if checkbox.isChecked():
-            if index not in selected_list:
-                selected_list.append(int(index))        
-        else:
-            selected_list.remove(int(index))
 
     def closeEvent(self, event):
         if self.selected_ok:
