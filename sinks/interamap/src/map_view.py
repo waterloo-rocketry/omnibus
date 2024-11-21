@@ -111,6 +111,7 @@ class MapView(QWebEngineView):
 
     def update_map(self):
         self.draw_gps_data()
+        self.draw_gps_storage_data()
         """Renders the map and updates the QWebEngineView."""
         self.map_html = (
             self.m.get_root()
@@ -161,23 +162,21 @@ class MapView(QWebEngineView):
 
         if ("lat" in info.__dict__ and "lon" in info.__dict__ and current_time - self.last_map_point_update >= 1):
             self.last_map_point_update = current_time
-            self.add_point_to_map([info.__dict__["lat"], info.__dict__["lon"]])
-
-        self.point_storage.store_info(info)
-
-    def add_point_to_map(self, point: List[float]):
-        """Add a folium circle marker point to the map and update the view."""
-        point = folium.CircleMarker(location=[point[0], point[1]],
-            radius=1,
-            weight=5
-        )
-        point.add_to(self.m)
-        self.update_map()
+            self.point_storage.store_info(info)
+            self.update_map()
 
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
         # self.create_map()
         self.add_marker_to_map(coord, "Current Location", "blue")
+
+    def draw_gps_storage_data(self):
+        """Draw the GPS data stored in the point storage."""
+        for point in self.point_storage.get_gps_points():
+            folium.CircleMarker(
+                location=[point.lat, point.lon],
+                radius=1,
+            ).add_to(self.m)
 
     def draw_gps_data(self):
         if self.kmz_parser is None:
