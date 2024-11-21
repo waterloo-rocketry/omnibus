@@ -1,10 +1,12 @@
-from config import ONLINE_MODE
-
+import pathlib
+from datetime import datetime
 from typing import List
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
+from fastkml import kml, geometry, enums, times
 
+from config import ONLINE_MODE
 from src.gps_cache import GPS_Cache
 from src.real_time_parser import RTParser
 
@@ -13,9 +15,7 @@ if not ONLINE_MODE:
     Need to run the following command to download required js and css files (only once, with internet connection):
     $ python -m offline_folium
     """
-    import offline_folium
 import folium
-from fastkml import kml
 
 from src.kmz_parser import KMZParser
 from src.data_struct import Point_GPS, LineString_GPS
@@ -188,3 +188,35 @@ class MapView(QWebEngineView):
                 line.add_to(self.m)
             else:
                 print("Unhandled data type:", type(data))
+
+    def export_points(self):
+        """Export the map to KML file."""
+        file_path = 'points.kml'
+        gps_points_placemarks = []
+        for p in self.point_storage.get_gps_points():
+            gps_points_placemarks.append(
+                kml.Placemark(
+                    name="GPS Point",
+                    description=f"Board ID: {p.board_id}",
+                    times=times.TimeStamp(
+                        timestamp=times.KmlDateTime(
+                            datetime.combine(
+                                datetime.today(),
+                                datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time()))
+                    ) if p.time_stamp else None,
+                    kml_geometry=geometry.Point(
+                        kml_coordinates=geometry.Coordinates(
+                            coords=[(p.lon, p.lat, p.alt)]
+                        )
+                    )
+                )
+            )
+
+        k = kml.KML(features=[kml.Document(features=gps_points_placemarks)])
+        try:
+            k.write(pathlib.Path(file_path), prettyprint=True)
+        except Exception as e:
+            print(f"Error exporting points: {e}")
+
+        print(f"Exported points to {file_path}")
+

@@ -89,6 +89,12 @@ class MapWindow(QMainWindow):
         )  # Prevent the button from expanding
         self.toggle_button.clicked.connect(self.toggle_dark_mode)
 
+        # Export points button (temporary)
+        self.export_points_button = QPushButton("Export Points", self)
+        self.export_points_button.clicked.connect(self.map_view.export_points)
+        self.toolbar_layout.addWidget(self.export_points_button)
+
+
         # Create a container layout to align the toggle button to the left
         self.toggle_container = QHBoxLayout()
         self.toggle_container.addWidget(
