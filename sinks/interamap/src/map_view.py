@@ -8,6 +8,8 @@ from PySide6.QtWidgets import QSizePolicy
 from src.gps_cache import GPS_Cache
 from src.real_time_parser import RTParser
 
+import time
+
 if not ONLINE_MODE:
     """
     Need to run the following command to download required js and css files (only once, with internet connection):
@@ -49,6 +51,7 @@ class MapView(QWebEngineView):
 
         # Initialize a Point Storage object to store GPS points
         self.point_storage = GPS_Cache()
+        self.last_map_point_update = 0
 
         self.create_map()
 
@@ -151,12 +154,25 @@ class MapView(QWebEngineView):
             self.rt_parser.start()
         else:
             self.rt_parser.stop()
-            print(self.point_storage)
     
     def storage_rt_info(self, info): 
+        
+        current_time = time.time()
+
+        if ("lat" in info.__dict__ and "lon" in info.__dict__ and current_time - self.last_map_point_update >= 1):
+            self.last_map_point_update = current_time
+            self.add_point_to_map([info.__dict__["lat"], info.__dict__["lon"]])
+
         self.point_storage.store_info(info)
-        # TODO: update the map 
-    
+
+    def add_point_to_map(self, point: List[float]):
+        """Add a folium circle marker point to the map and update the view."""
+        point = folium.CircleMarker(location=[point[0], point[1]],
+            radius=1,
+            weight=5
+        )
+        point.add_to(self.m)
+        self.update_map()
 
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
