@@ -132,7 +132,7 @@ class MapWindow(QMainWindow):
 
         # Export points button
         self.export_points_button = QPushButton("Export Points", self)
-        self.export_points_button.clicked.connect(self.map_view.export_points)
+        self.export_points_button.clicked.connect(self.map_view.point_storage.export_points)
         self.toolbar_layout.addWidget(self.export_points_button)
 
         return self.side_toolbar

@@ -190,36 +190,4 @@ class MapView(QWebEngineView):
             else:
                 print("Unhandled data type:", type(data))
 
-    def export_points(self):
-        """Export the map to KML file."""
-        file_path = 'points.kmz' # path TBD
-        gps_points_placemarks = []
-        for p in self.point_storage.get_gps_points():
-            gps_points_placemarks.append(
-                kml.Placemark(
-                    name="GPS Point",
-                    description=f"Board ID: {p.board_id}",
-                    times=times.TimeStamp(
-                        timestamp=times.KmlDateTime(
-                            datetime.combine(
-                                datetime.today(),
-                                datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time()))
-                    ) if p.time_stamp else None,
-                    kml_geometry=geometry.Point(
-                        kml_coordinates=geometry.Coordinates(
-                            coords=[(p.lon, p.lat, p.alt)]
-                        )
-                    )
-                )
-            )
-
-        k = kml.KML(features=[kml.Document(name="Points", features=gps_points_placemarks)])
-        try:
-            # k.write(pathlib.Path('points.kml'), prettyprint=True) # write directly as kml file
-            with zipfile.ZipFile(file_path, "w") as kmz:
-                kmz.writestr("doc.kml", k.to_string(prettyprint=True))
-        except Exception as e:
-            print(f"Error exporting points: {e}")
-
-        print(f"Exported points to {file_path}")
 

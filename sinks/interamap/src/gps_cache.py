@@ -1,6 +1,10 @@
+import pathlib
+import zipfile
+from datetime import datetime
 from enum import IntEnum
 
 from PySide6.QtCore import QThread, Signal
+from fastkml import kml, geometry, times
 
 from src.data_struct import Point_GPS, Info_GPS, LineString_GPS
 
@@ -67,6 +71,41 @@ class GPS_Cache(QThread):
             self.storage_update.emit((self.StorageUpdateType.REMOVE, info))
         except KeyError:
             raise "Error: Unstored info to be removed" + str(info)
+
+    def export_points(self):
+        """Export the map to KML file."""
+        file_path = 'points.kmz' # path TBD
+        gps_points_placemarks: (str, kml.Folder) = {}
+        for p in self.gps_points:
+            time = datetime.combine(
+                datetime.today(),
+                datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time()) if p.time_stamp else None
+
+            if p.board_id not in gps_points_placemarks.keys():
+                gps_points_placemarks[p.board_id] = kml.Folder(name=p.board_id)
+
+            gps_points_placemarks[p.board_id].append(
+                kml.Placemark(
+                    name="GPS Point",
+                    description=f"Time: {time} Board ID: {p.board_id}",
+                    times=times.TimeStamp(timestamp=times.KmlDateTime(time)) if p.time_stamp else None,
+                    kml_geometry=geometry.Point(
+                        kml_coordinates=geometry.Coordinates(
+                            coords=[(p.lon, p.lat, p.alt)]
+                        )
+                    )
+                )
+            )
+
+        k = kml.KML(features=[kml.Document(name="Points", features=list(gps_points_placemarks.values()))])
+        try:
+            k.write(pathlib.Path('points.kml'), prettyprint=True) # write directly as kml file
+            with zipfile.ZipFile(file_path, "w") as kmz:
+                kmz.writestr("doc.kml", k.to_string(prettyprint=True))
+        except Exception as e:
+            print(f"Error exporting points: {e}")
+
+        print(f"Exported points to {file_path}")
 
     def __str__(self):
         string = ""
