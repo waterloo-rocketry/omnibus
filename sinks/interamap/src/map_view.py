@@ -1,10 +1,13 @@
-from config import ONLINE_MODE
-
+import pathlib
+import zipfile
+from datetime import datetime
 from typing import List
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
+from fastkml import kml, geometry, enums, times
 
+from config import ONLINE_MODE
 from src.gps_cache import GPS_Cache
 from src.real_time_parser import RTParser
 
@@ -13,9 +16,7 @@ if not ONLINE_MODE:
     Need to run the following command to download required js and css files (only once, with internet connection):
     $ python -m offline_folium
     """
-    import offline_folium
 import folium
-from fastkml import kml
 
 from src.kmz_parser import KMZParser
 from src.data_struct import Point_GPS, LineString_GPS
@@ -188,3 +189,5 @@ class MapView(QWebEngineView):
                 line.add_to(self.m)
             else:
                 print("Unhandled data type:", type(data))
+
+
