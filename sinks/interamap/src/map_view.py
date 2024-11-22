@@ -1,4 +1,5 @@
 import pathlib
+import zipfile
 from datetime import datetime
 from typing import List
 
@@ -191,7 +192,7 @@ class MapView(QWebEngineView):
 
     def export_points(self):
         """Export the map to KML file."""
-        file_path = 'points.kml'
+        file_path = 'points.kmz' # path TBD
         gps_points_placemarks = []
         for p in self.point_storage.get_gps_points():
             gps_points_placemarks.append(
@@ -212,9 +213,11 @@ class MapView(QWebEngineView):
                 )
             )
 
-        k = kml.KML(features=[kml.Document(features=gps_points_placemarks)])
+        k = kml.KML(features=[kml.Document(name="Points", features=gps_points_placemarks)])
         try:
-            k.write(pathlib.Path(file_path), prettyprint=True)
+            # k.write(pathlib.Path('points.kml'), prettyprint=True) # write directly as kml file
+            with zipfile.ZipFile(file_path, "w") as kmz:
+                kmz.writestr("doc.kml", k.to_string(prettyprint=True))
         except Exception as e:
             print(f"Error exporting points: {e}")
 
