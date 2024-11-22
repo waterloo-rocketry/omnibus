@@ -28,7 +28,7 @@ def parse_gps_data(gps, data):
         lon, lat = switch_numbers_keep_sign(lon, lat) # NOTE: This is for fix a mistake in the PROCESSOR data
         
     # Combine altitude and decimal altitude
-    alt = altitude["altitude"] + altitude["daltitude"] / 100
+    alt = altitude["altitude"] + altitude["daltitude"] / 10000
 
     point = Point_GPS(lon=lon, lat=lat, alt=alt, num_sats=num_sats, time_stamp=timestamp, board_id=boardId)
 
@@ -53,7 +53,7 @@ def switch_numbers_keep_sign(a, b):
 def convert_to_decimal_degrees(coord):
     degs = coord["degs"]
     mins = coord["mins"] / 60
-    dmins = coord["dmins"] / 6000
+    dmins = coord["dmins"] / 600000
     decimal = degs + mins + dmins
     if coord.get("direction") in ["S", "W"]:
         decimal = -decimal

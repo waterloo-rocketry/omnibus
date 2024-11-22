@@ -90,21 +90,12 @@ class MapWindow(QMainWindow):
         )  # Prevent the button from expanding
         self.toggle_button.clicked.connect(self.toggle_dark_mode)
 
-        # Display GPS satellite connection status (satellite number and quality)
-        self.gps_status_label = QLabel("GPS Status: Not Connected")
-        self.gps_status_label.setFixedWidth(80)  # Set fixed width for the label
-        self.gps_status_label.setSizePolicy(
-            QSizePolicy.Fixed, QSizePolicy.Fixed
-        )
 
         # Create a container layout to align the toggle button to the left
-        self.top_bar = QHBoxLayout()
+        self.top_bar = QVBoxLayout()
         self.top_bar.addWidget(
             self.toggle_button, alignment=Qt.AlignLeft
         )  # Align the button to the left
-        self.top_bar.addWidget(
-            self.gps_status_label, alignment=Qt.AlignLeft
-        )
         self.toolbar_layout.addLayout(
             self.top_bar
         )  # Add the container layout to the toolbar layout
@@ -164,6 +155,17 @@ class MapWindow(QMainWindow):
         if self.data_source == 1:  # Real-time Data Source
             # if is real-time data source selected, then add the following
             # Create buttons for starting/stopping real-time data and loading data
+
+            # Display GPS satellite connection status (satellite number and quality)
+            self.gps_status_label = QLabel("GPS Status: Not Connected")
+            self.gps_status_label.setFixedWidth(200)  # Set fixed width for the label
+            self.gps_status_label.setSizePolicy(
+                QSizePolicy.Fixed, QSizePolicy.Fixed
+            )
+            self.gps_status_label.setWordWrap(True)
+            
+            self.toolbar_layout.insertWidget(self.get_current_index_to_feature_ui()-2, self.gps_status_label)
+            
             start_stop_button = QPushButton("Start/Stop Real-time Data", self)
             start_stop_button.clicked.connect(
                 self.start_stop_realtime_data

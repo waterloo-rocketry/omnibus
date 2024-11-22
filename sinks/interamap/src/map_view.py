@@ -165,12 +165,12 @@ class MapView(QWebEngineView):
     
     def emit_update_signal(self, gps_text):
         # Emit the signal with the new text when the button is clicked
-        self.update_gps_label.emit(f"GPS Status:\n{gps_text}")
+        self.update_gps_label.emit(f"GPS Status:\n\n{gps_text}")
     
     def storage_rt_info(self, info): 
         self.point_storage.store_info(info)
         if isinstance(info, Info_GPS):
-            self.emit_update_signal(f"Board ID: {info.board_id}, Satellites: {info.num_sats}, Quality: {info.quality}")
+            self.emit_update_signal(f"Board ID: {info.board_id},\nSatellites: {info.num_sats}, Quality: {info.quality}")
         # TODO: update the map 
     
 
