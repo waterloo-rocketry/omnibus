@@ -10,6 +10,12 @@ from src.real_time_parser import RTParser
 
 import time
 
+import flask
+
+import threading
+
+import logging
+
 if not ONLINE_MODE:
     """
     Need to run the following command to download required js and css files (only once, with internet connection):
@@ -81,38 +87,6 @@ class MapView(QWebEngineView):
             height="100%",  # Ensure map height is 100%
         )
 
-        source = folium.JsCode("""
-            function(responseHandler, errorHandler) {
-                var url = 'https://api.wheretheiss.at/v1/satellites/25544';
-
-                fetch(url)
-                .then((response) => {
-                    return response.json().then((data) => {
-                        var { id, longitude, latitude } = data;
-
-                        return {
-                            'type': 'FeatureCollection',
-                            'features': [{
-                                'type': 'Feature',
-                                'geometry': {
-                                    'type': 'Point',
-                                    'coordinates': [longitude, latitude]
-                                },
-                                'properties': {
-                                    'id': id
-                                }
-                            }]
-                        };
-                    })
-                })
-                .then(responseHandler)
-                .catch(errorHandler);
-            }
-        """)
-
-        rt = Realtime(source, point_to_layer=folium.JsCode("(f, coordinate) => { return L.circleMarker(coordinate, {radius: 6, fillOpacity: 1})}"), interval=1000)
-        rt.add_to(self.m)
-
         # Add a bottom layer with the default tile style (If online, it will use CartoDB tiles)
         folium.TileLayer(
             tiles=(
@@ -123,6 +97,7 @@ class MapView(QWebEngineView):
             overlay=False,
         ).add_to(self.m)
 
+        self.initialize_realtime_source()
         self.add_offline_layer()
 
         # For Debugging
@@ -130,6 +105,46 @@ class MapView(QWebEngineView):
 
         # Save the folium map to an HTML string with a responsive style
         self.update_map()
+
+    def initailize_realtime_source_server(self, point_storage):
+        app = flask.Flask(__name__)
+
+        @app.route('/')
+        def get_realtime_gps():
+
+            point_id = 0
+
+            response = flask.jsonify({
+                'type': 'FeatureCollection',
+                'features': [{
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'Point',
+                        'coordinates': [point.lon, point.lat]
+                    },
+                    'properties': {
+                        'id': (point_id := point_id + 1)
+                    }
+                } for point in point_storage.get_gps_points()]
+            })
+
+            response.headers.add('Access-Control-Allow-Origin', '*')
+
+            return response
+
+        # Disable flask request logging
+        logging.getLogger("werkzeug").disabled = True
+
+        app.run(debug=False)
+
+    def initialize_realtime_source(self):
+
+        realtime_source_thread = threading.Thread(target=self.initailize_realtime_source_server, args=(self.point_storage,))
+        realtime_source_thread.daemon = True
+        realtime_source_thread.start()
+        
+        rt = Realtime("http://127.0.0.1:5000", point_to_layer=folium.JsCode("(f, coordinate) => { return L.circleMarker(coordinate, {radius: 3, fillOpacity: 1})}"), interval=100)
+        rt.add_to(self.m)
 
     def add_offline_layer(self):
         """Add a offline tile layer to the map."""
@@ -190,11 +205,9 @@ class MapView(QWebEngineView):
             self.rt_parser.stop()
     
     def storage_rt_info(self, info): 
-        
-        current_time = time.time()
 
-        if ("lat" in info.__dict__ and "lon" in info.__dict__ and current_time - self.last_map_point_update >= 1):
-            self.last_map_point_update = current_time
+        if ("lat" in info.__dict__ and "lon" in info.__dict__ and time.time() - self.last_map_point_update >= 0.5):
+            self.last_map_point_update = time.time()
             self.point_storage.store_info(info)
             
     def set_map_center(self, coord: List[float]):
