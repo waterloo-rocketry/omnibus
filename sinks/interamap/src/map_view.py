@@ -17,6 +17,8 @@ if not ONLINE_MODE:
     """
     import offline_folium
 import folium
+
+from folium.plugins import Realtime
 from fastkml import kml
 
 from src.kmz_parser import KMZParser
@@ -79,6 +81,38 @@ class MapView(QWebEngineView):
             height="100%",  # Ensure map height is 100%
         )
 
+        source = folium.JsCode("""
+            function(responseHandler, errorHandler) {
+                var url = 'https://api.wheretheiss.at/v1/satellites/25544';
+
+                fetch(url)
+                .then((response) => {
+                    return response.json().then((data) => {
+                        var { id, longitude, latitude } = data;
+
+                        return {
+                            'type': 'FeatureCollection',
+                            'features': [{
+                                'type': 'Feature',
+                                'geometry': {
+                                    'type': 'Point',
+                                    'coordinates': [longitude, latitude]
+                                },
+                                'properties': {
+                                    'id': id
+                                }
+                            }]
+                        };
+                    })
+                })
+                .then(responseHandler)
+                .catch(errorHandler);
+            }
+        """)
+
+        rt = Realtime(source, point_to_layer=folium.JsCode("(f, coordinate) => { return L.circleMarker(coordinate, {radius: 6, fillOpacity: 1})}"), interval=1000)
+        rt.add_to(self.m)
+
         # Add a bottom layer with the default tile style (If online, it will use CartoDB tiles)
         folium.TileLayer(
             tiles=(
@@ -111,7 +145,6 @@ class MapView(QWebEngineView):
 
     def update_map(self):
         self.draw_gps_data()
-        self.draw_gps_storage_data()
         """Renders the map and updates the QWebEngineView."""
         self.map_html = (
             self.m.get_root()
@@ -163,20 +196,11 @@ class MapView(QWebEngineView):
         if ("lat" in info.__dict__ and "lon" in info.__dict__ and current_time - self.last_map_point_update >= 1):
             self.last_map_point_update = current_time
             self.point_storage.store_info(info)
-            self.update_map()
-
+            
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
         # self.create_map()
         self.add_marker_to_map(coord, "Current Location", "blue")
-
-    def draw_gps_storage_data(self):
-        """Draw the GPS data stored in the point storage."""
-        for point in self.point_storage.get_gps_points():
-            folium.CircleMarker(
-                location=[point.lat, point.lon],
-                radius=1,
-            ).add_to(self.m)
 
     def draw_gps_data(self):
         if self.kmz_parser is None:
