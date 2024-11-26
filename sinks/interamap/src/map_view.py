@@ -60,6 +60,7 @@ class MapView(QWebEngineView):
         # Initialize a Point Storage object to store GPS points
         self.point_storage = GPS_Cache()
         self.last_map_point_update = 0
+        self.realtime_source_thread = None
 
         self.create_map()
 
@@ -139,9 +140,10 @@ class MapView(QWebEngineView):
 
     def initialize_realtime_source(self):
 
-        realtime_source_thread = threading.Thread(target=self.initialize_realtime_source_server, args=(self.point_storage,))
-        realtime_source_thread.daemon = True
-        realtime_source_thread.start()
+        if not self.realtime_source_thread:
+            self.realtime_source_thread = threading.Thread(target=self.initialize_realtime_source_server, args=(self.point_storage,))
+            self.realtime_source_thread.daemon = True
+            self.realtime_source_thread.start()
         
         rt = Realtime("http://127.0.0.1:5000", point_to_layer=folium.JsCode("(f, coordinate) => { return L.circleMarker(coordinate, {radius: 3, fillOpacity: 1})}"), interval=100)
         rt.add_to(self.m)
