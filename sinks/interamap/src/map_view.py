@@ -106,7 +106,7 @@ class MapView(QWebEngineView):
         # Save the folium map to an HTML string with a responsive style
         self.update_map()
 
-    def initailize_realtime_source_server(self, point_storage):
+    def initialize_realtime_source_server(self, point_storage):
         app = flask.Flask(__name__)
 
         @app.route('/')
@@ -139,7 +139,7 @@ class MapView(QWebEngineView):
 
     def initialize_realtime_source(self):
 
-        realtime_source_thread = threading.Thread(target=self.initailize_realtime_source_server, args=(self.point_storage,))
+        realtime_source_thread = threading.Thread(target=self.initialize_realtime_source_server, args=(self.point_storage,))
         realtime_source_thread.daemon = True
         realtime_source_thread.start()
         
