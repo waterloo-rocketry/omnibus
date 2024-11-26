@@ -108,6 +108,8 @@ class MapView(QWebEngineView):
         self.update_map()
 
     def initialize_realtime_source_server(self, point_storage):
+        """Initialize a Flask server to serve real-time GPS data."""
+        
         app = flask.Flask(__name__)
 
         @app.route('/')
@@ -139,6 +141,7 @@ class MapView(QWebEngineView):
         app.run(debug=False)
 
     def initialize_realtime_source(self):
+        """Initialize real-time map updates from a Flask server."""
 
         if not self.realtime_source_thread:
             self.realtime_source_thread = threading.Thread(target=self.initialize_realtime_source_server, args=(self.point_storage,))
