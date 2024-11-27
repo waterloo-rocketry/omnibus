@@ -8,6 +8,14 @@ from PySide6.QtWidgets import QSizePolicy
 from src.gps_cache import GPS_Cache
 from src.real_time_parser import RTParser
 
+import time
+
+import flask
+
+import threading
+
+import logging
+
 if not ONLINE_MODE:
     """
     Need to run the following command to download required js and css files (only once, with internet connection):
@@ -15,6 +23,8 @@ if not ONLINE_MODE:
     """
     import offline_folium
 import folium
+
+from folium.plugins import Realtime
 from fastkml import kml
 
 from src.kmz_parser import KMZParser
@@ -49,6 +59,8 @@ class MapView(QWebEngineView):
 
         # Initialize a Point Storage object to store GPS points
         self.point_storage = GPS_Cache()
+        self.last_map_point_update = 0
+        self.realtime_source_thread = None
 
         self.create_map()
 
@@ -86,6 +98,7 @@ class MapView(QWebEngineView):
             overlay=False,
         ).add_to(self.m)
 
+        self.initialize_realtime_source()
         self.add_offline_layer()
 
         # For Debugging
@@ -93,6 +106,50 @@ class MapView(QWebEngineView):
 
         # Save the folium map to an HTML string with a responsive style
         self.update_map()
+
+    def initialize_realtime_source_server(self, point_storage):
+        """Initialize a Flask server to serve real-time GPS data."""
+        
+        app = flask.Flask(__name__)
+
+        @app.route('/')
+        def get_realtime_gps():
+
+            point_id = 0
+
+            response = flask.jsonify({
+                'type': 'FeatureCollection',
+                'features': [{
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'Point',
+                        'coordinates': [point.lon, point.lat]
+                    },
+                    'properties': {
+                        'id': (point_id := point_id + 1)
+                    }
+                } for point in point_storage.get_gps_points()]
+            })
+
+            response.headers.add('Access-Control-Allow-Origin', '*')
+
+            return response
+
+        # Disable flask request logging
+        logging.getLogger("werkzeug").disabled = True
+
+        app.run(debug=False)
+
+    def initialize_realtime_source(self):
+        """Initialize real-time map updates from a Flask server."""
+
+        if not self.realtime_source_thread:
+            self.realtime_source_thread = threading.Thread(target=self.initialize_realtime_source_server, args=(self.point_storage,))
+            self.realtime_source_thread.daemon = True
+            self.realtime_source_thread.start()
+        
+        rt = Realtime("http://127.0.0.1:5000", point_to_layer=folium.JsCode("(f, coordinate) => { return L.circleMarker(coordinate, {radius: 3, fillOpacity: 1})}"), interval=100)
+        rt.add_to(self.m)
 
     def add_offline_layer(self):
         """Add a offline tile layer to the map."""
@@ -151,13 +208,13 @@ class MapView(QWebEngineView):
             self.rt_parser.start()
         else:
             self.rt_parser.stop()
-            print(self.point_storage)
     
     def storage_rt_info(self, info): 
-        self.point_storage.store_info(info)
-        # TODO: update the map 
-    
 
+        if ("lat" in info.__dict__ and "lon" in info.__dict__ and time.time() - self.last_map_point_update >= 0.5):
+            self.last_map_point_update = time.time()
+            self.point_storage.store_info(info)
+            
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
         # self.create_map()
