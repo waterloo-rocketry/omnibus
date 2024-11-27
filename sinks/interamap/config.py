@@ -1,0 +1,2 @@
+ONLINE_MODE = True
+TERMINAL_QR_CODE  = False
