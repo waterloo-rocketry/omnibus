@@ -99,7 +99,7 @@ class GPS_Cache(QThread):
 
         k = kml.KML(features=[kml.Document(name="Points", features=list(gps_points_placemarks.values()))])
         try:
-            k.write(pathlib.Path('points.kml'), prettyprint=True) # write directly as kml file
+            # k.write(pathlib.Path('points.kml'), prettyprint=True) # write directly as kml file
             with zipfile.ZipFile(file_path, "w") as kmz:
                 kmz.writestr("doc.kml", k.to_string(prettyprint=True))
         except Exception as e:
