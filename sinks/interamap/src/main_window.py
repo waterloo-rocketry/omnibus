@@ -53,6 +53,7 @@ class MapWindow(QMainWindow):
         # Initialize the map view and set it to expand
         self.map_view = MapView(self)
         self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.map_view.update_gps_label.connect(self.update_gps_status)
 
         # Add the map view to the splitter
         self.main_splitter.addWidget(self.map_view)
@@ -91,12 +92,12 @@ class MapWindow(QMainWindow):
 
 
         # Create a container layout to align the toggle button to the left
-        self.toggle_container = QHBoxLayout()
-        self.toggle_container.addWidget(
+        self.top_bar = QVBoxLayout()
+        self.top_bar.addWidget(
             self.toggle_button, alignment=Qt.AlignLeft
         )  # Align the button to the left
         self.toolbar_layout.addLayout(
-            self.toggle_container
+            self.top_bar
         )  # Add the container layout to the toolbar layout
 
         # Add a combo box to choose the data source
@@ -136,6 +137,11 @@ class MapWindow(QMainWindow):
         self.toolbar_layout.addWidget(self.export_points_button)
 
         return self.side_toolbar
+    
+    def update_gps_status(self, gps_status):
+        # Slot to handle the update for MainWindow's label
+        self.gps_status_label.setText(gps_status)
+        # self.gps_status_label.adjustSize()
 
     def get_current_index_to_feature_ui(self):
         self.start_index_to_feature_ui += 1
@@ -148,9 +154,23 @@ class MapWindow(QMainWindow):
         self.data_source = self.data_sources.get(self.data_source_ui.currentText())
         self.reset_data_source_ui()
 
+        if self.map_view.rt_parser.running:
+            self.map_view.stop_realtime_data()
+
         if self.data_source == 1:  # Real-time Data Source
             # if is real-time data source selected, then add the following
             # Create buttons for starting/stopping real-time data and loading data
+
+            # Display GPS satellite connection status (satellite number and quality)
+            self.gps_status_label = QLabel("GPS Status: Not Connected")
+            self.gps_status_label.setFixedWidth(200)  # Set fixed width for the label
+            self.gps_status_label.setSizePolicy(
+                QSizePolicy.Fixed, QSizePolicy.Fixed
+            )
+            self.gps_status_label.setWordWrap(True)
+            
+            self.toolbar_layout.insertWidget(self.get_current_index_to_feature_ui()-2, self.gps_status_label)
+            
             start_stop_button = QPushButton("Start/Stop Real-time Data", self)
             start_stop_button.clicked.connect(
                 self.start_stop_realtime_data

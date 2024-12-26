@@ -9,7 +9,18 @@ from fastkml import kml, geometry, enums, times
 
 from config import ONLINE_MODE
 from src.gps_cache import GPS_Cache
+from PySide6.QtCore import Signal
+
+from src.gps_cache import GPS_Cache, Info_GPS
 from src.real_time_parser import RTParser
+
+import time
+
+import flask
+
+import threading
+
+import logging
 
 if not ONLINE_MODE:
     """
@@ -17,6 +28,8 @@ if not ONLINE_MODE:
     $ python -m offline_folium
     """
 import folium
+from folium.plugins import Realtime
+from fastkml import kml
 
 from src.kmz_parser import KMZParser
 from src.data_struct import Point_GPS, LineString_GPS
@@ -25,8 +38,13 @@ from src.tools.current_location import get_current_location
 
 
 class MapView(QWebEngineView):
+    
+    # Signal to update the label in the MainWindow
+    update_gps_label = Signal(str)
+    
     def __init__(self, parent=None):
         super().__init__(parent)
+
 
         # Online Mode
         self.online = ONLINE_MODE
@@ -50,11 +68,13 @@ class MapView(QWebEngineView):
 
         # Initialize a Point Storage object to store GPS points
         self.point_storage = GPS_Cache()
+        self.last_map_point_update = 0
+        self.realtime_source_thread = None
 
         self.create_map()
 
     def __del__(self):
-        self.rt_parser.stop()
+        self.stop_realtime_data()
         self.rt_parser.terminate()
 
     def create_map(self):
@@ -87,6 +107,7 @@ class MapView(QWebEngineView):
             overlay=False,
         ).add_to(self.m)
 
+        self.initialize_realtime_source()
         self.add_offline_layer()
 
         # For Debugging
@@ -94,6 +115,50 @@ class MapView(QWebEngineView):
 
         # Save the folium map to an HTML string with a responsive style
         self.update_map()
+
+    def initialize_realtime_source_server(self, point_storage):
+        """Initialize a Flask server to serve real-time GPS data."""
+        
+        app = flask.Flask(__name__)
+
+        @app.route('/')
+        def get_realtime_gps():
+
+            point_id = 0
+
+            response = flask.jsonify({
+                'type': 'FeatureCollection',
+                'features': [{
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'Point',
+                        'coordinates': [point.lon, point.lat]
+                    },
+                    'properties': {
+                        'id': (point_id := point_id + 1)
+                    }
+                } for point in point_storage.get_gps_points()]
+            })
+
+            response.headers.add('Access-Control-Allow-Origin', '*')
+
+            return response
+
+        # Disable flask request logging
+        logging.getLogger("werkzeug").disabled = True
+
+        app.run(debug=False)
+
+    def initialize_realtime_source(self):
+        """Initialize real-time map updates from a Flask server."""
+
+        if not self.realtime_source_thread:
+            self.realtime_source_thread = threading.Thread(target=self.initialize_realtime_source_server, args=(self.point_storage,))
+            self.realtime_source_thread.daemon = True
+            self.realtime_source_thread.start()
+        
+        rt = Realtime("http://127.0.0.1:5000", point_to_layer=folium.JsCode("(f, coordinate) => { return L.circleMarker(coordinate, {radius: 3, fillOpacity: 1})}"), interval=100)
+        rt.add_to(self.m)
 
     def add_offline_layer(self):
         """Add a offline tile layer to the map."""
@@ -147,18 +212,31 @@ class MapView(QWebEngineView):
         self.clear_all_markers()
         self.update_map()
 
+    def stop_realtime_data(self):
+        self.emit_update_signal("Stopped")
+        self.rt_parser.stop()
+
     def start_stop_realtime_data(self):
         if not self.rt_parser.running:
             self.rt_parser.start()
         else:
-            self.rt_parser.stop()
+            self.stop_realtime_data()
             print(self.point_storage)
+    
+    def emit_update_signal(self, gps_text):
+        # Emit the signal with the new text when the button is clicked
+        self.update_gps_label.emit(f"GPS Status:\n\n{gps_text}")
     
     def storage_rt_info(self, info): 
         self.point_storage.store_info(info)
+        if isinstance(info, Info_GPS):
+            self.emit_update_signal(f"Board ID: {info.board_id},\nSatellites: {info.num_sats}, Quality: {info.quality}")
         # TODO: update the map 
-    
 
+        if ("lat" in info.__dict__ and "lon" in info.__dict__ and time.time() - self.last_map_point_update >= 0.5):
+            self.last_map_point_update = time.time()
+            self.point_storage.store_info(info)
+            
     def set_map_center(self, coord: List[float]):
         """Set the center of the map to the given latitude and longitude."""
         # self.create_map()
