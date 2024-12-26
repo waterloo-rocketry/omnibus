@@ -36,7 +36,7 @@ def start_http_server(SHARED_DIR):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python ftp_server.py <folder>")
+        print("Usage: python server.py <folder>")
         sys.exit(1)
 
     folder = sys.argv[1]
