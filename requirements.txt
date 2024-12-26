@@ -5,4 +5,3 @@ pyzmq
 flake8
 matplotlib
 dash
-pyftpdlib

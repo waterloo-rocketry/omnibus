@@ -19,7 +19,7 @@ def generate_qr_code(qr_code_url):
     img = qr.make_image(fill_color='black', back_color='white')
     img.save(filename)
     # Serve img in web-browser (backup)
-    # webbrowser.open(f"file://{os.path.abspath(filename)}")
+    webbrowser.open(f"file://{os.path.abspath(filename)}")
 
     if TERMINAL_QR_CODE:
         qr.print_ascii()

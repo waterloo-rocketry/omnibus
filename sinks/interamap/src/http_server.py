@@ -5,6 +5,8 @@ import http.server
 import socketserver
 import socket
 
+from config import HTTP_SERVER_PORT
+
 def check_permissions(folder):
     # check if user has READ access
     if os.access(folder, os.R_OK):
@@ -18,7 +20,7 @@ def get_local_ip():
 
 def start_http_server(SHARED_DIR):
     # Define the port to serve the HTTP server (default: 8000)
-    PORT = 8000
+    PORT = HTTP_SERVER_PORT
      
     class CustomHandler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):

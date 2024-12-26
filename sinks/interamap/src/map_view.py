@@ -1,11 +1,7 @@
-import pathlib
-import zipfile
-from datetime import datetime
 from typing import List
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
-from fastkml import kml, geometry, enums, times
 
 from config import ONLINE_MODE
 from src.gps_cache import GPS_Cache
