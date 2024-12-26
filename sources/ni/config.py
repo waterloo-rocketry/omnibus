@@ -1,7 +1,7 @@
 from calibration import Sensor, Connection, LinearCalibration, ThermistorCalibration
 
-RATE = 1000  # Analog data sample rate
-READ_BULK = 20  # Number of samples to read at once for better performance
+RATE = 20000  # Analog data sample rate
+READ_BULK = 2000  # Number of samples to read at once for better performance
 
 # Mapping between briefcase ports and ai channels such that you can do ports[1] through ports[12]
 ports = [
