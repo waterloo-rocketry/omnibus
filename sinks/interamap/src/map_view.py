@@ -4,8 +4,9 @@ from typing import List
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
+from PySide6.QtCore import Signal
 
-from src.gps_cache import GPS_Cache
+from src.gps_cache import GPS_Cache, Info_GPS
 from src.real_time_parser import RTParser
 
 import time
@@ -34,8 +35,13 @@ from src.tools.current_location import get_current_location
 
 
 class MapView(QWebEngineView):
+    
+    # Signal to update the label in the MainWindow
+    update_gps_label = Signal(str)
+    
     def __init__(self, parent=None):
         super().__init__(parent)
+
 
         # Online Mode
         self.online = ONLINE_MODE
@@ -65,7 +71,7 @@ class MapView(QWebEngineView):
         self.create_map()
 
     def __del__(self):
-        self.rt_parser.stop()
+        self.stop_realtime_data()
         self.rt_parser.terminate()
 
     def create_map(self):
@@ -203,13 +209,26 @@ class MapView(QWebEngineView):
         self.clear_all_markers()
         self.update_map()
 
+    def stop_realtime_data(self):
+        self.emit_update_signal("Stopped")
+        self.rt_parser.stop()
+
     def start_stop_realtime_data(self):
         if not self.rt_parser.running:
             self.rt_parser.start()
         else:
-            self.rt_parser.stop()
+            self.stop_realtime_data()
+            print(self.point_storage)
+    
+    def emit_update_signal(self, gps_text):
+        # Emit the signal with the new text when the button is clicked
+        self.update_gps_label.emit(f"GPS Status:\n\n{gps_text}")
     
     def storage_rt_info(self, info): 
+        self.point_storage.store_info(info)
+        if isinstance(info, Info_GPS):
+            self.emit_update_signal(f"Board ID: {info.board_id},\nSatellites: {info.num_sats}, Quality: {info.quality}")
+        # TODO: update the map 
 
         if ("lat" in info.__dict__ and "lon" in info.__dict__ and time.time() - self.last_map_point_update >= 0.5):
             self.last_map_point_update = time.time()

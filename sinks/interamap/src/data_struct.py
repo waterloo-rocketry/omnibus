@@ -12,7 +12,7 @@ class Point_GPS():
     def __str__(self):
         return f"Point: {self.lat}, {self.lon}, {self.alt}, At {self.time_stamp}, With {self.num_sats} satellites, from {self.board_id}"
 
-
+# Ignore, Currently not used
 class LineString_GPS():
     def __init__(self, points: Optional[List[Point_GPS]] = None):
         self.points = points if points is not None else []
