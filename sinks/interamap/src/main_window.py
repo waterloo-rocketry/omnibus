@@ -131,6 +131,11 @@ class MapWindow(QMainWindow):
         self.clear_markers_button.clicked.connect(self.clear_markers)
         self.toolbar_layout.addWidget(self.clear_markers_button)
 
+        # Export points button
+        self.export_points_button = QPushButton("Export Points", self)
+        self.export_points_button.clicked.connect(self.map_view.point_storage.export_points)
+        self.toolbar_layout.addWidget(self.export_points_button)
+
         return self.side_toolbar
     
     def update_gps_status(self, gps_status):

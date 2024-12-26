@@ -22,14 +22,14 @@ class KMZParser:
             # Use the first KML file found
             kml_file_name = kml_files[0]
             with kmz.open(kml_file_name, "r") as kml_file:
-                kml_content = kml_file.read()
-        k = kml.KML()
-        k.from_string(kml_content)
+                k = kml.KML().parse(kml_file)
+
+        print(k.to_string())
         return k
 
     def parse_kml_features(self, kml_obj):
         """Display the KML features on the map."""
-        for feature in kml_obj.features():
+        for feature in list(kml_obj.features):
             if hasattr(feature, "geometry") and feature.geometry:
                 self.gps_data.append(self.parse_detail_geometry(feature))
             if hasattr(feature, "features"):
@@ -38,14 +38,14 @@ class KMZParser:
     def parse_detail_geometry(self, feature):
         geom = feature.geometry
         geom_type = geom.geom_type
-        timestamp = (
+        timestamp = ( # point will never have a timestamp, only Placemark will
             getattr(feature, "name", "")
             if (type(feature).__name__ == "Placemark")
             else None
         )
         if geom_type == "Point":
             lon, lat, alt = geom.coords[0]
-            return Point_GPS(lon, lat, alt, timestamp)
+            return Point_GPS(lon, lat, alt, 0, time_stamp=timestamp) # unsure what num_sats is
         elif geom_type == "LineString":
             linestring = LineString_GPS()
             coords = [coord[:3] for coord in geom.coords]  # Extract lon and lat
