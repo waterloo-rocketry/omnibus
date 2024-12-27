@@ -1,0 +1,6 @@
+*/mbtiles
+*/temp
+*/kmz_files
+*.mbtiles
+*.pbf
+*.kmz
