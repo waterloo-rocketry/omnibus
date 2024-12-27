@@ -18,7 +18,8 @@ from PySide6.QtGui import QIcon
 
 from src.map_view import MapView
 
-from src.http_server import start_map_folder_http_server
+from src.http_server import start_map_folder_http_server, get_share_url
+from src.url_to_qrcode import QRCodeWindow
 
 class MapWindow(QMainWindow):
     def __init__(self):
@@ -157,7 +158,7 @@ class MapWindow(QMainWindow):
             share_server_layout.addWidget(self.start_share_server_button)
             
             self.show_qr_code_button = QPushButton("Show QR Code", self)
-            # self.show_qr_code_button.clicked.connect(self.map_view.show_qr_code)
+            self.show_qr_code_button.clicked.connect(self.show_qr_code)
             share_server_layout.addWidget(self.show_qr_code_button)
             
             self.toolbar_layout.addLayout(share_server_layout)
@@ -320,3 +321,8 @@ class MapWindow(QMainWindow):
     def clear_markers(self):
         """Function to clear all markers from the map."""
         self.map_view.clear_all_markers()
+
+    def show_qr_code(self):
+        """Function to display the QR code for the shared server URL."""
+        qr_window = QRCodeWindow(get_share_url())
+        qr_window.show()

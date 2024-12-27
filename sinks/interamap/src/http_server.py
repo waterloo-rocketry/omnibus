@@ -24,6 +24,9 @@ def start_map_folder_http_server():
     print(f"Starting HTTP server in folder '{share_folder}'")
     start_http_server_with_progress(share_folder)
 
+def get_share_url():
+    return f"http://{get_local_ip()}:{HTTP_SERVER_PORT}"
+
 def start_http_server_with_progress(SHARED_DIR):
 
     def run_server():
