@@ -5,6 +5,10 @@ import http.server
 import socketserver
 import socket
 
+from config import HTTP_SERVER_PORT
+import threading
+import os
+
 def check_permissions(folder):
     # check if user has READ access
     if os.access(folder, os.R_OK):
@@ -15,10 +19,28 @@ def check_permissions(folder):
 def get_local_ip():
     return socket.gethostbyname(socket.gethostname())
 
+def start_map_folder_http_server():
+    share_folder = os.getcwd() + "/sinks/interamap/shared"
+    print(f"Starting HTTP server in folder '{share_folder}'")
+    start_http_server_with_progress(share_folder)
+
+def get_share_url():
+    return f"http://{get_local_ip()}:{HTTP_SERVER_PORT}"
+
+def start_http_server_with_progress(SHARED_DIR):
+
+    def run_server():
+        start_http_server(SHARED_DIR)
+
+    server_thread = threading.Thread(target=run_server)
+    server_thread.start()
+    
+    print("HTTP server is running...")
+
 
 def start_http_server(SHARED_DIR):
     # Define the port to serve the HTTP server (default: 8000)
-    PORT = 8000
+    PORT = HTTP_SERVER_PORT
      
     class CustomHandler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):

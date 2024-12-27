@@ -17,8 +17,9 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 
 from src.map_view import MapView
-from src.tools.current_location import get_current_location
 
+from src.http_server import start_map_folder_http_server, get_share_url
+from src.url_to_qrcode import QRCodeWindow
 
 class MapWindow(QMainWindow):
     def __init__(self):
@@ -75,7 +76,7 @@ class MapWindow(QMainWindow):
         self.side_toolbar = QWidget(self)
         self.toolbar_layout = QVBoxLayout(self.side_toolbar)
         self.toolbar_layout.setContentsMargins(10, 10, 10, 10)  # Add some padding
-        self.toolbar_layout.setSpacing(10)  # Add some spacing between buttons
+        self.toolbar_layout.setSpacing(5)  # Add some spacing between buttons
 
         # Custom Toggle Button for Dark Mode
         self.toggle_button = QPushButton(self)
@@ -100,6 +101,10 @@ class MapWindow(QMainWindow):
             self.top_bar
         )  # Add the container layout to the toolbar layout
 
+        # Add a label to indicate the data source selection section
+        self.data_source_label = QLabel("Data Source:")
+        self.toolbar_layout.addWidget(self.data_source_label)
+        
         # Add a combo box to choose the data source
         self.data_source_ui = QComboBox(self)
         self.data_source_ui.addItem("None")
@@ -107,35 +112,57 @@ class MapWindow(QMainWindow):
         self.data_source_ui.addItem("Load KMZ File")
         self.data_source_ui.setCurrentIndex(self.data_source)
         self.data_source_ui.currentIndexChanged.connect(self.toggle_data_source)
-        self.toolbar_layout.addWidget(QLabel("Data Source:"))
         self.toolbar_layout.addWidget(self.data_source_ui)
 
         # Input fields for latitude and longitude
-        self.lat_input = QLineEdit(self)
-        self.lat_input.setPlaceholderText("Enter Latitude")
-        self.toolbar_layout.addWidget(QLabel("Latitude:"))
-        self.toolbar_layout.addWidget(self.lat_input)
+        # self.lat_input = QLineEdit(self)
+        # self.lat_input.setPlaceholderText("Enter Latitude")
+        # self.toolbar_layout.addWidget(QLabel("Latitude:"))
+        # self.toolbar_layout.addWidget(self.lat_input)
 
-        self.lon_input = QLineEdit(self)
-        self.lon_input.setPlaceholderText("Enter Longitude")
-        self.toolbar_layout.addWidget(QLabel("Longitude:"))
-        self.toolbar_layout.addWidget(self.lon_input)
+        # self.lon_input = QLineEdit(self)
+        # self.lon_input.setPlaceholderText("Enter Longitude")
+        # self.toolbar_layout.addWidget(QLabel("Longitude:"))
+        # self.toolbar_layout.addWidget(self.lon_input)
 
         # Add button to add marker at the specified coordinates
-        self.add_marker_button = QPushButton("Add Marker", self)
-        self.add_marker_button.clicked.connect(self.add_marker)
-        self.toolbar_layout.addWidget(self.add_marker_button)
+        # self.add_marker_button = QPushButton("Add Marker", self)
+        # self.add_marker_button.clicked.connect(self.add_marker)
+        # self.toolbar_layout.addWidget(self.add_marker_button)
 
-        # Add button to clear all markers
-        self.clear_markers_button = QPushButton("Clear Markers", self)
-        self.clear_markers_button.clicked.connect(self.clear_markers)
-        self.toolbar_layout.addWidget(self.clear_markers_button)
+        if self.data_source != 0:
 
-        # Export points button
-        self.export_points_button = QPushButton("Export Points", self)
-        self.export_points_button.clicked.connect(self.map_view.point_storage.export_points)
-        self.toolbar_layout.addWidget(self.export_points_button)
+            # Add a label to indicate the map markers operator section
+            self.map_markers_label = QLabel("Map Markers:")
+            self.toolbar_layout.addWidget(self.map_markers_label)
 
+            # Add button to clear all markers
+            self.clear_markers_button = QPushButton("Clear Markers", self)
+            self.clear_markers_button.clicked.connect(self.clear_markers)
+            self.toolbar_layout.addWidget(self.clear_markers_button)
+
+            # Export points button
+            self.export_points_button = QPushButton("Export Points", self)
+            self.export_points_button.clicked.connect(self.map_view.point_storage.export_points)
+            self.toolbar_layout.addWidget(self.export_points_button)
+
+            # Start Share Server button and another button to show qr code
+            share_server_layout = QHBoxLayout()
+
+            share_server_label = QLabel("Share Server:")
+            self.toolbar_layout.addWidget(share_server_label)
+            
+            self.start_share_server_button = QPushButton("Start Share Server", self)
+            
+            self.start_share_server_button.clicked.connect(start_map_folder_http_server)
+            share_server_layout.addWidget(self.start_share_server_button)
+            
+            self.show_qr_code_button = QPushButton("Show QR Code", self)
+            self.show_qr_code_button.clicked.connect(self.show_qr_code)
+            share_server_layout.addWidget(self.show_qr_code_button)
+            
+            self.toolbar_layout.addLayout(share_server_layout)
+        
         return self.side_toolbar
     
     def update_gps_status(self, gps_status):
@@ -174,7 +201,7 @@ class MapWindow(QMainWindow):
             start_stop_button = QPushButton("Start/Stop Real-time Data", self)
             start_stop_button.clicked.connect(
                 self.start_stop_realtime_data
-            )  # TODO: Implement this function
+            )
 
             self.toolbar_layout.insertWidget(
                 self.start_index_to_feature_ui, start_stop_button
@@ -294,3 +321,8 @@ class MapWindow(QMainWindow):
     def clear_markers(self):
         """Function to clear all markers from the map."""
         self.map_view.clear_all_markers()
+
+    def show_qr_code(self):
+        """Function to display the QR code for the shared server URL."""
+        qr_window = QRCodeWindow(get_share_url())
+        qr_window.show()

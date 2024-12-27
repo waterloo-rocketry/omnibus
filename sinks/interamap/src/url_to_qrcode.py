@@ -19,7 +19,11 @@ def generate_qr_code(qr_code_url):
     img = qr.make_image(fill_color='black', back_color='white')
     img.save(filename)
     # Serve img in web-browser (backup)
-    # webbrowser.open(f"file://{os.path.abspath(filename)}")
+    try:
+        webbrowser.open(f"file://{os.path.abspath(filename)}")
+    except:
+        print("Failed to open the QR code in a web browser.")
+        
 
     if TERMINAL_QR_CODE:
         qr.print_ascii()
@@ -28,7 +32,7 @@ def generate_qr_code(qr_code_url):
 
 
 class QRCodeWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, qr_code_url):
         super().__init__()
 
         # Generate QR code and load into a QPixmap
@@ -79,8 +83,8 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         print("Usage: qr-code.py <link>")
         sys.exit(1)
-    qr_code_url = sys.argv[1]
+    url = sys.argv[1]
     app = QApplication(sys.argv)
-    viewer = QRCodeWindow()
+    viewer = QRCodeWindow(url)
     viewer.show()
     sys.exit(app.exec())
