@@ -4,8 +4,8 @@ import webbrowser
 import os
 
 from PIL.ImageQt import QPixmap
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QMainWindow, QLabel, QApplication, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMainWindow, QLabel, QApplication, QVBoxLayout, QWidget
 from sinks.interamap.config import TERMINAL_QR_CODE
 
 
