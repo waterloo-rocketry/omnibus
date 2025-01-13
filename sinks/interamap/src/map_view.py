@@ -200,7 +200,7 @@ class MapView(QWebEngineView):
         self.kmz_parser = KMZParser(kmz_file_path)
         self.clear_all_markers()
         self.point_storage.store_infos(self.kmz_parser.gps_data)
-        self.update_static_map()
+        self.update_map()
 
     def stop_realtime_data(self):
         self.emit_update_signal("Stopped")
