@@ -66,8 +66,6 @@ class PeriodicCanSender(DashboardItem):
         self.parameters.param('period').sigValueChanged.connect(self.on_period_change)
         self.parameters.param('actuator').sigValueChanged.connect(self.on_actuator_change)
 
-        self.last_time = time.time()
-
         publisher.subscribe_clock(60, self.on_clock_update)
 
     def on_clock_update(self, _):
@@ -87,10 +85,6 @@ class PeriodicCanSender(DashboardItem):
         publisher.update('outgoing_can_messages', can_message)
         self.pulse_count = 2
         self.pulse_timer.start(self.pulse_period)
-
-        t = time.time()
-        print(t - self.last_time)
-        self.last_time = t
 
     def add_parameters(self):
         actuator_ids = list(mt.actuator_id.keys())
