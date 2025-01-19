@@ -66,31 +66,25 @@ class PeriodicCanSender(DashboardItem):
         self.parameters.param('period').sigValueChanged.connect(self.on_period_change)
         self.parameters.param('actuator').sigValueChanged.connect(self.on_actuator_change)
 
-        self.last_time = time.time()
-        publisher.subscribe("ALL", self.on_data_update)
+        publisher.subscribe_clock(60, self.on_clock_update)
 
-    def on_data_update(self, _, __):
-        self.cur_time = time.time()
-        time_elapsed = self.cur_time - self.last_time
-        # send the can message if enough time has passed
-        if time_elapsed > self.period and self.period != 0:
-            can_message = {
-                'data': {
-                    'time': time.time(),
-                    'can_msg': {
-                        'msg_type': 'ACTUATOR_CMD',
-                        'board_id': 'ANY',
-                        'time': 0,
-                        'actuator': self.actuator,
-                        'req_state': 'ACTUATOR_ON' if self.radio_on.isChecked() else 'ACTUATOR_OFF'
-                    },
+    def on_clock_update(self, _):
+        can_message = {
+            'data': {
+                'time': time.time(),
+                'can_msg': {
+                    'msg_type': 'ACTUATOR_CMD',
+                    'board_id': 'ANY',
+                    'time': 0,
+                    'actuator': self.actuator,
+                    'req_state': 'ACTUATOR_ON' if self.radio_on.isChecked() else 'ACTUATOR_OFF'
+                },
 
-                }
             }
-            publisher.update('outgoing_can_messages', can_message)
-            self.pulse_count = 2
-            self.pulse_timer.start(self.pulse_period)
-            self.last_time = self.cur_time
+        }
+        publisher.update('outgoing_can_messages', can_message)
+        self.pulse_count = 2
+        self.pulse_timer.start(self.pulse_period)
 
     def add_parameters(self):
         actuator_ids = list(mt.actuator_id.keys())
@@ -98,7 +92,7 @@ class PeriodicCanSender(DashboardItem):
                                      default=actuator_ids[0], limits=actuator_ids)
         period_param = {'name': 'period', 'type': 'int', 'value': 0, 'limits': (0, None)}
         return [series_param, period_param]
-        
+
 
     def pulse_widgets(self):
         if self.pulse_count > 0:
@@ -135,4 +129,4 @@ class PeriodicCanSender(DashboardItem):
         return "Periodic CAN Sender"
 
     def on_delete(self):
-        publisher.unsubscribe_from_all(self.on_data_update)
+        publisher.unsubscribe_from_all(self.on_clock_update)
