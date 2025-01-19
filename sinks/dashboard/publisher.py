@@ -31,8 +31,7 @@ class Publisher:
             if callback in self.streams[stream]:
                 self.streams[stream].remove(callback)
 
-        if callback in self.clock_callbacks:
-            self.clock_callbacks.remote(callback)
+        self.clock_callbacks = [(s, i, c) for (s, i, c) in self.clock_callbacks if c != callback)]
 
     def update(self, stream, payload):
         self.ensure_exists(stream)
