@@ -39,6 +39,8 @@ class TVCControllerPreset(DashboardItem):
         self.layout.addWidget(self.get_file_button)
         self.layout.addWidget(self.send_button)
 
+        self.msg_seq = []
+
     def get_file(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         save_directory = os.path.join(script_dir, "..", "..", "..", "sinks", "dashboard", "saved-files")
@@ -48,40 +50,61 @@ class TVCControllerPreset(DashboardItem):
 
     def send_sequence(self):
         self.send_button.setDisabled(True)
+
+        self.msg_seq = []
         with open(self.file) as f:
             for line in f:
-                v1, v2 = line.strip().split(' ')
+                arr  = line.strip().split(' ')
 
-                can_message_1 = {
-                    'data': {
-                        'time': time.time(),
-                        'can_msg': {
-                            'msg_type': 'ACTUATOR_CMD',
-                            'board_id': 'ANY',
-                            'time': 0,
-                            'actuator': 'ACTUATOR_CHARGE_AIRBRAKE',
-                            'req_state': int(v1)
-                            },  # contains the message data bits
+                if (len(arr) == 2):
+                    v1, v2 = arr
+
+                    can_message_1 = {
+                        'data': {
+                            'time': time.time(),
+                            'can_msg': {
+                                'msg_type': 'ACTUATOR_CMD',
+                                'board_id': 'ANY',
+                                'time': 0,
+                                'actuator': 'ACTUATOR_CHARGE_AIRBRAKE',
+                                'req_state': int(v1)
+                                },  # contains the message data bits
+                        }
                     }
-                }
 
-                can_message_2 = {
-                    'data': {
-                        'time': time.time(),
-                        'can_msg': {
-                            'msg_type': 'ACTUATOR_CMD',
-                            'board_id': 'ANY',
-                            'time': 0,
-                            'actuator': 'ACTUATOR_CHARGE_PAYLOAD',
-                            'req_state': int(v2)
-                            },  # contains the message data bits
+                    can_message_2 = {
+                        'data': {
+                            'time': time.time(),
+                            'can_msg': {
+                                'msg_type': 'ACTUATOR_CMD',
+                                'board_id': 'ANY',
+                                'time': 0,
+                                'actuator': 'ACTUATOR_CHARGE_PAYLOAD',
+                                'req_state': int(v2)
+                                },  # contains the message data bits
+                        }
                     }
-                }
+                    self.msg_seq.append((can_message_1, can_message_2))
+                else:
+                    self.msg_seq.extend([None] * int(arr[0]))
 
-                publisher.update('outgoing_can_messages', can_message_1)
-                publisher.update('outgoing_can_messages', can_message_2)
-                time.sleep(0.01)
-        self.send_button.setDisabled(False)
+            publisher.subscribe_clock(1, self.on_clock_update)
+
+
+
+    def on_clock_update(self, _):
+        if len(self.msg_seq) == 0:
+            print("="*100)
+            print(publisher.clock_callbacks)
+            publisher.unsubscribe_from_all(self.on_clock_update)
+            print(publisher.clock_callbacks)
+            self.send_button.setDisabled(False)
+        elif (m := self.msg_seq.pop(-1)):
+            m1, m2 = m
+            publisher.update('outgoing_can_messages', m1)
+            publisher.update('outgoing_can_messages', m2)
+
+
 
     @staticmethod
     def get_name():
