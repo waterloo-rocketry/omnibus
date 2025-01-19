@@ -94,10 +94,7 @@ class TVCControllerPreset(DashboardItem):
 
     def on_clock_update(self, _):
         if len(self.msg_seq) == 0:
-            print("="*100)
-            print(publisher.clock_callbacks)
             publisher.unsubscribe_from_all(self.on_clock_update)
-            print(publisher.clock_callbacks)
             self.send_button.setDisabled(False)
         elif (m := self.msg_seq.pop(-1)):
             m1, m2 = m
