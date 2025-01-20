@@ -5,4 +5,4 @@ from interamap import interamap_driver
 
 receiver = Receiver("")  # subscribe to all channels
 
-interamap_driver(None)
+interamap_driver()

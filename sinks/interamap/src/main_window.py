@@ -81,11 +81,9 @@ class MapWindow(QMainWindow):
         # Custom Toggle Button for Dark Mode
         self.toggle_button = QPushButton(self)
         self.toggle_button.setCheckable(True)
-        self.toggle_button.setIcon(
-            QIcon(self.relative_path + "/resources/icons/moon.png")
-        )
+        self.toggle_button.setText("Light")
         self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
-        self.toggle_button.setFixedSize(60, 30)  # Set fixed size for the toggle button
+        self.toggle_button.setFixedSize(80, 30)  # Set fixed size for the toggle button
         self.toggle_button.setSizePolicy(
             QSizePolicy.Fixed, QSizePolicy.Fixed
         )  # Prevent the button from expanding
@@ -254,17 +252,13 @@ class MapWindow(QMainWindow):
         if self.toggle_button.isChecked():
             # Switch to Dark Mode
             self.load_stylesheet(self.relative_path + "/resources/styles/darkmode.qss")
-            self.toggle_button.setIcon(
-                QIcon(self.relative_path + "/resources/icons/sun.png")
-            )
+            self.toggle_button.setText("Dark")
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(True))
             self.map_view.toggle_map_theme(True)  # Enable dark mode tiles for the map
         else:
             # Switch to Light Mode
             self.load_stylesheet(self.relative_path + "/resources/styles/lightmode.qss")
-            self.toggle_button.setIcon(
-                QIcon(self.relative_path + "/resources/icons/moon.png")
-            )
+            self.toggle_button.setText("Light")
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
             self.map_view.toggle_map_theme(False)  # Enable light mode tiles for the map
 
