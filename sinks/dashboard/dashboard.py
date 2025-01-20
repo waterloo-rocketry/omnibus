@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import signal
+import time
 
 import pyqtgraph
 from pyqtgraph.Qt.QtCore import Qt, QTimer
@@ -30,7 +31,6 @@ from pyqtgraph.Qt.QtWidgets import (
 )
 from pyqtgraph.parametertree import ParameterTree
 from items import registry
-from omnibus.util import TickCounter
 from utils import ConfirmDialog, EventTracker
 from publisher import publisher
 from typing import Optional
@@ -65,7 +65,7 @@ class QGraphicsViewWrapper(QGraphicsView):
         self.zoomed = 1.0
         self.SCROLL_SENSITIVITY = 1/3  # scale down the scrolling sensitivity
         self.dashboard = dashboard
-        
+
     def wheelEvent(self, event):
         """
         Zoom in/out if ctrl/cmd is held
@@ -88,7 +88,7 @@ class QGraphicsViewWrapper(QGraphicsView):
                 self.verticalScrollBar().setValue(int(value + numDegrees))
         else:  # let the default implementation occur for everything else
             super().wheelEvent(event)
-    
+
     # override the mouseDoubleClickEvent to open the property panel
     def mouseDoubleClickEvent(self, event):
         item = self.itemAt(event.pos())
@@ -139,13 +139,13 @@ class Dashboard(QWidget):
         # Determine the specific directory you want to always open
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.save_directory = os.path.join(script_dir, "..", "..", "sinks", "dashboard", "saved-files")
-        
+
         # The file from which the dashboard is loaded
         self.file_location = os.path.join(self.save_directory, "savefile.json")
 
         # Keep track on whether the save popup should be shown on exit.
         self.should_show_save_popup = True
-        
+
         # Create a GUI
         self.width = 1100
         self.height = 700
@@ -223,7 +223,7 @@ class Dashboard(QWidget):
         self.locked_widgets: list[tuple[QGraphicsRectItem, QAction]] = []
         """List of items which are locked, in the order in which they
         were locked.
-        
+
         Includes the rect item and the unlock action."""
         self.mouse_resize_action = editing_menu.addAction("Mouse Resizing (^m)")
         self.mouse_resize_action.setCheckable(True)
@@ -268,9 +268,6 @@ class Dashboard(QWidget):
 
         self.layout.setMenuBar(menubar)
 
-        # Set the counter
-        self.counter = TickCounter(1)
-
         # Create the view and add it to the widget
         self.view = QGraphicsViewWrapper(self.scene, self)
         self.view.setDragMode(QGraphicsView.ScrollHandDrag)
@@ -310,15 +307,17 @@ class Dashboard(QWidget):
         self.key_press_signals.mouse_resize.connect(self.toggle_mouse)
         self.key_press_signals.escape_pressed.connect(self.close_property_tree)
         self.installEventFilter(self.key_press_signals)
-        
+
         # Data used to check unsaved changes and indicate on the window title
         self.current_data = self.get_data()["widgets"]
         self.unsave_indicator = False
-        
+
+        publisher.subscribe_clock(7, self.change_detector)
+
         # For every 5 second, check if there are any changes
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.change_detector)
-        self.timer.start(100)  # Check every 0.1 seconds
+        #self.timer = QTimer(self)
+        #self.timer.timeout.connect(self.change_detector)
+        #self.timer.start(100)  # Check every 0.1 seconds
 
         QApplication.setStyle('Fusion')
 
@@ -346,6 +345,9 @@ class Dashboard(QWidget):
         sendForward_menu.triggered.connect(self.send_forward)
         sendBackward_menu.triggered.connect(self.send_backward)
 
+        # Set the start time for the clock
+        self.start_time = time.time()
+
     # Right click menu
     def contextMenuEvent(self, event):
         self.context_menu.exec(event.globalPos())
@@ -362,7 +364,7 @@ class Dashboard(QWidget):
             return True
         return False
 
-    def change_detector(self):
+    def change_detector(self, _ = None):
         title = self.windowTitle()
         unsaved_symbol = "⏺"
         changed = self.check_for_changes()
@@ -567,7 +569,7 @@ class Dashboard(QWidget):
         self.view.zoomed = new_zoom
         # Capture the save on exit settting.
         if "should_show_save_popup" in data and not data["should_show_save_popup"]:
-            self.should_show_save_popup = False    
+            self.should_show_save_popup = False
 
         locked_item_pairs = []
 
@@ -593,15 +595,15 @@ class Dashboard(QWidget):
     # Method to save current layout to file
     def save(self):
         data = self.get_data()
-        
+
         self.current_data = data["widgets"]
         self.unsave_indicator = False
-                    
+
         # Write data to savefile
         os.makedirs(os.path.dirname(self.file_location), exist_ok=True)
         with open(self.file_location, "w") as savefile:
             json.dump(data, savefile)
-        
+
         self.change_detector()
 
     # Method to save file with a custom chosen name
@@ -616,7 +618,7 @@ class Dashboard(QWidget):
     def show_save_as_prompt(self) -> str:
         # Show a prompt box using QInputDialog
         text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter file name without extension:')
-        
+
         # Check if OK was pressed and text is not empty
         if ok and text:
             return text + ".json"
@@ -628,13 +630,13 @@ class Dashboard(QWidget):
         # Ensure the save directory exists, if not, create it
         if not os.path.exists(self.save_directory):
             os.makedirs(self.save_directory)
-            
+
         (filename, _) = QFileDialog.getOpenFileName(self, "Open File", self.save_directory, "JSON Files (*.json)")
 
         # If the user presses cancel, do nothing
         if not filename:
             return
-        
+
         self.file_location = filename
         self.load()
 
@@ -673,7 +675,7 @@ class Dashboard(QWidget):
             self.unlock_items_menu.removeAction(action)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, enabled=not self.locked)
             rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, enabled=not self.locked)
-            
+
         action.triggered.connect(unlock)
         self.locked_widgets.append((rect, action))
 
@@ -693,8 +695,8 @@ class Dashboard(QWidget):
         else:
             # Set default values to default data.
             old_data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "should_show_save_popup": True}
-        
-        # Obtain current data 
+
+        # Obtain current data
         new_data = self.get_data()
         # Automatically exit if user has clicked "Dont ask again checkbox" or no new changes are made.
         if not self.should_show_save_popup or new_data["widgets"] == old_data["widgets"]:
@@ -711,7 +713,7 @@ class Dashboard(QWidget):
 
         # Obtain current save on exit value.
         data["should_show_save_popup"] = self.should_show_save_popup
-    
+
         # Capture the coordinates of the center of the view on the scene
         scene_center = self.view.mapToScene(self.view.width()//2, self.view.height()//2)
         data["center"] = [scene_center.x(), scene_center.y()]
@@ -738,9 +740,9 @@ class Dashboard(QWidget):
                                             "params": dashitem.get_serialized_parameters(),
                                             "pos": [viewpos.x(), viewpos.y()],
                                             "locked": locked_index})
-        
+
         return data
-    
+
     # Method to display save on exit popup.
     def show_save_popup(self, old_data, event):
         # Display Popup that prompts for save.
@@ -773,7 +775,7 @@ class Dashboard(QWidget):
             SAVE_CHANGES = 1
             DISCARD_CHANGES = 2
             CANCEL = 3
-        # Connect buttons to action listeners. 
+        # Connect buttons to action listeners.
         save_changes.clicked.connect(lambda: popup.done(Event.SAVE_CHANGES.value))
         discard_changes.clicked.connect(lambda: popup.done(Event.DISCARD_CHANGES.value))
         cancel.clicked.connect(lambda: popup.done(Event.CANCEL.value))
@@ -782,7 +784,7 @@ class Dashboard(QWidget):
 
         if dont_ask_again_checkbox.isChecked():
             self.should_show_save_popup = False
-        
+
         if result == Event.SAVE_CHANGES.value:
             self.save()
             self.remove_all(True)
@@ -824,11 +826,16 @@ class Dashboard(QWidget):
         """
         help_box = ConfirmDialog("Omnibus Help", message)
         help_box.exec()
-    
+
     # Method to get new data for widgets
     def update(self):
-        self.counter.tick()
+        # Note, based on performance testing,
+        # we don't need to be worried about
+        # the delay caused by the callback,
+        # as the if-statement runs sufficiently
+        # often
         self.callback()
+        publisher.update_clock()
 
     # Method to center the view
     def reset_zoom(self):
@@ -856,7 +863,7 @@ class Dashboard(QWidget):
         selected_items = self.scene.selectedItems()
         if len(selected_items) == 0:
             return
-        
+
         order_of_items = {}
         for i, item in enumerate(self.scene.items(Qt.SortOrder.AscendingOrder)):
             order_of_items[item] = i
@@ -871,7 +878,7 @@ class Dashboard(QWidget):
         selected_items = self.scene.selectedItems()
         if len(selected_items) == 0:
             return
-        
+
         # For some reason QGraphicsItem::stackBefore doesn't work, so we just
         # go with manually adding/removing all the items that are not supposed
         # to be at the back
@@ -890,7 +897,7 @@ class Dashboard(QWidget):
         selected_items = self.scene.selectedItems()
         if len(selected_items) == 0:
             return
-        
+
         # Too complicated to figure out what to add and remove. Just do it for
         # all in a virtual array first
         items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
@@ -914,7 +921,7 @@ class Dashboard(QWidget):
         selected_items = self.scene.selectedItems()
         if len(selected_items) == 0:
             return
-        
+
         items = [item for item in self.scene.items(Qt.SortOrder.AscendingOrder)
                     if isinstance(item, QGraphicsRectItem)]
         for item in items:
