@@ -11,7 +11,7 @@ def load_stylesheet(file_name):
     with open(file_name, "r") as file:
         return file.read()
 
-def interamap_driver(callback):
+def interamap_driver():
     # quit applicaiton from terminal
     signal.signal(signal.SIGINT, lambda *args: QApplication.quit())
     app = QApplication(sys.argv)
