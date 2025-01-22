@@ -31,6 +31,11 @@ class GPS_Cache(QThread):
         elif isinstance(info_stream, Info_GPS):
             # GPS Info is not stored, only display in stream on UI
             pass
+        elif isinstance(info_stream, LineString_GPS):
+            self.gps_linestrings.append(info_stream)
+        elif isinstance(info_stream, list):
+            for info in info_stream:
+                self.store_info(info)
         else:
             print("Unknown info type", info_stream)
             pass
@@ -76,10 +81,12 @@ class GPS_Cache(QThread):
         """Export the map to KML file."""
         file_path = 'points.kmz' # path TBD
         gps_points_placemarks: (str, kml.Folder) = {}
+        gps_linestring_placemarks = kml.Folder()
+
         for p in self.gps_points:
             time = datetime.combine(
                 datetime.today(),
-                datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time()) if p.time_stamp else None
+                datetime.strptime(p.time_stamp, '%H:%M:%S').time()) if p.time_stamp else None
 
             if p.board_id not in gps_points_placemarks.keys():
                 gps_points_placemarks[p.board_id] = kml.Folder(name=p.board_id)
@@ -97,7 +104,21 @@ class GPS_Cache(QThread):
                 )
             )
 
-        k = kml.KML(features=[kml.Document(name="Points", features=list(gps_points_placemarks.values()))])
+        for l in self.gps_linestrings:
+            gps_linestring_placemarks.append(
+                kml.Placemark(
+                    name="GPS Linestring",
+                    kml_geometry=geometry.LineString(
+                        kml_coordinates=geometry.Coordinates(
+                            coords=[(p.lon, p.lat, p.alt) for p in l.points]
+                        )
+                    )
+                )
+            )
+
+
+        k = kml.KML(features=[kml.Document(name="Points", features=list(gps_points_placemarks.values())),
+                              kml.Document(name="LineStrings", features=[gps_linestring_placemarks])])
         try:
             # k.write(pathlib.Path('points.kml'), prettyprint=True) # write directly as kml file
             with zipfile.ZipFile(file_path, "w") as kmz:
