@@ -83,10 +83,14 @@ class GPS_Cache(QThread):
         gps_points_placemarks: (str, kml.Folder) = {}
         gps_linestring_placemarks = kml.Folder()
 
+        # add points to placemarks
         for p in self.gps_points:
+            if p.time_stamp and '.' not in p.time_stamp:
+                p.time_stamp += '.0'
+
             time = datetime.combine(
                 datetime.today(),
-                datetime.strptime(p.time_stamp, '%H:%M:%S').time()) if p.time_stamp else None
+                datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time()) if p.time_stamp else None
 
             if p.board_id not in gps_points_placemarks.keys():
                 gps_points_placemarks[p.board_id] = kml.Folder(name=p.board_id)
@@ -104,10 +108,21 @@ class GPS_Cache(QThread):
                 )
             )
 
+        # add linestrings to placemarks
         for l in self.gps_linestrings:
+            sample_point = l.points[0] # only points have timestamp/board_id so we grab the first one
+            if sample_point.time_stamp and '.' not in sample_point.time_stamp:
+                sample_point.time_stamp += '.0'
+
+            time = datetime.combine(
+                datetime.today(),
+                datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time()) if sample_point.time_stamp else None
+
             gps_linestring_placemarks.append(
                 kml.Placemark(
                     name="GPS Linestring",
+                    description=f"Time: {sample_point.time_stamp} Board ID: {sample_point.board_id}",
+                    times=times.TimeStamp(timestamp=times.KmlDateTime(time)) if sample_point.time_stamp else None,
                     kml_geometry=geometry.LineString(
                         kml_coordinates=geometry.Coordinates(
                             coords=[(p.lon, p.lat, p.alt) for p in l.points]
@@ -120,7 +135,7 @@ class GPS_Cache(QThread):
         k = kml.KML(features=[kml.Document(name="Points", features=list(gps_points_placemarks.values())),
                               kml.Document(name="LineStrings", features=[gps_linestring_placemarks])])
         try:
-            # k.write(pathlib.Path('points.kml'), prettyprint=True) # write directly as kml file
+            # k.write(pathlib.Path('points.kml'), prettyprint=True) # Debug: write directly as kml file
             with zipfile.ZipFile(file_path, "w") as kmz:
                 kmz.writestr("doc.kml", k.to_string(prettyprint=True))
         except Exception as e:
