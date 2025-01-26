@@ -60,6 +60,7 @@ class MapView(QWebEngineView):
 
         # Initialize a Point Storage object to store GPS points
         self.point_storage = GPS_Cache()
+
         self.last_map_point_update = 0
         self.realtime_source_thread = None
         
