@@ -3,13 +3,13 @@ import { useEffect, useState } from 'react';
 
 import './RechartsTester.css';
 
-var lastUpdated = Date.now();
-
 interface RechartsTesterProps {
   numCharts: number
 }
 
 function RechartsTester(props: RechartsTesterProps) {
+
+  var lastUpdated = Date.now();
 
   const [data, setData] = useState([{
     index: 0,
@@ -19,7 +19,7 @@ function RechartsTester(props: RechartsTesterProps) {
   }]);
 
   useEffect(() => {
-    console.log("Time since last updated:", Date.now() - lastUpdated);
+    console.log("Data points per second: ", 1000 / (Date.now() - lastUpdated));
     lastUpdated = Date.now();
   }, [data])
 
@@ -42,7 +42,7 @@ function RechartsTester(props: RechartsTesterProps) {
 
       i ++;
 
-    }, 29);
+    }, 1);
 
     return () => clearInterval(interval);
   }, []);
@@ -50,7 +50,7 @@ function RechartsTester(props: RechartsTesterProps) {
   return (
       <div className='flex flex-row flex-wrap'>
       {
-        [...Array(props.numCharts)].map((_, index) =>
+        Array.from({ length: props.numCharts }).map((_, index) =>
           <LineChart key={index} width={400} height={300} data={data}>
             <XAxis type="number" dataKey="index" tickCount={8} domain={['dataMin', 'dataMax']} allowDecimals/>
             <YAxis type="number" domain={[0, 'dataMax']} />
