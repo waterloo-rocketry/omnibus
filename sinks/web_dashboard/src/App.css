@@ -2,15 +2,3 @@
   font-family: "Geist";
   src: url("assets/fonts/geist.ttf") format("truetype");
 }
-
-/* Styles for charts */
-.recharts-cartesian-axis-tick-value {
-  font-family: 'Geist';
-  font-weight: 500;
-  font-size: 0.7rem;
-  fill: rgb(154, 154, 154);
-}
-
-.recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line {
-  stroke: rgb(53, 53, 53);
-}
