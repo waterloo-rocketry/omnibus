@@ -2,17 +2,16 @@
 #### NI Source Log to CSV Data Processing Script - Extrapolate Timestamps ####
 # This script is used when the secondary backup logs created by the NI source itself need to be extracted.
 # This script does not extrapolate, simply takes the average and deals with it
+# Last updated 2025-01-31 - Chris Yang (@ChrisYx511)
+
 from typing import IO, List, Union
 import msgpack
 import sys
 
 from data_saving import save_data_to_csv
 
-# IN_DATA = "" # Path to NI log data
-# OUT_CSV = "export.csv" # Output CSV file, incl. file path
-IN_DATA = "test_inputs/testNILog.dat"
-OUT_CSV = "OUTPUT-test_ni_dat_log.csv"
-
+IN_DATA = "" # Path to NI log data
+OUT_CSV = "export.csv" # Output CSV file, incl. file path
 
 def average_list(data: List[Union[int, float]]) -> Union[int, float]:
     if type(data) == int:
@@ -52,6 +51,7 @@ def get_raw_daq_cols(infile: IO) -> List[str]:
     infile.seek(0)
     return cols
 
+
 def get_raw_daq_lines(infile: IO, cols=[], compressed=True, aggregate_function_name="average") -> List[List[Union[int, str]]]:
     """Get all the data from the DAQ messages in the file, and return it as a list of lists, where each list is a line of the csv"""
     lines = []
@@ -84,6 +84,7 @@ def get_raw_daq_lines(infile: IO, cols=[], compressed=True, aggregate_function_n
     print(len(lines))
     print(lineCount)
     return lines
+
 
 def main(inpath: str , outpath: str):
     with open(inpath, "rb") as infile:

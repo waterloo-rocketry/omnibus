@@ -1,17 +1,15 @@
 #### NI Source Log to CSV Data Processing Script - Extrapolate Timestamps ####
 # This script is used when the secondary backup logs created by the NI source itself need to be extracted.
 # This script also extrapolates compressed / aggregated data points by assigning them timestamps accordingly, somewhat increasing precision.
+# Last updated 2025-01-31 - Chris Yang (@ChrisYx511)
 
 import sys
 from typing import IO, List, Union
 from data_saving import save_data_to_csv
 import msgpack
 
-# IN_DATA = "test_inputs/test_NI" # Path to NI log data
-# OUT_CSV = "export.csv" # Output CSV file, incl. file path
-IN_DATA = "test_inputs/testNILog.dat"
-OUT_CSV = "OUTPUT-test_ni_dat_extrapolate.csv"
-
+IN_DATA = "" # Path to NI log data
+OUT_CSV = "export.csv" # Output CSV file, incl. file path
 
 def get_raw_daq_cols(infile: IO) -> List[str]:
     """Get the columns that are present in the DAQ data in the file and returns them in the order they're encountered"""
@@ -29,6 +27,7 @@ def get_raw_daq_cols(infile: IO) -> List[str]:
 
     infile.seek(0)
     return cols
+
 
 def get_raw_daq_lines(infile: IO, cols=[]) -> List[List[Union[int, str]]]:
     last = None

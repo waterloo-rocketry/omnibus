@@ -1,4 +1,6 @@
-import pytest
+#### UNIT TESTS for parse_ni_dat_log.py and parse_ni_extrapolate_compression.py
+## Execute using pytest
+# Last updated 2025-01-31 - Chris Yang (@ChrisYx511)
 
 from parse_ni_dat_log import main as ni_dat_log
 from parse_ni_extrapolate_compression import main as ni_dat_extrapolate
