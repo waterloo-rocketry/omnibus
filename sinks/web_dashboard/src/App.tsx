@@ -1,10 +1,12 @@
 import './App.css'
-import RechartsTester from './components/RechartsTester/RechartsTester'
+import D3Tester from './components/D3Tester/D3Tester'
 
 function App() {
 
   return (
-    <RechartsTester numCharts={10}/>
+    <>
+      <D3Tester numCharts={10}/>
+    </>
   )
 }
 
