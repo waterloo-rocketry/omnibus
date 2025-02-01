@@ -61,7 +61,7 @@ if __name__ == "__main__":
     args = parse_arguments()
     max_logs = args.max_logs
     replay_speed = args.replay_speed
-    log_file = args.log_file if args.log_file != None else get_replay_log(max_logs)
+    log_file = os.path.expanduser(args.log_file if args.log_file != None else get_replay_log(max_logs))
 
     if log_file == None:
         print("Error: unable to retrieve log file.")

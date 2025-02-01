@@ -1,9 +1,9 @@
 class Publisher:
     """
-    The core data bus of the dashboard. 
+    The core data bus of the dashboard.
 
     This class holds a number number of streams. Users may
-    subscribe to these streams to recieve notifications 
+    subscribe to these streams to recieve notifications
     upon updates. This is done by providing a callback, which
     is called when the data is updated.
     """
@@ -11,6 +11,8 @@ class Publisher:
     def __init__(self):
         self.streams = {}
         self.stream_update_callbacks = []
+        self.ticks = 0
+        self.clock_callbacks = []
 
     def register_stream_callback(self, cb):
         self.stream_update_callbacks.append(cb)
@@ -29,10 +31,21 @@ class Publisher:
             if callback in self.streams[stream]:
                 self.streams[stream].remove(callback)
 
+        self.clock_callbacks = [(s, i, c) for (s, i, c) in self.clock_callbacks if c != callback]
+
     def update(self, stream, payload):
         self.ensure_exists(stream)
         for callback in self.streams[stream]:
             callback(stream, payload)
+
+    def subscribe_clock(self, interval, callback):
+        self.clock_callbacks.append((self.ticks, interval, callback))
+
+    def update_clock(self):
+        self.ticks += 1
+        for start, interval, cb in self.clock_callbacks:
+            if (self.ticks + start) % interval == 0:
+                cb(self.ticks)
 
     def ensure_exists(self, stream):
         if stream not in self.streams:

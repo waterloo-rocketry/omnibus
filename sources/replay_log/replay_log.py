@@ -1,6 +1,6 @@
 """
 Replay Log Source
--  
+-
 Replays previous logs from the Global Log sink,
 or from a selected file, in real time.
 
