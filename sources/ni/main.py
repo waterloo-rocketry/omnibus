@@ -1,6 +1,5 @@
 import time
 import sys
-import importlib
 import msgpack
 import nidaqmx
 
@@ -10,7 +9,8 @@ import calibration
 try:
     import config
 except ImportError as e:
-    print(f"Error: Importing config failed! Is config.py in the same folder as NI Source? See config.py.example for more info.\n" + str(e), file=sys.stderr)
+    print(f"""Error: Importing config failed! Is config.py in the same folder as NI Source? 
+See 'config.py.example' for more info.\n""" + str(e.msg), file=sys.stderr)
     sys.exit(1)
 
 
