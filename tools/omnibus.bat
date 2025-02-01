@@ -27,7 +27,21 @@ echo router response good... connected to ethernet!
 for /f "tokens=*" %%g in ('"wmic path win32_serialport get DeviceID | find "COM" "') do set com=%%g
 echo found USB debug at %com%
 
-start python -m omnibus
+@REM start python -m omnibus
+@REM timeout /nobreak /t 5
+@REM start python sources\ni\main.py
+@REM start python sources\parsley\main.py --format usb %com%
+wsl.exe -- tmux new -d -s "OmnibusServer"
+wsl.exe -- tmux send-keys -t "OmnibusServer" "python.exe -m omnibus" C-m
 timeout /nobreak /t 5
-start python sources\ni\main.py
-start python sources\parsley\main.py --format usb %com%
+wsl.exe -- tmux new -d -s "NI" "python.exe sources/ni/main.py || sh"
+wsl.exe -- tmux new -d -s "Parsley" "python.exe sources/parsley/main.py --format usb %com% || sh"
+
+echo Omnibus Started! If there are any messages stating 'duplicate session', omnibus is already running...
+echo To access omnibus output over ssh, login and run 'wsl tmux a -t [name]', where [name] is 'OmnibusServer', 'NI', or 'Parsley'
+echo Note that closing these windows will not close omnibus! Run the kill-omnibus.bat script or 'wsl tmux kill-server'!
+pause
+echo Spawning interactive shells if in remote desktop...
+start cmd /c wsl -- tmux a -t "OmnibusServer"
+start cmd /c wsl -- tmux a -t "NI"
+start cmd /c wsl -- tmux a -t "Parsley"
