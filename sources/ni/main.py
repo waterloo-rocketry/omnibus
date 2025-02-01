@@ -1,17 +1,23 @@
 import time
 import sys
-
+import importlib
 import msgpack
 import nidaqmx
 
 from omnibus import Sender
-import config
 import calibration
+
+try:
+    import config
+except ImportError as e:
+    print(f"Error: Importing config failed! Is config.py in the same folder as NI Source? See config.py.example for more info.\n" + str(e), file=sys.stderr)
+    sys.exit(1)
+
 
 try:
     config.setup()  # initialize the sensors
 except KeyError as e:
-    print(f"Error: {''.join(e.args)}.")
+    print(f"Error: {''.join(e.args)}.", file=sys.stderr)
     sys.exit(1)
 
 calibration.Sensor.print()  # print out sensors and their ai channels
