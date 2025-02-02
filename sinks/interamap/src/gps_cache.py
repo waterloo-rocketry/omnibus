@@ -31,6 +31,11 @@ class GPS_Cache(QThread):
         elif isinstance(info_stream, Info_GPS):
             # GPS Info is not stored, only display in stream on UI
             pass
+        elif isinstance(info_stream, LineString_GPS):
+            self.gps_linestrings.append(info_stream)
+        elif isinstance(info_stream, list):
+            for info in info_stream:
+                self.store_info(info)
         else:
             print("Unknown info type", info_stream)
             pass
@@ -76,7 +81,13 @@ class GPS_Cache(QThread):
         """Export the map to KML file."""
         file_path = 'points.kmz' # path TBD
         gps_points_placemarks: (str, kml.Folder) = {}
+        gps_linestring_placemarks = kml.Folder()
+
+        # add points to placemarks
         for p in self.gps_points:
+            if p.time_stamp and '.' not in p.time_stamp:
+                p.time_stamp += '.0'
+
             time = datetime.combine(
                 datetime.today(),
                 datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time()) if p.time_stamp else None
@@ -97,9 +108,34 @@ class GPS_Cache(QThread):
                 )
             )
 
-        k = kml.KML(features=[kml.Document(name="Points", features=list(gps_points_placemarks.values()))])
+        # add linestrings to placemarks
+        for l in self.gps_linestrings:
+            sample_point = l.points[0] # only points have timestamp/board_id so we grab the first one
+            if sample_point.time_stamp and '.' not in sample_point.time_stamp:
+                sample_point.time_stamp += '.0'
+
+            time = datetime.combine(
+                datetime.today(),
+                datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time()) if sample_point.time_stamp else None
+
+            gps_linestring_placemarks.append(
+                kml.Placemark(
+                    name="GPS Linestring",
+                    description=f"Time: {sample_point.time_stamp} Board ID: {sample_point.board_id}",
+                    times=times.TimeStamp(timestamp=times.KmlDateTime(time)) if sample_point.time_stamp else None,
+                    kml_geometry=geometry.LineString(
+                        kml_coordinates=geometry.Coordinates(
+                            coords=[(p.lon, p.lat, p.alt) for p in l.points]
+                        )
+                    )
+                )
+            )
+
+
+        k = kml.KML(features=[kml.Document(name="Points", features=list(gps_points_placemarks.values())),
+                              kml.Document(name="LineStrings", features=[gps_linestring_placemarks])])
         try:
-            # k.write(pathlib.Path('points.kml'), prettyprint=True) # write directly as kml file
+            # k.write(pathlib.Path('points.kml'), prettyprint=True) # Debug: write directly as kml file
             with zipfile.ZipFile(file_path, "w") as kmz:
                 kmz.writestr("doc.kml", k.to_string(prettyprint=True))
         except Exception as e:

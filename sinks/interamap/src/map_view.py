@@ -60,6 +60,7 @@ class MapView(QWebEngineView):
 
         # Initialize a Point Storage object to store GPS points
         self.point_storage = GPS_Cache()
+
         self.last_map_point_update = 0
         self.realtime_source_thread = None
         
@@ -169,7 +170,8 @@ class MapView(QWebEngineView):
         if self.rt_parser.running:
             self.add_realtime_layer()
         else:
-            self.draw_gps_data(self.point_storage.get_gps_points())
+            print(self.point_storage.get_linestring_gps())
+            self.draw_gps_data(self.point_storage.get_gps_points() + self.point_storage.get_linestring_gps())
 
         self.map_html = (
             self.m.get_root()
@@ -187,6 +189,7 @@ class MapView(QWebEngineView):
     def clear_all_markers(self):
         """Clear all markers from the map."""
         self.point_storage.clear_points()
+        self.point_storage.clear_linestrings()
         self.refresh_map()
 
     def toggle_map_theme(self, is_dark_mode):
