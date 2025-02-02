@@ -44,8 +44,4 @@ pause
 echo Spawning interactive shells if in remote desktop...
 start cmd /c wsl -- tmux a -t "OmnibusServer"
 start cmd /c wsl -- tmux a -t "NI"
-<<<<<<< HEAD
 start cmd /c wsl -- tmux a -t "Parsley"
-=======
-start cmd /c wsl -- tmux a -t "Parsley"
->>>>>>> master
