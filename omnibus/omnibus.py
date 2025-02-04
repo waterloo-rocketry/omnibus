@@ -109,14 +109,15 @@ class Receiver(OmnibusCommunicator):
     to 'foobar', and a receiver listing to the channel '' will receive all
     messages.
     """
-
+    channels = []
     def __init__(self, *channels):
         super().__init__()
-
+        self.channels = channels
         self.subscriber = self.context.socket(zmq.SUB)
         self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")
         for channel in channels:
             self.subscriber.setsockopt(zmq.SUBSCRIBE, channel.encode("utf-8"))
+        
 
     def recv_message(self, timeout=None):
         """
@@ -132,6 +133,7 @@ class Receiver(OmnibusCommunicator):
             return Message(channel.decode("utf-8"), msgpack.unpackb(timestamp), msgpack.unpackb(payload))
         return None
 
+
     def recv(self, timeout=None):
         """
         Receive the payload of one message from a sender, discarding metadata.
@@ -144,3 +146,14 @@ class Receiver(OmnibusCommunicator):
         if message := self.recv_message(timeout):
             return message.payload
         return None
+    
+
+    def reset(self):
+        self.subscriber.close(0)
+        self.context.destroy(0)
+        self.context = zmq.Context()
+        self.subscriber = self.context.socket(zmq.SUB)
+        self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")
+        for channel in self.channels:
+            self.subscriber.setsockopt(zmq.SUBSCRIBE, channel.encode("utf-8"))
+        
