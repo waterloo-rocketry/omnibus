@@ -7,7 +7,7 @@ import random
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
 
-from config import ONLINE_MODE
+from config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN
 from src.gps_cache import GPS_Cache
 from PySide6.QtCore import Signal
 import flask
@@ -60,6 +60,7 @@ class MapView(QWebEngineView):
 
         # Initialize a Point Storage object to store GPS points
         self.point_storage = GPS_Cache()
+
         self.last_map_point_update = 0
         self.realtime_source_thread = None
         
@@ -100,6 +101,9 @@ class MapView(QWebEngineView):
             attr="CartoDB",
             name="CartoDB",
             overlay=False,
+            max_native_zoom=ZOOM_MAX,
+            max_zoom=ZOOM_MAX,
+            min_zoom=ZOOM_MIN
         ).add_to(self.m)
 
         self.add_offline_layer()
@@ -169,7 +173,8 @@ class MapView(QWebEngineView):
         if self.rt_parser.running:
             self.add_realtime_layer()
         else:
-            self.draw_gps_data(self.point_storage.get_gps_points())
+            print(self.point_storage.get_linestring_gps())
+            self.draw_gps_data(self.point_storage.get_gps_points() + self.point_storage.get_linestring_gps())
 
         self.map_html = (
             self.m.get_root()
@@ -187,6 +192,7 @@ class MapView(QWebEngineView):
     def clear_all_markers(self):
         """Clear all markers from the map."""
         self.point_storage.clear_points()
+        self.point_storage.clear_linestrings()
         self.refresh_map()
 
     def toggle_map_theme(self, is_dark_mode):
