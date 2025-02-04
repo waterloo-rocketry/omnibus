@@ -1,5 +1,6 @@
 import zipfile
 from fastkml import kml
+from pygeoif import MultiLineString
 
 from src.data_struct import Point_GPS, LineString_GPS
 
@@ -22,7 +23,7 @@ class KMZParser:
             # Use the first KML file found
             kml_file_name = kml_files[0]
             with kmz.open(kml_file_name, "r") as kml_file:
-                k = kml.KML().parse(kml_file)
+                k = kml.KML().parse(kml_file, validate=False)
 
         print(k.to_string())
         return k
@@ -47,10 +48,18 @@ class KMZParser:
             lon, lat, alt = geom.coords[0]
             return Point_GPS(lon, lat, alt, 0, time_stamp=timestamp) # unsure what num_sats is
         elif geom_type == "LineString":
-            linestring = LineString_GPS()
-            coords = [coord[:3] for coord in geom.coords]  # Extract lon and lat
-            for coord in coords:
-                linestring.add_point(Point_GPS(coord[0], coord[1], coord[2], timestamp))
-            return linestring
+            return self.parse_linestring(geom, timestamp)
+        elif geom_type == "MultiLineString":
+            multilinestring = []
+            for linestring in list(geom.geoms):
+                multilinestring.append(self.parse_linestring(linestring, timestamp))
+            return multilinestring
         else:
             print(f"Unhandled geometry type: {geom_type}")
+
+    def parse_linestring(self, geom, timestamp):
+        linestring = LineString_GPS()
+        coords = [coord[:3] for coord in geom.coords]  # Extract lon and lat
+        for coord in coords:
+            linestring.add_point(Point_GPS(coord[0], coord[1], coord[2], 0, timestamp))
+        return linestring
