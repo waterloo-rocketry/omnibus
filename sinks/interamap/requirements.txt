@@ -6,3 +6,4 @@ offline_folium
 lxml
 qrcode
 pillow
+branca
