@@ -101,14 +101,15 @@ def can_parser(payload):
     # specific way, eg SENSOR_ANALOG messages need a different stream for each
     # value of SENSOR_ID.
 
-    # Example payload: {'board_id': 'CHARGING', 'msg_type': 'SENSOR_ANALOG', 'data': {'time': 37.595, 'sensor_id': 'SENSOR_GROUND_VOLT', 'value': 13104}}
+    # Example payload: {'board_type_id': 'INJ_SENSOR', 'board_inst_id': 'GENERIC', msg_type': 'SENSOR_ANALOG', 'data': {'time': 37.595, 'sensor_id': 'SENSOR_PRESSURE_CC', 'value': 13104}}
 
     message_type = payload["msg_type"]
-    board_id = payload["board_id"]
+    board_type_id = payload["board_type_id"]
+    board_inst_id = payload["board_inst_id"]
     data = payload["data"]
 
     # Build up the common prefix for all data streams, split based on a field if needed.
-    prefix = f"{board_id}/{message_type}"
+    prefix = f"{board_type_id}/{board_inst_id}/{message_type}"
     if message_type in splits:
         split = data.pop(splits[message_type])
         prefix += f"/{split}"
@@ -116,21 +117,21 @@ def can_parser(payload):
     error_series = []  # additional series to publish to on error
 
     timestamp = data.pop("time", time.time())  # default back to system time
-    time_key = board_id + message_type
+    time_key = board_type_id + board_inst_id + message_type
     if time_key not in last_timestamp:
         last_timestamp[time_key] = 0
         offset_timestamp[time_key] = 0
-        publisher.ensure_exists(f"{board_id}/RESET")
-        publisher.ensure_exists(f"{board_id}/ERROR")
+        publisher.ensure_exists(f"{board_type_id}/{board_inst_id}/RESET")
+        publisher.ensure_exists(f"{board_type_id}/{board_inst_id}/ERROR")
     if timestamp < last_timestamp[time_key] - 5 and timestamp < 10:  # detect rollover
         offset_timestamp[time_key] += last_timestamp[time_key]
         if message_type == "GENERAL_BOARD_STATUS":
-            error_series.append((f"{board_id}/RESET", time.time(), time.strftime("%I:%M:%S")))
+            error_series.append((f"{board_type_id}/{board_inst_id}/RESET", time.time(), time.strftime("%I:%M:%S")))
     last_timestamp[time_key] = timestamp
     timestamp += offset_timestamp[time_key]
 
     if message_type == "GENERAL_BOARD_STATUS" and data['status'] != "E_NOMINAL":
-        error_series.append((f"{board_id}/ERROR", timestamp, payload["data"]))
+        error_series.append((f"{board_type_id}/{board_inst_id}/ERROR", timestamp, payload["data"]))
 
     return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()] + error_series
 
