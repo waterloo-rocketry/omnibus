@@ -25,13 +25,13 @@ class CanSender(DashboardItem):
     """
     Visual blueprint of the CanSender dashboard item:
 
-    |---------------------------------------------------------------|
-    | msg_type | board_id | time (seconds)    | command  |          | <- field names (conditional: unit in brackets)
-    |----------|----------|-------------------|----------|----------|
-    | Dropdown | Dropdown | 24-bit text_field | Dropdown |   Send   | <- field-dependent widgets to take input
-    |----------|----------|-------------------|----------|----------|
-    |          |          | Parsley error     |          |          | <- (conditional: parsley encoding error)
-    |---------------------------------------------------------------|
+    |------------------------------------------------------------------------------------|
+    | msg_type | board_type_id | board_inst_id | time (seconds)    | command  |          | <- field names (conditional: unit in brackets)
+    |----------|---------------|---------------|-------------------|----------|----------|
+    | Dropdown |   Dropdown    |   Dropdown    | 16-bit text_field | Dropdown |   Send   | <- field-dependent widgets to take input
+    |----------|---------------|---------------|-------------------|----------|----------|
+    |          |               |               | Parsley error     |          |          | <- (conditional: parsley encoding error)
+    |------------------------------------------------------------------------------------|
 
     - Dropdowns contain a field's dictionary keys
         => when a Switch is encountered, populate the first key's fields
