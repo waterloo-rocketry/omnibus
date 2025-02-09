@@ -28,7 +28,7 @@ class CanSender(DashboardItem):
     |------------------------------------------------------------------------------------|
     | msg_type | board_type_id | board_inst_id | time (seconds)    | command  |          | <- field names (conditional: unit in brackets)
     |----------|---------------|---------------|-------------------|----------|----------|
-    | Dropdown |   Dropdown    |   Dropdown    | 24-bit text_field | Dropdown |   Send   | <- field-dependent widgets to take input
+    | Dropdown |   Dropdown    |   Dropdown    | 16-bit text_field | Dropdown |   Send   | <- field-dependent widgets to take input
     |----------|---------------|---------------|-------------------|----------|----------|
     |          |               |               | Parsley error     |          |          | <- (conditional: parsley encoding error)
     |------------------------------------------------------------------------------------|
