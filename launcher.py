@@ -13,10 +13,12 @@ from typing import List, Tuple
 
 # Import from Qt – note: these come from pyqtgraph’s wrapper
 from pyqtgraph.Qt import QtGui
+from pyqtgraph.Qt import QtCore
 from pyqtgraph.Qt.QtWidgets import (
     QApplication, QDialog, QLabel, QDialogButtonBox, QVBoxLayout,
     QWidget, QCheckBox, QGridLayout, QLineEdit
 )
+
 
 from logtool import Logger
 
@@ -231,9 +233,9 @@ class Launcher:
             # Poll processes until one finishes or user interrupts
             while True:
                 for process in self.processes:
-                    if process.poll() is not None:
+                    all_finished = all(process.poll() is not None for process in self.processes)
+                    if all_finished:
                         raise Finished
-                time.sleep(0.5)
         except (Finished, KeyboardInterrupt, Exception):
             for process in self.processes:
                 try:
@@ -405,20 +407,22 @@ class GUILauncher(Launcher, QDialog):
         self.selected_ok = True
         # Add omnibus command
 
-        # Construct source commands
-        for i, (selected, args) in enumerate(self.src_state):
-            if selected:
-                cmd = [python_executable, os.path.join("sources", self.modules["sources"][i], "main.py")]
-                if args:
-                    cmd.append(args)
-                self.commands.append(CommandStruct(command=cmd, stdout=False))
+        for idx, src in enumerate(self.src_state):
+            if src[0]:
+                command = [python_executable, f"sources/{self.modules['sources'][idx]}/main.py"]
+                if src[1] != "":
+                    command.append(src[1])
+                source = CommandStruct(command=command, stdout=False)
+                self.commands.append(source)
 
-        # Construct sink commands
-        for i, (selected, stdout_flag) in enumerate(self.sink_state):
-            if selected:
-                cmd = [python_executable, os.path.join("sinks", self.modules["sinks"][i], "main.py")]
-                self.commands.append(CommandStruct(command=cmd, stdout=stdout_flag))
-        self.save_selected_to_config()
+        for idx, snk in enumerate(self.sink_state):
+            if snk[0]:
+                command = [python_executable, f"sinks/{self.modules['sinks'][idx]}/main.py"]
+                if snk[1]: # Check stdout flag
+                    sink = CommandStruct(command=command, stdout=True)
+                else:
+                    sink = CommandStruct(command=command, stdout=False)
+                self.commands.append(sink)
         self.close()
 
     def closeEvent(self, event) -> None:
@@ -426,7 +430,15 @@ class GUILauncher(Launcher, QDialog):
         if self.selected_ok:
             event.accept()
         else:
-            sys.exit()
+            print("No sources or sinks selected. Exiting...")
+            sys.exit(0)
+
+    def keyPressEvent(self, event) -> None:
+        """Handle key press events. Exit if 'q' or 'Esc' is pressed."""
+        if event.key() in (QtGui.QKeySequence.Quit, QtCore.Qt.Key_Escape):
+            self.close()
+        else:
+            super().keyPressEvent(event)
 
 
 def main():
