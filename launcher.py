@@ -167,22 +167,27 @@ class Launcher:
         print(f"Launching processes with the following commands:")
         for cmd_struct in self.commands:
             print(" ", " ".join(cmd_struct.command))
-            stdout = subprocess.PIPE if cmd_struct.stdout else None
-            stderr = subprocess.PIPE if cmd_struct.stderr else None
-            if sys.platform == "win32":
-                process = subprocess.Popen(
-                    cmd_struct.command,
-                    stdout=stdout,
-                    stderr=stderr,
-                    creationflags=CREATE_NEW_PROCESS_GROUP
-                )
-            else:
-                process = subprocess.Popen(
-                    cmd_struct.command,
-                    stdout=stdout,
-                    stderr=stderr
-                )
-            time.sleep(0.8)  # slight delay to allow process startup
+            try:
+                stdout = subprocess.PIPE if cmd_struct.stdout else None
+                stderr = subprocess.PIPE if cmd_struct.stderr else None
+                if sys.platform == "win32":
+                    process = subprocess.Popen(
+                        cmd_struct.command,
+                        stdout=stdout,
+                        stderr=stderr,
+                        creationflags=CREATE_NEW_PROCESS_GROUP
+                    )
+                else:
+                    process = subprocess.Popen(
+                        cmd_struct.command,
+                        stdout=stdout,
+                        stderr=stderr
+                    )
+                time.sleep(2)  # slight delay to allow process startup
+                self.processes.append(process)
+            except Exception as e:
+                print(f"Error launching process: {e}")
+            time.sleep(2)  # slight delay to allow process startup
             self.processes.append(process)
         print("All processes launched!")
 
