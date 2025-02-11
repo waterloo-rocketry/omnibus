@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface DataProps {
     data: number[][]
@@ -10,8 +10,23 @@ function D3Tester( {data}: DataProps) {
     var lastUpdated = useRef(Date.now());
     const d3Container = useRef(null);
 
+    let [index, setIndex] = useState(0);
+    let [total, setTotal] = useState(0);
+    let [tick, setTick] = useState(Date.now());
+
     useEffect(() => {
-        console.log("Data points per second: ", 1000 / (Date.now() - lastUpdated.current));
+
+        if (index < 10) {
+            setTotal((prev) => prev+1); 
+        } else {
+            console.log("Data points per second: ", total / ((Date.now()-tick)/1000));
+
+            setTick(Date.now())
+            setTotal(0);
+            setIndex(0);
+        }
+
+        setIndex((prev) => prev+1)
         lastUpdated.current = Date.now();
     }, [data])
 
