@@ -47,5 +47,5 @@ if __name__ == "__main__":
     app = make_app()
     app.listen(8888)
     print("Tornado Server Up")
-    tornado.ioloop.PeriodicCallback(zmq_subscriber, 50).start()
+    tornado.ioloop.PeriodicCallback(zmq_subscriber, 100).start()
     tornado.ioloop.IOLoop.current().start()
