@@ -1,43 +1,19 @@
 import * as d3 from 'd3';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
+interface DataProps {
+    data: number[][]
+}
 
-function D3Tester() {
+function D3Tester( {data}: DataProps) {
 
     var lastUpdated = useRef(Date.now());
     const d3Container = useRef(null);
 
-    const [data, setData] = useState([{
-        x: 0,
-        y: Math.floor(Math.random() * 500),
-    }]);
-    
     useEffect(() => {
         console.log("Data points per second: ", 1000 / (Date.now() - lastUpdated.current));
         lastUpdated.current = Date.now();
     }, [data])
-
-    useEffect(() => {
-
-        var i = 0;
-
-        const interval = setInterval(() => {
-
-            setData((prevData: { x: number, y: number }[]) => {
-                prevData = [...prevData, {
-                    x: i+1,
-                    y: Math.floor(Math.random() * 3000)
-                }];
-
-                return prevData.length > 100 ? prevData.slice(1) : prevData;
-            });
-
-            i ++;
-
-        }, 1);
-
-        return () => clearInterval(interval);
-    }, []);
 
     useEffect(() => {
 
@@ -48,11 +24,11 @@ function D3Tester() {
             .attr('height', height);
 
         const xScale = d3.scaleLinear()
-            .domain(d3.extent(data, d => d.x) as [number, number])
+            .domain(d3.extent(data, d => d[0]) as [number, number])
             .range([20, width - 20]);
 
         const yScale = d3.scaleLinear()
-            .domain([0, d3.max(data, d => d.y) as number])
+            .domain([0, d3.max(data, d => d[1]) as number])
             .range([height - 20, 20]);
 
         const xAxis = d3.axisBottom(xScale);
@@ -78,9 +54,9 @@ function D3Tester() {
             .attr('text-anchor', 'middle')
             .text('Y Axis');
 
-        const line = d3.line<{ x: number; y: number }>()
-            .x(d => xScale(d.x))
-            .y(d => yScale(d.y));
+        const line = d3.line<number[]>()
+            .x(d => xScale(d[0]))
+            .y(d => yScale(d[1]));
 
         svg.append('path')
             .datum(data)
@@ -89,7 +65,9 @@ function D3Tester() {
             .attr('stroke-width', 2)
             .attr('d', line);
 
-        return () => { svg.remove() };
+        return () => {
+            svg.remove();
+        };
     }, [data]);
 
     return (
