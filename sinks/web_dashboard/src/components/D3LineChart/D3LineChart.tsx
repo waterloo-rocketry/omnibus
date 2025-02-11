@@ -5,7 +5,7 @@ interface DataProps {
     data: number[][]
 }
 
-function D3Tester( {data}: DataProps) {
+function D3LineChart ( {data}: DataProps) {
 
     var lastUpdated = useRef(Date.now());
     const d3Container = useRef(null);
@@ -90,4 +90,4 @@ function D3Tester( {data}: DataProps) {
     );
 }
 
-export default D3Tester;
+export default D3LineChart;
