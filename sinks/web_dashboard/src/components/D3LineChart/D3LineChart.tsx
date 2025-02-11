@@ -10,23 +10,23 @@ function D3LineChart ( {data}: DataProps) {
     var lastUpdated = useRef(Date.now());
     const d3Container = useRef(null);
 
-    let [index, setIndex] = useState(0);
-    let [total, setTotal] = useState(0);
-    let [tick, setTick] = useState(Date.now());
+    let index = useRef(0);
+    let total = useRef(0);
+    let tick = useRef(Date.now());
 
     useEffect(() => {
 
-        if (index < 10) {
-            setTotal((prev) => prev+1); 
+        if (index.current < 10) {
+            total.current ++; 
         } else {
-            console.log("Data points per second: ", total / ((Date.now()-tick)/1000));
+            console.log("Data points per second: ", total.current / ((Date.now()-tick.current)/1000));
 
-            setTick(Date.now())
-            setTotal(0);
-            setIndex(0);
+            tick.current = Date.now();
+            total.current = 0;
+            index.current = 0;
         }
 
-        setIndex((prev) => prev+1)
+        index.current ++;
         lastUpdated.current = Date.now();
     }, [data])
 
