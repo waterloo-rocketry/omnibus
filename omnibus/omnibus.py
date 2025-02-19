@@ -80,6 +80,7 @@ class Sender(OmnibusCommunicator):
         super().__init__()
         self.publisher = self.context.socket(zmq.PUB)
         self.publisher.connect(f"tcp://{self.server_ip}:{server.SOURCE_PORT}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] Omnibus sending to {self.server_ip}")
 
     def send_message(self, message: Message):
         """
@@ -126,7 +127,7 @@ class Receiver(OmnibusCommunicator):
         self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")
         for channel in channels:
             self.subscriber.setsockopt(zmq.SUBSCRIBE, channel.encode("utf-8"))
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] Omnibus connecting to {self.server_ip}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] Omnibus receiving from {self.server_ip}")
         
 
     def recv_message(self, timeout=None):
@@ -140,7 +141,7 @@ class Receiver(OmnibusCommunicator):
 
         if self.subscriber.poll(timeout):
             if self.__disconnected:
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M%:%S')}] [INFO] Omnibus is online!")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] Omnibus Receiver is online!")
             self.__disconnected = False
             channel, timestamp, payload = self.subscriber.recv_multipart()
             self.__last_online_check = time.time()
@@ -169,8 +170,6 @@ class Receiver(OmnibusCommunicator):
 
     def reset(self):
         self.subscriber.close(0)
-        self.context.destroy(0)
-        self.context = zmq.Context()
         self.subscriber = self.context.socket(zmq.SUB)
         self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")
         for channel in self.__channels:

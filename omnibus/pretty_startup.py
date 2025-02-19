@@ -1,6 +1,6 @@
 ## Pretty Startup - Print version information (and cool ASCII) on startup ##
 # This is not runtime essential, so its been split into a separate file #
-from datetime import datetime, timezone
+from datetime import datetime
 
 
 def run_startup_screen():
@@ -14,9 +14,9 @@ def run_startup_screen():
         short_hash = repo.git.rev_parse(hash, short=7)
         repo.close()
     except ImportError:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M%:%S')}] [INFO] GitPython is not installed, unable to get version info!")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] GitPython is not installed, unable to get version info!")
     except:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M%:%S')}] [INFO] Failed to get certain version info!")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] Failed to get certain version info!")
     print(rf"""
  __        ___  _____ _____ ____  _     ___   ___  
  \ \      / / \|_   _| ____|  _ \| |   / _ \ / _ \ 
@@ -28,4 +28,4 @@ def run_startup_screen():
    |  _ <| |_| | |___| . \| |___  | | |  _ < | |   
    |_| \_\\___/ \____|_|\_\_____| |_| |_| \_\|_|   
                                                    """)
-    print(f"{'=' * 52}\nOmnibus - build {short_hash} from {date}\n{'=' * 52}\n")
+    print(f"{'=' * 54}\nOmnibus - build {short_hash} from {date}\n{'=' * 54}\n")
