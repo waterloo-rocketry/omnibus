@@ -10,11 +10,13 @@ def run_startup_screen():
         import git
         repo = git.Repo(search_parent_directories=True)
         hash = repo.head.object.hexsha
-        date = repo.head.commit.committed_datetime.strftime(rf'%Y-%m-%d %H:%M%:%S')
+        date = repo.head.commit.committed_datetime
         short_hash = repo.git.rev_parse(hash, short=7)
         repo.close()
     except ImportError:
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M%:%S')}] [INFO] GitPython is not installed, unable to get version info!")
+    except:
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M%:%S')}] [INFO] Failed to get certain version info!")
     print(rf"""
  __        ___  _____ _____ ____  _     ___   ___  
  \ \      / / \|_   _| ____|  _ \| |   / _ \ / _ \ 
