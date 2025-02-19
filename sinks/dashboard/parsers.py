@@ -82,9 +82,9 @@ def daq_parser(msg_data):
 # map between message types and fields that we need to split data based on
 splits = {
     "ACTUATOR_CMD": "actuator",
-    "ALT_ARM_CMD": "altimeter",
+    "ALT_ARM_CMD": "alt_id",
     "ACTUATOR_STATUS": "actuator",
-    "ALT_ARM_STATUS": "altimeter",
+    "ALT_ARM_STATUS": "alt_id",
     "SENSOR_TEMP": "sensor_id",
     "SENSOR_ANALOG": "sensor_id",
     "STATE_EST_DATA": "state_id",
@@ -130,7 +130,7 @@ def can_parser(payload):
     last_timestamp[time_key] = timestamp
     timestamp += offset_timestamp[time_key]
 
-    if message_type == "GENERAL_BOARD_STATUS" and data['status'] != "E_NOMINAL":
+    if message_type == "GENERAL_BOARD_STATUS" and data['general_error_bitfield'] != 0:
         error_series.append((f"{board_type_id}/{board_inst_id}/ERROR", timestamp, payload["data"]))
 
     return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()] + error_series
