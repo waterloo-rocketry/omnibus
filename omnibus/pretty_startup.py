@@ -1,6 +1,7 @@
 ## Pretty Startup - Print version information (and cool ASCII) on startup ##
 # This is not runtime essential, so its been split into a separate file #
-from datetime import datetime
+from datetime import datetime, timezone
+
 
 def run_startup_screen():
     short_hash = "UNKNOWN"
@@ -9,7 +10,7 @@ def run_startup_screen():
         import git
         repo = git.Repo(search_parent_directories=True)
         hash = repo.head.object.hexsha
-        date = repo.head.commit.committed_datetime.strftime("%Y-%m-%d %H:%M%:%S UTC%:z")
+        date = repo.head.commit.committed_datetime.strftime("%Y-%m-%d %H:%M%:%S")
         short_hash = repo.git.rev_parse(hash, short=7)
         repo.close()
     except ImportError:
@@ -25,4 +26,4 @@ def run_startup_screen():
    |  _ <| |_| | |___| . \| |___  | | |  _ < | |   
    |_| \_\\___/ \____|_|\_\_____| |_| |_| \_\|_|   
                                                    """)
-    print(f"{'=' * 50}\nOmnibus - build {short_hash} from {date}\n{'=' * 50}\n")
+    print(f"{'=' * 52}\nOmnibus - build {short_hash} from {date}\n{'=' * 52}\n")
