@@ -126,7 +126,7 @@ class Receiver(OmnibusCommunicator):
         self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")
         for channel in channels:
             self.subscriber.setsockopt(zmq.SUBSCRIBE, channel.encode("utf-8"))
-        print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] [INFO] Omnibus connecting to {self.server_ip}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] Omnibus connecting to {self.server_ip}")
         
 
     def recv_message(self, timeout=None):
@@ -140,13 +140,13 @@ class Receiver(OmnibusCommunicator):
 
         if self.subscriber.poll(timeout):
             if self.__disconnected:
-                print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M%:%S")}] [INFO] Omnibus is online!")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M%:%S')}] [INFO] Omnibus is online!")
             self.__disconnected = False
             channel, timestamp, payload = self.subscriber.recv_multipart()
             self.__last_online_check = time.time()
             return Message(channel.decode("utf-8"), msgpack.unpackb(timestamp), msgpack.unpackb(payload))
         if time.time() - self.__last_online_check >= 5:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] [WARN] No messages received for a while, is Omnibus online?")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [WARN] No messages received for a while, is Omnibus online?")
             self.__disconnected = True
             self.reset()
             self.__last_online_check = time.time()
