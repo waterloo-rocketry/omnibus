@@ -10,7 +10,7 @@ def run_startup_screen():
         import git
         repo = git.Repo(search_parent_directories=True)
         hash = repo.head.object.hexsha
-        date = repo.head.commit.committed_datetime.strftime("%Y-%m-%d %H:%M%:%S")
+        date = repo.head.commit.committed_datetime.strftime(rf'%Y-%m-%d %H:%M%:%S')
         short_hash = repo.git.rev_parse(hash, short=7)
         repo.close()
     except ImportError:
