@@ -25,4 +25,4 @@ def run_startup_screen():
    |  _ <| |_| | |___| . \| |___  | | |  _ < | |   
    |_| \_\\___/ \____|_|\_\_____| |_| |_| \_\|_|   
                                                    """)
-    print(f"{"=" * 50}\nOmnibus - build {short_hash} from {date}\n{"=" * 50}\n")
+    print(f"{'=' * 50}\nOmnibus - build {short_hash} from {date}\n{'=' * 50}\n")
