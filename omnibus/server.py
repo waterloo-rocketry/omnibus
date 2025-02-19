@@ -5,6 +5,8 @@ import time
 import zmq
 from zmq.devices import ThreadProxy
 
+from .pretty_startup import run_startup_screen
+
 SOURCE_PORT = 5075
 SINK_PORT = 5076
 BROADCAST_PORT = 5077
@@ -48,6 +50,8 @@ def server():
     """
     Run the Omnibus server, display the current messages/sec.
     """
+    run_startup_screen()
+    print("========== Omnibus Server ==========")
     context = zmq.Context()
 
     proxy = ThreadProxy(zmq.SUB, zmq.PUB, zmq.PUB)  # proxies messages in a separate thread
