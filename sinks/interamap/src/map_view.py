@@ -7,7 +7,7 @@ import random
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
 
-from config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN
+from config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN, GRADIENT_COLORS
 from src.gps_cache import GPS_Cache
 from PySide6.QtCore import Signal
 import flask
@@ -24,7 +24,7 @@ if not ONLINE_MODE:
 
 import folium
 from folium.plugins import Realtime
-from fastkml import kml
+import branca.colormap as cm
 
 from src.kmz_parser import KMZParser
 from src.data_struct import Point_GPS, LineString_GPS
@@ -33,6 +33,7 @@ class MapView(QWebEngineView):
     
     # Signal to update the label in the MainWindow
     update_gps_label = Signal(str)
+    gradient_count = 0
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -249,9 +250,17 @@ class MapView(QWebEngineView):
                     popup=f"Height: {data.alt}m, Timestamp: {data.time_stamp}",
                 ).add_to(self.m)
             elif isinstance(data, LineString_GPS):
-                line = folium.PolyLine(
-                    locations=[[point.lat, point.lon] for point in data.points],
-                    color="red",
+                points, color_idx = [], []
+                for point in data.points:
+                    points.append([point.lat, point.lon])
+                    color_idx.append(self.gradient_count)
+                    self.gradient_count = (self.gradient_count + 1) % len(GRADIENT_COLORS)
+
+                line = folium.ColorLine(
+                    positions=points,
+                    colors=color_idx,
+                    colormap=cm.LinearColormap(GRADIENT_COLORS, vmin=0, vmax=len(GRADIENT_COLORS)),
+                    nb_steps=50
                 )
                 line.add_to(self.m)
             else:
