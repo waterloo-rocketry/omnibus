@@ -7,7 +7,7 @@ import random
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
 
-from config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN, GRADIENT_COLORS
+from src.config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN, GRADIENT_COLORS, BoardID
 from src.gps_cache import GPS_Cache
 from PySide6.QtCore import Signal
 import flask
@@ -265,5 +265,19 @@ class MapView(QWebEngineView):
                 line.add_to(self.m)
             else:
                 print("Unhandled data type:", type(data))
+
+    def change_data_source(self, data_source: BoardID):
+        print("Data Source:", data_source)
+        if data_source == BoardID.GPS_BOARD:
+            # Handle GPS_BOARD data source
+            print("GPS Board")
+            pass
+        elif data_source == BoardID.PROCESSOR_BOARD:
+            # Handle PROCESSOR_BOARD data source
+            print("Processor Board")
+            pass
+
+        # self.rt_parser.change_data_source(data_source)
+        # self.refresh_map()
 
 

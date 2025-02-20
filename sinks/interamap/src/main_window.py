@@ -7,19 +7,18 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QPushButton,
     QSizePolicy,
-    QLineEdit,
     QLabel,
     QSplitter,
     QComboBox,
     QFileDialog,
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
 
 from src.map_view import MapView
 
 from src.http_server import start_map_folder_http_server, get_share_url
 from src.url_to_qrcode import QRCodeWindow
+from src.config import BoardID
 
 class MapWindow(QMainWindow):
     def __init__(self):
@@ -35,7 +34,7 @@ class MapWindow(QMainWindow):
         self.data_sources = {
             value: key
             for key, value in enumerate(
-                ["None", "Real-time Data Source", "Load KMZ File"]
+            ["None", "Real-time Data Source", "Load KMZ File"]
             )
         }
         self.data_source = 0
@@ -111,22 +110,6 @@ class MapWindow(QMainWindow):
         self.data_source_ui.setCurrentIndex(self.data_source)
         self.data_source_ui.currentIndexChanged.connect(self.toggle_data_source)
         self.toolbar_layout.addWidget(self.data_source_ui)
-
-        # Input fields for latitude and longitude
-        # self.lat_input = QLineEdit(self)
-        # self.lat_input.setPlaceholderText("Enter Latitude")
-        # self.toolbar_layout.addWidget(QLabel("Latitude:"))
-        # self.toolbar_layout.addWidget(self.lat_input)
-
-        # self.lon_input = QLineEdit(self)
-        # self.lon_input.setPlaceholderText("Enter Longitude")
-        # self.toolbar_layout.addWidget(QLabel("Longitude:"))
-        # self.toolbar_layout.addWidget(self.lon_input)
-
-        # Add button to add marker at the specified coordinates
-        # self.add_marker_button = QPushButton("Add Marker", self)
-        # self.add_marker_button.clicked.connect(self.add_marker)
-        # self.toolbar_layout.addWidget(self.add_marker_button)
 
         if self.data_source != 0:
 
@@ -205,13 +188,10 @@ class MapWindow(QMainWindow):
                 self.start_index_to_feature_ui, start_stop_button
             )
 
-            data_options = [
-                "GPS Board",
-                "Processor Board",
-                "Fake Data Generator",
-            ]  # TODO: Connect to the source of data with the real-time data
+            data_options = [board.value for board in BoardID]
             data_combo = QComboBox(self)
             data_combo.addItems(data_options)
+            data_combo.currentTextChanged.connect(lambda text: self.map_view.change_data_source(BoardID(text)))
             self.toolbar_layout.insertWidget(
                 self.get_current_index_to_feature_ui(), QLabel("Sources Options:")
             )
