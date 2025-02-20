@@ -59,7 +59,7 @@ REM Install Ineteramap sink requirements
 echo.
 echo ----- Installing Interamap sink requirements -----
 pip install -r sinks/interamap/requirements.txt
-python -m offline_folium || exit 1
+python -m offline_folium
 IF %ERRORLEVEL% NEQ 0 (
     echo Error installing Interamap sink requirements.
     exit /b %ERRORLEVEL%
