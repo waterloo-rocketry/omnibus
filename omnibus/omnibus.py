@@ -111,7 +111,14 @@ class Receiver(OmnibusCommunicator):
     a receiver listening to the channel 'foo' will also receive messages sent
     to 'foobar', and a receiver listing to the channel '' will receive all
     messages.
-    """
+    
+    :param *channels: All the channels the receiver should be listening on, pass each as 
+            individual parameters. Only the beginning of the name is matched.
+    :param seconds_until_reconnect_attempt: OPTIONAL - Specify the number of seconds the 
+            Receiver should wait before attempting a reconnection when no messages
+            are being received. Default value is 5 seconds. Keyword parameter only. 
+    """    
+
     ## PRIVATE PROPERTIES ##
     __channels: tuple
     # Keep track of last received message, only second granularity is needed
@@ -119,9 +126,23 @@ class Receiver(OmnibusCommunicator):
     __last_online_check = time.time()
     __disconnected = True
     __seconds_until_attempt_reconnect = 5
-    ## END PRIVATE PROPERTIES ##
+    ## END PRIVATE PROPERTIES ## 
     
-    def __init__(self, *channels, seconds_until_reconnect_attempt=5):
+    def __init__(self, *channels: str, seconds_until_reconnect_attempt:int = 5):
+        """
+        Listens to a number of channels and receives all messages sent to them.
+
+        Filtering is based on only the beginning of the channel name, so for example
+        a receiver listening to the channel 'foo' will also receive messages sent
+        to 'foobar', and a receiver listing to the channel '' will receive all
+        messages.
+        
+        :param *channels: All the channels the receiver should be listening on, pass each as 
+                individual parameters. Only the beginning of the name is matched. '' means all channels.
+        :param seconds_until_reconnect_attempt: OPTIONAL - Specify the number of seconds the 
+                Receiver should wait before attempting a reconnection when no messages
+                are being received. Default value is 5 seconds. Keyword parameter only. 
+        """    
         super().__init__()
         self.__channels = channels
         self.subscriber = self.context.socket(zmq.SUB)
@@ -139,6 +160,8 @@ class Receiver(OmnibusCommunicator):
         If timeout is None this blocks until a message is received. Otherwise it
         waits for timeout milliseconds to receive a message and returns None. A
         zero timeout is supported for nonblocking operation.
+
+        The default timeout is 3000ms.
         """
 
         if self.subscriber.poll(timeout):
@@ -148,7 +171,7 @@ class Receiver(OmnibusCommunicator):
             channel, timestamp, payload = self.subscriber.recv_multipart()
             self.__last_online_check = time.time()
             return Message(channel.decode("utf-8"), msgpack.unpackb(timestamp), msgpack.unpackb(payload))
-        if time.time() - self.__last_online_check >= 5:
+        if time.time() - self.__last_online_check >= self.__seconds_until_attempt_reconnect:
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [WARN] ({'All Channels' if self.__channels[0] == '' else ','.join(channel for channel in self.__channels)}) No messages received for a while, is Omnibus online?")
             self.__disconnected = True
             self.reset()
@@ -163,6 +186,8 @@ class Receiver(OmnibusCommunicator):
         If timeout is None this blocks until a message is received. Otherwise it
         waits for timeout milliseconds to receive a message and returns None. A
         zero timeout is supported for nonblocking operation.
+
+        The default timeout is 3000ms.
         """
 
         if message := self.recv_message(timeout):
@@ -171,6 +196,13 @@ class Receiver(OmnibusCommunicator):
     
 
     def reset(self):
+        """
+        PRIVATE METHOD
+
+        Restart the ZMQ Socket of this receiver instance. Called when the Receiver
+        has not received any data for over a given number of seconds, specified 
+        by seconds_until_reconnect_attempt.
+        """
         self.subscriber.close(0)
         self.subscriber = self.context.socket(zmq.SUB)
         self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")

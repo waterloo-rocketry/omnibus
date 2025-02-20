@@ -15,7 +15,7 @@ SEND_CHANNEL = "CAN/Parsley"
 # Note: The Receiver will also listen on the HEARTBEAT_CHANNEL to make sure that it is still alive
 RECEIVE_CHANNEL = "CAN"
 # The CAN Commands channel
-RECEIVE_COMMANDS_CHANNEL="CAN/Commands"
+RECEIVE_COMMANDS_CHANNEL="CAN/Commands" # NOTE: This should be the EXACT channel, not just the beginning like usual behaviour with Receiver
 HEARTBEAT_CHANNEL = "Parsley/Health"
 
 HEARTBEAT_TIME = 1
