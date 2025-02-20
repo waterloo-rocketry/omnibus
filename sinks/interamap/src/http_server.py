@@ -5,7 +5,7 @@ import http.server
 import socketserver
 import socket
 
-from config import HTTP_SERVER_PORT
+from src.config import HTTP_SERVER_PORT
 import threading
 import os
 

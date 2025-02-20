@@ -1,4 +1,3 @@
-import pathlib
 import zipfile
 from datetime import datetime
 from enum import IntEnum
