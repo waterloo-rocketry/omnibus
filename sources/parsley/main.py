@@ -10,12 +10,17 @@ from omnibus import Sender, Receiver
 import parsley
 
 SEND_CHANNEL = "CAN/Parsley"
-RECEIVE_CHANNEL = "CAN/Commands"
+# Which general channel should we be receiving messages on, used for checking if we're still connected to
+# the ZMQ network and we're able to receive messages sent by this or other instances of Parsley source over the network
+# Note: The Receiver will also listen on the HEARTBEAT_CHANNEL to make sure that it is still alive
+RECEIVE_CHANNEL = "CAN"
+# The CAN Commands channel
+RECEIVE_COMMANDS_CHANNEL="CAN/Commands"
 HEARTBEAT_CHANNEL = "Parsley/Health"
 
 HEARTBEAT_TIME = 1
 KEEPALIVE_TIME = 10
-FAKE_MESSAGE_SPACING = 25
+FAKE_MESSAGE_SPACING = 0.5
 
 
 class SerialCommunicator:
@@ -129,10 +134,10 @@ def main():
     elif args.fake:
         print("Parsley started in fake mode")
         sender = Sender()
-        receiver = Receiver(RECEIVE_CHANNEL)
+        receiver = Receiver(RECEIVE_CHANNEL, HEARTBEAT_CHANNEL)
     else:
         sender = Sender()
-        receiver = Receiver(RECEIVE_CHANNEL)
+        receiver = Receiver(RECEIVE_CHANNEL, HEARTBEAT_CHANNEL)
 
     last_valid_message_time = 0
     last_heartbeat_time = time.time()
@@ -153,7 +158,7 @@ def main():
             communicator.write(b'.')
             last_keepalive_time = now
 
-        if receiver and (msg := receiver.recv_message(0)):  # Non-blocking
+        if receiver and (msg := receiver.recv_message(0)) and (msg.channel == RECEIVE_COMMANDS_CHANNEL):  # Non-blocking
             can_msg_data = msg.payload["data"]["can_msg"]
             msg_sid, msg_data = parsley.encode_data(can_msg_data)
 

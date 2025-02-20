@@ -113,24 +113,26 @@ class Receiver(OmnibusCommunicator):
     messages.
     """
     ## PRIVATE PROPERTIES ##
-    __channels = []
+    __channels: tuple
     # Keep track of last received message, only second granularity is needed
     # so time.time() is good enough on any platform
     __last_online_check = time.time()
     __disconnected = True
+    __seconds_until_attempt_reconnect = 5
     ## END PRIVATE PROPERTIES ##
-
-    def __init__(self, *channels):
+    
+    def __init__(self, *channels, seconds_until_reconnect_attempt=5):
         super().__init__()
         self.__channels = channels
         self.subscriber = self.context.socket(zmq.SUB)
         self.subscriber.connect(f"tcp://{self.server_ip}:{server.SINK_PORT}")
+        self.__seconds_until_attempt_reconnect = seconds_until_reconnect_attempt
         for channel in channels:
             self.subscriber.setsockopt(zmq.SUBSCRIBE, channel.encode("utf-8"))
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] Omnibus receiving from {self.server_ip}")
         
 
-    def recv_message(self, timeout=None):
+    def recv_message(self, timeout=3000):
         """
         Receive one message from a sender.
 
@@ -147,14 +149,14 @@ class Receiver(OmnibusCommunicator):
             self.__last_online_check = time.time()
             return Message(channel.decode("utf-8"), msgpack.unpackb(timestamp), msgpack.unpackb(payload))
         if time.time() - self.__last_online_check >= 5:
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [WARN] No messages received for a while, is Omnibus online?")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [WARN] ({'All Channels' if self.__channels[0] == '' else ','.join(channel for channel in self.__channels)}) No messages received for a while, is Omnibus online?")
             self.__disconnected = True
             self.reset()
             self.__last_online_check = time.time()
         return None
 
 
-    def recv(self, timeout=None):
+    def recv(self, timeout=3000):
         """
         Receive the payload of one message from a sender, discarding metadata.
 
