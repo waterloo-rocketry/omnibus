@@ -1,4 +1,4 @@
-from omnibus import Receiver, server
+from omnibus import Receiver
 
 import parsers
 from dashboard import dashboard_driver
