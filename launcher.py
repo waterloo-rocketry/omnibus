@@ -105,9 +105,12 @@ class Launcher:
 
             self.save_selected_to_config()
 
-        # Add the omnibus command
-        omnibus = CommandStruct(command=[python_executable, "-m", "omnibus"], stdout=False)
-        self.commands.append(omnibus)
+        # Ask if the user wants to start the omnibus server
+        start_omnibus = input("Advanced: Do you want to start the omnibus server locally? (y/n) [default n]: ").strip().lower()
+        if start_omnibus == 'y':
+            omnibus = CommandStruct(command=[python_executable, "-m", "omnibus"], stdout=False)
+            self.commands.append(omnibus)
+
         self.construct_commands_cli()
 
     def construct_args(self, selected_indices: List[int]) -> None:
@@ -283,9 +286,6 @@ class GUILauncher(Launcher, QDialog):
         self.omnibus_checkbox.setChecked(False)
         self.omnibus_checkbox.stateChanged.connect(self.on_omnibus_state_changed)
         
-        self.on_omnibus_state_changed(2)  # default to checked
-        
-
         # Setup sources UI
         source_label = QLabel("Sources:")
         self.sources = self.modules["sources"]
