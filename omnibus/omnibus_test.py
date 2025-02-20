@@ -139,7 +139,7 @@ class TestNetworkReset:
     @pytest.fixture()
     def receiver(self):
         def _receiver(*channels):
-            r = Receiver(*channels)
+            r = Receiver(*channels, seconds_until_reconnect_attempt=2)
             time.sleep(0.05)  # let the receiver connect to the server so messages aren't dropped
             return r
         return _receiver
@@ -214,7 +214,7 @@ class TestNetworkReset:
             source.send("_TESTING", "PAYLOAD2")
             assert sink.recv(10) == "PAYLOAD2"
             print("Recovery Time: " + str(receiver_recovered_time - connection_regained_time))
-            assert receiver_recovered_time - connection_regained_time < 6 # It should receive a message immediately after first reconnect attempt
+            assert receiver_recovered_time - connection_regained_time < 2.5 # It should receive a message immediately after first reconnect attempt
         finally:
             if (server_process):
                 server_process.terminate()
