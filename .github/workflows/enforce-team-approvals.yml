@@ -44,7 +44,7 @@ jobs:
               await github.rest.teams.getMembershipForUserInOrg({
                 org,
                 team_slug: defaultTeam,
-                authorName
+                username: authorName
               });
               defaultApproved = true;
               console.log(`✅ ${authorName} is in ${defaultTeam} team pass ${defaultTeam} check`);
