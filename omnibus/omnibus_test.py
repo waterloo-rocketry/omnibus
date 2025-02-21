@@ -152,7 +152,7 @@ class TestNetworkReset:
         server_process: SpawnProcess | None = None
         try:
             server_process = start_stop_capable_server()
-            source:Sender = sender()
+            source: Sender = sender()
             sink: Receiver = receiver("_TESTING")
             source.send("_TESTING", "PAYLOAD")
             assert sink.recv(10) == "PAYLOAD"
@@ -175,7 +175,7 @@ class TestNetworkReset:
         server_process = None
         try:
             server_process: SpawnProcess = start_stop_capable_server()
-            source:Sender = sender()
+            source: Sender = sender()
             OmnibusCommunicator.server_ip = "1.1.1.1" # Set to some bad IP
             sink: Receiver = receiver("_TESTING")
             source.send("_TESTING", "PAYLOAD")
@@ -197,7 +197,7 @@ class TestNetworkReset:
         server_process = None
         try:
             server_process: SpawnProcess = start_stop_capable_server()
-            source:Sender = sender()
+            source: Sender = sender()
             OmnibusCommunicator.server_ip = "1.1.1.1" # Set to some bad IP
             sink: Receiver = receiver("_TESTING")
             source.send("_TESTING", "PAYLOAD")
@@ -224,7 +224,7 @@ class TestNetworkReset:
         server_process: SpawnProcess | None = None
         try:
             server_process = start_stop_capable_server()
-            source:Sender = sender()
+            source: Sender = sender()
             sink: Receiver = receiver("_TESTING")
             source.send("_TESTING", "PAYLOAD")
             assert sink.recv(10) == "PAYLOAD"
