@@ -160,7 +160,7 @@ class TestNetworkReset:
             server_process.join()
             server_process = None
             server_process = start_stop_capable_server()
-            time.sleep(0.05)
+            time.sleep(0.5)
             source.send("_TESTING", "PAYLOAD2")
             assert sink.recv(10) == "PAYLOAD2"
         finally:
