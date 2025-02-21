@@ -5,7 +5,10 @@ import time
 import zmq
 from zmq.devices import ThreadProxy
 
-from .pretty_startup import run_startup_screen
+try:
+    from .util import BuildInfoManager
+except ImportError:
+    from util import BuildInfoManager
 
 SOURCE_PORT = 5075
 SINK_PORT = 5076
@@ -50,8 +53,10 @@ def server():
     """
     Run the Omnibus server, display the current messages/sec.
     """
-    run_startup_screen()
-    print("========== Omnibus Server ==========")
+    bim = BuildInfoManager("Omnibus Server") # Initialize BuildInfoManager to print build info
+    bim.print_startup_screen()
+    bim.print_app_name()
+
     context = zmq.Context()
 
     proxy = ThreadProxy(zmq.SUB, zmq.PUB, zmq.PUB)  # proxies messages in a separate thread

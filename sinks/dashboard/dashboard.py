@@ -35,6 +35,7 @@ from utils import ConfirmDialog, EventTracker
 from publisher import publisher
 from typing import Optional
 from omnibus import Sender
+from omnibus.util import BuildInfoManager
 from items.dashboard_item import DashboardItem
 
 # These need to be imported to be added to the registry
@@ -113,6 +114,7 @@ class Dashboard(QWidget):
     def __init__(self, callback):
         # Initialize the super class
         super().__init__()
+        self.bim = BuildInfoManager("Omnibus Dashboard")
 
         self.omnibus_sender = Sender()
         self.current_parsley_instances = []
@@ -149,7 +151,7 @@ class Dashboard(QWidget):
         # Create a GUI
         self.width = 1100
         self.height = 700
-        self.setWindowTitle("Omnibus Dashboard")
+        self.setWindowTitle(f"Omnibus Dashboard - {self.bim.build_number}")
         self.resize(self.width, self.height)
 
         # Create a large scene underneath the view
