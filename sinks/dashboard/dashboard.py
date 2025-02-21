@@ -114,7 +114,6 @@ class Dashboard(QWidget):
     def __init__(self, callback):
         # Initialize the super class
         super().__init__()
-        self.bim = BuildInfoManager("Omnibus Dashboard")
 
         self.omnibus_sender = Sender()
         self.current_parsley_instances = []

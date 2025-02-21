@@ -196,8 +196,6 @@ class Receiver(OmnibusCommunicator):
 
     def reset(self):
         """
-        PRIVATE METHOD
-
         Restart the ZMQ Socket of this receiver instance. Called when the Receiver
         has not received any data for over a given number of seconds, specified 
         by seconds_until_reconnect_attempt.
