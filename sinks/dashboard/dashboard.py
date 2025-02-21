@@ -150,7 +150,7 @@ class Dashboard(QWidget):
         # Create a GUI
         self.width = 1100
         self.height = 700
-        self.setWindowTitle(f"Omnibus Dashboard - {self.bim.build_number}")
+        self.setWindowTitle("Omnibus Dashboard")
         self.resize(self.width, self.height)
 
         # Create a large scene underneath the view
