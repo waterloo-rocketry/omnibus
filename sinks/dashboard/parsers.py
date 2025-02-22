@@ -101,7 +101,7 @@ def can_parser(payload):
     # specific way, eg SENSOR_ANALOG messages need a different stream for each
     # value of SENSOR_ID.
 
-    # Example payload: {'board_type_id': 'INJ_SENSOR', 'board_inst_id': 'GENERIC', msg_type': 'SENSOR_ANALOG', 'data': {'time': 37.595, 'sensor_id': 'SENSOR_PRESSURE_CC', 'value': 13104}}
+    # Example payload: {'board_type_id': 'INJ_SENSOR', 'board_inst_id': 'GENERIC', msg_type': 'SENSOR_ANALOG', 'data': {'time': 37.595, 'sensor_id': 'SENSOR_PRESSURE_CC', 'value': 1310}}
 
     message_type = payload["msg_type"]
     board_type_id = payload["board_type_id"]
