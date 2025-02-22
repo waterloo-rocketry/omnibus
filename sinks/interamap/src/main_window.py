@@ -75,7 +75,7 @@ class MapWindow(QMainWindow):
         self.side_toolbar = QWidget(self)
         self.toolbar_layout = QVBoxLayout(self.side_toolbar)
         self.toolbar_layout.setContentsMargins(10, 10, 10, 10)  # Add some padding
-        self.toolbar_layout.setSpacing(5)  # Add some spacing between buttons
+        self.toolbar_layout.setSpacing(20)  # Add some spacing between buttons
 
         # Custom Toggle Button for Dark Mode
         self.toggle_button = QPushButton(self)
@@ -143,6 +143,9 @@ class MapWindow(QMainWindow):
             share_server_layout.addWidget(self.show_qr_code_button)
             
             self.toolbar_layout.addLayout(share_server_layout)
+
+        else:
+            self.toolbar_layout.addStretch(1)
         
         return self.side_toolbar
     
