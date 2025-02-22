@@ -16,8 +16,10 @@ def check_tileserver_installed():
         print("tileserver-gl is installed.")
     except subprocess.CalledProcessError:
         print("tileserver-gl is not installed.")
+        sys.exit(1)
     except FileNotFoundError:
         print("tileserver-gl is not found. Please install it.")
+        sys.exit(1)
 
 
 def start_tileserver(mbtiles_path):

@@ -20,7 +20,7 @@ if not ONLINE_MODE:
     Need to run the following command to download required js and css files (only once, with internet connection):
     $ python -m offline_folium
     """
-    import offline_folium
+    from offline_folium import offline
 
 import folium
 from folium.plugins import Realtime
@@ -81,7 +81,6 @@ class MapView(QWebEngineView):
                 sum(map(attr, random.sample(self.point_storage.get_gps_points(), 5))) / 5
                 for attr in [lambda p: p.lat, lambda p: p.lon]
             ]
-            
 
         if self.coordinate is None:
             self.coordinate = [43.4643, -80.5204]  # Default to Waterloo, Ontario
@@ -174,7 +173,6 @@ class MapView(QWebEngineView):
         if self.rt_parser.running:
             self.add_realtime_layer()
         else:
-            print(self.point_storage.get_linestring_gps())
             self.draw_gps_data(self.point_storage.get_gps_points() + self.point_storage.get_linestring_gps())
 
         self.map_html = (
@@ -207,7 +205,7 @@ class MapView(QWebEngineView):
         self.kmz_parser = KMZParser(kmz_file_path)
         self.clear_all_markers()
         self.point_storage.store_infos(self.kmz_parser.gps_data)
-        self.update_map()
+        self.refresh_map()
 
     def stop_realtime_data(self):
         self.emit_update_signal("Stopped")
@@ -236,25 +234,33 @@ class MapView(QWebEngineView):
             
     def draw_gps_data(self, points: List[Point_GPS | LineString_GPS] = None):
         total_points = len(points)
-        step = max(total_points // 500, 1)  # Ensure at least one point is drawn
+        step = 2
+        low_alt = min([point.alt for point in points if isinstance(point, Point_GPS)], default=0)
+        high_alt = max([point.alt for point in points if isinstance(point, Point_GPS)], default=0)
 
         for i in range(0, total_points, step):
             data = points[i]
             if isinstance(data, Point_GPS):
+                # Map the altitude (data.alt) to a color using the GRADIENT_COLORS.
+                # Adjust vmin and vmax as needed for your altitude range.
+                colormap = cm.LinearColormap(GRADIENT_COLORS, vmin=low_alt, vmax=high_alt)
+                marker_color = colormap(data.alt)
                 folium.CircleMarker(
                     location=[data.lat, data.lon],
                     radius=3,  # Small radius for the marker
-                    color="blue",
+                    color=marker_color,
                     fill=True,
-                    fill_color="blue",
+                    fill_color=marker_color,
                     popup=f"Height: {data.alt}m, Timestamp: {data.time_stamp}",
                 ).add_to(self.m)
             elif isinstance(data, LineString_GPS):
                 points, color_idx = [], []
-                for point in data.points:
+                for i, point in enumerate(data.points):
                     points.append([point.lat, point.lon])
                     color_idx.append(self.gradient_count)
-                    self.gradient_count = (self.gradient_count + 1) % len(GRADIENT_COLORS)
+                    # When passing a step, change the color
+                    if (i + 1) % step == 0:
+                        self.gradient_count = (self.gradient_count + 1) % len(GRADIENT_COLORS)
 
                 line = folium.ColorLine(
                     positions=points,
