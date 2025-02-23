@@ -28,6 +28,7 @@ import branca.colormap as cm
 
 from src.kmz_parser import KMZParser
 from src.data_struct import Point_GPS, LineString_GPS
+import os
 
 class MapView(QWebEngineView):
     
@@ -154,6 +155,8 @@ class MapView(QWebEngineView):
     
     def add_realtime_layer(self):
         rt = Realtime("http://127.0.0.1:5000", point_to_layer=folium.JsCode("(f, coordinate) => { return L.circleMarker(coordinate, {radius: 3, fillOpacity: 1})}"), interval=100)
+        if not self.online:
+            rt.default_js = [("Leaflet_Realtime_js", os.path.join(os.path.dirname(__file__),"static/leaflet-realtime.js"))]
         rt.add_to(self.m)
 
     def add_offline_layer(self):
