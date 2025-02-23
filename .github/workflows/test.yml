@@ -42,7 +42,9 @@ jobs:
         shell: bash
         run: |
           python -m venv .venv
-          source .venv/bin/activate
+          cd .venv/Scripts
+          . activate
+          cd ../..
           echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
           echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
           python -m pip install --upgrade pip
