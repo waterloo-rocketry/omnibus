@@ -1,5 +1,3 @@
-
-
 from datetime import datetime
 
 WATERLOO_ROCKETRY_ASCII_STR = rf"""
@@ -14,13 +12,14 @@ WATERLOO_ROCKETRY_ASCII_STR = rf"""
    |_| \_\\___/ \____|_|\_\_____| |_| |_| \_\|_|   
                                                    """
 
+
 class BuildInfoManager:
     """
     Class to get and print the build version of the currently installed
     Omnibus instance using GitPython and the information encoded within
     the Omnibus Git repository.
 
-    The build_number is defined as the 7 character commit hash from the 
+    The build_number is defined as the 7 character commit hash from the
     HEAD of the repo, to match GitHub's format. The build_date is the date
     of that commit.
 
@@ -28,8 +27,9 @@ class BuildInfoManager:
 
     Requires: Omnibus must be installed through the git tree, GitPython must be installed.
     """
-    build_number: str # defaults to UNKNOWN if not found
-    build_date: datetime # defaults to N/A if no build information is available
+
+    build_number: str  # defaults to UNKNOWN if not found
+    build_date: str  # defaults to N/A if no build information is available
     app_name: str | None
 
     _full_commit_hash: str
@@ -37,21 +37,27 @@ class BuildInfoManager:
     def __init__(self, app_name: str | None = None):
         self.app_name = app_name
         try:
-            import git # Import here to prevent the version check from holding up the application 
+            import git  # Import here to prevent the version check from holding up the application
+
             repo = git.Repo(search_parent_directories=True)
             self._full_commit_hash = str(repo.head.object.hexsha)
-            self.build_date = repo.head.commit.committed_datetime
+            self.build_date = repo.head.commit.committed_datetime.strftime(
+                "%Y-%m-%d %H:%M:%S %z"
+            )
             self.build_number = self._full_commit_hash[:7]
             repo.close()
             return
         except ImportError:
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] BuildInfoManager: GitPython is not installed, unable to get version info!")
+            print(
+                f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] BuildInfoManager: GitPython is not installed, unable to get version info!"
+            )
         except:
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] BuildInfoManager: Failed to get version info!")
+            print(
+                f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] BuildInfoManager: Failed to get version info!"
+            )
         self.build_number = "UNKNOWN"
         self._full_commit_hash = "UNKNOWN"
         self.build_date = "N/A"
-    
 
     def print_startup_screen(self):
         """
@@ -59,8 +65,9 @@ class BuildInfoManager:
         date.
         """
         print(WATERLOO_ROCKETRY_ASCII_STR)
-        print(f"{'=' * 54}\nOmnibus - build {self.build_number} from {self.build_date}\n{'=' * 54}\n")
-
+        print(
+            f"{'=' * 54}\nOmnibus - build {self.build_number} from {self.build_date}\n{'=' * 54}\n"
+        )
 
     def print_app_name(self):
         """
@@ -70,4 +77,3 @@ class BuildInfoManager:
         if not self.app_name:
             return
         print(f"{'=' * 10} {self.app_name} {'=' * 10}")
-
