@@ -258,7 +258,7 @@ class Receiver(OmnibusCommunicator):
                 else min(timeout, self._seconds_until_attempt_reconnect * 1000)
             )
             i = 0
-            while timeout == None or i < timeout:
+            while timeout == None or i < timeout or timeout == 0:
                 poll_result = self.subscriber.poll(timeout=actual_timeout)
                 self._check_online_and_reconnect(
                     poll_result
@@ -305,7 +305,6 @@ class Receiver(OmnibusCommunicator):
         has not received any data for over a given number of seconds, specified
         by seconds_until_reconnect_attempt.
         """
-        print("Reset!")
         if self.subscriber != None:
             self.subscriber.close(linger=0)
             self.subscriber = None  # Prevent receiver from attempting to read from socket while it's closed.

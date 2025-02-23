@@ -87,6 +87,28 @@ class TestOmnibus:
         s.send("CHAN3", "C")
         assert r.recv(10) == "C"
 
+    def test_non_blocking_receive(
+        self, sender: Callable[[], Sender], receiver: Callable[..., Receiver]
+    ) -> None:
+        s: Sender = sender()
+        r: Receiver = receiver("CHAN")
+        s.send("CHAN", "A")
+        start = time.perf_counter()
+        t = start
+        while r.recv(0) is None:
+            s.send("CHAN", "A")
+            t = time.perf_counter()
+            if t - start > 0.003:
+                raise AssertionError("Non Blocking Receive Failed")
+
+    def test_long_timeout_receiving(
+        self, sender: Callable[[], Sender], receiver: Callable[..., Receiver]
+    ) -> None:
+        s: Sender = sender()
+        r: Receiver = receiver("CHAN")
+        s.send("CHAN", "A")
+        assert r.recv(6000) == "A"
+
 
 class TestIPBroadcast:
     @pytest.fixture()
