@@ -64,6 +64,10 @@ jobs:
       - name: Lint with flake8
         shell: bash
         run: |
+          cd .venv/Scripts
+          . activate
+          cd ../..
+
           # stop the build if there are Python syntax errors or undefined names
           # error codes shown by `--select` can be found
           # here (F): https://flake8.pycqa.org/en/latest/user/error-codes.html
@@ -74,9 +78,17 @@ jobs:
       - name: Test with pytest
         shell: bash
         run: |
+          cd .venv/Scripts
+          . activate
+          cd ../..
+
           pytest
 
       - name: Enforce autopep8
         shell: bash
         run: |
+          cd .venv/Scripts
+          . activate
+          cd ../..
+
           autopep8 -d -r sources/ sinks/ omnibus/ tools/ *.py --exit-code
