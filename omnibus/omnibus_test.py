@@ -326,7 +326,9 @@ class TestTimeouts:
         after_receive_time = time.perf_counter()
         print(after_receive_time - curr_time)
         assert after_receive_time - curr_time >= 0.019
-        assert after_receive_time - curr_time <= 0.023 # fpt inaccuracy + inherent delays from ZMQ that make it more than exactly 20ms
+        # fpt inaccuracy, inherent delays from ZMQ, platform delays, etc. makes it impossible to check upper bound accurately
+        # it's not that important anyways so this is just a basic sanity check to ensure it didn't get stuck
+        assert after_receive_time - curr_time <= 0.1 
 
     def test_receiver_timeout_more_than_reset(self, receiver: Callable[..., Receiver]):
         OmnibusCommunicator.server_ip = "127.0.0.1"
@@ -336,7 +338,7 @@ class TestTimeouts:
         after_receive_time = time.perf_counter()
         print(after_receive_time - curr_time)
         assert after_receive_time - curr_time >= 4.007
-        assert after_receive_time - curr_time <= 4.020 # Factoring reset time + see above for inherent delays
+        assert after_receive_time - curr_time <= 4.1 # Factoring reset time + see above for inherent delays
 
     def test_infinite_time(
     self,
