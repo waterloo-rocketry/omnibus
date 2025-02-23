@@ -249,8 +249,6 @@ class Receiver(OmnibusCommunicator):
         If timeout is None this blocks until a message is received. Otherwise it
         waits for timeout milliseconds to receive a message and returns None. A
         zero timeout is supported for nonblocking operation.
-
-        The default timeout is 3000ms.
         """
         try:
             assert (
