@@ -18,6 +18,13 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.11
+      - name: Restore cached virtualenv
+        uses: actions/cache/restore@v4
+        env:
+          cache-name: cache-python-venv
+        with:
+          key: venv-${{ runner.os }}-build-${{ env.cache-name }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          path: .venv
 
       - name: Cache pip dependencies
         id: cache
@@ -31,10 +38,13 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-
       - name: Install dependencies
         shell: bash
         run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+          echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
           python -m pip install --upgrade pip
           pip install wheel
           pip install flake8
@@ -42,7 +52,13 @@ jobs:
           pip install -r requirements.txt
           pip install -e parsley
           find sinks/ sources/ tools/ -name requirements.txt -type f -exec pip install -r {} \;
-
+      - name: Saved cached virtualenv
+        uses: actions/cache/save@v4
+        env:
+          cache-name: cache-python-venv
+        with:
+          key: venv-${{ runner.os }}-build-${{ env.cache-name }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          path: .venv
       - name: Lint with flake8
         shell: bash
         run: |
