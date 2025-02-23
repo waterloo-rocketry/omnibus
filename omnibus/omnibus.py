@@ -124,7 +124,7 @@ class Sender(OmnibusCommunicator):
             )
         except AssertionError:
             print(
-                f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ERROR] Read Fail! Socket has not been initialized!",
+                f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ERROR] Send Fail! Socket has not been initialized!",
                 file=sys.stderr,
             )
             raise RuntimeError("Sender: Send before initialization")
@@ -217,7 +217,6 @@ class Receiver(OmnibusCommunicator):
                 f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [WARN] Unable to connect to {OmnibusCommunicator.server_ip}!"
             )
 
-
     def _check_online_and_reconnect(self, poll_result: int) -> None:
         if poll_result != 0:
             self._last_online_check = time.time()
@@ -240,7 +239,6 @@ class Receiver(OmnibusCommunicator):
             self._disconnected = True
             self._last_online_check = time.time()
             self._reset()
-            
 
     def recv_message(self, timeout: int | None = None):
         """
@@ -254,28 +252,24 @@ class Receiver(OmnibusCommunicator):
             assert (
                 self.subscriber != None
             )  # Ensure subscriber is actually ready to receive, should never trigger in theory
-            actual_timeout = ( # Ensure that we do still check for network loss even when timeout is large or infinite
-                        self._seconds_until_attempt_reconnect * 1000
-                        if timeout == None
-                        else min(timeout, self._seconds_until_attempt_reconnect * 1000)
-                    )
+            actual_timeout = (  # Ensure that we do still check for network loss even when timeout is large or infinite
+                self._seconds_until_attempt_reconnect * 1000
+                if timeout == None
+                else min(timeout, self._seconds_until_attempt_reconnect * 1000)
+            )
             i = 0
             while timeout == None or i < timeout:
-                time_a = time.perf_counter()
-                poll_result = self.subscriber.poll(
-                    timeout=actual_timeout
-                )
-                time_b = time.perf_counter()
-                t = time_b-time_a
-
-                self._check_online_and_reconnect(poll_result) # Will attempt to reconnect here if reconnection timeout exceeded
+                poll_result = self.subscriber.poll(timeout=actual_timeout)
+                self._check_online_and_reconnect(
+                    poll_result
+                )  # Will attempt to reconnect here if reconnection timeout exceeded
                 if poll_result == 0:  # No message received
                     if timeout == 0:
                         break
-                    if (timeout != None):
-                        i += actual_timeout # + 1 to prevent being stuck in the loop if timeout == 0
+                    if timeout != None:
+                        i += actual_timeout  # + 1 to prevent being stuck in the loop if timeout == 0
                         # Below is slightly inaccurate if the timeout is very large, but if you have 5+ second timeouts I don't think 1ms matters
-                        actual_timeout: int = min(timeout - i, actual_timeout) 
+                        actual_timeout = min(timeout - i, actual_timeout)
                     continue
                 # If there is a message received, proceed below
                 channel, timestamp, payload = self.subscriber.recv_multipart()
@@ -316,4 +310,3 @@ class Receiver(OmnibusCommunicator):
             self.subscriber.close(linger=0)
             self.subscriber = None  # Prevent receiver from attempting to read from socket while it's closed.
         self._connect()
-

@@ -10,6 +10,7 @@ import pytest
 from omnibus import Sender, Receiver, Message, server
 from omnibus.omnibus import OmnibusCommunicator
 
+
 class TestOmnibus:
     @pytest.fixture(autouse=True, scope="class")
     def server(self):
@@ -308,19 +309,21 @@ class TestTimeouts:
             return r
 
         return _receiver
-    
+
     def test_receiver_non_blocking(self, receiver: Callable[..., Receiver]):
         OmnibusCommunicator.server_ip = "127.0.0.1"
         sink = receiver("TEST")
-        curr_time= time.perf_counter()
+        curr_time = time.perf_counter()
         sink.recv_message(0)
         after_receive_time = time.perf_counter()
         print(after_receive_time - curr_time)
-        assert after_receive_time - curr_time < 0.001 # Less than 1 ms is acceptable, as that would be the minimum timeout otherwise
-    
+        assert (
+            after_receive_time - curr_time < 0.001
+        )  # Less than 1 ms is acceptable, as that would be the minimum timeout otherwise
+
     def test_receiver_timeout_less_than_reset(self, receiver: Callable[..., Receiver]):
         OmnibusCommunicator.server_ip = "127.0.0.1"
-        sink  = receiver("TEST")
+        sink = receiver("TEST")
         curr_time = time.perf_counter()
         sink.recv_message(20)
         after_receive_time = time.perf_counter()
@@ -328,7 +331,7 @@ class TestTimeouts:
         assert after_receive_time - curr_time >= 0.019
         # fpt inaccuracy, inherent delays from ZMQ, platform delays, etc. makes it impossible to check upper bound accurately
         # it's not that important anyways so this is just a basic sanity check to ensure it didn't get stuck
-        assert after_receive_time - curr_time <= 0.1 
+        assert after_receive_time - curr_time <= 0.1
 
     def test_receiver_timeout_more_than_reset(self, receiver: Callable[..., Receiver]):
         OmnibusCommunicator.server_ip = "127.0.0.1"
@@ -338,16 +341,18 @@ class TestTimeouts:
         after_receive_time = time.perf_counter()
         print(after_receive_time - curr_time)
         assert after_receive_time - curr_time >= 4.007
-        assert after_receive_time - curr_time <= 4.1 # Factoring reset time + see above for inherent delays
+        assert (
+            after_receive_time - curr_time <= 4.1
+        )  # Factoring reset time + see above for inherent delays
 
     def test_infinite_time(
-    self,
-    start_stop_capable_server: Callable[[], SpawnProcess],
-    sender: Callable[[], Sender],
-    receiver: Callable[..., Receiver],
+        self,
+        start_stop_capable_server: Callable[[], SpawnProcess],
+        sender: Callable[[], Sender],
+        receiver: Callable[..., Receiver],
     ):
         server_process: SpawnProcess | None = None
-        
+
         try:
             server_process = start_stop_capable_server()
             source: Sender = sender()
