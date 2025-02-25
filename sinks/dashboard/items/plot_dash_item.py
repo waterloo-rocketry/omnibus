@@ -30,7 +30,10 @@ class PlotDashItem(DashboardItem):
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
-
+        self.parameters.param('low_pass_filter').sigValueChanged.connect(self.on_low_pass_filter_toggle)
+        self.parameters.param('max_threshold').sigValueChanged.connect(self.on_threshold_change)
+        self.parameters.param('min_threshold').sigValueChanged.connect(self.on_threshold_change)
+        
         self.series = self.parameters.param('series').value()
         # just a single global offset for now
         self.offset = self.parameters.param('offset').value()
@@ -56,7 +59,10 @@ class PlotDashItem(DashboardItem):
         series_param = SeriesChecklistParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
-        return [series_param, limit_param, offset_param]
+        low_pass_filter_toggle = {'name': 'low_pass_filter', 'type': 'bool', 'value': False}
+        low_pass_filter_max = {'name': 'max_threshold', 'type': 'float', 'value': float('inf'), 'visible': False}
+        low_pass_filter_min = {'name': 'min_threshold', 'type': 'float', 'value': float('-inf'), 'visible': False}
+        return [series_param, limit_param, offset_param, low_pass_filter_toggle, low_pass_filter_max, low_pass_filter_min]
 
     def on_series_change(self, param, value):
         if len(value) > 6:
@@ -75,8 +81,23 @@ class PlotDashItem(DashboardItem):
 
     def on_offset_change(self, _, offset):
         self.offset = offset
+    def on_low_pass_filter_toggle(self, _, value):
+        # Show or hide max/min threshold parameters
+        self.parameters.param('max_threshold').setOpts(visible=value)
+        self.parameters.param('min_threshold').setOpts(visible=value)
+    def on_threshold_change(self, param, value):
+        # Retrieve the current max and min thresholds
+        max_threshold = self.parameters.param('max_threshold').value()
+        min_threshold = self.parameters.param('min_threshold').value()
 
-    # Create the plot item
+        # Ensure the min threshold is not greater than the max threshold
+        if min_threshold > max_threshold:
+            # Swap values or set them to sensible defaults
+            tmp = min_threshold
+            self.parameters.param('min_threshold').setValue(max_threshold)
+            self.parameters.param('max_threshold').setValue(tmp)
+            print("Thresholds adjusted to maintain valid range.")
+        # Create the plot item
     def create_plot(self):
         plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
@@ -105,7 +126,11 @@ class PlotDashItem(DashboardItem):
         time, point = payload
 
         point += self.offset
-
+        if self.parameters.param('low_pass_filter').value(): #checks if value is within threashold
+            max_threshold = self.parameters.param('max_threshold').value()
+            min_threshold = self.parameters.param('min_threshold').value()
+            if point > max_threshold or point < min_threshold:
+                return
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
@@ -126,6 +151,9 @@ class PlotDashItem(DashboardItem):
         if not any(values):
             min_point = 0
             max_point = 0
+        elif self.parameters.param('low_pass_filter').value():
+            max_point = min(max_threshold, max(max(v) for v in values if v))
+            min_point = max(min_threshold, min(min(v) for v in values if v))
         else:
             min_point = min(min(v) for v in values if v)
             max_point = max(max(v) for v in values if v)
