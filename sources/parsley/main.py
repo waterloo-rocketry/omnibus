@@ -36,23 +36,18 @@ class FakeSerialCommunicator:
     def __init__(self):
         # Fake messages to cycle through
         self.fake_msgs = [
-            {'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_BATT_CURR', 'value': 0},
-            {'board_id': 'CHARGING_PAYLOAD', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_5V_CURR', 'value': 0},
-            {'board_id': 'CHARGING_AIRBRAKE', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_CHARGE_CURR', 'value': 0},
-            {'board_id': 'CHARGING_CAN', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
-            {'board_id': 'CHARGING_PAYLOAD', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_GROUND_VOLT', 'value': 0},
-            {'board_id': 'PROPULSION_INJ', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
-            {'board_id': 'PROPULSION_VENT', 'msg_type': 'GENERAL_BOARD_STATUS',
-                'time': 0, 'status': 'E_NOMINAL'},
-            {'board_id': 'PROPULSION_INJ', 'msg_type': 'ACTUATOR_STATUS', 'time': 0,
-                'actuator': 'ACTUATOR_INJECTOR_VALVE', 'req_state': 'ACTUATOR_UNK', 'cur_state': 'ACTUATOR_OFF'},
-            {'board_id': 'DAQ', 'msg_type': 'GENERAL_BOARD_STATUS', 'time': 0, 'status': 'E_NOMINAL'},
+            {'board_id': 'GPS', 'msg_type': 'GENERAL_BOARD_STATUS', 
+                'data': {'time': 0, 'status': 'E_NOMINAL'}},
+            {'board_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP', 
+                'data': {'time': 0, 'hrs': 0, 'mins': 0, 'secs': 0, 'dsecs': 0}},
+            {'board_id': 'GPS', 'msg_type': 'GPS_LATITUDE', 
+                'data': {'time': 0, 'degs': 43, 'mins': 0, 'dmins': 0, 'direction': 'N'}},
+            {'board_id': 'GPS', 'msg_type': 'GPS_LONGITUDE', 
+                'data': {'time': 0, 'degs': 80, 'mins': 0, 'dmins': 0, 'direction': 'W'}},
+            {'board_id': 'GPS', 'msg_type': 'GPS_INFO', 
+                'data': {'time': 0, 'num_sats': 0, 'quality': 0}},
+            {'board_id': 'GPS', 'msg_type': 'GPS_ALTITUDE', 
+                'data': {'time': 0, 'altitude': 0, 'daltitude': 0, 'unit': 'M'}}
         ]
         self.fake_msg_index = 0
         self.last_fake_zero_time = 0
@@ -61,12 +56,60 @@ class FakeSerialCommunicator:
     def read(self):
         now = time.time()
         if now - self.last_fake_zero_time > FAKE_MESSAGE_SPACING:
-            # Time is in seconds, mod 65536ms to get the 16 bit time
-            self.fake_msgs[self.fake_msg_index]["time"] = (
-                ((now - self.zero_time) * 1000) % 65536) / 1000
-            if "value" in self.fake_msgs[self.fake_msg_index]:
-                self.fake_msgs[self.fake_msg_index]["value"] = random.randint(0, 10)
 
+            msg = self.fake_msgs[self.fake_msg_index]
+
+            if ("data" in msg):
+                
+                if ("time" in msg["data"]):
+
+                    # Mod 16,777,216 to get 24 bit time
+                    self.fake_msgs[self.fake_msg_index]["data"]["time"] = (
+                        ((now - self.zero_time) * 1000) % 16_777_216) / 1000
+                    
+                if ("hrs" in msg["data"]):
+                    self.fake_msgs[self.fake_msg_index]["data"]["hrs"] = random.randint(0, 23)
+                
+                if ("mins" in msg["data"]):
+                    
+                    # Minutes for latitude in Waterloo region
+                    if (msg["msg_type"] == "GPS_LATITUDE"):
+                        self.fake_msgs[self.fake_msg_index]["data"]["mins"] = random.randint(26, 29)
+
+                    # Minutes for longitude in Waterloo region
+                    elif (msg["msg_type"] == "GPS_LONGITUDE"):
+                        self.fake_msgs[self.fake_msg_index]["data"]["mins"] = random.randint(29, 35)
+
+                    # Regular time minutes
+                    else:
+                        self.fake_msgs[self.fake_msg_index]["data"]["mins"] = random.randint(0, 59)
+
+                if ("dmins" in msg["data"]):
+
+                    # Offsetting deciminutes for longitude/latitude (0-9 deciminutes means 0-54 second offset in terms of DMS coordinates.
+                    #                                                10 deciminutes is omitted since that is just 1 minute)
+                    if (msg["msg_type"] == "GPS_LATITUDE" or msg["msg_type"] == "GPS_LONGITUDE"):
+                        self.fake_msgs[self.fake_msg_index]["data"]["dmins"] = random.randint(0, 9)
+                
+                if ("secs" in msg["data"]):
+                    self.fake_msgs[self.fake_msg_index]["data"]["secs"] = random.randint(0, 59)
+            
+                if ("dsecs" in msg["data"]):
+                    self.fake_msgs[self.fake_msg_index]["data"]["dsecs"] = random.randint(0, 9)
+        
+                if ("num_sats" in msg["data"]):
+                    self.fake_msgs[self.fake_msg_index]["data"]["num_sats"] = random.randint(0, 255)
+            
+                if ("quality" in msg["data"]):
+                    self.fake_msgs[self.fake_msg_index]["data"]["quality"] = random.randint(0, 255)
+
+                # Max theoretical altitude is 16 bits -> 65535 M, but such data would likely not be useful, so capped at 600
+                if ("altitude" in msg["data"]):
+                    self.fake_msgs[self.fake_msg_index]["data"]["altitude"] = random.randint(0, 600)
+            
+                if ("daltitude" in msg["data"]):
+                    self.fake_msgs[self.fake_msg_index]["data"]["daltitude"] = random.randint(0, 255)
+            
             # Turn the fake message from the dict to the bytes representation that would be read from the serial connection, like from the USB debug board
             msg_sid, msg_data = parsley.encode_data(self.fake_msgs[self.fake_msg_index])
             formatted_msg = f"{msg_sid:03X}"
