@@ -151,7 +151,7 @@ class PlotDashItem(DashboardItem):
         if not any(values):
             min_point = 0
             max_point = 0
-        elif self.parameters.param('low_pass_filter').value():
+        elif self.parameters.param('low_pass_filter').value(): #resizes plot based on filter values
             max_point = min(max_threshold, max(max(v) for v in values if v))
             min_point = max(min_threshold, min(min(v) for v in values if v))
         else:
