@@ -43,7 +43,8 @@ jobs:
         shell: bash
         run: |
           python -m venv venv
-      - name: Install dependencies
+      - if: ${{ steps.restore_virtualenv_cache.outputs.cache-hit != 'true' }}
+        name: Install dependencies
         shell: bash
         run: |
           source venv/Scripts/activate
