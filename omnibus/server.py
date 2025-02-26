@@ -8,7 +8,7 @@ from zmq.devices import ThreadProxy
 try:
     from .util import BuildInfoManager
 except ImportError:
-    from util import BuildInfoManager  # pyright: ignore reportImplicitRelativeImport
+    from util import BuildInfoManager  # pyright: ignore[reportImplicitRelativeImport]
 
 SOURCE_PORT = 5075
 SINK_PORT = 5076

@@ -18,6 +18,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.11
+      - name: Restore cached virtualenv
+        uses: actions/cache/restore@v4
+        with:
+          key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          path: venv
       - name: Cache pip dependencies
         id: cache
         uses: actions/cache@v4
@@ -33,6 +38,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
+          source venv/Scripts/activate
           python -m pip install --upgrade pip
           pip install wheel
           pip install flake8
@@ -40,6 +46,11 @@ jobs:
           pip install -r requirements.txt
           pip install -e parsley
           find sinks/ sources/ tools/ -name requirements.txt -type f -exec pip install -r {} \;
+      - name: Saved cached virtualenv
+        uses: actions/cache/save@v4
+        with:
+          key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          path: venv
       - name: Lint with flake8
         shell: bash
         run: |
@@ -48,14 +59,17 @@ jobs:
           # here (F): https://flake8.pycqa.org/en/latest/user/error-codes.html
           # and here (E): https://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
           # flake8 config can be found in setup.cfg
+          source venv/Scripts/activate
           flake8
 
       - name: Test with pytest
         shell: bash
         run: |
+          source venv/Scripts/activate
           pytest
 
       - name: Enforce autopep8
         shell: bash
         run: |
+          source venv/Scripts/activate
           python -m autopep8 -d -r sources/ sinks/ omnibus/ tools/ *.py --exit-code
