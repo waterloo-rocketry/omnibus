@@ -20,11 +20,13 @@ jobs:
         with:
           python-version: 3.11
       - name: Restore cached virtualenv
+        id: restore_virtualenv_cache
         uses: actions/cache/restore@v4
         with:
           key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
           path: venv
-      - name: Cache pip dependencies
+      - if: ${{ steps.restore_virtualenv_cache.outputs.cache-hit != 'true' }}
+        name: Cache pip dependencies
         id: cache
         uses: actions/cache@v4
         env:
@@ -48,7 +50,8 @@ jobs:
           pip install -r requirements.txt
           pip install -e parsley
           find sinks/ sources/ tools/ -name requirements.txt -type f -exec pip install -r {} \;
-      - name: Saved cached virtualenv
+      - if: ${{ steps.restore_virtualenv_cache.outputs.cache-hit != 'true' }}
+        name: Saved cached virtualenv
         uses: actions/cache/save@v4
         with:
           key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
