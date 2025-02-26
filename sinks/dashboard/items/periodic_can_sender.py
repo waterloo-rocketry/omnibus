@@ -73,11 +73,13 @@ class PeriodicCanSender(DashboardItem):
             'data': {
                 'time': time.time(),
                 'can_msg': {
+                    'msg_prio': 'HIGHEST',
                     'msg_type': 'ACTUATOR_CMD',
-                    'board_id': 'ANY',
+                    'board_type_id': 'DAQ',
+                    'board_inst_id': 'GENERIC',
                     'time': 0,
                     'actuator': self.actuator,
-                    'req_state': 'ACTUATOR_ON' if self.radio_on.isChecked() else 'ACTUATOR_OFF'
+                    'cmd_state': 'ACTUATOR_ON' if self.radio_on.isChecked() else 'ACTUATOR_OFF'
                 },
 
             }
