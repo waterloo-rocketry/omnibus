@@ -188,7 +188,7 @@ class Receiver(OmnibusCommunicator):
         the last successful poll as compared to `self._seconds_until_attempt_reconnect`. Calls `self._reset()`
         if we are indeed offline (no message received for over `self._seconds_until_attempt_reconnect`).
 
-        :param poll_result: Result from self._subscriber.poll(), where 0 means no message received, any other value
+        :param poll_result: Result from `self._subscriber.poll()`, where 0 means no message received, any other value
                 means that a message was received.
 
         """
