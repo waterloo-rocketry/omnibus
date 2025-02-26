@@ -41,6 +41,8 @@ jobs:
         run: |
           python -m venv venv
           source venv/Scripts/activate
+          echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+          echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
           python -m pip install --upgrade pip
           pip install wheel
           pip install flake8
@@ -61,17 +63,14 @@ jobs:
           # here (F): https://flake8.pycqa.org/en/latest/user/error-codes.html
           # and here (E): https://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
           # flake8 config can be found in setup.cfg
-          source venv/Scripts/activate
           flake8
 
       - name: Test with pytest
         shell: bash
         run: |
-          source venv/Scripts/activate
           pytest
 
       - name: Enforce autopep8
         shell: bash
         run: |
-          source venv/Scripts/activate
-          python -m autopep8 -d -r sources/ sinks/ omnibus/ tools/ *.py --exit-code
+          autopep8 -d -r sources/ sinks/ omnibus/ tools/ *.py --exit-code
