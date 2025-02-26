@@ -38,10 +38,14 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - name: Install dependencies
+      - if: ${{ steps.restore_virtualenv_cache.outputs.cache-hit != 'true' }}
+        name: Create virtualenv if not exists
         shell: bash
         run: |
           python -m venv venv
+      - name: Install dependencies
+        shell: bash
+        run: |
           source venv/Scripts/activate
           python -m pip install --upgrade pip
           pip install wheel
