@@ -39,6 +39,7 @@ class OmnibusCommunicator:
     """
     Handles state shared between senders and receivers.
     """
+
     # These should've been initialized on __init__ and shouldn't change
     server_ip: ClassVar[str | None] = None
     context: ClassVar[zmq.Context[zmq.SyncSocket] | None] = None
@@ -170,7 +171,7 @@ class Receiver(OmnibusCommunicator):
         """
         Create ZMQ subscriber and connect to server
         """
-        assert ( 
+        assert (
             OmnibusCommunicator.server_ip is not None
             and OmnibusCommunicator.context is not None
         )

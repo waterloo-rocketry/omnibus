@@ -1,6 +1,7 @@
 import socket
 import threading
 import time
+from typing import NoReturn
 
 import zmq
 from zmq.devices import ThreadProxy
@@ -30,7 +31,7 @@ def get_ip():
         s.close()
 
 
-def ip_broadcast():
+def ip_broadcast() -> NoReturn:
     """
     Periodically send a UDP broadcast to the LAN. Sources and sinks can listen
     to who sent the broadcast (filtering based on the content) to find our ip.
@@ -49,27 +50,23 @@ def ip_broadcast():
             time.sleep(0.5)
 
 
-def server():
+def server() -> NoReturn:
     """
     Run the Omnibus server, display the current messages/sec.
     """
-    bim = BuildInfoManager(
-        "Omnibus Server"
-    )  # Initialize BuildInfoManager to print build info
+    # Initialize BuildInfoManager to print build info
+    bim = BuildInfoManager("Omnibus Server")
     bim.print_startup_screen()
     bim.print_app_name()
 
     context = zmq.Context()
-
-    proxy = ThreadProxy(
-        zmq.SUB, zmq.PUB, zmq.PUB
-    )  # proxies messages in a separate thread
+    # Proxy messages in a separate thread
+    proxy = ThreadProxy(zmq.SUB, zmq.PUB, zmq.PUB)
     proxy.bind_in(f"tcp://*:{SOURCE_PORT}")
     proxy.setsockopt_in(zmq.SUBSCRIBE, b"")
     proxy.bind_out(f"tcp://*:{SINK_PORT}")
-    proxy.bind_mon(
-        "inproc://mon"
-    )  # use in-process communication for the monitor socket
+    # Use in-process communication for the monitor socket
+    proxy.bind_mon("inproc://mon")
     proxy.daemon = True
     proxy.context_factory = lambda: context
 
