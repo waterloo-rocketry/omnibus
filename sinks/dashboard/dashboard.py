@@ -333,6 +333,7 @@ class Dashboard(QWidget):
         sendBack_menu = self.context_menu.addAction("Send to Back")
         sendForward_menu = self.context_menu.addAction("Send Forward")
         sendBackward_menu = self.context_menu.addAction("Send Backward")
+        regrid_menu = self.context_menu.addAction("Snap Items to Grid")
 
         # Assigning each option to an action
         save_menu.triggered.connect(self.save)
@@ -344,6 +345,7 @@ class Dashboard(QWidget):
         sendBack_menu.triggered.connect(self.send_to_back)
         sendForward_menu.triggered.connect(self.send_forward)
         sendBackward_menu.triggered.connect(self.send_backward)
+        regrid_menu.triggered.connect(self.regrid_items_auto)
 
         # Set the start time for the clock
         self.start_time = time.time()
@@ -457,6 +459,76 @@ class Dashboard(QWidget):
                             (viewpos.x() + 20, viewpos.y() + 20))
 
                 break
+
+    # def map_to_scene(self, x, y):
+    #     return x - self.scene.width() / 3, y - self.scene.height() / 3
+
+    def regrid_items_auto(self):
+        """
+        Arrange items in a flow layout with variable sizes, including margins and centering.
+        Automatically wraps items to the next row when reaching the available width.
+        """
+        
+        for item, (proxy, _) in self.widgets.items():
+            proxy_pos = proxy.pos()
+            view_pos = self.view.mapFromScene(proxy_pos)
+            adj_x = round(view_pos.x() / 50) * 50
+            adj_y = round(view_pos.y() / 50) * 50
+            
+            # print(proxy_pos.x(), proxy_pos.y())
+            item.setPos(adj_x, adj_y)
+        # spacing = max(1, spacing)
+        # margin = max(0, margin)
+
+        # view_rect = self.view.mapToScene(self.view.viewport().rect()).boundingRect()
+        # max_width = view_rect.x() + view_rect.width() - 2 * margin  # Adjust for left and right margins
+
+        # x = view_rect.x() + margin
+        # y = view_rect.y() + margin
+        # row_height = 0
+        # row_items = []
+
+        # # print(view_rect.x(), view_rect.y(), view_rect.width(), view_rect.height(), max_width)
+
+        # for item, (proxy, _) in self.widgets.items():
+        #     item_width = proxy.size().width()
+        #     item_height = proxy.size().height()
+
+        #     # Check if the item fits in the current row
+        #     if x + item_width > max_width + margin:
+        #         # Center the items in the current row
+        #         total_row_width = sum([i[1] for i in row_items]) + spacing * (len(row_items) - 1)
+        #         start_x = margin + (max_width - total_row_width) / 2
+        #         current_x = start_x
+
+        #         for row_item, width in row_items:
+        #             # adjx, adjy =self.map_to_scene(current_x, y)
+        #             row_item.setPos(current_x, y)
+        #             current_x += width + spacing
+
+        #         # Move to the next row
+        #         x = view_rect.x() + margin
+        #         y += row_height + spacing
+        #         row_height = 0
+        #         row_items = []
+
+        #     row_items.append((item, item_width))
+        #     x += item_width + spacing
+        #     row_height = max(row_height, item_height)
+
+        # # Position the last row
+        # if row_items:
+        #     total_row_width = sum([i[1] for i in row_items]) + spacing * (len(row_items) - 1)
+        #     start_x = margin + (max_width - total_row_width) / 2
+        #     current_x = start_x
+
+        #     for row_item, width in row_items:
+        #         # adjx, adjy =self.map_to_scene(current_x, y)
+        #         row_item.setPos(current_x, y)
+        #         current_x += width + spacing
+
+
+
 
     # method to handle dimension changes in parameter tree
 
