@@ -16,7 +16,7 @@ HEARTBEAT_CHANNEL = "Parsley/Health"
 
 HEARTBEAT_TIME = 1
 KEEPALIVE_TIME = 10
-FAKE_MESSAGE_SPACING = 0.5
+FAKE_MESSAGE_SPACING = 0.2
 
 
 class SerialCommunicator:
@@ -37,23 +37,9 @@ class FakeSerialCommunicator:
     def __init__(self):
         # Fake messages to cycle through
         self.fake_msgs = [
-            {'board_id': 'ANY', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_BATT_CURR', 'value': 0},
-            {'board_id': 'CHARGING_PAYLOAD', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_5V_CURR', 'value': 0},
-            {'board_id': 'CHARGING_AIRBRAKE', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_CHARGE_CURR', 'value': 0},
-            {'board_id': 'CHARGING_CAN', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
-            {'board_id': 'CHARGING_PAYLOAD', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_GROUND_VOLT', 'value': 0},
-            {'board_id': 'PROPULSION_INJ', 'msg_type': 'SENSOR_ANALOG',
-                'time': 0, 'sensor_id': 'SENSOR_BATT_VOLT', 'value': 0},
-            {'board_id': 'PROPULSION_VENT', 'msg_type': 'GENERAL_BOARD_STATUS',
-                'time': 0, 'status': 'E_NOMINAL'},
-            {'board_id': 'PROPULSION_INJ', 'msg_type': 'ACTUATOR_STATUS', 'time': 0,
-                'actuator': 'ACTUATOR_INJECTOR_VALVE', 'req_state': 'ACTUATOR_UNK', 'cur_state': 'ACTUATOR_OFF'},
-            {'board_id': 'DAQ', 'msg_type': 'GENERAL_BOARD_STATUS', 'time': 0, 'status': 'E_NOMINAL'},
+            {'board_type_id': 'INJ_SENSOR', 'board_inst_id': 'GENERIC',
+             'msg_prio': 'HIGH', 'msg_type': 'SENSOR_ANALOG',
+             'time': 1234, 'sensor_id': 'SENSOR_PRESSURE_CC', 'value': 800},
         ]
         self.fake_msg_index = 0
         self.last_fake_zero_time = 0
@@ -163,11 +149,11 @@ def main():
                 parsley_instance = msg.payload['parsley']
 
                 if parsley_instance == sender_id:
-                    formatted_msg = f"m{msg_sid:03X}"
+                    formatted_msg = f"m{msg_sid:08X}"
                     if msg_data:
                         formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
                     formatted_msg += ";" + crc8.crc8(
-                        msg_sid.to_bytes(2, byteorder='big') + bytes(msg_data)
+                        msg_sid.to_bytes(4, byteorder='big') + bytes(msg_data)
                     ).hexdigest().upper()  # Sent messages in the usb debug format have a crc8 checksum at the end, to be investigated: https://github.com/waterloo-rocketry/omnibus/commit/0913ff2ef1c38c3ae715ad87c805d071c1ce2c38
                     print(formatted_msg)  # Always print the usb debug style can message
                     # Send the can message over the specified port
