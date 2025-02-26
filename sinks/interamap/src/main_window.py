@@ -18,13 +18,12 @@ from PySide6.QtGui import QIcon
 
 from src.map_view import MapView
 
-from src.http_server import start_map_folder_http_server, get_share_url
+from src.http_server import ShareServer
 from src.url_to_qrcode import QRCodeWindow
 
 class MapWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
         self.relative_path = os.path.dirname(
             os.path.dirname(os.path.realpath(__file__))
         )
@@ -68,6 +67,13 @@ class MapWindow(QMainWindow):
         self.main_splitter.setSizes(
             [800, 200]
         )  # Adjust these values to set the initial sizes
+
+        # Initialize the share server
+        self.share_server = ShareServer()
+
+        self.share_server_status_label = QLabel("Share Server Stopped")
+        self.start_share_server_button = QPushButton("Start Share Server", self)
+        self.show_qr_code_button = QPushButton("Show QR Code", self)
 
     def init_side_toolbar(self):
         """Initialize the side toolbar with buttons and input fields."""
@@ -146,17 +152,20 @@ class MapWindow(QMainWindow):
 
             # Start Share Server button and another button to show qr code
             share_server_layout = QHBoxLayout()
+            share_server_label_layout = QHBoxLayout()
 
             share_server_label = QLabel("Share Server:")
-            self.toolbar_layout.addWidget(share_server_label)
-            
-            self.start_share_server_button = QPushButton("Start Share Server", self)
-            
-            self.start_share_server_button.clicked.connect(start_map_folder_http_server)
+            share_server_label_layout.addWidget(share_server_label)
+            self.share_server_status_label.setStyleSheet("color: red")
+            share_server_label_layout.addWidget(self.share_server_status_label)
+            self.toolbar_layout.addLayout(share_server_label_layout)
+
+            self.start_share_server_button.clicked.connect(self.toggle_share_server)
             share_server_layout.addWidget(self.start_share_server_button)
-            
-            self.show_qr_code_button = QPushButton("Show QR Code", self)
+
             self.show_qr_code_button.clicked.connect(self.show_qr_code)
+            self.show_qr_code_button.setDisabled(True)
+            self.show_qr_code_button.setStyleSheet("color: grey")
             share_server_layout.addWidget(self.show_qr_code_button)
             
             self.toolbar_layout.addLayout(share_server_layout)
@@ -261,6 +270,25 @@ class MapWindow(QMainWindow):
             self.toggle_button.setText("Light")
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
             self.map_view.toggle_map_theme(False)  # Enable light mode tiles for the map
+
+    def toggle_share_server(self):
+        """Toggle between starting and stopping the share server."""
+        if not self.share_server.server_running():
+            # Start the Share Server
+            self.share_server.start_map_folder_http_server()
+            self.start_share_server_button.setText("Stop Share Server")
+            self.share_server_status_label.setText("Share Server Running")
+            self.share_server_status_label.setStyleSheet("color: green")
+            self.show_qr_code_button.setDisabled(False)
+            self.show_qr_code_button.setStyleSheet("")
+        else:
+            self.share_server.stop_http_server()
+            self.share_server_status_label.setText("Share Server Stopped")
+            self.share_server_status_label.setStyleSheet("color: red")
+            self.show_qr_code_button.setDisabled(True)
+            self.show_qr_code_button.setStyleSheet("color: grey")
+
+
 
     def get_toggle_button_stylesheet(self, is_dark_mode):
         """Return the QSS stylesheet for the toggle button based on the mode."""
