@@ -346,5 +346,5 @@ class MapWindow(QMainWindow):
 
     def show_qr_code(self):
         """Function to display the QR code for the shared server URL."""
-        qr_window = QRCodeWindow(get_share_url())
+        qr_window = QRCodeWindow(self.share_server.get_share_url())
         qr_window.show()
