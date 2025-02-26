@@ -1,4 +1,3 @@
-import os
 import sys
 
 import http.server
@@ -9,52 +8,74 @@ from config import HTTP_SERVER_PORT
 import threading
 import os
 
-def check_permissions(folder):
-    # check if user has READ access
-    if os.access(folder, os.R_OK):
-        return True
-    else:
-        return False
+class ShareServer:
+    def __init__(self, directory=os.getcwd() + "/sinks/interamap/shared", port=HTTP_SERVER_PORT):
+        self.__httpd = None
+        self.SHARED_DIR = directory
+        self.PORT = port
 
-def get_local_ip():
-    return socket.gethostbyname(socket.gethostname())
+    def start_map_folder_http_server(self):
+        print(f"Starting HTTP server in folder '{self.SHARED_DIR}'")
+        self.start_http_server_with_progress()
 
-def start_map_folder_http_server():
-    share_folder = os.getcwd() + "/sinks/interamap/shared"
-    print(f"Starting HTTP server in folder '{share_folder}'")
-    start_http_server_with_progress(share_folder)
+    def get_share_url(self):
+        return f"http://{self.get_local_ip()}:{HTTP_SERVER_PORT}"
 
-def get_share_url():
-    return f"http://{get_local_ip()}:{HTTP_SERVER_PORT}"
+    def start_http_server_with_progress(self):
 
-def start_http_server_with_progress(SHARED_DIR):
+        server_thread = threading.Thread(target=lambda : self.start_http_server())
+        server_thread.start()
 
-    def run_server():
-        start_http_server(SHARED_DIR)
-
-    server_thread = threading.Thread(target=run_server)
-    server_thread.start()
-    
-    print("HTTP server is running...")
+        print("HTTP server is running...")
 
 
-def start_http_server(SHARED_DIR):
-    # Define the port to serve the HTTP server (default: 8000)
-    PORT = HTTP_SERVER_PORT
-     
-    class CustomHandler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory=SHARED_DIR, **kwargs)
-    
-    try:
-        with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
-            print(f"Serving '{SHARED_DIR}' on http://localhost:{PORT}")
-            print(f"Access this server from other devices with your IP address (e.g., http://{get_local_ip()}:{PORT})")
-            print("Press Ctrl+C to stop the server.")
-            # Start the server
-            httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\nServer stopped.")
+    def start_http_server(self):
+        if self.__httpd is not None:
+            print("Server already running.")
+            return
+        # Define the port to serve the HTTP server (default: 8000)
+        shared_dir = self.SHARED_DIR
+        class CustomHandler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, directory=shared_dir, **kwargs)
+
+        try:
+            with socketserver.TCPServer(("", self.PORT), CustomHandler) as self.__httpd:
+                print(f"Serving '{self.SHARED_DIR}' on http://localhost:{self.PORT}")
+                print(f"Access this server from other devices with your IP address (e.g., http://{self.get_local_ip()}:{self.PORT})")
+                print("Press Ctrl+C to stop the server.")
+                # Start the server
+                self.__httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nServer stopped.")
+
+    def stop_http_server(self):
+        if self.__httpd is not None:
+            self.__httpd.shutdown()
+            self.__httpd.server_close()
+            self.__httpd = None
+            print("HTTP server stopped.")
+        else:
+            print("No server running.")
+
+    def server_running(self) -> bool:
+        if self.__httpd is not None:
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def check_permissions(folder):
+        # check if user has READ access
+        if os.access(folder, os.R_OK):
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def get_local_ip():
+        return socket.gethostbyname(socket.gethostname())
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -67,8 +88,10 @@ if __name__ == "__main__":
         print(f"Error: {folder} is not a valid directory.")
         sys.exit(1)
 
-    if not check_permissions(folder):
+    server = ShareServer(folder)
+
+    if not server.check_permissions(folder):
         print(f"Error: Insufficient permissions for folder {folder}.")
         sys.exit(1)
 
-    start_http_server(folder)
+    server.start_http_server()
