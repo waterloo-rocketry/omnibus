@@ -245,11 +245,10 @@ def main():
                 parsed_data = parsley.parse(msg_sid, msg_data)
                 last_valid_message_time = time.time()
                 print(parsley.format_line(parsed_data))
-
+                
+                # Send the CAN message over the channel
                 if sender:
-                    sender.send(
-                        channel=SEND_CHANNEL, payload=parsed_data
-                    )  # Send the CAN message over the channel
+                    sender.send(channel=SEND_CHANNEL, payload=parsed_data)
 
             except ValueError as e:
                 print(e)
