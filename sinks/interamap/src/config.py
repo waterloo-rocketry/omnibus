@@ -7,6 +7,7 @@ TERMINAL_QR_CODE: bool = False
 HTTP_SERVER_PORT: int = 8000
 ZOOM_MAX: int = 30
 ZOOM_MIN: int = 1
+ZOOM_DEFAULT: int = 15
 
 GRADIENT_COLORS: list[str] = [
     "#FF0000",  # Red
@@ -22,19 +23,10 @@ GRADIENT_COLORS: list[str] = [
 ]
 
 class BoardID(Enum):
-    GPS_BOARD: str = "GPS Board"
-    PROCESSOR_BOARD: str = "Processor Board"
+    GPS_BOARD = "GPS"
+    PROCESSOR_BOARD = "PROCESSOR"
 
-# # Example use of BoardID
-# def get_board_description(board_id: BoardID) -> str:
-#     if board_id == BoardID.GPS_BOARD:
-#         return "This is the GPS Board used for location tracking."
-#     elif board_id == BoardID.PROCESSOR_BOARD:
-#         return "This is the Processor Board used for data processing."
-#     else:
-#         return "Unknown Board"
-
-# # Example usage
-# selected_board = BoardID.GPS_BOARD
-# print(f"Selected Board: {selected_board.value}")
-# print(get_board_description(selected_board))
+BOARD_FIELDS = {
+    BoardID.GPS_BOARD.value: ["GPS_INFO", "GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"],
+    BoardID.PROCESSOR_BOARD.value: ["GPS_INFO", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]
+}
