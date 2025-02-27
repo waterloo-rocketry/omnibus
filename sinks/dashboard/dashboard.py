@@ -111,6 +111,9 @@ class QGraphicsViewWrapper(QGraphicsView):
 
 
 class Dashboard(QWidget):
+    
+    build_info: BuildInfoManager = BuildInfoManager("Omnibus Dashboard")
+
     def __init__(self, callback):
         # Initialize the super class
         super().__init__()
@@ -150,7 +153,7 @@ class Dashboard(QWidget):
         # Create a GUI
         self.width = 1100
         self.height = 700
-        self.setWindowTitle("Omnibus Dashboard")
+        self.setWindowTitle(f"{Dashboard.build_info.app_name} - {Dashboard.build_info.build_number}")
         self.resize(self.width, self.height)
 
         # Create a large scene underneath the view
@@ -945,6 +948,10 @@ def dashboard_driver(callback):
     signal.signal(signal.SIGINT, lambda *args: QApplication.quit())
     app = QApplication(sys.argv)
     dash = Dashboard(callback)
+
+    # Print dashboard build info
+    Dashboard.build_info.print_startup_screen()
+    Dashboard.build_info.print_app_name()
 
     timer = QTimer()
     timer.timeout.connect(dash.update)
