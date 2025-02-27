@@ -7,7 +7,7 @@ import random
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
 
-from src.config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN, GRADIENT_COLORS, BoardID
+from src.config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN, ZOOM_DEFAULT, GRADIENT_COLORS
 from src.gps_cache import GPS_Cache
 from PySide6.QtCore import Signal
 import flask
@@ -30,15 +30,15 @@ from src.kmz_parser import KMZParser
 from src.data_struct import Point_GPS, LineString_GPS
 import os
 
+
 class MapView(QWebEngineView):
-    
+
     # Signal to update the label in the MainWindow
     update_gps_label = Signal(str)
     gradient_count = 0
-    
+
     def __init__(self, parent=None):
         super().__init__(parent)
-
 
         # Online Mode
         self.online = ONLINE_MODE
@@ -65,8 +65,10 @@ class MapView(QWebEngineView):
 
         self.last_map_point_update = 0
         self.realtime_source_thread = None
-        
-        self.initialize_realtime_source() # For real-time update of GPS data
+
+        self.source: str | None = None
+
+        self.initialize_realtime_source()  # For real-time update of GPS data
 
         self.refresh_map()
 
@@ -77,9 +79,10 @@ class MapView(QWebEngineView):
     def refresh_map(self):
         """Create a folium map with the current tile style."""
 
-        if self.point_storage.get_gps_points(): # random sample 5 points to set the center
+        if (self.point_storage.get_gps_points() and len(self.point_storage.get_gps_points())> 5):
             self.coordinate = [
-                sum(map(attr, random.sample(self.point_storage.get_gps_points(), 5))) / 5
+                sum(map(attr, random.sample(self.filter_point(self.point_storage.get_gps_points(), self.source), 5)))
+                / 5
                 for attr in [lambda p: p.lat, lambda p: p.lon]
             ]
 
@@ -88,7 +91,7 @@ class MapView(QWebEngineView):
 
         self.m = folium.Map(
             location=self.coordinate,  # Center of the map
-            zoom_start=12,
+            zoom_start=ZOOM_DEFAULT,  # Default zoom level
             tiles=None,  # Set the tile style dynamically
             width="100%",  # Ensure map width is 100%
             height="100%",  # Ensure map height is 100%
@@ -104,39 +107,43 @@ class MapView(QWebEngineView):
             overlay=False,
             max_native_zoom=ZOOM_MAX,
             max_zoom=ZOOM_MAX,
-            min_zoom=ZOOM_MIN
+            min_zoom=ZOOM_MIN,
         ).add_to(self.m)
 
         self.add_offline_layer()
 
         self.update_map()
 
-
-    def initialize_realtime_source_server(self, point_storage):
+    def initialize_realtime_source_server(self):
         """Initialize a Flask server to serve real-time GPS data."""
-        
+
         app = flask.Flask(__name__)
 
-        @app.route('/')
+        @app.route("/")
         def get_realtime_gps():
 
             point_id = 0
 
-            response = flask.jsonify({
-                'type': 'FeatureCollection',
-                'features': [{
-                    'type': 'Feature',
-                    'geometry': {
-                        'type': 'Point',
-                        'coordinates': [point.lon, point.lat]
-                    },
-                    'properties': {
-                        'id': (point_id := point_id + 1)
-                    }
-                } for point in point_storage.get_gps_points()]
-            })
+            response = flask.jsonify(
+                {
+                    "type": "FeatureCollection",
+                    "features": [
+                        {
+                            "type": "Feature",
+                            "geometry": {
+                                "type": "Point",
+                                "coordinates": [point.lon, point.lat],
+                            },
+                            "properties": {"id": (point_id := point_id + 1)},
+                        }
+                        for point in self.filter_point(
+                            self.point_storage.get_gps_points(), self.source
+                        )
+                    ],
+                }
+            )
 
-            response.headers.add('Access-Control-Allow-Origin', '*')
+            response.headers.add("Access-Control-Allow-Origin", "*")
 
             return response
 
@@ -149,14 +156,29 @@ class MapView(QWebEngineView):
         """Initialize real-time map updates from a Flask server."""
 
         if not self.realtime_source_thread:
-            self.realtime_source_thread = threading.Thread(target=self.initialize_realtime_source_server, args=(self.point_storage,))
+            self.realtime_source_thread = threading.Thread(
+                target=self.initialize_realtime_source_server
+            )
             self.realtime_source_thread.daemon = True
             self.realtime_source_thread.start()
-    
+
     def add_realtime_layer(self):
-        rt = Realtime("http://127.0.0.1:5000", point_to_layer=folium.JsCode("(f, coordinate) => { return L.circleMarker(coordinate, {radius: 3, fillOpacity: 1})}"), interval=100)
+        rt = Realtime(
+            "http://127.0.0.1:5000",
+            point_to_layer=folium.JsCode(
+                "(f, coordinate) => { return L.circleMarker(coordinate, {radius: 3, fillOpacity: 1})}"
+            ),
+            interval=100,
+        )
         if not self.online:
-            rt.default_js = [("Leaflet_Realtime_js", os.path.join(os.path.dirname(__file__),"static/leaflet-realtime.js"))]
+            rt.default_js = [
+                (
+                    "Leaflet_Realtime_js",
+                    os.path.join(
+                        os.path.dirname(__file__), "static/leaflet-realtime.js"
+                    ),
+                )
+            ]
         rt.add_to(self.m)
 
     def add_offline_layer(self):
@@ -176,7 +198,10 @@ class MapView(QWebEngineView):
         if self.rt_parser.running:
             self.add_realtime_layer()
         else:
-            self.draw_gps_data(self.point_storage.get_gps_points() + self.point_storage.get_linestring_gps())
+            self.draw_gps_data(
+                self.filter_point(self.point_storage.get_gps_points(), self.source)
+                + self.point_storage.get_linestring_gps()
+            )
 
         self.map_html = (
             self.m.get_root()
@@ -187,7 +212,7 @@ class MapView(QWebEngineView):
             )
         )
         self.setHtml(self.map_html)
-        
+
         # For Debugging
         # self.m.save('offline_map.html')
 
@@ -221,32 +246,45 @@ class MapView(QWebEngineView):
         else:
             self.stop_realtime_data()
             self.refresh_map()
-    
+
     def emit_update_signal(self, gps_text):
         # Emit the signal with the new text when the button is clicked
         self.update_gps_label.emit(f"GPS Status:\n\n{gps_text}")
-    
-    def storage_rt_info(self, info): 
+
+    def storage_rt_info(self, info):
         self.point_storage.store_info(info)
         if isinstance(info, Info_GPS):
-            self.emit_update_signal(f"Board ID: {info.board_id},\nSatellites: {info.num_sats}, Quality: {info.quality}")
+            self.emit_update_signal(
+                f"Board ID: {info.board_id},\nSatellites: {info.num_sats}, Quality: {info.quality}"
+            )
 
-        if ("lat" in info.__dict__ and "lon" in info.__dict__ and time.time() - self.last_map_point_update >= 0.5):
+        if (
+            "lat" in info.__dict__
+            and "lon" in info.__dict__
+            and time.time() - self.last_map_point_update >= 0.5
+        ):
             self.last_map_point_update = time.time()
             self.point_storage.store_info(info)
-            
-    def draw_gps_data(self, points: List[Point_GPS | LineString_GPS] = None):
-        total_points = len(points)
-        step = 2
-        low_alt = min([point.alt for point in points if isinstance(point, Point_GPS)], default=0)
-        high_alt = max([point.alt for point in points if isinstance(point, Point_GPS)], default=0)
 
-        for i in range(0, total_points, step):
+    def draw_gps_data(self, points: List[Point_GPS | LineString_GPS] = None):
+
+        total_points = len(points)
+        step = 1
+        low_alt = min(
+            [point.alt for point in points if isinstance(point, Point_GPS)], default=0
+        )
+        high_alt = max(
+            [point.alt for point in points if isinstance(point, Point_GPS)], default=0
+        )
+
+        for i in range(0, total_points):
             data = points[i]
             if isinstance(data, Point_GPS):
                 # Map the altitude (data.alt) to a color using the GRADIENT_COLORS.
                 # Adjust vmin and vmax as needed for your altitude range.
-                colormap = cm.LinearColormap(GRADIENT_COLORS, vmin=low_alt, vmax=high_alt)
+                colormap = cm.LinearColormap(
+                    GRADIENT_COLORS, vmin=low_alt, vmax=high_alt
+                )
                 marker_color = colormap(data.alt)
                 folium.CircleMarker(
                     location=[data.lat, data.lon],
@@ -262,31 +300,34 @@ class MapView(QWebEngineView):
                     points.append([point.lat, point.lon])
                     color_idx.append(self.gradient_count)
                     # When passing a step, change the color
-                    if (i + 1) % step == 0:
-                        self.gradient_count = (self.gradient_count + 1) % len(GRADIENT_COLORS)
+                    # if (i + 1) % step == 0:
+                    self.gradient_count = (self.gradient_count + 1) % len(
+                        GRADIENT_COLORS
+                    )
 
                 line = folium.ColorLine(
                     positions=points,
                     colors=color_idx,
-                    colormap=cm.LinearColormap(GRADIENT_COLORS, vmin=0, vmax=len(GRADIENT_COLORS)),
-                    nb_steps=50
+                    colormap=cm.LinearColormap(
+                        GRADIENT_COLORS, vmin=0, vmax=len(GRADIENT_COLORS)
+                    ),
+                    nb_steps=50,
                 )
                 line.add_to(self.m)
             else:
                 print("Unhandled data type:", type(data))
 
-    def change_data_source(self, data_source: BoardID):
-        print("Data Source:", data_source)
-        if data_source == BoardID.GPS_BOARD:
-            # Handle GPS_BOARD data source
-            print("GPS Board")
-            pass
-        elif data_source == BoardID.PROCESSOR_BOARD:
-            # Handle PROCESSOR_BOARD data source
-            print("Processor Board")
-            pass
+    def filter_point(self, data: List[Point_GPS], board_id: str):
+        return (
+            [point for point in data if point.board_id == board_id]
+            if board_id
+            else data
+        )
 
-        # self.rt_parser.change_data_source(data_source)
-        # self.refresh_map()
+    def change_data_source(self, data_source: str):
+        if data_source == "All":
+            self.source = None
+        else:
+            self.source = data_source
 
-
+        self.refresh_map()
