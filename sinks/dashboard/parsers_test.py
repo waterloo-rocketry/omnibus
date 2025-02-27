@@ -19,14 +19,16 @@ class TestParser:
 
     def test_can_parser(self):
         can_message = {
-            'board_id': 'CHARGING',
+            'board_type_id': 'INJ_SENSOR',
+            'board_inst_id': 'GENERIC',
+            'msg_prio': 'HIGH',
             'msg_type': 'SENSOR_ANALOG',
             'data': {
                 'time': 37.595,
-                'sensor_id': 'SENSOR_GROUND_VOLT',
-                'value': 13104
+                'sensor_id': 'SENSOR_PRESSURE_OX',
+                'value': 1310
             }
         }
 
         assert can_parser(can_message) == [
-            ("CHARGING/SENSOR_ANALOG/SENSOR_GROUND_VOLT/value", 37.595, 13104)]
+            ("INJ_SENSOR/GENERIC/SENSOR_ANALOG/SENSOR_PRESSURE_OX/value", 37.595, 1310)]
