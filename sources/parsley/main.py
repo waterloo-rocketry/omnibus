@@ -32,16 +32,21 @@ class SerialCommunicator:
     def write(self, msg: bytes):
         self.serial.write(msg)
 
+
 # Acting as a fake usb debug board
-
-
 class FakeSerialCommunicator:
     def __init__(self):
         # Fake messages to cycle through
         self.fake_msgs = [
-            {'board_type_id': 'INJ_SENSOR', 'board_inst_id': 'GENERIC',
-             'msg_prio': 'HIGH', 'msg_type': 'SENSOR_ANALOG',
-             'time': 1234, 'sensor_id': 'SENSOR_PRESSURE_CC', 'value': 800},
+            {
+                "board_type_id": "INJ_SENSOR",
+                "board_inst_id": "GENERIC",
+                "msg_prio": "HIGH",
+                "msg_type": "SENSOR_ANALOG",
+                "time": 1234,
+                "sensor_id": "SENSOR_PRESSURE_CC",
+                "value": 800,
+            },
         ]
         self.fake_msg_index = 0
         self.last_fake_zero_time = 0
@@ -52,7 +57,8 @@ class FakeSerialCommunicator:
         if now - self.last_fake_zero_time > FAKE_MESSAGE_SPACING:
             # Time is in seconds, mod 65536ms to get the 16 bit time
             self.fake_msgs[self.fake_msg_index]["time"] = (
-                ((now - self.zero_time) * 1000) % 65536) / 1000
+                ((now - self.zero_time) * 1000) % 65536
+            ) / 1000
             if "value" in self.fake_msgs[self.fake_msg_index]:
                 self.fake_msgs[self.fake_msg_index]["value"] = random.randint(0, 10)
 
@@ -79,51 +85,71 @@ class FakeSerialCommunicator:
 
 
 def receive_commands(
-        receiver: Receiver | None, 
-        sender_id: str, 
-        communicator: SerialCommunicator | FakeSerialCommunicator,
-    ) -> bool: # True on received, false otherwise
+    receiver: Receiver | None,
+    sender_id: str,
+    communicator: SerialCommunicator | FakeSerialCommunicator,
+) -> bool:  # True on received, false otherwise
 
     if not receiver:
         return False
+
     msg: Message | None = receiver.recv_message(0)  # Non-blocking
     if not msg or msg.channel != RECEIVE_CHANNEL:
         return False
-    
+
     can_msg_data = msg.payload["data"]["can_msg"]
     msg_sid, msg_data = parsley.encode_data(can_msg_data)
-    
+
     # Checking parsley instance
-    parsley_instance = msg.payload['parsley']
+    parsley_instance = msg.payload["parsley"]
     if parsley_instance != sender_id:
         return False
-    
+
     formatted_msg = f"m{msg_sid:08X}"
     if msg_data:
-        formatted_msg += ',' + ','.join(f"{byte:02X}" for byte in msg_data)
-    
-    formatted_msg += ";" + crc8.crc8(
-        msg_sid.to_bytes(4, byteorder='big') + bytes(msg_data)
-    ).hexdigest().upper()  # Sent messages in the usb debug format have a crc8 checksum at the end, to be investigated: https://github.com/waterloo-rocketry/omnibus/commit/0913ff2ef1c38c3ae715ad87c805d071c1ce2c38
+        formatted_msg += "," + ",".join(f"{byte:02X}" for byte in msg_data)
+
+    # Sent messages in the usb debug format have a crc8 checksum at the end, to be investigated:
+    # https://github.com/waterloo-rocketry/omnibus/commit/0913ff2ef1c38c3ae715ad87c805d071c1ce2c38
+    formatted_msg += (
+        ";"
+        + crc8.crc8(msg_sid.to_bytes(4, byteorder="big") + bytes(msg_data))
+        .hexdigest()
+        .upper()
+    )
     print(formatted_msg)  # Always print the usb debug style can message
     # Send the can message over the specified port
     communicator.write(formatted_msg.encode())
-    time.sleep(0.01)
     return True
 
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('port', type=str, nargs='?', default="FAKEPORT",
-                           help='the serial port to read from, not needed for fake mode')
-    argparser.add_argument('baud', type=int, nargs='?', default=115200,
-                           help='the baud rate to use')
-    argparser.add_argument('--format', default='usb',
-                           help='Options: telemetry, logger, usb. Parse input in RocketCAN Logger or USB format')
-    argparser.add_argument('--solo', action='store_true',
-                           help="Don't connect to omnibus - just print to stdout.")
-    argparser.add_argument('--fake', action='store_true',
-                           help="Don't read from hardware - uses fake data. Give any value for a port")
+    argparser.add_argument(
+        "port",
+        type=str,
+        nargs="?",
+        default="FAKEPORT",
+        help="the serial port to read from, not needed for fake mode",
+    )
+    argparser.add_argument(
+        "baud", type=int, nargs="?", default=115200, help="the baud rate to use"
+    )
+    argparser.add_argument(
+        "--format",
+        default="usb",
+        help="Options: telemetry, logger, usb. Parse input in RocketCAN Logger or USB format",
+    )
+    argparser.add_argument(
+        "--solo",
+        action="store_true",
+        help="Don't connect to omnibus - just print to stdout.",
+    )
+    argparser.add_argument(
+        "--fake",
+        action="store_true",
+        help="Don't read from hardware - uses fake data. Give any value for a port",
+    )
     args = argparser.parse_args()
 
     if not args.fake:
@@ -169,16 +195,19 @@ def main():
         if sender and now - last_heartbeat_time > HEARTBEAT_TIME:
             last_heartbeat_time = now
             healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
-            sender.send(HEARTBEAT_CHANNEL, {
-                "id": sender_id, "healthy": healthy})
+            sender.send(HEARTBEAT_CHANNEL, {"id": sender_id, "healthy": healthy})
 
-        if args.format == "telemetry" and time.time() - last_keepalive_time > KEEPALIVE_TIME:
-            communicator.write(b'.')
+        if (
+            args.format == "telemetry"
+            and time.time() - last_keepalive_time > KEEPALIVE_TIME
+        ):
+            communicator.write(b".")
             last_keepalive_time = now
 
-        command_was_received: bool = receive_commands(receiver,sender_id, communicator)
-        if (command_was_received):
+        command_was_received: bool = receive_commands(receiver, sender_id, communicator)
+        if command_was_received:
             last_keepalive_time: float = now
+            time.sleep(0.01)
 
         line = communicator.read()
 
@@ -197,12 +226,12 @@ def main():
                     msg_len = buffer[i + 1] >> 4
                     if i + msg_len > len(buffer):
                         break
-                    msg = buffer[i: i + msg_len]
+                    msg = buffer[i : i + msg_len]
                     try:
                         msg_sid, msg_data = parser(msg)
-                        buffer = buffer[i + msg_len:]
+                        buffer = buffer[i + msg_len :]
                     except ValueError as e:
-                        buffer = buffer[i + 1:]
+                        buffer = buffer[i + 1 :]
                         raise e
                 else:
                     text_buff = buffer.decode("utf-8", errors="backslashreplace")
@@ -210,7 +239,7 @@ def main():
                     if i < 0:
                         break
                     msg = text_buff[:i]
-                    buffer = buffer[i + 1:]
+                    buffer = buffer[i + 1 :]
                     msg_sid, msg_data = parser(msg)
 
                 parsed_data = parsley.parse(msg_sid, msg_data)
@@ -218,7 +247,9 @@ def main():
                 print(parsley.format_line(parsed_data))
 
                 if sender:
-                    sender.send(SEND_CHANNEL, parsed_data)  # Send the CAN message over the channel
+                    sender.send(
+                        channel=SEND_CHANNEL, payload=parsed_data
+                    )  # Send the CAN message over the channel
 
             except ValueError as e:
                 print(e)
