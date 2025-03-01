@@ -7,7 +7,7 @@ from omnibus import Sender
 import calibration
 import numpy as np
 
-from typing import cast, Any
+from typing import cast, Any, NoReturn
 
 try:
     import config  # pyright: ignore[reportMissingImports]
@@ -42,11 +42,11 @@ sender = Sender()  # omnibus channel
 CHANNEL = "DAQ"
 # Increment whenever data format change, so that new incompatible tools don't
 # attempt to read old logs / messages
-MESSAGE_FORMAT_VERSION = 2  # Backwards compatible with original
+MESSAGE_FORMAT_VERSION = 2  # Backwards compatible with original version
 
 
-def read_data(ai: nidaqmx.Task):
-    # See config.example.py, config.RATE should be float
+def read_data(ai: nidaqmx.Task) -> NoReturn:
+    # See config.py.example, config.RATE should be float
     # Converting to nanoseconds to avoid floating point inaccuracy
     READ_PERIOD: int = int(1 / cast(int, config.RATE) * 1000000000)
 
@@ -79,23 +79,26 @@ def read_data(ai: nidaqmx.Task):
 
             num_of_messages_read = 0 if not data else len(data[0])
 
-            relative_timestamps = np.arange(
+            relative_timestamps = list(range(
                 relative_last_read_time,
                 relative_last_read_time + READ_PERIOD * num_of_messages_read,
                 READ_PERIOD,
-            ).tolist()
+            ))
 
             data_parsed = {
                 "timestamp": time.time(),
                 "data": calibration.Sensor.parse(data),  # apply calibration
                 "relative_timestamps_nanoseconds": relative_timestamps,
-                "sample_rate": config.RATE,
+                "sample_rate": cast(int, config.RATE),
                 "message_format_version": MESSAGE_FORMAT_VERSION,
             }
 
             # Calculate next staring timestamp
+            # Reset the timestamps to a new starting point if there were problems reading
             relative_last_read_time = (
-                time.time_ns() if not data else relative_timestamps[-1] + READ_PERIOD
+                time.time_ns()
+                if not data or num_of_messages_read < config.READ_BULK
+                else relative_timestamps[-1] + READ_PERIOD
             )
 
             # we can concatenate msgpack outputs as a backup logging option
@@ -118,5 +121,8 @@ with nidaqmx.Task() as ai:
         sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,  # pyright: ignore[reportAttributeAccessIssue]
     )
     ai.start()
-
-    read_data(ai)
+    
+    try:
+        read_data(ai)
+    except KeyboardInterrupt:
+        pass
