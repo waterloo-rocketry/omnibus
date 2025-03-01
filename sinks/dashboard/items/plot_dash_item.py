@@ -3,7 +3,6 @@ from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu
 from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 from pyqtgraph.Qt.QtCore import QEvent
 import pyqtgraph as pg
-import numpy as np
 
 from .dashboard_item import DashboardItem
 import config
