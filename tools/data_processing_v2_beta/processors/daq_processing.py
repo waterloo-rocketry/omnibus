@@ -56,7 +56,7 @@ class DAQ_RECEIVED_MESSAGE_TYPE(TypedDict):
 @dataclass(frozen=True)
 class DAQDataStructure:
     daq_box_timestamp: float  # System timestamp from DAQ box, not used for processing
-    ni_relative_timestamp: int # In nanoseconds
+    ni_relative_timestamp: int  # In nanoseconds
     sensors: list[str]
     values: list[float]
 
@@ -125,10 +125,11 @@ class DAQDataProcessor:
                         file=sys.stderr,
                     )
                     continue
+                # Cast to object to check that item's type
                 if (
                     type(cast(object, unpacked_data[key]))
                     != DAQ_EXPECTED_RECEIVE_DATA_FORMAT[key]
-                ):  # Cast to object to check that item's type
+                ):
                     print(
                         f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
                         file=sys.stderr,

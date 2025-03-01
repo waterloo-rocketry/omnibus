@@ -6,6 +6,7 @@ GLOBAL_LOG_FILE = "[PATH HERE]"
 CHANNEL = "DAQ"
 OUTPUT_CSV_FILE = "[PATH HERE]"
 
+
 # TODO: Make this an actual app and not a script (and maybe GUI?)
 def main() -> None:
     with open(GLOBAL_LOG_FILE, "rb") as file:
