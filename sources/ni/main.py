@@ -50,9 +50,11 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
     READ_PERIOD: int = int(1 / cast(int, config.RATE) * 1000000000)
 
     rates = []
+
     # Relative timestamp starting point, starts at current time and scales by READ_PERIOD
-    # Use current time to reduce risk of interruptions in data collection
+    # Use current time to have a unique starting point on every collection, ns to prevent floating point error
     relative_last_read_time: float = time.time_ns()
+
     now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
     with open(f"log_{now}.dat", "wb") as log:
         while True:
@@ -78,11 +80,13 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
 
             num_of_messages_read = 0 if not data else len(data[0])
 
-            relative_timestamps = list(range(
-                relative_last_read_time,
-                relative_last_read_time + READ_PERIOD * num_of_messages_read,
-                READ_PERIOD,
-            ))
+            relative_timestamps = list(
+                range(
+                    relative_last_read_time,
+                    relative_last_read_time + READ_PERIOD * num_of_messages_read,
+                    READ_PERIOD,
+                )
+            )
 
             data_parsed = {
                 "timestamp": time.time(),
@@ -120,7 +124,7 @@ with nidaqmx.Task() as ai:
         sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,  # pyright: ignore[reportAttributeAccessIssue]
     )
     ai.start()
-    
+
     try:
         read_data(ai)
     except KeyboardInterrupt:

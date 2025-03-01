@@ -34,7 +34,7 @@ class DAQ_RECEIVED_MESSAGE_TYPE(TypedDict):
     #     "OPT-201: Ox Fill PT (psi)": [2.3, 4.5, 7.2],
     #     ...
     # }
-    # 1.3 and 2.3 are the readings for each sensor at t_0, 2.3 and 4.5 for t_1, etc.
+    # 1.3 and 2.3 are the readings for each sensor at t0, 2.3 and 4.5 for t1, etc.
 
     relative_timestamps_nanoseconds: list[int]
     """
@@ -43,7 +43,7 @@ class DAQ_RECEIVED_MESSAGE_TYPE(TypedDict):
     Timestamps are based on initial time t_0 = time.time_ns(), meaning they should be always unique.
     Unit is nanoseconds
     """
-    # Example: [19, 22, 25] <- 1.3 and 2.3 from above was read at t_0=19
+    # Example: [19, 22, 25] <- 1.3 and 2.3 from above was read at t0 = 19
 
     # Rate at which the messages were read, in Hz, dt = 1/sample_rate
     sample_rate: int
