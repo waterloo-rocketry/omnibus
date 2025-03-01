@@ -5,7 +5,6 @@ import nidaqmx
 
 from omnibus import Sender
 import calibration
-import numpy as np
 
 from typing import cast, Any, NoReturn
 
@@ -102,7 +101,7 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
             )
 
             # we can concatenate msgpack outputs as a backup logging option
-            log.write(cast(bytes, msgpack.packb(data_parsed)))
+            log.write(msgpack.packb(data_parsed))
 
             sender.send(CHANNEL, data_parsed)  # send data to omnibus
 

@@ -5,7 +5,6 @@ import random
 import time
 
 import msgpack
-import numpy as np
 
 from omnibus import Sender
 
@@ -40,11 +39,11 @@ try:
     while True:
         start = time.time()
         # send a tuple of when the data was recorded and an array of the data for each channel
-        relative_timestamps = np.arange(
-                    relative_last_read_time,
-                    relative_last_read_time + READ_PERIOD * READ_BULK,
-                    READ_PERIOD,
-                ).tolist()
+        relative_timestamps = list(range(
+                relative_last_read_time,
+                relative_last_read_time + READ_PERIOD * READ_BULK,
+                READ_PERIOD,
+            ))
             
         data = {
             "timestamp": start,
