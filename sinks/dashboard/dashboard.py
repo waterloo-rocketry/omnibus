@@ -50,6 +50,7 @@ from items.standard_display_item import StandardDisplayItem
 from items.tvc_controller import TVCController
 from items.tvc_controller_slider import TVCControllerSlider
 from items.tvc_controller_preset import TVCControllerPreset
+from items.tvc_controller_act_slider import TVCControllerActSlider
 
 
 
