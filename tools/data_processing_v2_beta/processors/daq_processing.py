@@ -106,6 +106,10 @@ class DAQDataProcessor:
             channel, _, unpacked_data = cast(
                 tuple[str, float, DAQ_RECEIVED_MESSAGE_TYPE], tuple(msg)
             )
+
+            if channel != self._expected_channel:
+                continue
+
             # Verify the message version
             if ("message_format_version" not in unpacked_data) or (
                 unpacked_data["message_format_version"] != MESSAGE_FORMAT_VERSION
@@ -113,9 +117,6 @@ class DAQDataProcessor:
                 raise AssertionError(
                     "[FATAL] [DAQ Unpacker] This version of data processing is not compatible with the DAQ messages provided!"
                 )
-
-            if channel != self._expected_channel:
-                continue
 
             # Verify that the unpacked_data is actually valid
             for key in DAQ_EXPECTED_RECEIVE_DATA_FORMAT.keys():
