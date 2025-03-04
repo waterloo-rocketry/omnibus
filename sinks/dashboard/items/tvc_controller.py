@@ -4,9 +4,9 @@ from typing import List
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics, QFont
 from pyqtgraph.Qt.QtWidgets import (
-    QHBoxLayout,
+    QHBoxLayout
     QLineEdit,
-    QPushButton
+    QPushButton,
 )
 
 from .registry import Register
@@ -16,7 +16,7 @@ from publisher import publisher
 
 
 @Register
-class TVCController(DashboardItem):
+class CanSender(DashboardItem):
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -32,20 +32,10 @@ class TVCController(DashboardItem):
 
         self.layout.addWidget(self.widget_one)
         self.layout.addWidget(self.widget_two)
-        self.layout.addWidget(self.send_button)
 
     # whenever the SEND button (or equilvalent) is activated, pulse PyQT input widgets for visual feedback
     # and upon a successful CAN message encoding, emit the encoded message
     def send_can_message(self):
-        try:
-            actuator_value_1 = int(self.widget_one.text().strip())
-            actuator_value_2 = int(self.widget_two.text().strip())
-        except:
-            self.widget_one.setText("Actuator value must be integer")
-            self.widget_two.setText("Actuator value must be integer")
-            return
-
-
         can_message_1 = {
             'data': {
                 'time': time.time(),
@@ -53,8 +43,8 @@ class TVCController(DashboardItem):
                     'msg_type': 'ACTUATOR_CMD',
                     'board_id': 'ANY',
                     'time': 0,
-                    'actuator': 'ACTUATOR_CHARGE_AIRBRAKE',
-                    'req_state': actuator_value_1
+                    'actuator': 1,
+                    'req_state': int(3)
                     },  # contains the message data bits
             }
         }
@@ -66,8 +56,8 @@ class TVCController(DashboardItem):
                     'msg_type': 'ACTUATOR_CMD',
                     'board_id': 'ANY',
                     'time': 0,
-                    'actuator': 'ACTUATOR_CHARGE_PAYLOAD',
-                    'req_state': actuator_value_2
+                    'actuator': 1,
+                    'req_state': int(3)
                     },  # contains the message data bits
             }
         }
