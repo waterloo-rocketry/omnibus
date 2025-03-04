@@ -319,9 +319,7 @@ class Dashboard(QWidget):
 
 
         # For every 5 second, check if there are any changes
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.change_detector)
-        self.timer.start(100)  # Check every 0.1 seconds
+        publisher.subscribe_clock(7, self.change_detector)
 
         QApplication.setStyle('Fusion')
 
