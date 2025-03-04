@@ -48,6 +48,8 @@ from items.periodic_can_sender import PeriodicCanSender
 from items.can_sender import CanSender
 from items.standard_display_item import StandardDisplayItem
 from items.tvc_controller import TVCController
+from items.tvc_controller_slider import TVCControllerSlider
+from items.tvc_controller_preset import TVCControllerPreset
 
 
 
@@ -314,8 +316,11 @@ class Dashboard(QWidget):
         self.current_data = self.get_data()["widgets"]
         self.unsave_indicator = False
 
-        # For every 0.1 seconds ~= 7 ticks, check if there are any changes
-        publisher.subscribe_clock(7, self.change_detector)
+
+        # For every 5 second, check if there are any changes
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.change_detector)
+        self.timer.start(100)  # Check every 0.1 seconds
 
         QApplication.setStyle('Fusion')
 
