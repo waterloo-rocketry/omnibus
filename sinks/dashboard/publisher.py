@@ -33,6 +33,7 @@ class Publisher:
 
         self.clock_callbacks = [(s, i, c) for (s, i, c) in self.clock_callbacks if c != callback]
 
+
     def update(self, stream, payload):
         self.ensure_exists(stream)
         for callback in self.streams[stream]:
