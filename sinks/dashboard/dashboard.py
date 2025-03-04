@@ -317,8 +317,6 @@ class Dashboard(QWidget):
         self.current_data = self.get_data()["widgets"]
         self.unsave_indicator = False
 
-
-        # For every 5 second, check if there are any changes
         publisher.subscribe_clock(7, self.change_detector)
 
         QApplication.setStyle('Fusion')
