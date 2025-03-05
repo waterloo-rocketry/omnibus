@@ -249,7 +249,6 @@ class Receiver(OmnibusCommunicator):
 
             # If there is a message received, proceed below:
             channel, timestamp, payload = self._subscriber.recv_multipart()
-            self._last_online_check = time.time()
             return Message(
                 channel=channel.decode(encoding="utf-8"),
                 timestamp=msgpack.unpackb(timestamp),
