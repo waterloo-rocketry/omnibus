@@ -130,7 +130,7 @@ class PlotDashItem(DashboardItem):
             max_threshold = self.parameters.param('max_threshold').value()
             min_threshold = self.parameters.param('min_threshold').value()
             if point > max_threshold or point < min_threshold:
-                return
+                point = np.nan
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
@@ -145,20 +145,27 @@ class PlotDashItem(DashboardItem):
             self.points[stream].pop(0)
 
         # Filter out the points that are in the series
-        values = [ self.points[v] for v in self.points.keys() if v in self.series]
+        values = [self.points[v] for v in self.points.keys() if v in self.series and not all(np.isnan(p) for p in self.points[v])]
+        cleaned_values = [list(filter(lambda x: not np.isnan(x), v)) for v in values]
+        all_valid_values = [item for sublist in cleaned_values for item in sublist]
         
         # get the min/max point in the whole data set
-        if not any(values):
+        
+        if values: #resizes plot based on filter values
+            if self.parameters.param('low_pass_filter').value():
+                max_point = min(max_threshold, max(max(v) for v in values if v))
+                min_point = max(min_threshold, min(min(v) for v in values if v))
+            else:
+                max_point = max(all_valid_values)
+                min_point = min(all_valid_values)
+        else:
             min_point = 0
             max_point = 0
-        elif self.parameters.param('low_pass_filter').value(): #resizes plot based on filter values
-            max_point = min(max_threshold, max(max(v) for v in values if v))
-            min_point = max(min_threshold, min(min(v) for v in values if v))
-        else:
-            min_point = min(min(v) for v in values if v)
-            max_point = max(max(v) for v in values if v)
 
         # set the displayed range of Y axis
+        if np.isnan(min_point) or np.isnan(max_point):
+            max_point = max(all_valid_values)
+            min_point = min(all_valid_values)
         self.plot.setYRange(min_point, max_point, padding=0.1)
 
         limit = self.parameters.param('limit').value()
