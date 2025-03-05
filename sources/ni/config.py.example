@@ -2,7 +2,7 @@
 ## This is the documented sensor calibrations, as well as the port configurations in use on the DAQ Box.
 ## To use the NI Source, duplicate this file and name it `config.py`, uncomment and modify as needed.
 ## NOTE: If `config.py` is updated, please also update this file as required
-## Last modified 2025-01-31 - Chris Yang (@ChrisYx511)
+## Last modified 2025-03-04 - Chris Yang (@ChrisYx511)
 
 
 from calibration import Sensor, Connection, LinearCalibration, ThermistorCalibration
@@ -12,19 +12,19 @@ READ_BULK = 25  # Number of samples to read at once for better performance
 
 # Mapping between briefcase ports and ai channels such that you can do ports[1] through ports[12]
 # fmt: off
-ports = [
+ports = (
     None,  # port 0
     "ai16", None, "ai18",  # Differental channels 1-3  # 2 used to be ai17
     "ai19", "ai27", "ai20", # 4-20 mA channels 4,6 and 0-5V channel 5
     "ai28",  "ai21", "ai29", # 4-20 mA channels 7-9
     "ai11",  "ai4", "ai12"  # 4-20 mA channels 10-12
-]
+)
 
-thermo_ports = [
+thermo_ports = (
     None,  # port 0
     "ai10", "ai2", "ai9", "ai1",  # Ports 1-4
     "ai8", "ai0"                  # Ports 5-6
-]
+)
 
 
 # fmt: on
@@ -51,8 +51,12 @@ def setup():
     #       LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
 
     # TDL
-    #    Sensor("Example TDM", ports[5], 10, Connection.SINGLE,
-    #       LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
+    # Sensor("Example TDM", ports[7], 10, Connection.SINGLE,
+    #     LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
+
+    # PSE PT (Small pneumatics PT, 0-145.038 psi)
+    # Sensor("Example PSE PT", ports[5], 5, Connection.SINGLE,
+    #     LinearCalibration(36.25943443, -36.25943443, "psi"))
 
     ## LOAD CELLS ##
 
@@ -103,6 +107,10 @@ def setup():
     # Standard TDL35 and TDM51 transducers: 4-20mA 0-3000 psi
     # Sensor("example", ports[12], 10, Connection.SINGLE,
     # LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
+
+    # PSE540-R06 PT: 1-5V, Small pneumatics PT, 0-145.038 psi
+    # Sensor("Example PSE PT", ports[5], 5, Connection.SINGLE,
+    #     LinearCalibration(36.25943443, -36.25943443, "psi"))
 
     # Honeywell S-type, 1000 N (divide by 9.81 to kg) an 2.002 mv/V at 12V
     # checked the datasheet, it says that honeywell S-type 1000N has power range 5-10V

@@ -8,7 +8,8 @@ class Connection(Enum):
     """
     Represents how a sensor is wired into the NI box.
     """
-    SINGLE = nidaqmx.constants.TerminalConfiguration.RSE  # ground referenced single ended
+    # ground referenced single ended
+    SINGLE = nidaqmx.constants.TerminalConfiguration.RSE 
     DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.DIFF
 
 
