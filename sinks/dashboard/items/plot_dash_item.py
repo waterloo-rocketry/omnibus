@@ -96,7 +96,6 @@ class PlotDashItem(DashboardItem):
             tmp = min_threshold
             self.parameters.param('min_threshold').setValue(max_threshold)
             self.parameters.param('max_threshold').setValue(tmp)
-            print("Thresholds adjusted to maintain valid range.")
         # Create the plot item
     def create_plot(self):
         plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
@@ -163,9 +162,6 @@ class PlotDashItem(DashboardItem):
             max_point = 0
 
         # set the displayed range of Y axis
-        if np.isnan(min_point) or np.isnan(max_point):
-            max_point = max(all_valid_values)
-            min_point = min(all_valid_values)
         self.plot.setYRange(min_point, max_point, padding=0.1)
 
         limit = self.parameters.param('limit').value()
