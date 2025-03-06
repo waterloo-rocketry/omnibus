@@ -8,7 +8,9 @@ Omnibus is a unified data bus which manages the connection of various data sourc
 
 ### Requirements
 
-Python 3.10 or newer is required. For Linux users, a python package with C headers (such as `python3-dev`) is necessary. For Windows users, it's recommended to install and run Omnibus through [Git Bash](https://git-scm.com/download/win) for a smoother Unix-like experience.
+Python 3.10 or newer is required to run Omnibus. For Linux users, a python package with C headers (such as `python3-dev`) is necessary. For Windows users, it's recommended to install and run Omnibus through [Git Bash](https://git-scm.com/download/win) for a smoother Unix-like experience.
+
+Note that the production build of Omnibus targets **Python 3.11**. All code contributions must be compatible with that version. See `CONTRIBUTING.md` for more info.
 
 ### Installation
 
@@ -25,17 +27,17 @@ Python 3.10 or newer is required. For Linux users, a python package with C heade
 5. There are two ways to install Omnibus. The setup script is the easiest method, but if it doesn't work you can manually install the required packages
    1. Setup script:
       - For osx/linux: `source setup.sh`
-      - For windows: `setup.bat` 
+      - For windows: `setup.bat`
    2. Manual installation:
       - Upgrade pip version: `pip install --upgrade pip`
       - Run `pip install wheel`, which will help install the rest of the packages more quickly
       - Install Python dependencies with `pip install -r requirements.txt`. You'll also need to run that command in each of the following folders:
-         - `sources/ni/`
-         - `sources/parsley/`
-         - `sinks/dashboard/`
-         - If you get a permission error, try `pip install --user -r requirements.txt` instead.
+        - `sources/ni/`
+        - `sources/parsley/`
+        - `sinks/dashboard/`
+        - If you get a permission error, try `pip install --user -r requirements.txt` instead.
       - Install the Omnibus library locally with `pip install -e .`
-         - Don't forget the `.`! This allows the sources and sinks (and you) to import Omnibus
+        - Don't forget the `.`! This allows the sources and sinks (and you) to import Omnibus
       - Initialize the `Parsley` submodule with `git submodule update --init --recursive` and install the library locally with `pip install -e ./parsley`
 
 ## Usage
@@ -55,4 +57,4 @@ Depending on your configuration, you'll need to run one or more sources or sinks
 
 ### Theme
 
-Omnibus uses the same theme as your operating system's default theme (light or dark). If you would like to switch themes, consider changing the theme of your system accordingly. 
+Omnibus uses the same theme as your operating system's default theme (light or dark). If you would like to switch themes, consider changing the theme of your system accordingly.

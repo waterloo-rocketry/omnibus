@@ -5,3 +5,4 @@ pyzmq
 flake8
 matplotlib
 dash
+gitpython
