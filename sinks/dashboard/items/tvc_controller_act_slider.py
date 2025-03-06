@@ -26,11 +26,13 @@ class TVCControllerActSlider(DashboardItem):
         self.setLayout(self.layout)
 
         self.slider = QSlider()
+        self.slider.setMinimum(-100)
+        self.slider.setMaximum(100)
         self.text = QLineEdit()
         self.act_id_select = QComboBox()
         self.act_id_select.addItems(list(actuator_id.keys()))
 
-        self.slider.valueChanged.connect(None)
+        self.slider.valueChanged.connect(self.on_slider_change)
         self.text.textChanged.connect(self.on_text_change)
 
         self.layout.addWidget(self.act_id_select)
@@ -38,7 +40,10 @@ class TVCControllerActSlider(DashboardItem):
         self.layout.addWidget(self.text)
 
     def on_text_change(self):
-        val = int(self.text.text().strip())
+        try:
+            val = int(self.text.text().strip())
+        except:
+            return
         act_id = self.act_id_select.currentText()
 
         self.slider.blockSignals(True)
@@ -47,8 +52,7 @@ class TVCControllerActSlider(DashboardItem):
 
         self.send_can_message(val, act_id)
 
-    def on_slider_change(self):
-        val = int(self.slider.value())
+    def on_slider_change(self, val):
         act_id = self.act_id_select.currentText()
 
         self.text.blockSignals(True)
@@ -62,15 +66,16 @@ class TVCControllerActSlider(DashboardItem):
     # and upon a successful CAN message encoding, emit the encoded message
     def send_can_message(self, val, act_id):
         can_message = {
-            'msg_prio': 3,
             'data': {
                 'time': time.time(),
                 'can_msg': {
-                    'msg_type': 'ACTUATOR_CMD',
-                    'board_id': 'ANY',
-                    'time': 69420,
+                    'msg_prio': 'LOW',
+                    'msg_type': 'ACTUATOR_ANALOG_CMD',
+                    'board_type_id': 'ANY',
+                    'board_inst_id': 'ANY',
+                    'time': 1,
                     'actuator': act_id,
-                    'req_state': val
+                    'cmd_state': val
                     },
             }
         }

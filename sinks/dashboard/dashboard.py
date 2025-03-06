@@ -47,6 +47,7 @@ from items.dynamic_text import DynamicTextItem
 from items.periodic_can_sender import PeriodicCanSender
 from items.can_sender import CanSender
 from items.standard_display_item import StandardDisplayItem
+from items.tvc_controller_act_slider import TVCControllerActSlider
 
 
 pyqtgraph.setConfigOption('background', 'w')
