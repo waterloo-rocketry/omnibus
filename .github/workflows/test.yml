@@ -71,7 +71,7 @@ jobs:
           # flake8 config can be found in setup.cfg
           source venv/Scripts/activate
           flake8
-
+          
       - name: Test with pytest
         shell: bash
         run: |
