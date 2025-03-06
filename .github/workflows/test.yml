@@ -37,6 +37,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
+            ${{ runner.os }}-
       - if: ${{ steps.restore_virtualenv_cache.outputs.cache-hit != 'true' }}
         name: Create virtualenv if not exists
         shell: bash
@@ -68,11 +69,6 @@ jobs:
           # here (F): https://flake8.pycqa.org/en/latest/user/error-codes.html
           # and here (E): https://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
           # flake8 config can be found in setup.cfg
-          flake8
-
-      - name: Test with pytest
-        shell: bash
-        run: |
           source venv/Scripts/activate
           flake8
           
