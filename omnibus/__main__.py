@@ -1,3 +1,6 @@
 from .server import server
 
-server()
+try:
+    server()
+except KeyboardInterrupt:
+    pass  # Should exit silently

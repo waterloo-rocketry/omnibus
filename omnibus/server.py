@@ -1,9 +1,15 @@
 import socket
 import threading
 import time
+from typing import NoReturn
 
 import zmq
 from zmq.devices import ThreadProxy
+
+try:
+    from .util import BuildInfoManager
+except ImportError:
+    from util import BuildInfoManager  # pyright: ignore[reportImplicitRelativeImport]
 
 SOURCE_PORT = 5075
 SINK_PORT = 5076
@@ -25,7 +31,7 @@ def get_ip():
         s.close()
 
 
-def ip_broadcast():
+def ip_broadcast() -> NoReturn:
     """
     Periodically send a UDP broadcast to the LAN. Sources and sinks can listen
     to who sent the broadcast (filtering based on the content) to find our ip.
@@ -40,21 +46,27 @@ def ip_broadcast():
         # This runs in a separate thread so we can loop
         while True:
             # 255.255.255.255 is a magic IP that means 'broadcast to the LAN'
-            sock.sendto(b"omnibus", ('255.255.255.255', BROADCAST_PORT))
+            sock.sendto(b"omnibus", ("255.255.255.255", BROADCAST_PORT))
             time.sleep(0.5)
 
 
-def server():
+def server() -> NoReturn:
     """
     Run the Omnibus server, display the current messages/sec.
     """
-    context = zmq.Context()
+    # Initialize BuildInfoManager to print build info
+    bim = BuildInfoManager("Omnibus Server")
+    bim.print_startup_screen()
+    bim.print_app_name()
 
-    proxy = ThreadProxy(zmq.SUB, zmq.PUB, zmq.PUB)  # proxies messages in a separate thread
+    context = zmq.Context()
+    # Proxy messages in a separate thread
+    proxy = ThreadProxy(zmq.SUB, zmq.PUB, zmq.PUB)
     proxy.bind_in(f"tcp://*:{SOURCE_PORT}")
     proxy.setsockopt_in(zmq.SUBSCRIBE, b"")
     proxy.bind_out(f"tcp://*:{SINK_PORT}")
-    proxy.bind_mon("inproc://mon")  # use in-process communication for the monitor socket
+    # Use in-process communication for the monitor socket
+    proxy.bind_mon("inproc://mon")
     proxy.daemon = True
     proxy.context_factory = lambda: context
 
@@ -84,5 +96,8 @@ def server():
             count = 0
 
 
-if __name__ == '__main__':
-    server()
+if __name__ == "__main__":
+    try:
+        server()
+    except KeyboardInterrupt:
+        pass

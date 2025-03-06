@@ -14,7 +14,10 @@ CHANNEL = ""
 CURTIME = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
 # Creates filename
 fname = CURTIME + ".log"
-receiver = Receiver(CHANNEL)
+# We use a shorter reconnect attempt here because globallog should be
+# receiving a lot of messages anyways and data integrity is a lot more important
+# Even if the reset does affect a few messages, some data is better than no data.
+receiver = Receiver(CHANNEL, seconds_until_reconnect_attempt=2)
 
 dots = 0
 counter = 0
