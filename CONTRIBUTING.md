@@ -22,7 +22,9 @@ The repo follows the branch naming convention of `{name}/{issue_num}-{descriptio
 
 ### Formatting and Linting Your Code
 
-This repo conforms to [PEP8](https://pep8.org) guidelines for Python code. We have a script to automatically enforce these guidelines (`tools/format.sh`). It is **mandatory** to run this before pushing your branch or opening a PR, and *recommended* before every commit.
+This repo conforms to [PEP8](https://pep8.org) guidelines for Python code. We have a script to automatically enforce these guidelines (`tools/format.sh`). It is **mandatory** to run this before pushing your branch or opening a PR, and _recommended_ before every commit.
+
+Note that the production build of Omnibus targets **Python 3.11**. Tests are run against Python 3.11 on Windows. All code contributions must be compatible with that version.
 
 ### Publishing PRs
 
@@ -36,4 +38,4 @@ When you have written your code and are ready to get it reviewed and merged to `
 
 ### Merging PRs
 
-Once your PR has passed all unit tests, and has been reviewed and approved, you can merge it to `master`. Merge using the "Squash and Merge" option so that all the commits from your branch are "squashed" into one commit containing all the changes. Congrats, you're now free to take on another issue and continue to make Omnibus better! 
+Once your PR has passed all unit tests, and has been reviewed and approved, you can merge it to `master`. Merge using the "Squash and Merge" option so that all the commits from your branch are "squashed" into one commit containing all the changes. Congrats, you're now free to take on another issue and continue to make Omnibus better!

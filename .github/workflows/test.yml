@@ -15,11 +15,18 @@ jobs:
         with:
           submodules: "true"
       - name: Set up Python 3.11
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
+        id: setup_python
         with:
           python-version: 3.11
-
-      - name: Cache pip dependencies
+      - name: Restore cached virtualenv
+        id: restore_virtualenv_cache
+        uses: actions/cache/restore@v4
+        with:
+          key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          path: venv
+      - if: ${{ steps.restore_virtualenv_cache.outputs.cache-hit != 'true' }}
+        name: Cache pip dependencies
         id: cache
         uses: actions/cache@v4
         env:
@@ -30,11 +37,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
+      - if: ${{ steps.restore_virtualenv_cache.outputs.cache-hit != 'true' }}
+        name: Create virtualenv if not exists
         shell: bash
         run: |
+          python -m venv venv
+      - if: ${{ steps.restore_virtualenv_cache.outputs.cache-hit != 'true' }}
+        name: Install dependencies
+        shell: bash
+        run: |
+          source venv/Scripts/activate
           python -m pip install --upgrade pip
           pip install wheel
           pip install flake8
@@ -42,7 +54,12 @@ jobs:
           pip install -r requirements.txt
           pip install -e parsley
           find sinks/ sources/ tools/ -name requirements.txt -type f -exec pip install -r {} \;
-
+      - if: ${{ steps.restore_virtualenv_cache.outputs.cache-hit != 'true' }}
+        name: Saved cached virtualenv
+        uses: actions/cache/save@v4
+        with:
+          key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          path: venv
       - name: Lint with flake8
         shell: bash
         run: |
@@ -56,9 +73,17 @@ jobs:
       - name: Test with pytest
         shell: bash
         run: |
+          source venv/Scripts/activate
+          flake8
+          
+      - name: Test with pytest
+        shell: bash
+        run: |
+          source venv/Scripts/activate
           pytest
 
       - name: Enforce autopep8
         shell: bash
         run: |
+          source venv/Scripts/activate
           autopep8 -d -r sources/ sinks/ omnibus/ tools/ *.py --exit-code

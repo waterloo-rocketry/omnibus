@@ -12,5 +12,5 @@ def update():  # gets called every frame
         # updates streams, which them updates the dashitems
         parsers.parse(msg.channel, msg.payload)
 
-
 dashboard_driver(update)
+
