@@ -1,7 +1,5 @@
 from publisher import publisher
-from pyqtgraph.Qt.QtWidgets import QGridLayout, QMenu
-from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
-from pyqtgraph.Qt.QtCore import QEvent
+from pyqtgraph.Qt.QtWidgets import QGridLayout
 import pyqtgraph as pg
 
 from .dashboard_item import DashboardItem
@@ -39,8 +37,8 @@ class PlotDashItem(DashboardItem):
             publisher.subscribe(series, self.on_data_update)
 
         # a default color list for plotting multiple curves
-        # yellow green cyan white blue magenta
-        self.color = ['k', 'g', 'c', 'w', 'b', 'm']
+        # black blue magenta green cyan white
+        self.color = ['k', 'b', 'm', 'g', 'c', 'w']
 
         # create the plot
         self.plot = self.create_plot()
@@ -151,22 +149,24 @@ class PlotDashItem(DashboardItem):
         self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
                             t + config.GRAPH_STEP, padding=0)
 
+        series_name: str  = ""
+        # data series name
+        series_name += " / ".join(self.series) # join all data series on plot
+
         # value readout in the title for at most 2 series
-        title = ""
+        current_values: str = ""
         if len(self.series) <= 2:
             # avg values
-            title += "    current: "
+            current_values += "Current: "
             last_values = [self.points[item][-1]
                            if self.points[item] else 0 for item in self.series]
             for v in last_values:
-                title += f"[{v: < 4.4f}]"
-            title += "    "
-        # data series name
-        title += "/".join(self.series)
-        if len(title) > 50:
-            title = title[:50]
+                current_values += f"[{v: < 4.4f}] "
 
-        self.plot.setTitle(title)
+        # 100 CHARS MAX for title
+        series_name = f"{series_name[:100]}..." if len(series_name) > 100 else series_name
+
+        self.plot.setTitle(title=f"<div style='font-size: 16pt;'><br/><b>{series_name}</b><br/>{current_values}</div>")
 
     @staticmethod
     def get_name():
