@@ -164,7 +164,7 @@ class PlotDashItem(DashboardItem):
                 current_values += f"[{v: < 4.4f}] "
 
         # 100 CHARS MAX for title
-        series_name = f"{series_name[:100]}..." if len(series_name) > 100 else series_name[:100]
+        series_name = f"{series_name[:100]}..." if len(series_name) > 100 else series_name
 
         self.plot.setTitle(title=f"<div style='font-size: 16pt;'><br/><b>{series_name}</b><br/>{current_values}</div>")
 
