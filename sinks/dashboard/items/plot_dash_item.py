@@ -170,7 +170,7 @@ class PlotDashItem(DashboardItem):
         series_name = series_name[:100]
         current_values = current_values[:100]
 
-        self.plot.setTitle(title=f"<div style='text-align: center; width: 100%; font-size: 12pt; padding-top: 100px;'><br/><b>{series_name}</b><br/>{current_values}</div>")
+        self.plot.setTitle(title=f"<div style='font-size: 16pt;'><br/><b>{series_name}</b><br/>{current_values}</div>")
 
     @staticmethod
     def get_name():
