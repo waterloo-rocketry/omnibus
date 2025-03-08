@@ -75,7 +75,7 @@ class PlotDashItem(DashboardItem):
 
     # Create the plot item
     def create_plot(self):
-        plot = pg.PlotItem(title='/'.join(self.series), left="Data", bottom="Seconds")
+        plot = pg.PlotItem(title=f"<div style='font-size: 16pt;'><br/><b>{' / '.join(self.series)}</b><br/></div>", left="Data", bottom="Seconds")
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
         plot.setMouseEnabled(x=False, y=False)
         plot.hideButtons()
