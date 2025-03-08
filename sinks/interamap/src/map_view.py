@@ -79,7 +79,7 @@ class MapView(QWebEngineView):
     def refresh_map(self):
         """Create a folium map with the current tile style."""
 
-        if (self.point_storage.get_gps_points() and len(self.point_storage.get_gps_points())> 5):
+        if (self.point_storage.get_gps_points() and len(self.filter_point(self.point_storage.get_gps_points(), self.source)) > 5):
             self.coordinate = [
                 sum(map(attr, random.sample(self.filter_point(self.point_storage.get_gps_points(), self.source), 5)))
                 / 5

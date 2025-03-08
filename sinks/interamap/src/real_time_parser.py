@@ -8,7 +8,7 @@ try:
     from src.config import BoardID, BOARD_FIELDS
 except ImportError:
     from data_struct import Point_GPS, Info_GPS
-    from config import BoardID, BOARD_FIELDS
+    from config import BoardID, BOARD_FIELDS # type: ignore
 
 
 def parse_gps_data(gps_data, data):
@@ -19,8 +19,8 @@ def parse_gps_data(gps_data, data):
     latitude = gps_data.get("GPS_LATITUDE", {"degs": 0, "mins": 0, "dmins": 0})
     longitude = gps_data.get("GPS_LONGITUDE", {"degs": 0, "mins": 0, "dmins": 0})
     altitude = gps_data.get("GPS_ALTITUDE", {"altitude": 0, "daltitude": 0})
-    num_sats = gps_data.get("GPS_INFO", {"num_sats": 0}).get("num_sats", 0)
-    board_id = data.get("board_id")
+    num_sats = gps_data.get("GPS_INFO", {"num_sats": -1}).get("num_sats", -1) # Default to -1 if num_sats is not available
+    board_id = data.get("board_type_id")
 
     # Convert coordinates to decimal degrees
     lat = convert_to_decimal_degrees(latitude)
@@ -33,6 +33,8 @@ def parse_gps_data(gps_data, data):
 
     # Combine altitude information
     alt = altitude.get("altitude", 0) + altitude.get("daltitude", 0) / 10000
+
+    timestamp = timestamp if timestamp is not None else "N/A"
 
     return Point_GPS(lon=lon, lat=lat, alt=alt, num_sats=num_sats, time_stamp=timestamp, board_id=board_id)
 
@@ -75,13 +77,20 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
     # Clear any initial data from the buffer
     receiver.recv()
 
+    # Combine all fields from BOARD_FIELDS into GENERAL_FIELDS
+    GENERAL_FIELDS = set()
+    for fields in BOARD_FIELDS.values():
+        GENERAL_FIELDS.update(fields)
+
+    print("Starting GPS data extraction loop")
+
     while running_checker():
         try:
             data = receiver.recv()
             msgtype = data.get("msg_type")
 
-            if msgtype in ["GPS_INFO", "GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]:
-                board_id = data.get("board_id")
+            if msgtype in GENERAL_FIELDS:
+                board_id = data.get("board_type_id")
                 # Immediately process GPS_INFO messages
                 if msgtype == "GPS_INFO":
                     process_func(parse_gps_info(data))
@@ -89,7 +98,7 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
 
             # Check for a complete set of messages for each board
             for board, keys in BOARD_FIELDS.items():
-                if all(key in gps[board] for key in keys):
+                if all(key in gps[board] for key in keys if key != "GPS_INFO"):
                     process_func(parse_gps_data(gps[board], data))
                     gps[board].clear()
 
