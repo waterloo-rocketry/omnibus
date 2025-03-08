@@ -54,7 +54,7 @@ try:
         }
         relative_last_read_time = relative_timestamps[-1] + READ_PERIOD
         if log:
-            log.write(cast(bytes, msgpack.packb(data)))
+            log.write(msgpack.packb(data))
 
         # Cool continuously updating print statment
         print("\rSending", end="")
