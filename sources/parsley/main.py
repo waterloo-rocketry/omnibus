@@ -40,7 +40,7 @@ class FileCommunicator:
         return self.file.read(4096)
 
     def write(self, msg: bytes):
-        print('cannot write to a file')
+        print('Cannot write to file: {msg}')
 
 # Acting as a fake usb debug board
 class FakeSerialCommunicator:
