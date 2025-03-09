@@ -32,6 +32,15 @@ class SerialCommunicator:
     def write(self, msg: bytes):
         self.serial.write(msg)
 
+class FileCommunicator:
+    def __init__(self, filename: str):
+        self.file = open(filename, mode='rb')
+
+    def read(self):
+        return self.file.read(4096)
+
+    def write(self, msg: bytes):
+        print('Cannot write to file: {msg}')
 
 # Acting as a fake usb debug board
 class FakeSerialCommunicator:
@@ -87,7 +96,7 @@ class FakeSerialCommunicator:
 def receive_commands(
     receiver: Receiver | None,
     sender_id: str,
-    communicator: SerialCommunicator | FakeSerialCommunicator,
+    communicator: SerialCommunicator | FakeSerialCommunicator | FileCommunicator,
 ) -> bool:  # True on received, false otherwise
 
     if not receiver:
@@ -126,7 +135,7 @@ def receive_commands(
 def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
-        "port",
+        "port_or_file",
         type=str,
         nargs="?",
         default="FAKEPORT",
@@ -150,18 +159,28 @@ def main():
         action="store_true",
         help="Don't read from hardware - uses fake data. Give any value for a port",
     )
+    argparser.add_argument(
+        "--file",
+        action="store_true",
+        help="Don't read from hardware - read from a file instead",
+    )
     args = argparser.parse_args()
 
-    if not args.fake:
-        if args.port == "FAKEPORT":
-            print("Please specify a serial port by name or use --fake")
-            exit(1)
-        communicator = SerialCommunicator(args.port, args.baud, 0)
-    else:
+    if args.fake:
         if args.format != "usb":
             print("Fake mode only supports usb format")
             exit(1)
         communicator = FakeSerialCommunicator()
+    elif args.file:
+        if args.format != "logger":
+            print("File mode only supports logger format")
+            exit(1)
+        communicator = FileCommunicator(args.port_or_file)
+    else:
+        if args.port_or_file == "FAKEPORT":
+            print("Please specify a serial port by name or use --fake")
+            exit(1)
+        communicator = SerialCommunicator(args.port_or_file, args.baud, 0)
 
     if args.format == "telemetry":
         parser = parsley.parse_live_telemetry
@@ -170,7 +189,7 @@ def main():
     else:
         parser = parsley.parse_usb_debug
 
-    sender_id = f"{gethostname()}/{args.format}/{args.port}"
+    sender_id = f"{gethostname()}/{args.format}/{args.port_or_file}"
 
     if args.solo:
         sender = None
