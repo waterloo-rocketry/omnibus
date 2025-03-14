@@ -67,6 +67,9 @@ def parse(msg_channel, msg_payload):
 # We note that parsers may use the func_map to call other parsers (This is how we plan
 # to handle CAN messages in the future)
 
+sums = {
+    "Feed Systems Mass": ["Anyload Load Cell", "Omega Load Cell", "STS Load Cell"],
+}
 
 @Register("DAQ")
 def daq_parser(msg_data):
@@ -75,6 +78,11 @@ def daq_parser(msg_data):
 
     for sensor, data in msg_data["data"].items():
         parsed_messages.append((sensor, timestamp, sum(data)/len(data)))
+
+    for series, sum_items in sums.items():
+        if all(sum_item in msg_data["data"] for sum_item in sum_items):
+            datas = (msg_data["data"][sum_item] for sum_item in sum_items)
+            parsed_messages.append((series, timestamp, sum(sum(data) / len(data) for data in datas)))
 
     return parsed_messages
 
