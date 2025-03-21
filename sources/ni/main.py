@@ -65,20 +65,22 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
 
             # read data config.READ_BULK at a time
             # ai.read returns a single array if there is only one sensor and a nested array otherwise
-            data = cast(
-                list[Any] | list[list[Any]],
+            data: list[float | int] | list[list[float | int]] = cast(
+                list[float | int] | list[list[float | int]],
                 ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5),
             )
             assert type(data) is list  # Ensure the above behaviour is enforced
 
             # make sure the data is a nested list to ensure consistency
             if data and not isinstance(data[0], list):
-                data = cast(list[list[Any]], [data])
-
+                data = cast(list[list[float | int]], [data])
+            
             # Ensure that list is either empty or nested
             assert (not data) or (type(data[0]) is list)
+            data = cast(list[list[float | int]], data)
 
             num_of_messages_read = 0 if not data else len(data[0])
+
 
             relative_timestamps = list(
                 range(

@@ -84,7 +84,7 @@ class Sensor:
 
     def __init__(self, name: str, channel: str, input_range: float | int,
                  connection: Connection,
-                 calibration: Calibration):
+                 calibration: Calibration) -> None:
         self.name = name
         self.channel = channel  # NI box channel, eg ai8
         self.input_range = input_range  # Voltage range for the NI box. 10, 5, 1 or 0.2.
@@ -97,7 +97,7 @@ class Sensor:
         Sensor.sensors.append(self)
 
     @staticmethod
-    def setup(ai: nidaqmx.Task):
+    def setup(ai: nidaqmx.Task) -> None:
         """
         Set up the NI analog input task with the initialized sensors.
         """
@@ -107,7 +107,7 @@ class Sensor:
                                                terminal_config=sensor.connection.value)
 
     @staticmethod
-    def print():
+    def print() -> None:
         """
         Pretty print the initialized sensors.
         """
@@ -116,11 +116,11 @@ class Sensor:
             print(f"  {sensor.name} ({sensor.calibration.unit}) on {sensor.channel}")
 
     @staticmethod
-    def parse(data) -> dict[str, list[float | int]]:
+    def parse(data: list[list[float | int]]) -> dict[str, list[float | int]]:
         """
         Apply each sensor's calibration to voltages from the NI box.
         """
-        res = {}
+        res: dict[str, list[float | int]] = {}
         for i, sensor in enumerate(Sensor.sensors):
-            res[sensor.name + f" ({sensor.calibration.unit})"] = [sensor.calibration.calibrate(d) for d in data[i]]
+            res[f"{sensor.name} ({sensor.calibration.unit})"] = [sensor.calibration.calibrate(d) for d in data[i]]
         return res

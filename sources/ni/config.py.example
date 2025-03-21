@@ -7,6 +7,8 @@
 
 from calibration import Sensor, Connection, LinearCalibration, ThermistorCalibration
 
+# pyright: basic
+
 RATE: int = 1000  # Analog data sample rate
 READ_BULK: int = 25  # Number of samples to read at once for better performance
 
@@ -94,7 +96,7 @@ def setup():
 
     ## HALL SENSORS ##
     
-    # 5V in Hall Sensor
+    # 5V INPUT Hall Sensor
     # Sensor("Hall Sensor", ports[5], 5, Connection.SINGLE, 
     # LinearCalibration(1000, 0, "mV")) 
     #-> [~ < 1000mV or > 4000 mV closed, ~2500 mV OPEN]
