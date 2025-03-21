@@ -6,7 +6,7 @@ import nidaqmx
 from omnibus import Sender
 import calibration
 
-from typing import cast, Any, NoReturn
+from typing import cast, NoReturn, TypedDict
 
 try:
     import config  # pyright: ignore[reportMissingImports]
@@ -42,6 +42,37 @@ CHANNEL = "DAQ"
 # Increment whenever data format change, so that new incompatible tools don't
 # attempt to read old logs / messages
 MESSAGE_FORMAT_VERSION = 2  # Backwards compatible with original version
+
+class DAQ_SEND_MESSAGE_TYPE(TypedDict):
+    timestamp: float
+    data: dict[str, list[float]]
+    """    
+    Each sensor groups a certain number of readings, the bulk read rate of the DAQ.
+    The length of that list corresponds to the length of relative_timestamps_nanoseconds below.
+    The floating point numbers are arbitrary values depending on the unit of the sensor configured when it was recorded.
+    """
+    # Example: {
+    #     "NPT-201: Nitrogen Fill PT (psi)": [1.3, 2.3, 4.3],
+    #     "OPT-201: Ox Fill PT (psi)": [2.3, 4.5, 7.2],
+    #     ...
+    # }
+    # 1.3 and 2.3 are the readings for each sensor at t0, 2.3 and 4.5 for t1, etc.
+
+    relative_timestamps_nanoseconds: list[int]
+    """
+    Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt_ns = 1/sample_rate * 10^9).
+    There can be variation of +- 1ns for every point, according to NI box data sheet, which is minimal.
+    Timestamps are based on initial time t_0 = time.time_ns(), meaning they should be always unique.
+    Unit is nanoseconds
+    """
+    # Example: [19, 22, 25] <- 1.3 and 2.3 from above was read at t0 = 19
+
+    # Rate at which the messages were read, in Hz, dt = 1/sample_rate
+    sample_rate: int
+
+    # Arbitrary constant that validates that the received message format is compatible
+    # Increment MESSAGE_FORMAT_VERSION both here and in the NI source whenever the structure changes
+    message_format_version: int
 
 
 def read_data(ai: nidaqmx.Task) -> NoReturn:
@@ -90,7 +121,7 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
                 )
             )
 
-            data_parsed = {
+            data_parsed: DAQ_SEND_MESSAGE_TYPE = {
                 "timestamp": time.time(),
                 "data": calibration.Sensor.parse(data),  # apply calibration
                 "relative_timestamps_nanoseconds": relative_timestamps,

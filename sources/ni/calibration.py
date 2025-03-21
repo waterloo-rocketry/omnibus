@@ -77,6 +77,12 @@ class Sensor:
 
     sensors: ClassVar[list[Self]] = []
 
+    name: str
+    channel: str
+    input_range: float | int
+    connection: Connection
+    calibration: Calibration
+
     """
     Represents a sensor plugged into the NI box. Instantiating members of this
     class sets up the sensors used with the static methods.
@@ -116,11 +122,11 @@ class Sensor:
             print(f"  {sensor.name} ({sensor.calibration.unit}) on {sensor.channel}")
 
     @staticmethod
-    def parse(data: list[list[float | int]]) -> dict[str, list[float | int]]:
+    def parse(sensor_values: list[list[float | int]]) -> dict[str, list[float | int]]:
         """
         Apply each sensor's calibration to voltages from the NI box.
         """
         res: dict[str, list[float | int]] = {}
         for i, sensor in enumerate(Sensor.sensors):
-            res[f"{sensor.name} ({sensor.calibration.unit})"] = [sensor.calibration.calibrate(d) for d in data[i]]
+            res[f"{sensor.name} ({sensor.calibration.unit})"] = [sensor.calibration.calibrate(d) for d in sensor_values[i]]
         return res
