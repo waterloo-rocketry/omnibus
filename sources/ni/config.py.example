@@ -91,6 +91,14 @@ def setup():
     # Sensor("Anemometer m/s", ports[5], 10, Connection.SINGLE,
     # LinearCalibration(32.4 / (2 - 0.4) / 0.725, -0.4 * 32.4 / (2 - 0.4) / 0.725, "m/s"))
 
+
+    ## HALL SENSORS ##
+    
+    # 5V in Hall Sensor
+    # Sensor("Hall Sensor", ports[5], 5, Connection.SINGLE, 
+    # LinearCalibration(1000, 0, "mV")) 
+    #-> [~ < 1000mV or > 4000 mV closed, ~2500 mV OPEN]
+
     """
     Everything below here is just for documentation purposes
     """

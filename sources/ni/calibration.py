@@ -3,13 +3,15 @@ import math
 
 import nidaqmx
 
+from typing import ClassVar, Self
 
 class Connection(Enum):
     """
     Represents how a sensor is wired into the NI box.
     """
-    SINGLE = nidaqmx.constants.TerminalConfiguration.RSE  # ground referenced single ended
-    DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.DIFF
+    # ground referenced single ended
+    SINGLE = nidaqmx.constants.TerminalConfiguration.RSE  # pyright: ignore[reportAttributeAccessIssue]
+    DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.DIFF # pyright: ignore[reportAttributeAccessIssue]
 
 
 class Calibration:
@@ -72,7 +74,9 @@ class ThermistorCalibration(Calibration):
 
 
 class Sensor:
-    sensors = []
+
+    sensors: ClassVar[list[Self]] = []
+
     """
     Represents a sensor plugged into the NI box. Instantiating members of this
     class sets up the sensors used with the static methods.
@@ -118,5 +122,5 @@ class Sensor:
         """
         res = {}
         for i, sensor in enumerate(Sensor.sensors):
-            res[sensor.name] = [sensor.calibration.calibrate(d) for d in data[i]]
+            res[sensor.name + f" ({sensor.calibration.unit})"] = [sensor.calibration.calibrate(d) for d in data[i]]
         return res
