@@ -26,6 +26,7 @@ class TVCControllerActSlider(DashboardItem):
         self.setLayout(self.layout)
 
         self.slider = QSlider()
+        # TODO, make this a property
         self.slider.setMinimum(-100)
         self.slider.setMaximum(100)
         self.text = QLineEdit()

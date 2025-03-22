@@ -63,11 +63,13 @@ class TVCControllerPreset(DashboardItem):
                         'data': {
                             'time': time.time(),
                             'can_msg': {
-                                'msg_type': 'ACTUATOR_CMD',
-                                'board_id': 'ANY',
-                                'time': 0,
-                                'actuator': 'ACTUATOR_CHARGE_AIRBRAKE',
-                                'req_state': int(v1)
+                                'msg_prio': 'LOW',
+                                'msg_type': 'ACTUATOR_ANALOG_CMD',
+                                'board_type_id': 'ANY',
+                                'board_inst_id': 'ANY',
+                                'time': 1,
+                                'actuator': 'ACTUATOR_TVC_TARGET_1',
+                                'cmd_state': int(v1)
                                 },  # contains the message data bits
                         }
                     }
@@ -76,11 +78,13 @@ class TVCControllerPreset(DashboardItem):
                         'data': {
                             'time': time.time(),
                             'can_msg': {
-                                'msg_type': 'ACTUATOR_CMD',
-                                'board_id': 'ANY',
-                                'time': 0,
-                                'actuator': 'ACTUATOR_CHARGE_PAYLOAD',
-                                'req_state': int(v2)
+                                'msg_prio': 'LOW',
+                                'msg_type': 'ACTUATOR_ANALOG_CMD',
+                                'board_type_id': 'ANY',
+                                'board_inst_id': 'ANY',
+                                'time': 1,
+                                'actuator': 'ACTUATOR_TVC_TARGET_2',
+                                'cmd_state': int(v1)
                                 },  # contains the message data bits
                         }
                     }
@@ -89,8 +93,6 @@ class TVCControllerPreset(DashboardItem):
                     self.msg_seq.extend([None] * int(arr[0]))
 
             publisher.subscribe_clock(1, self.on_clock_update)
-
-
 
     def on_clock_update(self, _):
         if len(self.msg_seq) == 0:
