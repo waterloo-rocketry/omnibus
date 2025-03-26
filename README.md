@@ -22,12 +22,12 @@ Note that the production build of Omnibus targets **Python 3.11**. All code cont
    - First install the virtualenv library: `pip install virtualenv`
    - Create the venv: `python -m venv venv`
 4. Activate the virtual environment:
-   - For osx/linux: `source venv/bin/activate`
-   - For windows using Git Bash: `source venv/Scripts/activate`
+   - For Mac/Linux: `source venv/bin/activate`
+   - For Windows using Git Bash: `source venv/Scripts/activate`
 5. There are two ways to install Omnibus. The setup script is the easiest method, but if it doesn't work you can manually install the required packages
    1. Setup script:
-      - For osx/linux: `source setup.sh`
-      - For windows using Git Bash: `./setup.bat`
+      - For Mac/Linux: `source setup.sh`
+      - For Windows using Git Bash: `./setup.bat`
    2. Manual installation:
       - Upgrade pip version: `pip install --upgrade pip`
       - Run `pip install wheel`, which will help install the rest of the packages more quickly
