@@ -1,7 +1,7 @@
 from publisher import publisher
 from pyqtgraph.Qt.QtWidgets import QGridLayout
 import pyqtgraph as pg
-
+import numpy as np
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
@@ -53,8 +53,16 @@ class PlotDashItem(DashboardItem):
         series_param = SeriesChecklistParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
-        return [series_param, limit_param, offset_param]
-
+        show_slope_param = {'name': 'Show Slope', 'type': 'bool', 'value': False}
+        num_points_param = {'name': 'Number of Points', 'type': 'int', 'value': 10, 'limits': (1, None)}
+        return [series_param, limit_param, offset_param, show_slope_param, num_points_param]
+    def calculate_slope(self, times, points, n):
+        if len(times) < n or len(points) < n:
+            return np.nan
+        x = np.array(times[-n:])
+        y = np.array(points[-n:])
+        slope, _ = np.polyfit(x, y, 1)
+        return slope
     def on_series_change(self, param, value):
         if len(value) > 6:
             self.parameters.param('series').setValue(value[:6])
@@ -102,7 +110,12 @@ class PlotDashItem(DashboardItem):
         time, point = payload
 
         point += self.offset
-
+        # if Show Slope can be activated
+        if len(self.series) > 2:
+            self.parameters.param('Show Slope').setValue(False)
+            self.parameters.param('Show Slope').setOpts(enabled=False)
+        else:
+            self.parameters.param('Show Slope').setOpts(enabled=True)
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
@@ -162,6 +175,13 @@ class PlotDashItem(DashboardItem):
                            if self.points[item] else 0 for item in self.series]
             for v in last_values:
                 current_values += f"[{v: < 4.4f}] "
+        if self.parameters.param('Show Slope').value():
+            slope_values = []
+            for stream in self.series:
+                slope = self.calculate_slope(self.times[stream], self.points[stream],
+                                            self.parameters.param('Number of Points').value())
+                slope_values.append(f"[{slope:.2f}]")
+            current_values += f"    Slope: {' '.join(slope_values)}"
 
         # 100 CHARS MAX for title
         series_name = f"{series_name[:100]}..." if len(series_name) > 100 else series_name
