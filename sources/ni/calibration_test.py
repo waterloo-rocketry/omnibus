@@ -1,6 +1,6 @@
 import pytest
 
-from calibration import LinearCalibration, ThermistorCalibration
+from calibration import LinearCalibration, ThermistorCalibration, Sensor, Connection
 
 
 class TestLinearCalibration:
@@ -37,3 +37,11 @@ class TestThermistorCalibration:
         assert c.calibrate(3) == pytest.approx(35.9, 0.1)
         assert c.calibrate(2) == pytest.approx(14.9, 0.1)
         assert c.calibrate(1) == pytest.approx(-7, 0.1)
+
+
+class TestSensorParser:
+    def test_parsing(self):
+        _ = Sensor("Test", "TEST", 10, Connection.SINGLE, LinearCalibration(5, 0, "units"))
+        parsed = Sensor.parse([[1,2,3,4,5]])
+        assert "Test (units)" in parsed
+        assert parsed["Test (units)"] == [5,10,15,20,25]

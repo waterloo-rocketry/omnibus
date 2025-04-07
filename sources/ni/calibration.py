@@ -3,13 +3,15 @@ import math
 
 import nidaqmx
 
+from typing import ClassVar, Self
 
 class Connection(Enum):
     """
     Represents how a sensor is wired into the NI box.
     """
-    SINGLE = nidaqmx.constants.TerminalConfiguration.RSE  # ground referenced single ended
-    DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.DIFF
+    # ground referenced single ended
+    SINGLE = nidaqmx.constants.TerminalConfiguration.RSE  # pyright: ignore[reportAttributeAccessIssue]
+    DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.DIFF # pyright: ignore[reportAttributeAccessIssue]
 
 
 class Calibration:
@@ -72,7 +74,15 @@ class ThermistorCalibration(Calibration):
 
 
 class Sensor:
-    sensors = []
+
+    sensors: ClassVar[list[Self]] = []
+
+    name: str
+    channel: str
+    input_range: float | int
+    connection: Connection
+    calibration: Calibration
+
     """
     Represents a sensor plugged into the NI box. Instantiating members of this
     class sets up the sensors used with the static methods.
@@ -80,7 +90,7 @@ class Sensor:
 
     def __init__(self, name: str, channel: str, input_range: float | int,
                  connection: Connection,
-                 calibration: Calibration):
+                 calibration: Calibration) -> None:
         self.name = name
         self.channel = channel  # NI box channel, eg ai8
         self.input_range = input_range  # Voltage range for the NI box. 10, 5, 1 or 0.2.
@@ -93,7 +103,7 @@ class Sensor:
         Sensor.sensors.append(self)
 
     @staticmethod
-    def setup(ai: nidaqmx.Task):
+    def setup(ai: nidaqmx.Task) -> None:
         """
         Set up the NI analog input task with the initialized sensors.
         """
@@ -103,7 +113,7 @@ class Sensor:
                                                terminal_config=sensor.connection.value)
 
     @staticmethod
-    def print():
+    def print() -> None:
         """
         Pretty print the initialized sensors.
         """
@@ -112,11 +122,11 @@ class Sensor:
             print(f"  {sensor.name} ({sensor.calibration.unit}) on {sensor.channel}")
 
     @staticmethod
-    def parse(data) -> dict[str, list[float | int]]:
+    def parse(sensor_values: list[list[float | int]]) -> dict[str, list[float | int]]:
         """
         Apply each sensor's calibration to voltages from the NI box.
         """
-        res = {}
+        res: dict[str, list[float | int]] = {}
         for i, sensor in enumerate(Sensor.sensors):
-            res[sensor.name] = [sensor.calibration.calibrate(d) for d in data[i]]
+            res[f"{sensor.name} ({sensor.calibration.unit})"] = [sensor.calibration.calibrate(d) for d in sensor_values[i]]
         return res
