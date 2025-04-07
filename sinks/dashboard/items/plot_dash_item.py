@@ -58,7 +58,7 @@ class PlotDashItem(DashboardItem):
         num_points_param = {'name': 'Slope: Num. of Points in Approx.', 'type': 'int', 'value': 10, 'limits': (2, None), 'visible': False} #How many points to use to calculate slope
         return [series_param, limit_param, offset_param, show_slope_param, num_points_param]
     
-    def _calculate_slope(self, times, points, num_points):
+    def _calculate_slope(self, times: list[float], points: list[float], num_points: int) -> [Return Type?]:
         if len(times) < num_points or len(points) < num_points:
             return np.nan
         x = np.array(times[-num_points:])
