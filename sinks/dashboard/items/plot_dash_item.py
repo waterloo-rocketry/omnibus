@@ -55,7 +55,7 @@ class PlotDashItem(DashboardItem):
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         show_slope_param = {'name': 'Show Slope of Linear Approx.', 'type': 'bool', 'value': False}
-        num_points_param = {'name': 'Number of Points', 'type': 'int', 'value': 10, 'limits': (2, None), 'visible': False} #How many points to use to calculate slope
+        num_points_param = {'name': 'Slope: Num. of Points in Approx.', 'type': 'int', 'value': 10, 'limits': (2, None), 'visible': False} #How many points to use to calculate slope
         return [series_param, limit_param, offset_param, show_slope_param, num_points_param]
     
     def _calculate_slope(self, times, points, num_points):
