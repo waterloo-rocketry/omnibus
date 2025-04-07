@@ -27,6 +27,7 @@ class PlotDashItem(DashboardItem):
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
+        self.parameters.param('Show Slope').sigValueChanged.connect(self.on_show_slope_toggle)
 
         self.series = self.parameters.param('series').value()
         # just a single global offset for now
@@ -53,16 +54,21 @@ class PlotDashItem(DashboardItem):
         series_param = SeriesChecklistParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
-        show_slope_param = {'name': 'Show Slope', 'type': 'bool', 'value': False}
-        num_points_param = {'name': 'Number of Points', 'type': 'int', 'value': 10, 'limits': (1, None)}
+        show_slope_param = {'name': 'Show Slope', 'type': 'bool', 'value': False} #Toggle Show points
+        num_points_param = {'name': 'Number of Points', 'type': 'int', 'value': 10, 'limits': (2, None), 'visible': False} #How many points to use to calculate slope
         return [series_param, limit_param, offset_param, show_slope_param, num_points_param]
-    def calculate_slope(self, times, points, n):
-        if len(times) < n or len(points) < n:
+    
+    def _calculate_slope(self, times, points, num_points):
+        if len(times) < num_points or len(points) < num_points:
             return np.nan
-        x = np.array(times[-n:])
-        y = np.array(points[-n:])
+        x = np.array(times[-num_points:])
+        y = np.array(points[-num_points:])
         slope, _ = np.polyfit(x, y, 1)
         return slope
+    
+    def on_show_slope_toggle(self, _, value):
+        self.parameters.param('Number of Points').setOpts(visible=value)
+
     def on_series_change(self, param, value):
         if len(value) > 6:
             self.parameters.param('series').setValue(value[:6])
@@ -178,7 +184,7 @@ class PlotDashItem(DashboardItem):
         if self.parameters.param('Show Slope').value():
             slope_values = []
             for stream in self.series:
-                slope = self.calculate_slope(self.times[stream], self.points[stream],
+                slope = self._calculate_slope(self.times[stream], self.points[stream],
                                             self.parameters.param('Number of Points').value())
                 slope_values.append(f"[{slope:.2f}]")
             current_values += f"    Slope: {' '.join(slope_values)}"
