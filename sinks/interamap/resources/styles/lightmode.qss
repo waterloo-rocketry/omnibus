@@ -6,7 +6,7 @@ QMainWindow {
 
 /* Styling for Central Widget */
 QWidget#centralWidget {
-    background-color: #ffffff;  /* White background for central widget */
+    background-color: #e0e0e0;  /* Light gray for better contrast in dark mode */
     border-radius: 10px;        /* Rounded corners */
     padding: 10px;              /* Padding around the content */
 }
@@ -15,12 +15,13 @@ QWidget#centralWidget {
 QWebEngineView {
     border: 2px solid #4CAF50;  /* Green border for the map view */
     border-radius: 5px;         /* Rounded corners */
+    background-color: #ffffff;  /* Ensure background is white */
 }
 
 /* Title Bar Customization */
 QMainWindow::title {
     background-color: #4CAF50;   /* Green background for the title bar */
-    color: #ffffff;              /* White text color for the title */
+    color: #000000;              /* Ensure text is black */
     font-weight: bold;           /* Bold font for the title */
     padding: 5px;                /* Padding around the title text */
 }
@@ -33,7 +34,7 @@ QVBoxLayout {
 /* Button Style */
 QPushButton {
     background-color: #4CAF50;  /* Green button background */
-    color: #ffffff;             /* White text color */
+    color: #000000;             /* Force black text */
     border: 1px solid #388E3C;  /* Slightly darker green border */
     border-radius: 5px;         /* Rounded corners */
     padding: 8px 16px;          /* Padding for button text */
@@ -51,59 +52,61 @@ QPushButton:pressed {
 
 /* Label Style */
 QLabel {
-    color: #333333;             /* Dark gray text color */
+    color: #000000;             /* Force black text color */
     font-size: 14px;            /* Font size */
     font-weight: normal;        /* Normal weight text */
     padding: 2px;               /* Padding around text */
 }
 
-/* ScrollBar Style */
-QScrollBar:vertical {
-    border: none;
-    background: #f0f0f0;  /* Light gray background for the scrollbar */
-    width: 12px;           /* Width of the scrollbar */
-    margin: 15px 0 15px 0; /* Margins around the scrollbar */
-}
-
-QScrollBar::handle:vertical {
-    background: #4CAF50;    /* Green color for scrollbar handle */
-    min-height: 20px;       /* Minimum height for the handle */
-    border-radius: 5px;     /* Rounded corners */
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    background: none;       /* No arrows */
-}
-
-/* Input Fields (LineEdit) */
+/* Text Field (QLineEdit) */
 QLineEdit {
     background-color: #ffffff;  /* White background */
-    border: 1px solid #d3d3d3;  /* Light gray border */
-    padding: 5px;               /* Padding */
-    border-radius: 4px;         /* Rounded corners */
-    font-size: 14px;            /* Font size */
+    color: #000000;             /* Black text */
+    border: 1px solid #d3d3d3;
+    padding: 5px;
 }
 
-/* CheckBox Style */
-QCheckBox {
-    font-size: 14px;         /* Font size for checkboxes */
-    color: #333333;          /* Text color */
-    padding: 5px;            /* Padding */
+/* Scroll Area */
+QScrollArea {
+    background-color: #e0e0e0;  /* Light gray background */
 }
 
-QCheckBox::indicator {
-    width: 15px;
-    height: 15px;
+/* ComboBox Styling */
+QComboBox {
+    background-color: #ffffff;  /* White background */
+    color: #000000;  /* Black text */
+    border: 1px solid #4CAF50;  /* Green border */
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 14px;
 }
 
-QCheckBox::indicator:checked {
-    background-color: #4CAF50;  /* Green background for checked boxes */
-    border: 1px solid #388E3C;  /* Darker green border */
-    border-radius: 3px;         /* Rounded corners */
+/* Dropdown menu */
+QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    selection-background-color: #4CAF50;  /* Highlight color */
+    selection-color: #000000;             /* Ensure black text */
+    border: 1px solid #4CAF50;
+    border-radius: 8px;                   /* Rounded corners for a cover look */
+    padding: 4px;                         /* Extra padding for a cushioned appearance */
 }
 
-QCheckBox::indicator:unchecked {
-    background-color: #f0f0f0;  /* Light gray for unchecked boxes */
-    border: 1px solid #d3d3d3;  /* Light gray border */
-    border-radius: 3px;         /* Rounded corners */
+/* When ComboBox is hovered */
+QComboBox:hover {
+    background-color: #f0f0f0;
+}
+
+
+/* When ComboBox is clicked */
+QComboBox:on {
+    background-color: #e0e0e0;
+    border: 2px solid #4CAF50;
+}
+
+/* Drop-down button */
+QComboBox::drop-down {
+    border: none;
+    subcontrol-origin: padding;
+    subcontrol-position: right;
+    width: 20px;
 }
