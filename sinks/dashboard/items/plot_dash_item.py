@@ -27,11 +27,12 @@ class PlotDashItem(DashboardItem):
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
-        self.parameters.param('Show Slope').sigValueChanged.connect(self.on_show_slope_toggle)
+        self.parameters.param('Show Slope of Linear Approx.').sigValueChanged.connect(self.on_show_slope_toggle)
 
         self.series = self.parameters.param('series').value()
         # just a single global offset for now
         self.offset = self.parameters.param('offset').value()
+        self.on_show_slope_toggle(None, self.parameters.param('Show Slope of Linear Approx.').value())
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -58,7 +59,7 @@ class PlotDashItem(DashboardItem):
         num_points_param = {'name': 'Slope: Num. of Points in Approx.', 'type': 'int', 'value': 10, 'limits': (2, None), 'visible': False} #How many points to use to calculate slope
         return [series_param, limit_param, offset_param, show_slope_param, num_points_param]
     
-    def _calculate_slope(self, times: list[float], points: list[float], num_points: int) -> [Return Type?]:
+    def _calculate_slope(self, times: list[float], points: list[float], num_points: int) -> float:
         if len(times) < num_points or len(points) < num_points:
             return np.nan
         x = np.array(times[-num_points:])
@@ -67,7 +68,7 @@ class PlotDashItem(DashboardItem):
         return slope
     
     def on_show_slope_toggle(self, _, value):
-        self.parameters.param('Number of Points').setOpts(visible=value)
+        self.parameters.param('Slope: Num. of Points in Approx.').setOpts(visible=value)
 
     def on_series_change(self, param, value):
         if len(value) > 6:
@@ -118,10 +119,10 @@ class PlotDashItem(DashboardItem):
         point += self.offset
         # if Show Slope can be activated
         if len(self.series) > 2:
-            self.parameters.param('Show Slope').setValue(False)
-            self.parameters.param('Show Slope').setOpts(enabled=False)
+            self.parameters.param('Show Slope of Linear Approx.').setValue(False)
+            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=False)
         else:
-            self.parameters.param('Show Slope').setOpts(enabled=True)
+            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=True)
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
@@ -181,13 +182,13 @@ class PlotDashItem(DashboardItem):
                            if self.points[item] else 0 for item in self.series]
             for v in last_values:
                 current_values += f"[{v: < 4.4f}] "
-        if self.parameters.param('Show Slope').value():
+        if self.parameters.param('Show Slope of Linear Approx.').value():
             slope_values = []
             for stream in self.series:
                 slope = self._calculate_slope(self.times[stream], self.points[stream],
-                                            self.parameters.param('Number of Points').value())
+                                            self.parameters.param('Slope: Num. of Points in Approx.').value())
                 slope_values.append(f"[{slope:.2f}]")
-            current_values += f"    Slope: {' '.join(slope_values)}"
+            current_values += f"    Slope (/sec): {' '.join(slope_values)} "
 
         # 100 CHARS MAX for title
         series_name = f"{series_name[:100]}..." if len(series_name) > 100 else series_name
