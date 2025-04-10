@@ -63,7 +63,8 @@ class PlotDashItem(DashboardItem):
         if len(times) < num_points or len(points) < num_points:
             return np.nan
         x = np.array(times[-num_points:])
-        y = np.array(points[-num_points:])
+        x = np.array(times[-num_points:], dtype=np.float64)
+        y = np.array(points[-num_points:], dtype=np.float64)
         slope, _ = np.polyfit(x, y, 1)
         return slope
     
