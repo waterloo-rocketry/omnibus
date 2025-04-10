@@ -66,7 +66,10 @@ class PlotDashItem(DashboardItem):
         x = np.array(times[-num_points:], dtype=np.float64)
         y = np.array(points[-num_points:], dtype=np.float64)
         slope, _ = np.polyfit(x, y, 1)
-        return slope
+        # polyfit returns coefficients of polynomial
+        # ax+b => p = [a, b]
+        p = np.polyfit(x, y, deg=1)
+        return p.item(0)
     
     def on_show_slope_toggle(self, _, value):
         self.parameters.param('Slope: Num. of Points in Approx.').setOpts(visible=value)
