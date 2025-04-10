@@ -184,7 +184,7 @@ class PlotDashItem(DashboardItem):
             for v in last_values:
                 current_values += f"[{v: < 4.4f}] "
         if self.parameters.param('Show Slope of Linear Approx.').value():
-            slope_values = []
+            slope_values: list[str] = []
             for stream in self.series:
                 slope = self._calculate_slope(self.times[stream], self.points[stream],
                                             self.parameters.param('Slope: Num. of Points in Approx.').value())
