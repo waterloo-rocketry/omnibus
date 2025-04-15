@@ -4,7 +4,7 @@ from pyqtgraph.parametertree.parameterTypes import ListParameter
 from pyqtgraph.Qt.QtGui import QFont
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 import pyqtgraph as pg
-
+import numpy as np
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
@@ -35,6 +35,7 @@ class StandardDisplayItem(DashboardItem):
         self.parameters.param('font-size').sigValueChanged.connect(self.on_font_size_change)
         self.parameters.param('num-decimals').sigValueChanged.connect(self.on_decimal_change)
         self.parameters.param('display-sparkline').sigValueChanged.connect(self.on_display_sparkline_change)
+        self.parameters.param('Show Slope of Linear Approx.').sigValueChanged.connect(self.on_show_slope_toggle)
 
         self.expired_timeout = QTimer()
         self.expired_timeout.setSingleShot(True)
@@ -44,6 +45,7 @@ class StandardDisplayItem(DashboardItem):
         self.series = [self.parameters.param('series').value()]
         # just a single global offset for now
         self.offset = self.parameters.param('offset').value()
+        self.on_show_slope_toggle(None, self.parameters.param('Show Slope of Linear Approx.').value())
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -89,11 +91,26 @@ class StandardDisplayItem(DashboardItem):
         series_param = SeriesListParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0.0}
+        show_slope_param = {'name': 'Show Slope of Linear Approx.', 'type': 'bool', 'value': False}
+        num_points_param = {'name': 'Slope: Num. of Points in Approx.', 'type': 'int', 'value': 10, 'limits': (2, None), 'visible': False}
         font_size_param = {'name': 'font-size', 'type': 'int', 'value': 15, 'limits': (10, 30)}
         num_decimals_param = {'name': 'num-decimals', 'type': 'int', 'value': 2, 'limits': (0, 6)}
         display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': True}
-        return [text_param, series_param, limit_param, offset_param, display_sparkline_param, font_size_param, num_decimals_param]
-
+        return [text_param, series_param, limit_param, offset_param, display_sparkline_param, font_size_param, num_decimals_param,show_slope_param, num_points_param]
+    
+    def _calculate_slope(self, times: list[float], points: list[float], num_points: int) -> float:
+        if len(times) < num_points or len(points) < num_points:
+            return np.nan
+        x = np.array(times[-num_points:], dtype=np.float64)
+        y = np.array(points[-num_points:], dtype=np.float64)
+        # polyfit returns coefficients of polynomial
+        # ax+b => p = [a, b]
+        p = np.polyfit(x, y, deg=1)
+        return p.item(0)
+    
+    def on_show_slope_toggle(self, _, value):
+        self.parameters.param('Slope: Num. of Points in Approx.').setOpts(visible=value)
+    
     def on_series_change(self, param, value):
         self.series = [value]
         # resubscribe to the new stream
@@ -172,10 +189,17 @@ class StandardDisplayItem(DashboardItem):
         time, point = payload
         point += self.offset
 
+        if len(self.series) > 2:
+            self.parameters.param('Show Slope of Linear Approx.').setValue(False)
+            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=False)
+        else:
+            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=True)
+
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
-
+        
+    
         self.last[stream] = time
         self.times[stream].append(time)
         self.points[stream].append(point)
