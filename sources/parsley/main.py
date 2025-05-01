@@ -242,7 +242,7 @@ def main():
                     i = next((i for i, b in enumerate(buffer) if b == 0x02), -1)
                     if i < 0 or i + 1 >= len(buffer):
                         break
-                    msg_len = buffer[i + 1] >> 4
+                    msg_len = buffer[i + 1]
                     if i + msg_len > len(buffer):
                         break
                     msg = buffer[i : i + msg_len]
