@@ -78,117 +78,77 @@ class DAQDataProcessor:
         self._unprocessed_datapoints = deque()
 
     # TODO: Unpack onto disk rather than into RAM, reduces possibility of OOM error
-    def process(self):
+    def process(self, output_file_path: str) -> str:
         """
         Begin data processing. Blocking call.
         """
-        self._unpack()
-        self._expand_and_structure_all_datapoints()
+        return self._unpack_and_stream_to_csv(output_file_path)
 
-    def _unpack(self) -> None:
-        """Unpack msgpacked globallog containing DAQ data"""
+    def _unpack_and_stream_to_csv(self, output_file_path: str) -> str:
+        export_size = "N/A"
 
-        unpacker = msgpack.Unpacker(
-            self._log_file_stream  # pyright: ignore[reportArgumentType]
-        )
-
-        for msg in unpacker:
-            # Assuming the globallog is not corrupted, this should be true
-            assert type(msg) is list
-            msg = cast(list[float | str | DAQ_RECEIVED_MESSAGE_TYPE], msg)
-
-            # Example ["DAQ", 12345.02, {data here}]
-            assert len(msg) == 3
-            assert type(msg[0]) is str
-            assert type(msg[1]) is float
-            assert type(msg[2]) is dict
-
-            channel, _, unpacked_data = cast(
-                tuple[str, float, DAQ_RECEIVED_MESSAGE_TYPE], tuple(msg)
+        with open(output_file_path, "w") as outfile:
+            writer = csv.writer(outfile)
+            
+            unpacker = msgpack.Unpacker(
+                self._log_file_stream  # pyright: ignore[reportArgumentType]
             )
+            wrote_header = False
 
-            if channel != self._expected_channel:
-                continue
+            for msg in unpacker:
+                # Assuming the globallog is not corrupted, this should be true
+                assert type(msg) is list
+                msg = cast(list[float | str | DAQ_RECEIVED_MESSAGE_TYPE], msg)
 
-            # Verify the message version
-            if ("message_format_version" not in unpacked_data) or (
-                unpacked_data["message_format_version"] != MESSAGE_FORMAT_VERSION
-            ):
-                raise AssertionError(
-                    "[FATAL] [DAQ Unpacker] This version of data processing is not compatible with the DAQ messages provided!"
+                # Example ["DAQ", 12345.02, {data here}]
+                assert len(msg) == 3
+                assert type(msg[0]) is str
+                assert type(msg[1]) is float
+                assert type(msg[2]) is dict
+
+                channel, _, unpacked_data = cast(
+                    tuple[str, float, DAQ_RECEIVED_MESSAGE_TYPE], tuple(msg)
                 )
 
-            # Verify that the unpacked_data is actually valid
-            for key in DAQ_EXPECTED_RECEIVE_DATA_FORMAT.keys():
-                if key not in unpacked_data:
-                    print(
-                        f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
-                        file=sys.stderr,
-                    )
+                if channel != self._expected_channel:
+                    print(f"[SKIP] Channel mismatch: expected {self._expected_channel}, got {channel}")
                     continue
-                # Cast to object to check that item's type
-                if (
-                    type(cast(object, unpacked_data[key]))
-                    != DAQ_EXPECTED_RECEIVE_DATA_FORMAT[key]
+                
+                # Verify the message version
+                if ("message_format_version" not in unpacked_data) or (
+                    unpacked_data["message_format_version"] != MESSAGE_FORMAT_VERSION
                 ):
-                    print(
-                        f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
-                        file=sys.stderr,
+                    raise AssertionError(
+                        "[FATAL] [DAQ Unpacker] This version of data processing is not compatible with the DAQ messages provided!"
                     )
-                    continue
+                
+                # Verify that the unpacked_data is actually valid
+                for key in DAQ_EXPECTED_RECEIVE_DATA_FORMAT.keys():
+                    if key not in unpacked_data:
+                        print(
+                            f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
+                            file=sys.stderr,
+                        )
+                        continue
+                    # Cast to object to check that item's type
+                    if (
+                        type(cast(object, unpacked_data[key]))
+                        != DAQ_EXPECTED_RECEIVE_DATA_FORMAT[key]
+                    ):
+                        print(
+                            f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
+                            file=sys.stderr,
+                        )
+                        continue
 
-            self._unprocessed_datapoints.append(unpacked_data)
-
-    def _expand_and_structure_datapoint(
-        self, unprocessed_datapoint: DAQ_RECEIVED_MESSAGE_TYPE
-    ) -> list[DAQDataStructure]:
-        """
-        Expand single unprocessed datapoints, containing a grouping of datapoints
-        into a list of single datapoints.
-        """
-        sensors = list(unprocessed_datapoint["data"].keys())
-        results: list[DAQDataStructure] = []
-        for i, timestamp in enumerate(
-            unprocessed_datapoint["relative_timestamps_nanoseconds"]
-        ):
-            # The index of the timestamp array corresponds to the index of the sensor reading that was taken at that point in time
-            # Value at given timestamp for the sensor at the corresponding index in the sensors array
-            sensor_values: list[float] = []
-            for sensor in sensors:
-                sensor_values.append(unprocessed_datapoint["data"][sensor][i])
-
-            processed_point = DAQDataStructure(
-                unprocessed_datapoint["timestamp"], timestamp, sensors, sensor_values
-            )
-            results.append(processed_point)
-        return results
-
-    def _expand_and_structure_all_datapoints(self) -> None:
-        """
-        Expand all datapoints in self._unprocessed_datapoints, popping as we go through the queue.
-        """
-        self.processed_data = deque()
-        while self._unprocessed_datapoints:
-            unprocessed_datapoint = self._unprocessed_datapoints.popleft()
-            expanded_points = self._expand_and_structure_datapoint(
-                unprocessed_datapoint
-            )
-            for p in expanded_points:
-                self.processed_data.append(p)
-
-    def csv_ify(self, file_path: str) -> str:
-        """
-        Create CSV file from unpacked DAQ data.
-        The first column will always be the timestamp in nanoseconds
-        """
-        assert self.processed_data  # Make sure we have processed the data
-        formatted_can_size = "N/A"
-        # TODO: Make this better (dynamic column creation, select which cols, etc.)
-        with open(file_path, "w") as outfile:
-            writer = csv.writer(outfile)
-            writer.writerow(["Timestamp (ns) +- 10ns"] + self.processed_data[0].sensors)
-            for datapoint in self.processed_data:
-                writer.writerow([datapoint.ni_relative_timestamp] + datapoint.values)
-            export_size = os.path.getsize(file_path)
-            formatted_can_size = "{:.2f} MB".format(export_size / (1024 * 1024))
-        return formatted_can_size
+                sensors = list(unpacked_data["data"].keys())
+                if not wrote_header:
+                    writer.writerow(["Timestamp (ns) +- 10ns"] + sensors)
+                    wrote_header = True
+                
+                for i, timestamp in enumerate(unpacked_data["relative_timestamps_nanoseconds"]):
+                    values = [unpacked_data["data"][sensor][i] for sensor in sensors]
+                    writer.writerow([timestamp] + values)
+            
+        export_size = os.path.getsize(output_file_path)
+        return "{:.2f} MB".format(export_size / (1024 * 1024))
