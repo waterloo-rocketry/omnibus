@@ -6,9 +6,7 @@ import argparse
 from datetime import datetime
 import secrets
 
-GLOBAL_LOG_FILE = "[PATH HERE]"
 CHANNEL = "DAQ"
-OUTPUT_CSV_FILE = "[PATH HERE]"
 
 def generate_filename(input_file: str) -> str:
     # Creating file name with date + random hash
@@ -21,7 +19,7 @@ def run_daq_command(input_file: str, output_file: str | None):
     out_path = os.path.join(os.path.dirname(input_file), out_file)
 
     with open(input_file, "rb") as file:
-        processor = DAQDataProcessor(file, "DAQ/Fake")
+        processor = DAQDataProcessor(file, CHANNEL)
         size = processor.process(out_path)
 
 
