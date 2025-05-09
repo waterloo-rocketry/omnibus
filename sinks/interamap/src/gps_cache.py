@@ -1,7 +1,7 @@
-import pathlib
 import zipfile
 from datetime import datetime
 from enum import IntEnum
+import os
 
 from PySide6.QtCore import QThread, Signal
 from fastkml import kml, geometry, times
@@ -24,6 +24,9 @@ class GPS_Cache(QThread):
         QThread.__init__(self)
         self.gps_points = []
         self.gps_linestrings = []
+        self.relative_path = os.path.dirname(
+            os.path.dirname(os.path.realpath(__file__))
+        )
 
     def store_info(self, info_stream):
         if isinstance(info_stream, Point_GPS):
@@ -79,7 +82,8 @@ class GPS_Cache(QThread):
 
     def export_points(self):
         """Export the map to KML file."""
-        file_path = 'points.kmz' # path TBD
+        file_name = f"waterloo_rocketry_gps_{datetime.now().strftime('%Y%m%d_%H%M%S')}.kmz"
+        file_path = os.path.join(self.relative_path, "shared", file_name)
         gps_points_placemarks: (str, kml.Folder) = {}
         gps_linestring_placemarks = kml.Folder()
 
@@ -130,7 +134,6 @@ class GPS_Cache(QThread):
                     )
                 )
             )
-
 
         k = kml.KML(features=[kml.Document(name="Points", features=list(gps_points_placemarks.values())),
                               kml.Document(name="LineStrings", features=[gps_linestring_placemarks])])

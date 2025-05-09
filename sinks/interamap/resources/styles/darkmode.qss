@@ -96,3 +96,42 @@ QCheckBox::indicator:unchecked {
     border: 1px solid #555555;  /* Slightly lighter dark border */
     border-radius: 3px;         /* Rounded corners */
 }
+
+/* ComboBox Styling - Dark Mode */
+QComboBox {
+    background-color: #2E2E2E;  /* Dark background */
+    color: #ffffff;  /* Force black text */
+    border: 1px solid #4CAF50;  /* Green border */
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 14px;
+}
+
+/* Dropdown menu */
+QComboBox QAbstractItemView {
+    background-color: #3A3A3A;  /* Slightly lighter dark background */
+    selection-background-color: #4CAF50;  /* Highlight color */
+    selection-color: #000000;  /* Ensure black text */
+    border: 1px solid #4CAF50;
+    border-radius: 8px;  /* Rounded corners for a cover look */
+    padding: 4px;
+}
+
+/* When ComboBox is hovered */
+QComboBox:hover {
+    background-color: #4A4A4A;
+}
+
+/* When ComboBox is clicked */
+QComboBox:on {
+    background-color: #3A3A3A;
+    border: 2px solid #4CAF50;
+}
+
+/* Drop-down button */
+QComboBox::drop-down {
+    border: none;
+    subcontrol-origin: padding;
+    subcontrol-position: right;
+    width: 20px;
+}

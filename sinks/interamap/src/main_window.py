@@ -7,19 +7,18 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QPushButton,
     QSizePolicy,
-    QLineEdit,
     QLabel,
     QSplitter,
     QComboBox,
     QFileDialog,
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
 
 from src.map_view import MapView
 
-from src.http_server import start_map_folder_http_server, get_share_url
+from src.http_server import get_share_url, ThreadedHTTPServer
 from src.url_to_qrcode import QRCodeWindow
+from src.config import BoardID
 
 class MapWindow(QMainWindow):
     def __init__(self):
@@ -35,7 +34,7 @@ class MapWindow(QMainWindow):
         self.data_sources = {
             value: key
             for key, value in enumerate(
-                ["None", "Real-time Data Source", "Load KMZ File"]
+            ["None", "Real-time Data Source", "Load KMZ File"]
             )
         }
         self.data_source = 0
@@ -68,6 +67,11 @@ class MapWindow(QMainWindow):
         self.main_splitter.setSizes(
             [800, 200]
         )  # Adjust these values to set the initial sizes
+        
+        
+        # HTTP Share Server
+        self.share_server = ThreadedHTTPServer(os.path.join(self.relative_path, "shared"))
+            
 
     def init_side_toolbar(self):
         """Initialize the side toolbar with buttons and input fields."""
@@ -76,7 +80,7 @@ class MapWindow(QMainWindow):
         self.side_toolbar = QWidget(self)
         self.toolbar_layout = QVBoxLayout(self.side_toolbar)
         self.toolbar_layout.setContentsMargins(10, 10, 10, 10)  # Add some padding
-        self.toolbar_layout.setSpacing(5)  # Add some spacing between buttons
+        self.toolbar_layout.setSpacing(20)  # Add some spacing between buttons
 
         # Custom Toggle Button for Dark Mode
         self.toggle_button = QPushButton(self)
@@ -112,22 +116,6 @@ class MapWindow(QMainWindow):
         self.data_source_ui.currentIndexChanged.connect(self.toggle_data_source)
         self.toolbar_layout.addWidget(self.data_source_ui)
 
-        # Input fields for latitude and longitude
-        # self.lat_input = QLineEdit(self)
-        # self.lat_input.setPlaceholderText("Enter Latitude")
-        # self.toolbar_layout.addWidget(QLabel("Latitude:"))
-        # self.toolbar_layout.addWidget(self.lat_input)
-
-        # self.lon_input = QLineEdit(self)
-        # self.lon_input.setPlaceholderText("Enter Longitude")
-        # self.toolbar_layout.addWidget(QLabel("Longitude:"))
-        # self.toolbar_layout.addWidget(self.lon_input)
-
-        # Add button to add marker at the specified coordinates
-        # self.add_marker_button = QPushButton("Add Marker", self)
-        # self.add_marker_button.clicked.connect(self.add_marker)
-        # self.toolbar_layout.addWidget(self.add_marker_button)
-
         if self.data_source != 0:
 
             # Add a label to indicate the map markers operator section
@@ -146,31 +134,55 @@ class MapWindow(QMainWindow):
 
             # Start Share Server button and another button to show qr code
             share_server_layout = QHBoxLayout()
+            share_server_label_layout = QHBoxLayout()
 
             share_server_label = QLabel("Share Server:")
-            self.toolbar_layout.addWidget(share_server_label)
-            
+            self.share_server_status_label = QLabel("Share Server Stopped")
             self.start_share_server_button = QPushButton("Start Share Server", self)
-            
-            self.start_share_server_button.clicked.connect(start_map_folder_http_server)
+
+            share_server_label_layout.addWidget(share_server_label)
+            self.share_server_status_label.setStyleSheet("color: red")
+            share_server_label_layout.addWidget(self.share_server_status_label)
+            self.toolbar_layout.addLayout(share_server_label_layout)
+
+            self.start_share_server_button.clicked.connect(self.toggle_http_server)
             share_server_layout.addWidget(self.start_share_server_button)
             
             self.show_qr_code_button = QPushButton("Show QR Code", self)
             self.show_qr_code_button.clicked.connect(self.show_qr_code)
+            self.show_qr_code_button.setDisabled(True)
+            self.show_qr_code_button.setStyleSheet("color: grey")
             share_server_layout.addWidget(self.show_qr_code_button)
             
             self.toolbar_layout.addLayout(share_server_layout)
+
+        else:
+            self.toolbar_layout.addStretch(1)
         
         return self.side_toolbar
     
     def update_gps_status(self, gps_status):
         # Slot to handle the update for MainWindow's label
         self.gps_status_label.setText(gps_status)
-        # self.gps_status_label.adjustSize()
 
     def get_current_index_to_feature_ui(self):
         self.start_index_to_feature_ui += 1
         return self.start_index_to_feature_ui - 1
+    
+    def toggle_http_server(self):
+        self.share_server.toggle()
+        
+        if self.share_server.get_status():
+            self.start_share_server_button.setText("Stop Share Server")
+            self.share_server_status_label.setText("Share Server Running")
+            self.share_server_status_label.setStyleSheet("color: green")
+            self.show_qr_code_button.setDisabled(False)
+            self.show_qr_code_button.setStyleSheet("")
+        else:
+            self.share_server_status_label.setText("Share Server Stopped")
+            self.share_server_status_label.setStyleSheet("color: red")
+            self.show_qr_code_button.setDisabled(True)
+            self.show_qr_code_button.setStyleSheet("color: grey")
 
     def toggle_data_source(self):
         """Toggle between None, Real-time Data Source, and Load KMZ File."""
@@ -184,9 +196,9 @@ class MapWindow(QMainWindow):
 
         if self.data_source == 1:  # Real-time Data Source
             # if is real-time data source selected, then add the following
-            # Create buttons for starting/stopping real-time data and loading data
 
             # Display GPS satellite connection status (satellite number and quality)
+            self.start_stop_realtime_data()
             self.gps_status_label = QLabel("GPS Status: Not Connected")
             self.gps_status_label.setFixedWidth(200)  # Set fixed width for the label
             self.gps_status_label.setSizePolicy(
@@ -205,13 +217,10 @@ class MapWindow(QMainWindow):
                 self.start_index_to_feature_ui, start_stop_button
             )
 
-            data_options = [
-                "GPS Board",
-                "Processor Board",
-                "Fake Data Generator",
-            ]  # TODO: Connect to the source of data with the real-time data
+            data_options = ["All"] + [board.value for board in BoardID]
             data_combo = QComboBox(self)
             data_combo.addItems(data_options)
+            data_combo.currentTextChanged.connect(self.map_view.change_data_source)
             self.toolbar_layout.insertWidget(
                 self.get_current_index_to_feature_ui(), QLabel("Sources Options:")
             )
