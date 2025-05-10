@@ -27,12 +27,11 @@ class PlotDashItem(DashboardItem):
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
-        self.parameters.param('Show Slope of Linear Approx.').sigValueChanged.connect(self.on_show_slope_toggle)
-
+    
         self.series = self.parameters.param('series').value()
         # just a single global offset for now
         self.offset = self.parameters.param('offset').value()
-        self.on_show_slope_toggle(None, self.parameters.param('Show Slope of Linear Approx.').value())
+    
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -56,21 +55,18 @@ class PlotDashItem(DashboardItem):
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         show_slope_param = {'name': 'Show Slope of Linear Approx.', 'type': 'bool', 'value': False}
-        num_points_param = {'name': 'Slope: Num. of Points in Approx.', 'type': 'int', 'value': 10, 'limits': (2, None), 'visible': False} #How many points to use to calculate slope
-        return [series_param, limit_param, offset_param, show_slope_param, num_points_param]
+        return [series_param, limit_param, offset_param, show_slope_param]
     
-    def _calculate_slope(self, times: list[float], points: list[float], num_points: int) -> float:
-        if len(times) < num_points or len(points) < num_points:
+    def _calculate_slope(self, times: list[float], points: list[float]) -> float:
+        if len(times) < 2 or len(points) < 2:
             return np.nan
-        x = np.array(times[-num_points:], dtype=np.float64)
-        y = np.array(points[-num_points:], dtype=np.float64)
-        # polyfit returns coefficients of polynomial
-        # ax+b => p = [a, b]
-        p = np.polyfit(x, y, deg=1)
-        return p.item(0)
-    
-    def on_show_slope_toggle(self, _, value):
-        self.parameters.param('Slope: Num. of Points in Approx.').setOpts(visible=value)
+        x = np.array(times, dtype=np.float64)
+        y = np.array(points, dtype=np.float64)
+        # Use Polynomial.fit to fit a linear polynomial (degree=1)
+        p = np.polynomial.Polynomial.fit(x, y, deg=1)
+        # The slope is the coefficient of the linear term
+        return p.convert().coef[1]
+
 
     def on_series_change(self, param, value):
         if len(value) > 6:
@@ -187,8 +183,7 @@ class PlotDashItem(DashboardItem):
         if self.parameters.param('Show Slope of Linear Approx.').value():
             slope_values: list[str] = []
             for stream in self.series:
-                slope = self._calculate_slope(self.times[stream], self.points[stream],
-                                            self.parameters.param('Slope: Num. of Points in Approx.').value())
+                slope = self._calculate_slope(self.times[stream], self.points[stream])
                 slope_values.append(f"[{slope:.2f}]")
             current_values += f"    Slope (/sec): {' '.join(slope_values)} "
 
