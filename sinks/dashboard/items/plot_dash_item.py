@@ -69,6 +69,11 @@ class PlotDashItem(DashboardItem):
 
 
     def on_series_change(self, param, value):
+        if len(value) > 2:
+            self.parameters.param('Show Slope of Linear Approx.').setValue(False)
+            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=False)
+        else:
+            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=True)
         if len(value) > 6:
             self.parameters.param('series').setValue(value[:6])
         self.series = self.parameters.param('series').childrenValue()
@@ -115,12 +120,7 @@ class PlotDashItem(DashboardItem):
         time, point = payload
 
         point += self.offset
-        # if Show Slope can be activated
-        if len(self.series) > 2:
-            self.parameters.param('Show Slope of Linear Approx.').setValue(False)
-            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=False)
-        else:
-            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=True)
+        
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
@@ -184,7 +184,7 @@ class PlotDashItem(DashboardItem):
             slope_values: list[str] = []
             for stream in self.series:
                 slope = self._calculate_slope(self.times[stream], self.points[stream])
-                slope_values.append(f"[{slope:.2f}]")
+                slope_values.append(f"[{slope:.2f}]" if not np.isnan(slope) else "--")
             current_values += f"    Slope (/sec): {' '.join(slope_values)} "
 
         # 100 CHARS MAX for title
