@@ -73,6 +73,13 @@ class DAQDataProcessor:
     def __init__(
         self, log_file_stream: BufferedReader, daq_channel: str = "DAQ"
     ) -> None:
+        """
+        Initializes the DAQDataProcessor with a binary log file stream and optional DAQ channel.
+        
+        Args:
+            log_file_stream: BufferedReader stream of the binary DAQ log file.
+            daq_channel: Name of the DAQ channel to process (default is "DAQ").
+        """
         self._log_file_stream = log_file_stream
         self._expected_channel = daq_channel
         self._unprocessed_datapoints = deque()
@@ -80,11 +87,28 @@ class DAQDataProcessor:
     # TODO: Unpack onto disk rather than into RAM, reduces possibility of OOM error
     def process(self, output_file_path: str) -> str:
         """
-        Begin data processing. Blocking call.
+        Processes DAQ data from the binary log stream and exports it to a CSV file.
+        
+        Args:
+            output_file_path: Path to the output CSV file.
+        
+        Returns:
+            A string representing the size of the generated CSV file.
         """
         return self._unpack_and_stream_to_csv(output_file_path)
 
     def _unpack_and_stream_to_csv(self, output_file_path: str) -> str:
+        """
+        Streams DAQ messages from a binary log file to a CSV file with validation.
+        
+        Reads DAQ messages from the internal log file stream using MessagePack, validates their structure and version, filters by the expected channel, and writes sensor data and timestamps directly to the specified CSV file. Skips messages with channel mismatches and prints warnings for malformed data, but continues processing. Returns the size of the exported CSV file as a formatted string in megabytes.
+        
+        Args:
+            output_file_path: Path to the output CSV file.
+        
+        Returns:
+            The size of the exported CSV file as a string in megabytes (e.g., "1.23 MB").
+        """
         export_size = "N/A"
 
         with open(output_file_path, "w") as outfile:
