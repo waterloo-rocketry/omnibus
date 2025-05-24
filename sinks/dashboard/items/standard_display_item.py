@@ -110,13 +110,6 @@ class StandardDisplayItem(DashboardItem):
     
     
     def on_series_change(self, param, value):
-        if len(self.series) > 2:
-            self.parameters.param('Show Slope of Linear Approx.').setValue(False)
-            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=False)
-        else:
-            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=True)
-        if len(value) > 6:
-            self.parameters.param('series').setValue(value[:6])
         self.series = [value]
         # resubscribe to the new stream
         publisher.unsubscribe_from_all(self.on_data_update)
@@ -244,7 +237,7 @@ class StandardDisplayItem(DashboardItem):
             slope_values: list[str] = []
             for stream in self.series:
                 slope = self._calculate_slope(self.times[stream], self.points[stream])
-                slope_values.append(f"{slope:.2f}" if not np.isnan(slope) else "N/A")
+                slope_values.append(f"{slope:.2f}" if not np.isnan(slope) else "--")
             slope_text = " Slope: " + ", ".join(slope_values)
             self.numRead.setText(f"Point: {self.data:.{self.decimals}f}{slope_text}")
         else:
