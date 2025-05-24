@@ -368,13 +368,13 @@ class Dashboard(QWidget):
             return True
         return False
 
+    UNSAVED_SYMBOL = "⏺"
     def change_detector(self, _ = None):
         title = self.windowTitle()
-        unsaved_symbol = "⏺"
         changed = self.check_for_changes()
-        if changed and unsaved_symbol not in title:
-            self.setWindowTitle(f"{title} {unsaved_symbol}")
-        elif not changed and unsaved_symbol in title:
+        if changed and Dashboard.UNSAVED_SYMBOL not in title:
+            self.setWindowTitle(f"{title} {Dashboard.UNSAVED_SYMBOL}")
+        elif not changed and Dashboard.UNSAVED_SYMBOL in title:
             self.setWindowTitle(title[:-2])
 
     def every_second(self, payload, stream) -> None:
@@ -649,7 +649,7 @@ class Dashboard(QWidget):
     def toggle_lock(self):
         """Toggle lock/unlock state of the dashboard"""
         self.locked = not self.locked
-        title: str = self.windowTitle() + " [LOCKED]" if self.locked else self.windowTitle().replace(" [LOCKED]", "")
+        title: str = self.windowTitle().replace(" " + Dashboard.UNSAVED_SYMBOL, "") + " [LOCKED]" if self.locked else self.windowTitle().replace(" [LOCKED]", "")
         self.setWindowTitle(title)
 
         for menu_item in self.lockable_actions:
