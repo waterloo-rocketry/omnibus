@@ -33,7 +33,7 @@ from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from utils import ConfirmDialog, EventTracker
 from publisher import publisher
-from typing import Optional
+from typing import Callable
 from omnibus import Sender
 from omnibus.util import BuildInfoManager
 from items.dashboard_item import DashboardItem
@@ -119,13 +119,13 @@ class Dashboard(QWidget):
         super().__init__()
 
         self.omnibus_sender = Sender()
-        self.current_parsley_instances = []
+        self.current_parsley_instances: list[str] = []
         self.refresh_track = False
 
         publisher.subscribe("ALL", self.every_second)
 
         # Stores the selected parsley instance
-        self.parsley_instance = "None"
+        self.parsley_instance: str = "None"
         publisher.subscribe('outgoing_can_messages', self.send_can_message)
 
         # Called every frame to get new data
@@ -172,7 +172,7 @@ class Dashboard(QWidget):
 
         # List to keep track of menu bar action that
         # can be disabled when dashboard is locked
-        self.lockableActions = []
+        self.lockable_actions: list[QAction] = []
 
         # Add an action to the menu bar containing Save, Save As and Open.
         # Save will save the layout of the dashboard
@@ -189,9 +189,9 @@ class Dashboard(QWidget):
         file_open_layout_action = add_file_menu.addAction("Open (^o)")
         file_open_layout_action.triggered.connect(self.open)
 
-        self.lockableActions.append(file_save_layout_action)
-        self.lockableActions.append(file_save_as_layout_action)
-        self.lockableActions.append(file_open_layout_action)
+        self.lockable_actions.append(file_save_layout_action)
+        self.lockable_actions.append(file_save_as_layout_action)
+        self.lockable_actions.append(file_open_layout_action)
 
         # Create a sub menu which will be used
         # to add items to our dash board.
@@ -210,7 +210,7 @@ class Dashboard(QWidget):
         for i in range(len(registry.get_items())):
             new_action = add_item_menu.addAction(registry.get_items()[i].get_name())
             new_action.triggered.connect(create_registry_trigger(i))
-            self.lockableActions.append(new_action)
+            self.lockable_actions.append(new_action)
 
         # Add an action to the menu bar to lock/unlock
         # the dashboard
@@ -219,7 +219,7 @@ class Dashboard(QWidget):
         self.lock_action.triggered.connect(self.toggle_lock)
         lock_selected = editing_menu.addAction("Lock Selected (l)")
         lock_selected.triggered.connect(self.lock_selected)
-        self.lockableActions.append(lock_selected)
+        self.lockable_actions.append(lock_selected)
         self.unlock_items_menu = editing_menu.addMenu("Unlock Items")
         """Menu containing actions to unlock items that are locked, in the order
         in which they were locked.
@@ -233,33 +233,33 @@ class Dashboard(QWidget):
         self.mouse_resize_action.setCheckable(True)
         self.mouse_resize_action.setChecked(False)
         self.mouse_resize_action.triggered.connect(self.toggle_mouse)
-        self.lockableActions.append(self.mouse_resize_action)
+        self.lockable_actions.append(self.mouse_resize_action)
 
         # An action to the to the menu bar to duplicate
         # the selected item
         items_menu = menubar.addMenu("Items")
         duplicate_action = items_menu.addAction("Duplicate Item (^d)")
         duplicate_action.triggered.connect(self.on_duplicate)
-        self.lockableActions.append(duplicate_action)
+        self.lockable_actions.append(duplicate_action)
         remove_action = items_menu.addAction("Remove All (^r)")
         remove_action.triggered.connect(self.remove_all)
-        self.lockableActions.append(remove_action)
+        self.lockable_actions.append(remove_action)
 
         # We have a menu in the top to allow users to change the stacking order
         # of the selected items.
         order_menu = menubar.addMenu("Order")
         send_to_front_action = order_menu.addAction("Send to Front (^])")
         send_to_front_action.triggered.connect(self.send_to_front)
-        self.lockableActions.append(send_to_front_action)
+        self.lockable_actions.append(send_to_front_action)
         send_to_back_action = order_menu.addAction("Send to Back (^[)")
         send_to_back_action.triggered.connect(self.send_to_back)
-        self.lockableActions.append(send_to_back_action)
+        self.lockable_actions.append(send_to_back_action)
         send_forward_action = order_menu.addAction("Send Forward (])")
         send_forward_action.triggered.connect(self.send_forward)
-        self.lockableActions.append(send_forward_action)
+        self.lockable_actions.append(send_forward_action)
         send_backward_action = order_menu.addAction("Send Backward ([)")
         send_backward_action.triggered.connect(self.send_backward)
-        self.lockableActions.append(send_backward_action)
+        self.lockable_actions.append(send_backward_action)
 
         # Add a button to switch instances of parsley
         self.can_selector = menubar.addMenu("Parsley")
@@ -377,36 +377,38 @@ class Dashboard(QWidget):
         elif not changed and unsaved_symbol in title:
             self.setWindowTitle(title[:-2])
 
-    def every_second(self, payload, stream):
-        def on_select(string):
-            def retval():
+    def every_second(self, payload, stream) -> None:
+        def on_select(string: str) -> Callable[[], None]:
+            def retval() -> None:
                 self.select_instance(string)
             return retval
 
-        parsley_streams = [e[15:]
+        parsley_streams: list[str] = [e[15:]
                             for e in publisher.get_all_streams() if e.startswith("Parsley health")]
 
         parsley_streams.append("None")
 
-        if self.current_parsley_instances != parsley_streams or self.refresh_track:
-            self.can_selector.clear()
+        if self.current_parsley_instances == parsley_streams and not self.refresh_track:
+            return
+        
+        for action in self.can_selector.actions():
+            if action not in self.lockable_actions:
+                continue
+            self.lockable_actions.remove(action)
+        self.can_selector.clear()
 
-            if self.refresh_track:
-                self.refresh_track = False
+        self.refresh_track = False
 
-            self.current_parsley_instances = parsley_streams
+        self.current_parsley_instances = parsley_streams
 
-            for inst in range(len(parsley_streams)):
-                new_action = self.can_selector.addAction(parsley_streams[inst])
-                new_action.triggered.connect(on_select(parsley_streams[inst]))
-                new_action.setCheckable(True)
+        for inst in parsley_streams:
+            new_action = self.can_selector.addAction(inst)
+            new_action.triggered.connect(on_select(inst))
+            new_action.setCheckable(True)
 
-                if self.parsley_instance == parsley_streams[inst]:
-                    new_action.setChecked(True)
-                else:
-                    new_action.setChecked(False)
+            new_action.setChecked(self.parsley_instance == inst)
 
-                self.lockableActions.append(new_action)
+            self.lockable_actions.append(new_action)
 
     def send_can_message(self, stream, payload):
         payload['parsley'] = self.parsley_instance
@@ -647,12 +649,12 @@ class Dashboard(QWidget):
     def toggle_lock(self):
         """Toggle lock/unlock state of the dashboard"""
         self.locked = not self.locked
-        title = "Omnibus Dashboard - LOCKED" if self.locked else "Omnibus Dashboard"
+        title: str = self.windowTitle() + " [LOCKED]" if self.locked else self.windowTitle().replace(" [LOCKED]", "")
         self.setWindowTitle(title)
 
-        for menu_item in self.lockableActions:
+        for menu_item in self.lockable_actions:
             menu_item.setEnabled(not self.locked)
-        for _rect, action in self.locked_widgets:
+        for _, action in self.locked_widgets:
             action.setEnabled(not self.locked)
 
         for rect in self.widgets:
