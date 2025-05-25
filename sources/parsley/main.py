@@ -252,6 +252,8 @@ def main():
                     except ValueError as e:
                         buffer = buffer[i + 1 :]
                         raise e
+                elif args.format == "logger":
+                    msg_sid, msg_data = parser(buffer)
                 else:
                     text_buff = buffer.decode("utf-8", errors="backslashreplace")
                     i = text_buff.find("\n")
