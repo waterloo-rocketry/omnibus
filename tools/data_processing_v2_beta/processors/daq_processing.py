@@ -98,7 +98,7 @@ class DAQDataProcessor:
             )
 
         # Verify that the unpacked_data is actually valid
-        for key in DAQ_EXPECTED_RECEIVE_DATA_FORMAT.keys():
+        for key in DAQ_EXPECTED_RECEIVE_DATA_FORMAT:
             if key not in unpacked_data:
                 print(
                     f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
@@ -132,7 +132,7 @@ class DAQDataProcessor:
                 assert type(msg) is list
                 msg = cast(list[float | str | DAQ_RECEIVED_MESSAGE_TYPE], msg)
                 unpacked_data = self._validate_and_extract_data(msg)
-                if unpacked_data == None:
+                if unpacked_data is None:
                     continue
 
                 sensors = list(unpacked_data["data"].keys())

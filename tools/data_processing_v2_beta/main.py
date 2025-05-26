@@ -14,7 +14,7 @@ def generate_filename() -> str:
 
 def run_daq_command(input_file: str, output_file: str | None, channel: str) -> None:
     out_file = output_file or generate_filename()
-    out_path = os.getcwd() + '/' + out_file
+    out_path = os.path.join(os.getcwd(), out_file)
 
     with open(input_file, "rb") as file:
         processor = DAQDataProcessor(file, channel)
