@@ -52,15 +52,6 @@ class DAQ_RECEIVED_MESSAGE_TYPE(TypedDict):
     # Increment MESSAGE_FORMAT_VERSION both here and in the NI source whenever the structure changes
     message_format_version: int
 
-
-@dataclass(frozen=True)
-class DAQDataStructure:
-    daq_box_timestamp: float  # System timestamp from DAQ box, not used for processing
-    ni_relative_timestamp: int  # In nanoseconds
-    sensors: list[str]
-    values: list[float]
-
-
 class DAQDataProcessor:
 
     _all_available_sensors: list[str] = []
@@ -68,7 +59,6 @@ class DAQDataProcessor:
     _expected_channel: str
     # So we can pop as we process entries since log messages are first-in-first-out
     _unprocessed_datapoints: deque[DAQ_RECEIVED_MESSAGE_TYPE]
-    processed_data: deque[DAQDataStructure] | None = None
 
     def __init__(
         self, log_file_stream: BufferedReader, daq_channel: str = "DAQ"
@@ -116,9 +106,8 @@ class DAQDataProcessor:
                 )
                 return None
             # Cast to object to check that item's type
-            if (
-                type(cast(object, unpacked_data[key]))
-                != DAQ_EXPECTED_RECEIVE_DATA_FORMAT[key]
+            if not isinstance(
+                unpacked_data[key], DAQ_EXPECTED_RECEIVE_DATA_FORMAT[key]
             ):
                 print(
                     f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
@@ -130,9 +119,8 @@ class DAQDataProcessor:
         return unpacked_data
 
     def _unpack_and_stream_to_csv(self, output_file_path: str) -> str:
-        export_size = "N/A"
 
-        with open(output_file_path, "w") as outfile:
+        with open(output_file_path, "w", newline="") as outfile:
             writer = csv.writer(outfile)
             
             unpacker = msgpack.Unpacker(

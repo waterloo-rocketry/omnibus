@@ -33,6 +33,8 @@ def main() -> None:
     daq_parser.add_argument("--fake", action="store_true", help="Use fake DAQ data")
 
     args = parser.parse_args()
+    if not os.path.isfile(args.input_file):
+        parser.error(f"Input file '{args.input_file}' does not exist")
 
     channel = "DAQ"
     if args.command == "daq":
