@@ -83,6 +83,51 @@ class DAQDataProcessor:
         Begin data processing. Blocking call.
         """
         return self._unpack_and_stream_to_csv(output_file_path)
+    
+    def _validate_and_extract_data(self, msg: list[float | str | DAQ_RECEIVED_MESSAGE_TYPE]) -> DAQ_RECEIVED_MESSAGE_TYPE | None:
+
+        # Example ["DAQ", 12345.02, {data here}]
+        assert len(msg) == 3
+        assert type(msg[0]) is str
+        assert type(msg[1]) is float
+        assert type(msg[2]) is dict
+
+        channel, _, unpacked_data = cast(
+            tuple[str, float, DAQ_RECEIVED_MESSAGE_TYPE], tuple(msg)
+        )
+
+        if channel != self._expected_channel:
+            return None
+        
+        # Verify the message version
+        if ("message_format_version" not in unpacked_data) or (
+            unpacked_data["message_format_version"] != MESSAGE_FORMAT_VERSION
+        ):
+            raise AssertionError(
+                "[FATAL] [DAQ Unpacker] This version of data processing is not compatible with the DAQ messages provided!"
+            )
+
+        # Verify that the unpacked_data is actually valid
+        for key in DAQ_EXPECTED_RECEIVE_DATA_FORMAT.keys():
+            if key not in unpacked_data:
+                print(
+                    f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
+                    file=sys.stderr,
+                )
+                return None
+            # Cast to object to check that item's type
+            if (
+                type(cast(object, unpacked_data[key]))
+                != DAQ_EXPECTED_RECEIVE_DATA_FORMAT[key]
+            ):
+                print(
+                    f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
+                    file=sys.stderr,
+                )
+                return None
+        
+        # If we reach here, the data is valid and can be returned.
+        return unpacked_data
 
     def _unpack_and_stream_to_csv(self, output_file_path: str) -> str:
         export_size = "N/A"
@@ -93,58 +138,19 @@ class DAQDataProcessor:
             unpacker = msgpack.Unpacker(
                 self._log_file_stream  # pyright: ignore[reportArgumentType]
             )
-            wrote_header = False
+            wrote_header_flag = False
 
             for msg in unpacker:
-                # Assuming the globallog is not corrupted, this should be true
                 assert type(msg) is list
                 msg = cast(list[float | str | DAQ_RECEIVED_MESSAGE_TYPE], msg)
-
-                # Example ["DAQ", 12345.02, {data here}]
-                assert len(msg) == 3
-                assert type(msg[0]) is str
-                assert type(msg[1]) is float
-                assert type(msg[2]) is dict
-
-                channel, _, unpacked_data = cast(
-                    tuple[str, float, DAQ_RECEIVED_MESSAGE_TYPE], tuple(msg)
-                )
-
-                if channel != self._expected_channel:
-                    print(f"[SKIP] Channel mismatch: expected {self._expected_channel}, got {channel}")
+                unpacked_data = self._validate_and_extract_data(msg)
+                if unpacked_data == None:
                     continue
-                
-                # Verify the message version
-                if ("message_format_version" not in unpacked_data) or (
-                    unpacked_data["message_format_version"] != MESSAGE_FORMAT_VERSION
-                ):
-                    raise AssertionError(
-                        "[FATAL] [DAQ Unpacker] This version of data processing is not compatible with the DAQ messages provided!"
-                    )
-                
-                # Verify that the unpacked_data is actually valid
-                for key in DAQ_EXPECTED_RECEIVE_DATA_FORMAT.keys():
-                    if key not in unpacked_data:
-                        print(
-                            f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
-                            file=sys.stderr,
-                        )
-                        continue
-                    # Cast to object to check that item's type
-                    if (
-                        type(cast(object, unpacked_data[key]))
-                        != DAQ_EXPECTED_RECEIVE_DATA_FORMAT[key]
-                    ):
-                        print(
-                            f"[WARN] [DAQ Unpacker] Malformed Line! '{str(unpacked_data)}'",
-                            file=sys.stderr,
-                        )
-                        continue
 
                 sensors = list(unpacked_data["data"].keys())
-                if not wrote_header:
+                if not wrote_header_flag:
                     writer.writerow(["Timestamp (ns) +- 10ns"] + sensors)
-                    wrote_header = True
+                    wrote_header_flag = True
                 
                 for i, timestamp in enumerate(unpacked_data["relative_timestamps_nanoseconds"]):
                     values = [unpacked_data["data"][sensor][i] for sensor in sensors]
