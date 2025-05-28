@@ -35,9 +35,19 @@ class SerialCommunicator:
 class FileCommunicator:
     def __init__(self, filename: str):
         self.file = open(filename, mode='rb')
+        self.page_size = 4096
+        self.page_number = 0
 
     def read(self):
-        return self.file.read(4096)
+        if self.file.closed:
+            return b""
+        self.file.seek(self.page_number * self.page_size)
+        data = self.file.read(self.page_size)
+        if data:
+            self.page_number += 1 # Increment page number after reading
+        else:
+            self.file.close()
+        return data
 
     def write(self, msg: bytes):
         print('Cannot write to file: {msg}')
@@ -253,7 +263,7 @@ def main():
                         buffer = buffer[i + 1 :]
                         raise e
                 elif args.format == "logger":
-                    msg_sid, msg_data = parser(buffer)
+                    msg_sid, msg_data = parser(buffer, communicator.page_number - 1)
                 else:
                     text_buff = buffer.decode("utf-8", errors="backslashreplace")
                     i = text_buff.find("\n")
@@ -270,6 +280,10 @@ def main():
                 # Send the CAN message over the channel
                 if sender:
                     sender.send(channel=SEND_CHANNEL, payload=parsed_data)
+
+                if args.format == "logger":
+                    buffer = b""  # Reset buffer after processing a logger message
+                    break
 
             except ValueError as e:
                 print(e)
