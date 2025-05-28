@@ -247,7 +247,12 @@ def main():
         buffer += line
 
         if args.format == "logger":
-            logger_generator = parser(buffer, communicator.page_number - 1) # Magic number 1 used to check the page number
+            if 'initial_page_number' not in locals():
+                if len(buffer) > 3:
+                    initial_page_number = int(buffer[3])
+                else:
+                    raise ValueError("Initial page number not found in buffer")
+            logger_generator = parser(buffer, initial_page_number + communicator.page_number - 1) # Magic number 1 used to check the page number
 
         while True:
             try:
