@@ -246,6 +246,9 @@ def main():
 
         buffer += line
 
+        if args.format == "logger":
+            logger_generator = parser(buffer, communicator.page_number - 1) # Magic number 1 used to check the page number
+
         while True:
             try:
                 if args.format == "telemetry":
@@ -263,7 +266,10 @@ def main():
                         buffer = buffer[i + 1 :]
                         raise e
                 elif args.format == "logger":
-                    msg_sid, msg_data = parser(buffer, communicator.page_number - 1)
+                    msg_sid, msg_data = next(logger_generator, (None, None))
+                    if msg_sid is None or msg_data is None:
+                        buffer = b"" # Clear the buffer if no more messages
+                        break
                 else:
                     text_buff = buffer.decode("utf-8", errors="backslashreplace")
                     i = text_buff.find("\n")
@@ -280,10 +286,6 @@ def main():
                 # Send the CAN message over the channel
                 if sender:
                     sender.send(channel=SEND_CHANNEL, payload=parsed_data)
-
-                if args.format == "logger":
-                    buffer = b""  # Reset buffer after processing a logger message
-                    break
 
             except ValueError as e:
                 print(e)
