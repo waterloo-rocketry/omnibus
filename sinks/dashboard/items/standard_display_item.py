@@ -237,7 +237,7 @@ class StandardDisplayItem(DashboardItem):
             slope_values: list[str] = []
             for stream in self.series:
                 slope = self._calculate_slope(self.times[stream], self.points[stream])
-                slope_values.append(f"{slope:.2f}" if not np.isnan(slope) else "--")
+                slope_values.append(f"{slope:.2f}" if not np.isnan(slope) else "[--]")
             slope_text = " Slope: " + ", ".join(slope_values)
             self.numRead.setText(f"Point: {self.data:.{self.decimals}f}{slope_text}")
         else:

@@ -184,7 +184,7 @@ class PlotDashItem(DashboardItem):
             slope_values: list[str] = []
             for stream in self.series:
                 slope = self._calculate_slope(self.times[stream], self.points[stream])
-                slope_values.append(f"[{slope:.2f}]" if not np.isnan(slope) else "--")
+                slope_values.append(f"[{slope:.2f}]" if not np.isnan(slope) else "[--]")
             current_values += f"    Slope (/sec): {' '.join(slope_values)} "
 
         # 100 CHARS MAX for title
