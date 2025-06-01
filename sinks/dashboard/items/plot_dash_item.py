@@ -32,7 +32,6 @@ class PlotDashItem(DashboardItem):
         # just a single global offset for now
         self.offset = self.parameters.param('offset').value()
     
-
         # subscribe to stream dictated by properties
         for series in self.series:
             publisher.subscribe(series, self.on_data_update)
@@ -66,7 +65,6 @@ class PlotDashItem(DashboardItem):
         p = np.polynomial.Polynomial.fit(x, y, deg=1)
         # The slope is the coefficient of the linear term
         return p.convert().coef[1]
-
 
     def on_series_change(self, param, value):
         if len(value) > 2:
@@ -110,15 +108,12 @@ class PlotDashItem(DashboardItem):
             self.times[series] = []
             self.points[series] = []
             self.last[series] = 0
-
         # initialize the threshold line, but do not plot it unless a limit is specified
         self.warning_line = plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
-
         return plot
 
     def on_data_update(self, stream, payload):
         time, point = payload
-
         point += self.offset
         
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
@@ -126,7 +121,6 @@ class PlotDashItem(DashboardItem):
             return
 
         self.last[stream] = time
-
         self.times[stream].append(time)
         self.points[stream].append(point)
 
