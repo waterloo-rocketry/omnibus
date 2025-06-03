@@ -1,7 +1,7 @@
 from publisher import publisher
 from pyqtgraph.Qt.QtWidgets import QGridLayout
 import pyqtgraph as pg
-
+import numpy as np
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
@@ -27,11 +27,11 @@ class PlotDashItem(DashboardItem):
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
-
+    
         self.series = self.parameters.param('series').value()
         # just a single global offset for now
         self.offset = self.parameters.param('offset').value()
-
+    
         # subscribe to stream dictated by properties
         for series in self.series:
             publisher.subscribe(series, self.on_data_update)
@@ -53,9 +53,25 @@ class PlotDashItem(DashboardItem):
         series_param = SeriesChecklistParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
-        return [series_param, limit_param, offset_param]
+        show_slope_param = {'name': 'Show Slope of Linear Approx.', 'type': 'bool', 'value': False}
+        return [series_param, limit_param, offset_param, show_slope_param]
+
+    def _calculate_slope(self, times: list[float], points: list[float]) -> float:
+        if len(times) < 2 or len(points) < 2:
+            return np.nan
+        x = np.array(times, dtype=np.float64)
+        y = np.array(points, dtype=np.float64)
+        # Use Polynomial.fit to fit a linear polynomial (degree=1)
+        p = np.polynomial.Polynomial.fit(x, y, deg=1)
+        # The slope is the coefficient of the linear term
+        return p.convert().coef[1]
 
     def on_series_change(self, param, value):
+        if len(value) > 2:
+            self.parameters.param('Show Slope of Linear Approx.').setValue(False)
+            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=False)
+        else:
+            self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=True)
         if len(value) > 6:
             self.parameters.param('series').setValue(value[:6])
         self.series = self.parameters.param('series').childrenValue()
@@ -92,23 +108,19 @@ class PlotDashItem(DashboardItem):
             self.times[series] = []
             self.points[series] = []
             self.last[series] = 0
-
         # initialize the threshold line, but do not plot it unless a limit is specified
         self.warning_line = plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
-
         return plot
 
     def on_data_update(self, stream, payload):
         time, point = payload
-
         point += self.offset
-
+        
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
 
         self.last[stream] = time
-
         self.times[stream].append(time)
         self.points[stream].append(point)
 
@@ -162,6 +174,12 @@ class PlotDashItem(DashboardItem):
                            if self.points[item] else 0 for item in self.series]
             for v in last_values:
                 current_values += f"[{v: < 4.4f}] "
+        if self.parameters.param('Show Slope of Linear Approx.').value():
+            slope_values: list[str] = []
+            for series_name in self.series:
+                slope = self._calculate_slope(self.times[series_name], self.points[series_name])
+                slope_values.append(f"[{slope:.2f}]" if not np.isnan(slope) else "[--]")
+            current_values += f"    Slope (/sec): {' '.join(slope_values)} "
 
         # 100 CHARS MAX for title
         series_name = f"{series_name[:100]}..." if len(series_name) > 100 else series_name
