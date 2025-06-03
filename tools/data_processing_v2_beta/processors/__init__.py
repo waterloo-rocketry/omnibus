@@ -1,4 +1,4 @@
 # pyright: strict
-from .daq_processing import DAQDataProcessor, DAQDataStructure
+from .daq_processing import DAQDataProcessor
 
-__all__ = ["DAQDataProcessor", "DAQDataStructure"]
+__all__ = ["DAQDataProcessor"]
