@@ -55,7 +55,7 @@ class PlotDashItem(DashboardItem):
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         show_slope_param = {'name': 'Show Slope of Linear Approx.', 'type': 'bool', 'value': False}
         return [series_param, limit_param, offset_param, show_slope_param]
-    
+
     def _calculate_slope(self, times: list[float], points: list[float]) -> float:
         if len(times) < 2 or len(points) < 2:
             return np.nan
@@ -176,8 +176,8 @@ class PlotDashItem(DashboardItem):
                 current_values += f"[{v: < 4.4f}] "
         if self.parameters.param('Show Slope of Linear Approx.').value():
             slope_values: list[str] = []
-            for stream in self.series:
-                slope = self._calculate_slope(self.times[stream], self.points[stream])
+            for series_name in self.series:
+                slope = self._calculate_slope(self.times[series_name], self.points[series_name])
                 slope_values.append(f"[{slope:.2f}]" if not np.isnan(slope) else "[--]")
             current_values += f"    Slope (/sec): {' '.join(slope_values)} "
 
