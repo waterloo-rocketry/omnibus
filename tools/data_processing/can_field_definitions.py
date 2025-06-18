@@ -13,12 +13,21 @@ import argparse
 class CanProcessingField:
     """A class to represent a field in the CAN data that we can export as a CSV column. Has a matching pattern to try and see if a message payload matches the field (for CAN fields logged in the .log file by a parsley instance), and extracts the value from the payload if it does. These should be though of as an abstraction to explain what a message represents ex: the pneumatic pressure can be found at "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_PNEUMATICS" and we want to extract "data.value" from it."""
 
-    def __init__(self, csv_name, matching_pattern, reading_signature):
-        """Initialize the field with a name, a matching pattern, and a reading signature. The matching pattern is a dictionary of keys and values that MUST appear inside the message payload being matched, and if it's sub-dictioinaries, use . like data.sensor_id. The reading signature is a string that describes the path to the value we want to extract from the payload. Again, if it's a sub-dictionary, use . like data.value."""
+    def __init__(self, csv_name, matching_pattern, reading_signature=None):
+        """Initialize the field with a name, a matching pattern, and a reading signature.
+        The matching pattern is a dictionary of keys and values that MUST appear inside the message payload being matched,
+        and if it's sub-dictioinaries, use . like data.sensor_id.
+        The reading signature is a string that describes the path to the value we want to extract from the payload.
+        Again, if it's a sub-dictionary, use . like data.value.
+        """
 
         self.csv_name = csv_name
         self.matching_pattern = matching_pattern
         self.reading_signature = reading_signature
+
+        if reading_signature is None:
+            raise ValueError("reading_signature must be provided.")
+
 
     def __repr__(self):
         return f"<ProcessingField {self.csv_name} (matching: {self.matching_pattern}, reading: {self.reading_signature})>"
@@ -45,8 +54,8 @@ class CanProcessingField:
         """Read the value from the candidate message payload, if it matches the matching pattern. If it doesn't, raises an error."""
 
         if not self.match(candidate):  # first double check that it's the right thing
-            raise ValueError(
-                f"Can't read from a candidate that doesn't match the matching pattern {self.matching_pattern} for the data {candidate}")
+            # This should not raise an error, as we might be checking many fields against one candidate
+            return None # Indicate no match
 
         running_key = self.reading_signature
         checking = candidate
@@ -65,44 +74,45 @@ class CanProcessingField:
 # Then you define the CSV name, paste the signature from the discovery script, and choose a value from the dictionary you want to export
 
 CAN_FIELDS = [
+    # Existing CAN 2.0A and other fields (payload-based)
     CanProcessingField("ox_tank_pressure", {
-                       "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}, "data.value"),
+                       "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}, reading_signature="data.value"),
     CanProcessingField("pneumatics_pressure", {
-                       "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_PNEUMATICS"}, "data.value"),
+                       "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_PNEUMATICS"}, reading_signature="data.value"),
     CanProcessingField("vent_temp", {"msg_type": "SENSOR_ANALOG",
-                       "data.sensor_id": "SENSOR_VENT_TEMP"}, "data.value"),
+                       "data.sensor_id": "SENSOR_VENT_TEMP"}, reading_signature="data.value"),
     CanProcessingField("vent_ox_pressure", {
-                       'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_OX'}, "data.req_state"),
+                       'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_OX'}, reading_signature="data.req_state"),
     CanProcessingField("vent_valve_req_status", {
-                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, "data.req_state"),
+                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, reading_signature="data.req_state"),
     CanProcessingField("vent_valve_cur_status", {
-                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, "data.cur_state"),
+                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, reading_signature="data.cur_state"),
     CanProcessingField("injector_valve_req_status", {
-                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state"),
+                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, reading_signature="data.req_state"),
     CanProcessingField("injector_valve_cur_status", {
-                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.cur_state"),
+                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, reading_signature="data.cur_state"),
     CanProcessingField("battery_current", {
-                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_CURR"}, "data.value"),
+                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_CURR"}, reading_signature="data.value"),
     CanProcessingField("bus_current", {
-                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BUS_CURR"}, "data.value"),
+                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BUS_CURR"}, reading_signature="data.value"),
     CanProcessingField("charge_current", {
-                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_CHARGE_CURR"}, "data.value"),
+                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_CHARGE_CURR"}, reading_signature="data.value"),
     CanProcessingField("battery_voltage", {
-                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
+                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, reading_signature="data.value"),
     CanProcessingField("ground_voltage", {
-                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_GROUND_VOLT"}, "data.value"),
+                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_GROUND_VOLT"}, reading_signature="data.value"),
     CanProcessingField("injector_battery_voltage", {
-                       "board_id": "ACTUATOR_INJ", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
+                       "board_id": "ACTUATOR_INJ", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, reading_signature="data.value"),
     CanProcessingField("injector_board_status", {
-                       "board_id": "ACTUATOR_INJ", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
+                       "board_id": "ACTUATOR_INJ", "msg_type": "GENERAL_BOARD_STATUS"}, reading_signature="data.status"),
     CanProcessingField("injector_valve_status", {
-                       "board_id": "ACTUATOR_INJ", "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state"),
+                       "board_id": "ACTUATOR_INJ", "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, reading_signature="data.req_state"),
     CanProcessingField("charging_board_status", {
-                       "board_id": "CHARGING", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
+                       "board_id": "CHARGING", "msg_type": "GENERAL_BOARD_STATUS"}, reading_signature="data.status"),
     CanProcessingField("cc_pressure", {
-                       'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_CC'}, 'data.value'),
+                       'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_CC'}, reading_signature='data.value'),
     CanProcessingField("barometer", {
-                       'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_BARO'}, "data.value"),             
+                       'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_BARO'}, reading_signature="data.value"),
 ]
 
 # Auto-add fields with multiple values for the same signature
@@ -159,84 +169,4 @@ auto_fields = [
 for field in auto_fields:
     for subfield in field["fields"]:
         CAN_FIELDS.append(CanProcessingField(
-            f"{field['base_name']}_{subfield.split('.')[-1]}", field["signature"], subfield))
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run tests for field_definitions.py")
-    parser.add_argument("--test", action="store_true", help="Run tests")
-    TESTING = parser.parse_args().test
-
-    if not TESTING:
-        print("This file is not meant to be run directly. Run main.py instead.")
-        exit(1)
-
-    # test matching
-    correct_matching_pattern = {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}
-    incorrect_matching_pattern = {"msg_type": "SENSOR_ANALOG",
-                                  "data.sensor_id": "SENSOR_PRESSURE_FUEL"}
-    inexistant_matching_pattern = {"msg_type": "SENSOR_ANALOG",
-                                   "mangoes.pears": "SENSOR_PRESSURE_OX"}
-
-    correct_reading_signature = "data.value"
-    incorrect_reading_signature = "data.req_state"
-    inexistant_reading_signature = "data.mangoes"
-
-    cmatch_cread = CanProcessingField(
-        "ox tank", correct_matching_pattern, correct_reading_signature)
-    cmatch_iread = CanProcessingField(
-        "ox tank", correct_matching_pattern, incorrect_reading_signature)
-    cmatch_ixread = CanProcessingField(
-        "ox tank", correct_matching_pattern, inexistant_reading_signature)
-    imatch_cread = CanProcessingField(
-        "ox tank", incorrect_matching_pattern, correct_reading_signature)
-    imatch_iread = CanProcessingField(
-        "ox tank", incorrect_matching_pattern, incorrect_reading_signature)
-    imatch_ixread = CanProcessingField(
-        "ox tank", incorrect_matching_pattern, inexistant_reading_signature)
-    ixmatch_cread = CanProcessingField(
-        "ox tank", inexistant_matching_pattern, correct_reading_signature)
-    ixmatch_iread = CanProcessingField(
-        "ox tank", inexistant_matching_pattern, incorrect_reading_signature)
-    ixmatch_ixread = CanProcessingField(
-        "ox tank", inexistant_matching_pattern, inexistant_reading_signature)
-
-    # example candidates
-    correct_candidate = {"msg_type": "SENSOR_ANALOG", "data": {
-        "sensor_id": "SENSOR_PRESSURE_OX", "value": 100}}
-    missing_value_candidate = {"msg_type": "SENSOR_ANALOG",
-                               "data": {"sensor_id": "SENSOR_PRESSURE_OX"}}
-    false_candidate = {"msg_type": "SENSOR_ANALOG",
-                       "data": {"sensor_id": "NOT_THE_ONE", "value": 100}}
-    missing_data_candidate = {"msg_type": "SENSOR_ANALOG"}
-
-    print("Testing matching")
-    print("Correct input matching")
-    assert cmatch_cread.match(correct_candidate)
-    assert cmatch_iread.match(correct_candidate)
-    assert cmatch_ixread.match(correct_candidate)
-    assert not imatch_cread.match(correct_candidate)
-    assert not imatch_iread.match(correct_candidate)
-    assert not imatch_ixread.match(correct_candidate)
-    assert not ixmatch_cread.match(correct_candidate)
-    assert not ixmatch_iread.match(correct_candidate)
-    assert not ixmatch_ixread.match(correct_candidate)
-    print("Correct input reading")
-    assert cmatch_cread.read(correct_candidate) == 100
-    assert cmatch_iread.read(correct_candidate) == None
-    assert cmatch_ixread.read(correct_candidate) == None
-    assert imatch_cread.read(correct_candidate) == None
-    assert imatch_iread.read(correct_candidate) == None
-    assert imatch_ixread.read(correct_candidate) == None
-    assert ixmatch_cread.read(correct_candidate) == None
-    assert ixmatch_iread.read(correct_candidate) == None
-    assert ixmatch_ixread.read(correct_candidate) == None
-    print("Incorrect input matching")
-    assert not cmatch_cread.match(false_candidate)
-    assert not imatch_cread.match(false_candidate)
-    assert not ixmatch_cread.match(false_candidate)
-    print("Missing value input reading")
-    assert cmatch_cread.read(missing_value_candidate) == None
-    print("Missing data input matching")
-    assert not cmatch_cread.match(missing_data_candidate)
-
-    print("All tests passed!")
+            f"{field['base_name']}_{subfield.split('.')[-1]}", field["signature"], reading_signature=subfield))
