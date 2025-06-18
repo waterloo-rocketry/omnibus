@@ -19,9 +19,8 @@ def run_daq_command(input_file: str, output_file: str | None, channel: str) -> N
     with open(input_file, "rb") as file:
         processor = DAQDataProcessor(file, channel)
         size = processor.process(out_path)
+        print(f"SUCESS: Processed {size} bytes of DAQ data to {out_path}")
 
-
-# TODO: Make this an actual app and not a script (and maybe GUI?)
 def main() -> None:
     # initializing command line argument parser
     parser = argparse.ArgumentParser(description="Rocketry Log Processing CLI")
@@ -43,8 +42,6 @@ def main() -> None:
         run_daq_command(args.input_file, args.output, channel)
     else:
         raise NotImplementedError(f"Command {args.command} not implemented")
-    
-
 
 if __name__ == "__main__":
     main()

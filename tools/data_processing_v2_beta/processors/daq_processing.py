@@ -6,7 +6,6 @@ import msgpack
 from io import BufferedReader
 from typing import cast, TypedDict
 from dataclasses import dataclass
-from collections import deque
 import sys
 
 MESSAGE_FORMAT_VERSION = 2
@@ -18,7 +17,6 @@ DAQ_EXPECTED_RECEIVE_DATA_FORMAT = {
     "sample_rate": int,
     "message_format_version": int,
 }
-
 
 @dataclass(frozen=True)
 class DAQ_RECEIVED_MESSAGE_TYPE(TypedDict):
@@ -58,14 +56,12 @@ class DAQDataProcessor:
     _log_file_stream: BufferedReader
     _expected_channel: str
     # So we can pop as we process entries since log messages are first-in-first-out
-    _unprocessed_datapoints: deque[DAQ_RECEIVED_MESSAGE_TYPE]
 
     def __init__(
         self, log_file_stream: BufferedReader, daq_channel: str = "DAQ"
     ) -> None:
         self._log_file_stream = log_file_stream
         self._expected_channel = daq_channel
-        self._unprocessed_datapoints = deque()
 
     # TODO: Unpack onto disk rather than into RAM, reduces possibility of OOM error
     def process(self, output_file_path: str) -> str:
@@ -115,7 +111,6 @@ class DAQDataProcessor:
                 )
                 return None
         
-        # If we reach here, the data is valid and can be returned.
         return unpacked_data
 
     def _unpack_and_stream_to_csv(self, output_file_path: str) -> str:
