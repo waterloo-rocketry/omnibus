@@ -69,6 +69,8 @@ def parse(msg_channel, msg_payload):
 
 sums = {
     "Feed Systems Mass": ["Anyload Load Cell", "Omega Load Cell", "STS Load Cell"],
+    "Fuel Tank Mass": ["Fuel Tank Mass 1", "Fuel Tank Mass 2"],
+    "Thrust Total": ["Thrust 1", "Thrust 2"],
 }
 
 @Register("DAQ")
