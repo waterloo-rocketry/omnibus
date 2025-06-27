@@ -102,12 +102,8 @@ CAN_FIELDS: List[CanProcessingField] = [
                        "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_GROUND_VOLT"}, "data.value"),
     CanProcessingField("injector_battery_voltage", {
                        "board_id": "ACTUATOR_INJ", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
-    CanProcessingField("injector_board_status", {
-                       "board_id": "ACTUATOR_INJ", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
     CanProcessingField("injector_valve_status", {
                        "board_id": "ACTUATOR_INJ", "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state"),
-    CanProcessingField("charging_board_status", {
-                       "board_id": "CHARGING", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
     CanProcessingField("cc_pressure", {
                        'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_CC'}, 'data.value'),
     CanProcessingField("barometer", {
