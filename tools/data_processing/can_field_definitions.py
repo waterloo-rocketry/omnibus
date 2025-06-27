@@ -8,6 +8,9 @@
 
 # Run with -test to run tests
 import argparse
+from copy import deepcopy
+from string import Template
+from typing import Optional, List
 
 
 class CanProcessingField:
@@ -26,20 +29,26 @@ class CanProcessingField:
     def __str__(self):
         return self.__repr__()
 
-    def match(self, candidate):
+    def match(self, candidate) -> Optional['CanProcessingField']:
         """Check if the candidate message payload matches the matching pattern"""
 
         for key, value in self.matching_pattern.items():
+            if key == 'board_type_id' and value == 'ANY':
+                matched_instance = deepcopy(self)
+                candidate_board_name = candidate['board_type_id'].lower()
+                if isinstance(matched_instance.csv_name,Template):
+                    matched_instance.csv_name = matched_instance.csv_name.substitute(board_id=candidate_board_name)
+                continue # Keep will override data
             running_key = key
             checking = candidate
             while running_key.find(".") != -1:
                 nested_key, running_key = running_key.split(".", 1)
                 if nested_key not in checking:
-                    return False
+                    return None
                 checking = checking[nested_key]
             if running_key not in checking or checking[running_key] != value:
-                return False
-        return True
+                return None
+        return matched_instance if 'matched_instance' in locals() else self
 
     def read(self, candidate):
         """Read the value from the candidate message payload, if it matches the matching pattern. If it doesn't, raises an error."""
@@ -64,7 +73,7 @@ class CanProcessingField:
 # Fields can be discovered by using the field_peeking.py script
 # Then you define the CSV name, paste the signature from the discovery script, and choose a value from the dictionary you want to export
 
-CAN_FIELDS = [
+CAN_FIELDS: List[CanProcessingField] = [
     CanProcessingField("ox_tank_pressure", {
                        "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}, "data.value"),
     CanProcessingField("pneumatics_pressure", {
@@ -103,6 +112,17 @@ CAN_FIELDS = [
                        'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_CC'}, 'data.value'),
     CanProcessingField("barometer", {
                        'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_BARO'}, "data.value"),             
+]
+
+# General Fields is for everyboard shared field, it will based on the board id
+# dynamic added it use Template as csv name with field ${board_id}, other than 
+# that it stay same as auto_fields.
+general_fields = [
+    {
+        "temp_name": "${board_id}_board_status",
+        "signature": {'msg_type': 'GENERAL_BOARD_STATUS'},
+        "fields": ["data.general_error_bitfield", "data.board_error_bitfield"]
+    }
 ]
 
 # Auto-add fields with multiple values for the same signature
@@ -160,6 +180,12 @@ for field in auto_fields:
     for subfield in field["fields"]:
         CAN_FIELDS.append(CanProcessingField(
             f"{field['base_name']}_{subfield.split('.')[-1]}", field["signature"], subfield))
+
+for field in general_fields:
+    field["signature"]["board_type_id"] = "ANY"
+    for subfield in field["fields"]:
+        CAN_FIELDS.append(CanProcessingField(
+            Template(f"{field['temp_name']}_{subfield.split('.')[-1]}"), field["signature"], subfield))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run tests for field_definitions.py")
