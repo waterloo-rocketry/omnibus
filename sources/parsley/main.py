@@ -248,10 +248,12 @@ def main():
 
         if args.format == "logger":
             if 'initial_page_number' not in locals():
-                if len(buffer) > 3:
+                if len(buffer) < 4:
+                    continue  # Wait for more data
+                try:
                     initial_page_number = int(buffer[3])
-                else:
-                    raise ValueError("Initial page number not found in buffer")
+                except(IndexError, ValueError) as e:
+                    raise ValueError(f"Failed to extract initial page number: {e}")
             logger_generator = parser(buffer, initial_page_number + communicator.page_number - 1) # Magic number 1 used to check the page number
 
         while True:
