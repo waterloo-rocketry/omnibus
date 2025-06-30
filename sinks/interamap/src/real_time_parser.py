@@ -111,6 +111,8 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
                 if all(key in gps[board] for key in keys if key != "GPS_INFO"):
                     if gps[board]["GPS_INFO"].num_sats >= MIN_SATELLITE:
                         process_func(parse_gps_data(gps[board], data))
+                    else:
+                        print("GPS information timeout occurred, removing redundant packages.")
                     gps[board].clear()
 
         except queue.Empty:
