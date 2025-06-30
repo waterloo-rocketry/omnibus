@@ -1,7 +1,8 @@
+from collections import defaultdict
 import queue
 import sys
 import time
-from collections import defaultdict
+from typing import Any
 
 from omnibus import Receiver
 from PySide6.QtCore import QThread, Signal
@@ -79,7 +80,7 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
     BOARD_TIMEOUT:float  = 2.0      # seconds to let an incomplete bundle linger
     MIN_SATELLITE:int = 2   # minimal satellites requires to report a Point_GPS
 
-    gps = {board.value: {} for board in BoardID}
+    gps: dict[str, dict[str, Any]] = {board.value: {} for board in BoardID}
     last_seen_ts = defaultdict(lambda: time.monotonic())
 
     # Clear any initial data from the buffer
@@ -112,7 +113,7 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
                     if gps[board]["GPS_INFO"].num_sats >= MIN_SATELLITE:
                         process_func(parse_gps_data(gps[board], data))
                     else:
-                        print("GPS information timeout occurred, removing redundant packages.")
+                        print(f"Insufficient satellites ({gps[board]['GPS_INFO']['num_sats']} < {MIN_SATELLITE}), discarding GPS data.")
                     gps[board].clear()
 
         except queue.Empty:
@@ -124,6 +125,7 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
         # After timeout just clear the block wait for the next Point_GPS
         for board_id, buf in list(gps.items()):
             if buf and now - last_seen_ts[board_id] > BOARD_TIMEOUT:
+                print("GPS information timeout occurred, removing redundant packages.")
                 gps[board_id].clear()
 
 
