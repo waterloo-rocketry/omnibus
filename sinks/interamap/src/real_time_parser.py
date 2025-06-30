@@ -113,7 +113,7 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
                     if gps[board]["GPS_INFO"].num_sats >= MIN_SATELLITE:
                         process_func(parse_gps_data(gps[board], data))
                     else:
-                        print(f"Insufficient satellites ({gps[board]['GPS_INFO']['num_sats']} < {MIN_SATELLITE}), discarding GPS data.")
+                        print(f"Insufficient satellites ({gps[board]['GPS_INFO'].num_sats} < {MIN_SATELLITE}), discarding GPS data.")
                     gps[board].clear()
 
         except queue.Empty:
