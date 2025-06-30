@@ -41,13 +41,18 @@ class FileCommunicator:
     def read(self):
         if self.file.closed:
             return b""
-        self.file.seek(self.page_number * self.page_size)
-        data = self.file.read(self.page_size)
-        if data:
-            self.page_number += 1 # Increment page number after reading
-        else:
+        try:
+            self.file.seek(self.page_number * self.page_size)
+            data = self.file.read(self.page_size)
+            if data:
+                self.page_number += 1 # Increment page number after reading
+            else:
+                self.file.close()
+            return data
+        except IOError as e:
+            print(f"Error reading file: {e}")
             self.file.close()
-        return data
+            return b""
 
     def write(self, msg: bytes):
         print('Cannot write to file: {msg}')
