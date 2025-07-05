@@ -2,7 +2,7 @@
 import msgpack
 from typing import List, Union, IO
 
-from can_field_definitions import CAN_FIELDS
+from can_field_definitions import CAN_FIELDS, CanProcessingField
 from msgpack_sorter_unpacker import msgpackFilterUnpacker
 
 
@@ -13,13 +13,13 @@ def get_can_cols(infile: IO) -> List[str]:
     cols_set = set()
     # we don't need to use the filtered source, as we're just looking for the message types
     for full_data in msgpack.Unpacker(infile):
-        channel, timestamp, payload = full_data  # extract the three parts of the message packed data
+        channel, _, payload = full_data  # extract the three parts of the message packed data
         if channel.startswith("CAN/Parsley"):  # CAN messages come over parsely
             # try and match the message to a field given the field's matching pattern definition
             for field in CAN_FIELDS:
-                if field.match(payload) and field.csv_name not in cols_set:
-                    cols_set.add(field.csv_name)
-                    cols.append(field.csv_name)
+                if (matched_field:=field.match(payload)) and matched_field.csv_name not in cols_set:
+                    cols_set.add(matched_field.csv_name)
+                    cols.append(matched_field.csv_name)
                 continue
 
     infile.seek(0)
@@ -40,9 +40,12 @@ def get_can_lines(infile: IO, cols=[], msg_packed_filtering="behind_stream") -> 
             # we check if the payload matches any of the fields we're tracking, and if it does, we update the current_info dictionary
             matched = False
             # WARNING: we need to loop through all the fields, becuase columns can have the same signatures and matching patterns, but we're taking differnt data out of them so we need to check multiple times
+            field:CanProcessingField
             for field in CAN_FIELDS:
-                if field.match(payload) and field.csv_name in cols_set:
-                    current_info[field.csv_name] = field.read(payload)
+                # UPDATE: CanProcessingField.match will return self or None in this case instead 
+                # of boolean values for general_fields design.
+                if (matched_field:=field.match(payload)) and matched_field.csv_name in cols_set:
+                    current_info[matched_field.csv_name] = matched_field.read(payload)
                     matched = True
 
             # no need for an updated line if we didnt update any of the values we're tracking, we don't want to output a line with no new up to date info
