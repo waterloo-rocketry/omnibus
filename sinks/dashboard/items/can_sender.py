@@ -112,7 +112,7 @@ class CanSender(DashboardItem):
                 self.widget_widths[self.widget_index] = max_text_width + self.WIDGET_TEXT_PADDING
                 dropdown.setFixedWidth(self.widget_widths[self.widget_index])
                 self.widgets[self.widget_index] = dropdown
-            elif isinstance(field, pf.Numeric) or isinstance(field, pf.ASCII):
+            elif isinstance(field, pf.Numeric) or isinstance(field, pf.ASCII) or isinstance(field, pf.Bitfield):
                 mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
                 data_length = self.get_field_length(field)
 
