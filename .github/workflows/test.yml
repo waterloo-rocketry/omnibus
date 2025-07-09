@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: "true"
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@v5
         id: setup_python
         with:
-          python-version: 3.11
+          python-version: 3.13
       - name: Restore cached virtualenv
         id: restore_virtualenv_cache
         uses: actions/cache/restore@v4
