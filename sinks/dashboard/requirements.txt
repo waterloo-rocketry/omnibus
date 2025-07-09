@@ -1,4 +1,6 @@
 numpy
-PySide6<=6.7.2 # Cap due to pyqtgraph bug in versions 
+PySide6!=6.9.1 # Cap due to pyqtgraph bug in versions 
+               # Reference:https://github.com/pyqtgraph/pyqtgraph/blob/master/.github/workflows/etc/environment-pyside.yml
+               # https://bugreports.qt.io/browse/PYSIDE-3115
 pyqtgraph
 pyopengl

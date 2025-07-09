@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Check for Python 3.13.x
+PYTHON_VERSION=$(python3 --version 2>&1)
+if [[ ! $PYTHON_VERSION =~ 3\.13\.[0-9]+ ]]; then
+    echo "Error: Python 3.13.x is required. Found: $PYTHON_VERSION"
+    exit 1
+fi
+
 echo "\n----- Upgrading pip -----"
 pip install --upgrade pip || exit 1
 echo "\n----- Installing tools -----"
