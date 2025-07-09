@@ -10,7 +10,7 @@ Omnibus is a unified data bus which manages the connection of various data sourc
 
 ### Requirements
 
-Python 3.10 or newer is required to run Omnibus. For Linux users, a python package with C headers (such as `python3-dev`) is necessary. For Windows users, it's recommended to install and run Omnibus through [Git Bash](https://git-scm.com/download/win) for a smoother Unix-like experience.
+Python 3.11 is required exact to run Omnibus. For Linux users, a python package with C headers (such as `python3-dev`) is necessary. For Windows users, it's recommended to install and run Omnibus through [Git Bash](https://git-scm.com/download/win) for a smoother Unix-like experience.
 
 Note that the production build of Omnibus targets **Python 3.11**. All code contributions must be compatible with that version. See `CONTRIBUTING.md` for more info.
 
