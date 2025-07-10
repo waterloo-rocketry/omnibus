@@ -4,7 +4,7 @@
 
 Omnibus is a unified data bus which manages the connection of various data sources (such as DAQ, RLCS, and live telemetry) and sinks (such as plotting software and logging). Basically, it allows us to take data input from a bunch of different sensors, broadcast it over Wi-Fi, and then display/store it in different formats on the receiving end. This is extremely useful during testing (such as cold flows and static fires) when we need real-time data updates from our test rig while being a safe distance away.
 
-![Omnibus System Flowchart](omnibus-abstract.svg)
+![High-level Omnibus data-flow diagram](omnibus-abstract.svg)
 
 ## Setup
 
