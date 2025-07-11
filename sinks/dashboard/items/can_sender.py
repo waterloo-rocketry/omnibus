@@ -114,7 +114,6 @@ class CanSender(DashboardItem):
                 self.widgets[self.widget_index] = dropdown
             elif isinstance(field, (pf.Numeric, pf.ASCII, pf.Bitfield)):
                 mask = self.numeric_mask if isinstance(field, (pf.Numeric, pf.Bitfield)) else self.ascii_mask
-                mask = self.numeric_mask if isinstance(field, pf.Numeric) else self.ascii_mask
                 data_length = self.get_field_length(field)
 
                 text_field = QLineEdit()

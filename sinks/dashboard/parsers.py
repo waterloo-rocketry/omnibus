@@ -145,9 +145,7 @@ def can_parser(payload):
             if board_bits:
                 error_series.append((topic, timestamp, board_bits))
     
-            return error_series
-
-    return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()]
+    return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()] + error_series
 
 
 @Register("RLCS")
