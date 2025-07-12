@@ -6,6 +6,8 @@ Omnibus is a unified data bus which manages the connection of various data sourc
 
 ![High-level Omnibus data-flow diagram](omnibus-abstract.svg)
 
+> **Note:** For more details, see the [Omnibus documentation](https://docs.waterloorocketry.com/software/omnibus/index.html)
+
 ## Setup
 
 ### Requirements
