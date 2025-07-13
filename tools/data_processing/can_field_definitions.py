@@ -7,6 +7,7 @@
 # Ex2: "data.req_state" will return the req_state feild of the data feild of the msgpacked payload
 
 # Run with -test to run tests
+from typing import Self
 import argparse
 from copy import deepcopy
 from string import Template
@@ -32,6 +33,7 @@ class CanProcessingField:
     def match(self, candidate) -> Optional['CanProcessingField']:
         """Check if the candidate message payload matches the matching pattern"""
 
+        matched_instance: Self | None = None
         for key, value in self.matching_pattern.items():
             if key == 'board_type_id' and value == 'ANY':
                 matched_instance = deepcopy(self)
@@ -48,7 +50,7 @@ class CanProcessingField:
                 checking = checking[nested_key]
             if running_key not in checking or checking[running_key] != value:
                 return None
-        return matched_instance if 'matched_instance' in locals() else self
+        return matched_instance if matched_instance else self
 
     def read(self, candidate):
         """Read the value from the candidate message payload, if it matches the matching pattern. If it doesn't, raises an error."""
