@@ -49,11 +49,11 @@ class FakeSerialCommunicator:
         self.fake_msgs = [
             {
                 "board_type_id": "INJ_SENSOR",
-                "board_inst_id": "GENERIC",
+                "board_inst_id": "ROCKET",
                 "msg_prio": "HIGH",
                 "msg_type": "SENSOR_ANALOG",
                 "time": 1234,
-                "sensor_id": "SENSOR_PRESSURE_CC",
+                "sensor_id": "SENSOR_PRESSURE_CC0",
                 "value": 800,
             },
         ]
