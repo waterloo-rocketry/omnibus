@@ -129,7 +129,6 @@ class DynamicTextItem(DashboardItem):
         condition_value = condition.childs[1].value()
         data_text = self.widget.text()
         
-        # Map comparison operators
         ops = {
             '==': operator.eq,
             '!=': operator.ne,
@@ -143,7 +142,6 @@ class DynamicTextItem(DashboardItem):
             return False
         
         op_func = ops[comparison]
-        # Try numerical comparison first
         try:
             return bool(op_func(float(data_text), float(condition_value)))
         except (ValueError, TypeError):
