@@ -1,3 +1,4 @@
+from typing import Callable, Any
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter
 from pyqtgraph.Qt.QtCore import QTimer, Qt
 from pyqtgraph.parametertree.parameterTypes import (
@@ -13,6 +14,8 @@ from publisher import publisher
 from .dashboard_item import DashboardItem
 from .registry import Register
 from .series_parameter import SeriesListParameter
+
+import operator
 
 EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
 
@@ -123,24 +126,30 @@ class DynamicTextItem(DashboardItem):
 
     def condition_true(self, condition: GroupParameter):
         comparison = condition.childs[0].value()
-        condition_value = str(condition.childs[1].value())
-        data = self.widget.text()
-        match comparison:
-            case '==':
-                return data == condition_value
-            case '<':
-                return data < condition_value
-            case '>':
-                return data > condition_value
-            case '<=':
-                return data <= condition_value
-            case '>=':
-                return data >= condition_value
-            case '!=':
-                return data != condition_value
-            case _:
-                return False
-
+        condition_value = condition.childs[1].value()
+        data_text = self.widget.text()
+        
+        # Map comparison operators
+        ops = {
+            '==': operator.eq,
+            '!=': operator.ne,
+            '<': operator.lt,
+            '>': operator.gt,
+            '<=': operator.le,
+            '>=': operator.ge,
+        }
+        
+        if comparison not in ops:
+            return False
+        
+        op_func = ops[comparison]
+        # Try numerical comparison first
+        try:
+            return bool(op_func(float(data_text), float(condition_value)))
+        except (ValueError, TypeError):
+            # Fall back to string comparison
+            return bool(op_func(data_text, str(condition_value)))
+    
     def expire(self):
         self.setStyleSheet("color: red")
 
@@ -171,8 +180,8 @@ class DynamicTextItem(DashboardItem):
                                                          default='==',
                                                          limits=list_of_comparisons))
         condition_reference.addChild(child={'name': 'value',
-                                            'type': 'float',
-                                            'value': 0})
+                                            'type': 'str',
+                                            'value': '0'})
         condition_reference.addChild(child=ColorParameter(name='color'))
 
     def on_buffer_size_change(self, _, bufsize):
