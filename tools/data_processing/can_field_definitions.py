@@ -7,7 +7,11 @@
 # Ex2: "data.req_state" will return the req_state feild of the data feild of the msgpacked payload
 
 # Run with -test to run tests
+from typing import Self
 import argparse
+from copy import deepcopy
+from string import Template
+from typing import Optional, List
 
 
 class CanProcessingField:
@@ -26,20 +30,27 @@ class CanProcessingField:
     def __str__(self):
         return self.__repr__()
 
-    def match(self, candidate):
+    def match(self, candidate) -> Optional['CanProcessingField']:
         """Check if the candidate message payload matches the matching pattern"""
 
+        matched_instance: Self | None = None
         for key, value in self.matching_pattern.items():
+            if key == 'board_type_id' and value == 'ANY':
+                matched_instance = deepcopy(self)
+                candidate_board_name = candidate['board_type_id'].lower()
+                if isinstance(matched_instance.csv_name,Template):
+                    matched_instance.csv_name = matched_instance.csv_name.substitute(board_type_id=candidate_board_name)
+                continue # Keep will override data
             running_key = key
             checking = candidate
             while running_key.find(".") != -1:
                 nested_key, running_key = running_key.split(".", 1)
                 if nested_key not in checking:
-                    return False
+                    return None
                 checking = checking[nested_key]
             if running_key not in checking or checking[running_key] != value:
-                return False
-        return True
+                return None
+        return matched_instance if matched_instance else self
 
     def read(self, candidate):
         """Read the value from the candidate message payload, if it matches the matching pattern. If it doesn't, raises an error."""
@@ -64,95 +75,97 @@ class CanProcessingField:
 # Fields can be discovered by using the field_peeking.py script
 # Then you define the CSV name, paste the signature from the discovery script, and choose a value from the dictionary you want to export
 
-CAN_FIELDS = [
-    CanProcessingField("ox_tank_pressure", {
-                       "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}, "data.value"),
-    CanProcessingField("pneumatics_pressure", {
-                       "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_PNEUMATICS"}, "data.value"),
-    CanProcessingField("vent_temp", {"msg_type": "SENSOR_ANALOG",
-                       "data.sensor_id": "SENSOR_VENT_TEMP"}, "data.value"),
-    CanProcessingField("vent_ox_pressure", {
-                       'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_OX'}, "data.req_state"),
-    CanProcessingField("vent_valve_req_status", {
-                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, "data.req_state"),
-    CanProcessingField("vent_valve_cur_status", {
-                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}, "data.cur_state"),
-    CanProcessingField("injector_valve_req_status", {
-                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state"),
-    CanProcessingField("injector_valve_cur_status", {
-                       "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.cur_state"),
+CAN_FIELDS: List[CanProcessingField] = [
+    # 0x10
+    CanProcessingField("sensor_mag_y", {
+                       "board_type_id": "PROCESSOR", "msg_type": "SENSOR_MAG_Y", "data.imu_id": "IMU_PROC_ALTIMU10"}, "data.mag"),
+    # 0x11
+    CanProcessingField("sensor_mag_y", {
+                       "board_type_id": "PROCESSOR", "msg_type": "SENSOR_MAG_Y", "data.imu_id": "IMU_PROC_ALTIMU10"}, "data.mag"),
+    # 0x12
+    CanProcessingField("sensor_mag_z", {
+                       "board_type_id": "PROCESSOR", "msg_type": "SENSOR_MAG_Z", "data.imu_id": "IMU_PROC_ALTIMU10"}, "data.mag"),
+
+    # 0x014
     CanProcessingField("battery_current", {
-                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_CURR"}, "data.value"),
-    CanProcessingField("bus_current", {
-                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BUS_CURR"}, "data.value"),
-    CanProcessingField("charge_current", {
-                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_CHARGE_CURR"}, "data.value"),
+                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_CURR"}, "data.value"),
     CanProcessingField("battery_voltage", {
-                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
-    CanProcessingField("ground_voltage", {
-                       "board_id": "CHARGING", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_GROUND_VOLT"}, "data.value"),
-    CanProcessingField("injector_battery_voltage", {
-                       "board_id": "ACTUATOR_INJ", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
-    CanProcessingField("injector_board_status", {
-                       "board_id": "ACTUATOR_INJ", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
-    CanProcessingField("injector_valve_status", {
-                       "board_id": "ACTUATOR_INJ", "msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_INJECTOR_VALVE"}, "data.req_state"),
-    CanProcessingField("charging_board_status", {
-                       "board_id": "CHARGING", "msg_type": "GENERAL_BOARD_STATUS"}, "data.status"),
-    CanProcessingField("cc_pressure", {
-                       'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_PRESSURE_CC'}, 'data.value'),
-    CanProcessingField("barometer", {
-                       'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ANALOG', 'data.sensor_id': 'SENSOR_BARO'}, "data.value"),             
+                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
+    CanProcessingField("charge_current", {
+                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_CHARGE_CURR"}, "data.value"),
+    CanProcessingField("motor_current", {
+                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_MOTOR_CURR"}, "data.value"),
+]
+
+# General Fields is for everyboard shared field, it will based on the board id
+# dynamic added it use Template as csv name with field ${board_type_id}, other than 
+# that it stay same as auto_fields.
+general_fields = [
+    {
+        "temp_name": "${board_type_id}_board_status",
+        "signature": {'msg_type': 'GENERAL_BOARD_STATUS'},
+        "fields": ["data.general_error_bitfield", "data.board_error_bitfield"]
+    }, # 0x001
+    {
+        "temp_name": "${board_type_id}_state_est_data",
+        "signature": {'msg_type': 'STATE_EST_DATA'},
+        "fields": ["data.state_id", "data.data"]
+    }, # 0x01A
 ]
 
 # Auto-add fields with multiple values for the same signature
 # the signature is the same as usual, the base name is the prefix used, and then the fields are used for the part of the data and for labeling
 auto_fields = [
     {
-        "base_name": "gps_lat",
-        "signature": {'board_id': 'GPS', 'msg_type': 'GPS_LATITUDE'},
-        "fields": ["data.degs", "data.mins", "data.dmidminsnutes", "data.direction"]
-    },
+        "base_name": "altimeter_stratologger",
+        "signature": {'board_type_id': 'ARMING', 'msg_type': 'ALT_ARM_STATUS', "data.alt_id": "ALTIMETER_STRATOLOGGER"},
+        "fields": ["data.alt_arm_state", "data.drogue_v", "data.main_v"]
+    }, # 0x008
     {
-        "base_name": "gps_lon",
-        "signature": {'board_id': 'GPS', 'msg_type': 'GPS_LONGITUDE'},
-        "fields": ["data.degs", "data.mins", "data.dmins", "data.direction"]
-    },
+        "base_name": "altimeter_raven",
+        "signature": {'board_type_id': 'ARMING', 'msg_type': 'ALT_ARM_STATUS', "data.alt_id": "ALTIMETER_RAVEN"},
+        "fields": ["data.alt_arm_state", "data.drogue_v", "data.main_v"]
+    }, # 0x008
+    {
+        "base_name": "x_imu",
+        "signature": {'board_type_id': 'PROCESSOR', 'msg_type': 'SENSOR_IMU_X', "data.imu_id": "IMU_PROC_ALTIMU10"},
+        "fields": ["data.linear_accel", "data.angular_velocity"]
+    }, # 0x00d
+    {
+        "base_name": "y_imu",
+        "signature": {'board_type_id': 'PROCESSOR', 'msg_type': 'SENSOR_IMU_Y', "data.imu_id": "IMU_PROC_ALTIMU10"},
+        "fields": ["data.linear_accel", "data.angular_velocity"]
+    }, # 0x00e
+    {
+        "base_name": "z_imu",
+        "signature": {'board_type_id': 'PROCESSOR', 'msg_type': 'SENSOR_IMU_Z', "data.imu_id": "IMU_PROC_ALTIMU10"},
+        "fields": ["data.linear_accel", "data.angular_velocity"]
+    }, # 0x00f
+    {
+        "base_name": "power_baro",
+        "signature": {'board_type_id': 'POWER', 'msg_type': 'SENSOR_BARO', "data.imu_id": "IMU_PROC_ALTIMU10"},
+        "fields": ["data.pressure", "data.temp"]
+    }, # 0x013
     {
         "base_name": "gps_timestamp",
-        "signature": {'board_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'},
-        "fields": ["data.hrs", "data.mins", "data.secs"]
-    },
+        "signature": {'board_type_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'},
+        "fields": ["data.hrs", "data.mins", "data.secs", "data.dsecs"]
+    }, # 0x015
     {
-        "base_name": "sensor_vent_acc",
-        "signature": {'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_ACC'},
-        "fields": ["data.time", "data.x", "data.y", "data.z"]
-    },
+        "base_name": "gps_lat",
+        "signature": {'board_type_id': 'GPS', 'msg_type': 'GPS_LATITUDE'},
+        "fields": ["data.degs", "data.mins", "data.dmins"]
+    }, # 0x016
     {
-        "base_name": "sensor_vent_mag",
-        "signature": {'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_MAG'},
-        "fields": ["data.time", "data.x", "data.y", "data.z"]
-    },
+        "base_name": "gps_lon",
+        "signature": {'board_type_id': 'GPS', 'msg_type': 'GPS_LONGITUDE'},
+        "fields": ["data.degs", "data.mins", "data.dmins"]
+    }, # 0x017
     {
-        "base_name": "sensor_vent_gyro",
-        "signature": {'board_id': 'SENSOR_VENT', 'msg_type': 'SENSOR_GYRO'},
-        "fields": ["data.time", "data.x", "data.y", "data.z"]
-    },
-    {
-        "base_name": "sensor_inj_acc",
-        "signature": {'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_ACC'},
-        "fields": ["data.time", "data.x", "data.y", "data.z"]
-    },
-    {
-        "base_name": "sensor_inj_mag",
-        "signature": {'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_MAG'},
-        "fields": ["data.time", "data.x", "data.y", "data.z"]
-    },
-    {
-        "base_name": "sensor_inj_gyro",
-        "signature": {'board_id': 'SENSOR_INJ', 'msg_type': 'SENSOR_GYRO'},
-        "fields": ["data.time", "data.x", "data.y", "data.z"]
-    },
+        "base_name": "gps_alt",
+        "signature": {'board_type_id': 'GPS', 'msg_type': 'GPS_ALTITUDE'},
+        "fields": ["data.ailtitude"]
+    }, # 0x018
 ]
 
 # Add the auto fields to the CAN_FIELDS
@@ -160,6 +173,12 @@ for field in auto_fields:
     for subfield in field["fields"]:
         CAN_FIELDS.append(CanProcessingField(
             f"{field['base_name']}_{subfield.split('.')[-1]}", field["signature"], subfield))
+
+for field in general_fields:
+    field["signature"]["board_type_id"] = "ANY"
+    for subfield in field["fields"]:
+        CAN_FIELDS.append(CanProcessingField(
+            Template(f"{field['temp_name']}_{subfield.split('.')[-1]}"), field["signature"], subfield))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run tests for field_definitions.py")
