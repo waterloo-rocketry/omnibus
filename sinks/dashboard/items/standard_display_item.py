@@ -4,7 +4,7 @@ from pyqtgraph.parametertree.parameterTypes import ListParameter
 from pyqtgraph.Qt.QtGui import QFont
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 import pyqtgraph as pg
-
+import numpy as np
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
@@ -35,6 +35,7 @@ class StandardDisplayItem(DashboardItem):
         self.parameters.param('font-size').sigValueChanged.connect(self.on_font_size_change)
         self.parameters.param('num-decimals').sigValueChanged.connect(self.on_decimal_change)
         self.parameters.param('display-sparkline').sigValueChanged.connect(self.on_display_sparkline_change)
+    
 
         self.expired_timeout = QTimer()
         self.expired_timeout.setSingleShot(True)
@@ -44,6 +45,7 @@ class StandardDisplayItem(DashboardItem):
         self.series = [self.parameters.param('series').value()]
         # just a single global offset for now
         self.offset = self.parameters.param('offset').value()
+
 
         # subscribe to stream dictated by properties
         for series in self.series:
@@ -77,6 +79,7 @@ class StandardDisplayItem(DashboardItem):
         self.layout.addWidget(self.label, 0, 0)
         self.layout.addWidget(self.numRead, 0, 1)
         self.layout.addWidget(self.widget, 1, 0, 1, 2)
+        self.numRead.setAlignment(Qt.AlignCenter)
         
         self.resize(300,100)
         self.show_size = self.size()
@@ -89,11 +92,23 @@ class StandardDisplayItem(DashboardItem):
         series_param = SeriesListParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0.0}
+        show_slope_param = {'name': 'Show Slope of Linear Approx.', 'type': 'bool', 'value': False}
         font_size_param = {'name': 'font-size', 'type': 'int', 'value': 15, 'limits': (10, 30)}
         num_decimals_param = {'name': 'num-decimals', 'type': 'int', 'value': 2, 'limits': (0, 6)}
         display_sparkline_param = {'name': 'display-sparkline', 'type': 'bool', 'value': True}
-        return [text_param, series_param, limit_param, offset_param, display_sparkline_param, font_size_param, num_decimals_param]
-
+        return [text_param, series_param, limit_param, offset_param, display_sparkline_param, font_size_param, num_decimals_param,show_slope_param]
+    
+    def _calculate_slope(self, times: list[float], points: list[float]) -> float:
+        if len(times) < 2 or len(points) < 2:
+            return np.nan
+        x = np.array(times, dtype=np.float64)
+        y = np.array(points, dtype=np.float64)
+        # Use Polynomial.fit to fit a linear polynomial (degree=1)
+        p = np.polynomial.Polynomial.fit(x, y, deg=1)
+        # The slope is the coefficient of the linear term
+        return p.convert().coef[1]
+    
+    
     def on_series_change(self, param, value):
         self.series = [value]
         # resubscribe to the new stream
@@ -172,10 +187,12 @@ class StandardDisplayItem(DashboardItem):
         time, point = payload
         point += self.offset
 
+        
         # time should be passed as seconds, GRAPH_RESOLUTION is points per second
         if time - self.last[stream] < 1 / config.GRAPH_RESOLUTION:
             return
-
+        
+    
         self.last[stream] = time
         self.times[stream].append(time)
         self.points[stream].append(point)
@@ -216,7 +233,16 @@ class StandardDisplayItem(DashboardItem):
                             t + config.GRAPH_STEP, padding=0)
         # For the numerical readout label
         self.data = float(point)
-        self.numRead.setText(f"{self.data:.{self.decimals}f}")
+        if self.parameters.param('Show Slope of Linear Approx.').value():
+            slope_values: list[str] = []
+            for stream in self.series:
+                slope = self._calculate_slope(self.times[stream], self.points[stream])
+                slope_values.append(f"{slope:.2f}" if not np.isnan(slope) else "[--]")
+            slope_text = " Slope: " + ", ".join(slope_values)
+            self.numRead.setText(f"Point: {self.data:.{self.decimals}f}{slope_text}")
+        else:
+            slope_text = ""
+            self.numRead.setText(f"{self.data:.{self.decimals}f}")
         # Restart timer
         self.setStyleSheet("")
         self.expired_timeout.stop()
