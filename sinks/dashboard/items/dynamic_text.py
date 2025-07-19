@@ -16,7 +16,7 @@ from .series_parameter import SeriesListParameter
 
 import operator
 
-EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
+EXPIRED_TIME = 2.5  # time in seconds after which data "expires"
 
 class AutocompleteParameterItem(StrParameterItem):
     completer = QCompleter(publisher.get_all_streams())
