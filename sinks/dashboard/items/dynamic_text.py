@@ -125,8 +125,8 @@ class DynamicTextItem(DashboardItem):
         self.expired_timeout.start(int(EXPIRED_TIME * 1000))
 
     def condition_true(self, condition: GroupParameter):
-        comparison = condition.childs[0].value()
-        condition_value = condition.childs[1].value()
+        comparison = str(condition.childs[0].value())
+        condition_value = str(condition.childs[1].value())
         data_text = self.widget.text()
         
         ops = {
@@ -137,16 +137,25 @@ class DynamicTextItem(DashboardItem):
             '<=': operator.le,
             '>=': operator.ge,
         }
-        
+
+        str_only_ops = {
+            "contains": operator.contains
+        }
+
+        if comparison in str_only_ops:
+            op_func = str_only_ops[comparison]
+            return bool(op_func(data_text.lower(), condition_value.lower()))
+
         if comparison not in ops:
             return False
         
         op_func = ops[comparison]
+
         try:
             return bool(op_func(float(data_text), float(condition_value)))
         except (ValueError, TypeError):
             # Fall back to string comparison
-            return bool(op_func(data_text, str(condition_value)))
+            return bool(op_func(data_text.lower(), condition_value.lower()))
     
     def expire(self):
         self.setStyleSheet("color: red")
