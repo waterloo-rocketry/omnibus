@@ -26,7 +26,8 @@ Note that the production build of Omnibus targets **Python 3.11**. All code cont
    - For Windows using Git Bash: `source venv/Scripts/activate`
 5. There are two ways to install Omnibus. The setup script is the easiest method, but if it doesn't work you can manually install the required packages
    1. Setup script:
-      - For Mac/Linux or Windows Git Bash: `source setup.sh`
+      - For Mac/Linux: `source setup.sh`
+      - For Windows Git Bash: `./setup.sh`
    2. Manual installation:
       - Upgrade pip version: `pip install --upgrade pip`
       - Run `pip install wheel`, which will help install the rest of the packages more quickly
