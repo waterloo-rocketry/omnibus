@@ -130,20 +130,17 @@ def can_parser(payload):
     last_timestamp[time_key] = timestamp
     timestamp += offset_timestamp[time_key]
 
+    err_topic = f"{board_type_id}/{board_inst_id}/ERROR"
+
     if message_type == "GENERAL_BOARD_STATUS":
-        # Pull the bitfields (default to 0 when missing)
-        general_bits = payload.get("general_error_bitfield", 0)
-        board_bits   = payload.get("board_error_bitfield",   0)
+        general_bits = data.get("general_error_bitfield")
+        board_bits = data.get("board_error_bitfield")
     
-        # Exit early unless at least one bit is set
-        if general_bits or board_bits:
-            topic = f"{board_type_id}/{board_inst_id}/ERROR"
+        if general_bits != "E_NOMINAL":
+            error_series.append((err_topic, timestamp, general_bits))
     
-            if general_bits:
-                error_series.append((topic, timestamp, general_bits))
-    
-            if board_bits:
-                error_series.append((topic, timestamp, board_bits))
+        if board_bits != "E_NOMINAL":
+            error_series.append((err_topic, timestamp, board_bits))
     
     return [(f"{prefix}/{field}", timestamp, value) for field, value in data.items()] + error_series
 
