@@ -154,7 +154,6 @@ class DynamicTextItem(DashboardItem):
         try:
             return bool(op_func(float(data_text), float(condition_value)))
         except (ValueError, TypeError):
-            # Fall back to string comparison
             return bool(op_func(data_text.lower(), condition_value.lower()))
     
     def expire(self):
@@ -181,7 +180,7 @@ class DynamicTextItem(DashboardItem):
                                                          title=condition_label))
 
         condition_reference = self.parameters.param('condition_label' + cond_count_str)
-        list_of_comparisons = ['>', '<', '>=', '<=', '==', '!=']
+        list_of_comparisons = ['>', '<', '>=', '<=', '==', '!=', 'contains']
         condition_reference.addChild(child=ListParameter(name='condition',
                                                          type='list',
                                                          default='==',
