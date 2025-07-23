@@ -49,13 +49,19 @@ class FileCommunicator:
             else:
                 self.file.close()
             return data
-        except IOError as e:
-            print(f"Error reading file: {e}")
+        except IOError:
             self.file.close()
             return b""
 
     def write(self, msg: bytes):
         print('Cannot write to file: {msg}')
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if not self.file.closed:
+            self.file.close()
 
 # Acting as a fake usb debug board
 class FakeSerialCommunicator:
