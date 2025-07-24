@@ -14,8 +14,9 @@ from .dashboard_item import DashboardItem
 from .registry import Register
 from .series_parameter import SeriesListParameter
 
-EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
+import operator
 
+EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
 
 class AutocompleteParameterItem(StrParameterItem):
     completer = QCompleter(publisher.get_all_streams())
@@ -122,25 +123,37 @@ class DynamicTextItem(DashboardItem):
         self.expired_timeout.start(int(EXPIRED_TIME * 1000))
 
     def condition_true(self, condition: GroupParameter):
-        comparison = condition.childs[0].value()
+        comparison = str(condition.childs[0].value())
         condition_value = str(condition.childs[1].value())
-        data = self.widget.text()
-        match comparison:
-            case '==':
-                return data == condition_value
-            case '<':
-                return data < condition_value
-            case '>':
-                return data > condition_value
-            case '<=':
-                return data <= condition_value
-            case '>=':
-                return data >= condition_value
-            case '!=':
-                return data != condition_value
-            case _:
-                return False
+        data_text = self.widget.text()
+        
+        ops = {
+            '==': operator.eq,
+            '!=': operator.ne,
+            '<': operator.lt,
+            '>': operator.gt,
+            '<=': operator.le,
+            '>=': operator.ge,
+        }
 
+        str_only_ops = {
+            "contains": operator.contains
+        }
+
+        if comparison in str_only_ops:
+            op_func = str_only_ops[comparison]
+            return bool(op_func(data_text.lower(), condition_value.lower()))
+
+        if comparison not in ops:
+            return False
+        
+        op_func = ops[comparison]
+
+        try:
+            return bool(op_func(float(data_text), float(condition_value)))
+        except (ValueError, TypeError):
+            return bool(op_func(data_text.lower(), condition_value.lower()))
+    
     def expire(self):
         self.setStyleSheet("color: red")
 
@@ -165,14 +178,14 @@ class DynamicTextItem(DashboardItem):
                                                          title=condition_label))
 
         condition_reference = self.parameters.param('condition_label' + cond_count_str)
-        list_of_comparisons = ['>', '<', '>=', '<=', '==', '!=']
+        list_of_comparisons = ['>', '<', '>=', '<=', '==', '!=', 'contains']
         condition_reference.addChild(child=ListParameter(name='condition',
                                                          type='list',
                                                          default='==',
                                                          limits=list_of_comparisons))
         condition_reference.addChild(child={'name': 'value',
-                                            'type': 'float',
-                                            'value': 0})
+                                            'type': 'str',
+                                            'value': '0'})
         condition_reference.addChild(child=ColorParameter(name='color'))
 
     def on_buffer_size_change(self, _, bufsize):
