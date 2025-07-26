@@ -1,6 +1,21 @@
 @echo off
 SETLOCAL ENABLEDELAYEDEXPANSION
 
+REM Check for Python 3.13.x
+for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do set PYTHON_VERSION=%%v
+for /f "tokens=1-3 delims=." %%a in ("!PYTHON_VERSION!") do (
+    set MAJOR=%%a
+    set MINOR=%%b
+)
+if not "!MAJOR!"=="3" (
+    echo Error: Python 3.13.x is required. Found: !PYTHON_VERSION!
+    exit /b 1
+)
+if not "!MINOR!"=="13" (
+    echo Error: Python 3.13.x is required. Found: !PYTHON_VERSION!
+    exit /b 1
+)
+
 REM Upgrade pip
 echo.
 echo ----- Upgrading pip -----
