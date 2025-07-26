@@ -35,9 +35,24 @@ class SerialCommunicator:
 class FileCommunicator:
     def __init__(self, filename: str):
         self.file = open(filename, mode='rb')
+        self.page_size = 4096
+        self.page_number = 0
 
     def read(self):
-        return self.file.read(4096)
+        if self.file.closed:
+            return b""
+        try:
+            self.file.seek(self.page_number * self.page_size)
+            data = self.file.read(self.page_size)
+            if data:
+                self.page_number += 1 # Increment page number after reading
+            else:
+                self.file.close()
+            return data
+        except IOError as e:
+            print(f"Error reading file: {e}")
+            self.file.close()
+            return b""
 
     def write(self, msg: bytes):
         print('Cannot write to file: {msg}')
@@ -236,6 +251,16 @@ def main():
 
         buffer += line
 
+        if args.format == "logger":
+            if 'initial_page_number' not in locals():
+                if len(buffer) < 4:
+                    continue  # Wait for more data
+                try:
+                    initial_page_number = int(buffer[3])
+                except(IndexError, ValueError) as e:
+                    raise ValueError(f"Failed to extract initial page number: {e}")
+            logger_generator = parser(buffer, initial_page_number + communicator.page_number - 1) # Magic number 1 used to check the page number
+
         while True:
             try:
                 if args.format == "telemetry":
@@ -252,6 +277,11 @@ def main():
                     except ValueError as e:
                         buffer = buffer[i + 1 :]
                         raise e
+                elif args.format == "logger":
+                    msg_sid, msg_data = next(logger_generator, (None, None))
+                    if msg_sid is None or msg_data is None:
+                        buffer = b"" # Clear the buffer if no more messages
+                        break
                 else:
                     text_buff = buffer.decode("utf-8", errors="backslashreplace")
                     i = text_buff.find("\n")
