@@ -1,4 +1,4 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter, QSizePolicy
 from pyqtgraph.Qt.QtCore import QTimer, Qt
 from pyqtgraph.parametertree.parameterTypes import (
     SimpleParameter,
@@ -70,6 +70,7 @@ class DynamicTextItem(DashboardItem):
         publisher.subscribe(series, self.on_data_update)
 
         self.widget = QLabel()
+        self.widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.widget.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(self.widget)
 
@@ -78,6 +79,9 @@ class DynamicTextItem(DashboardItem):
 
         self.buffer_size = self.parameters.param('buffer size').value()
         self.buffer = []
+
+    def resizeEvent(self, _):
+        self.resize_callback(self)
 
     def add_parameters(self):
         font_param = {'name': 'font size', 'type': 'int', 'value': 12}
