@@ -35,9 +35,19 @@ class SerialCommunicator:
 class FileCommunicator:
     def __init__(self, filename: str):
         self.file = open(filename, mode='rb')
+        self.page_size = 4096
+        self.page_number = 0
 
     def read(self):
-        return self.file.read(4096)
+        if self.file.closed:
+            return b""
+        self.file.seek(self.page_number * self.page_size)
+        data = self.file.read(self.page_size)
+        if data:
+            self.page_number += 1 # Increment page number after reading
+        else:
+            self.file.close()
+        return data
 
     def write(self, msg: bytes):
         print('Cannot write to file: {msg}')
@@ -49,11 +59,11 @@ class FakeSerialCommunicator:
         self.fake_msgs = [
             {
                 "board_type_id": "INJ_SENSOR",
-                "board_inst_id": "GENERIC",
+                "board_inst_id": "ROCKET",
                 "msg_prio": "HIGH",
                 "msg_type": "SENSOR_ANALOG",
                 "time": 1234,
-                "sensor_id": "SENSOR_PRESSURE_CC",
+                "sensor_id": "SENSOR_PRESSURE_CC0",
                 "value": 800,
             },
         ]
@@ -236,6 +246,14 @@ def main():
 
         buffer += line
 
+        if args.format == "logger":
+            if 'initial_page_number' not in locals():
+                if len(buffer) > 3:
+                    initial_page_number = int(buffer[3])
+                else:
+                    raise ValueError("Initial page number not found in buffer")
+            logger_generator = parser(buffer, initial_page_number + communicator.page_number - 1) # Magic number 1 used to check the page number
+
         while True:
             try:
                 if args.format == "telemetry":
@@ -252,6 +270,11 @@ def main():
                     except ValueError as e:
                         buffer = buffer[i + 1 :]
                         raise e
+                elif args.format == "logger":
+                    msg_sid, msg_data = next(logger_generator, (None, None))
+                    if msg_sid is None or msg_data is None:
+                        buffer = b"" # Clear the buffer if no more messages
+                        break
                 else:
                     text_buff = buffer.decode("utf-8", errors="backslashreplace")
                     i = text_buff.find("\n")
