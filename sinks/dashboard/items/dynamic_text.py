@@ -92,7 +92,7 @@ class DynamicTextItem(DashboardItem):
         series_param = SeriesListParameter()
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         buffer_size_param = {'name': 'buffer size', 'type': 'int', 'value': 1}
-        dynamic_size_policy_param = {'name': 'dynamic_size_policy', 'type': 'bool', 'value': False, 'title': 'Dynamic Size Policy'}
+        dynamic_size_policy_param = {'name': 'dynamic_size_policy', 'type': 'bool', 'value': False, 'title': 'dynamic size'}
         new_param_button = ActionParameter(name='add_new',
                                                 title="Add New")
         return [dynamic_size_policy_param, font_param, series_param, offset_param, buffer_size_param, new_param_button]
