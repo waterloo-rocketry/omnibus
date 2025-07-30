@@ -135,3 +135,40 @@ QComboBox::drop-down {
     subcontrol-position: right;
     width: 20px;
 }
+
+/* QMessageBox dark mode container */
+QMessageBox {
+    background-color: #2b2b2b;
+    border: 2px solid #444444;
+    border-radius: 10px;
+}
+
+/* Text content inside the message box */
+QMessageBox QLabel {
+    color: #dddddd;
+    font-size: 14px;
+    padding: 10px;
+}
+
+/* Buttons inside the message box */
+QMessageBox QPushButton {
+    background-color: #3c7dd9;
+    color: #ffffff;
+    border: 1px solid #1f4f96;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: bold;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #346bb5;
+}
+
+QMessageBox QPushButton:pressed {
+    background-color: #2a5a9e;
+}
+
+QMessageBox QPushButton:disabled {
+    background-color: #555555;
+    color: #999999;
+}

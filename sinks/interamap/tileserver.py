@@ -3,65 +3,66 @@ import os
 import sys
 import argparse
 
+CONTAINER_NAME = "tileserver-omnibus-interamap"
 
-def check_tileserver_installed():
-    """Check if tileserver-gl is installed."""
+def start_tileserver_with_docker(mbtiles_path):
+    """Start the tileserver-gl Docker container in detached mode."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    mbtiles_abs_path = os.path.abspath(os.path.join(script_dir, "resources/mbtiles", os.path.basename(mbtiles_path)))
+    host_dir = os.path.dirname(mbtiles_abs_path)
+    container_mbtiles_path = os.path.basename(mbtiles_abs_path)
+
+    command = [
+        "docker", "run", "--rm", "-d",  # Run in detached mode
+        "--name", CONTAINER_NAME,
+        "-v", f"{host_dir}:/data",
+        "-p", "8080:8080",
+        "maptiler/tileserver-gl",
+        "--file", f"{container_mbtiles_path}"
+    ]
+
+    print(f"Starting tileserver-gl via Docker with {mbtiles_path}...")
     try:
-        subprocess.run(
-            ["tileserver-gl", "--version"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        print("tileserver-gl is installed.")
+        result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        container_id = result.stdout.decode().strip()
+        print(f"TileServer is running in container: {container_id}")
+    except subprocess.CalledProcessError as e:
+        print("Failed to start TileServer:")
+        print(e.stderr.decode())
+        sys.exit(1)
+
+
+def stop_tileserver():
+    """Stop the running tileserver-gl Docker container."""
+    print(f"Stopping container '{CONTAINER_NAME}'...")
+    try:
+        subprocess.run(["docker", "stop", CONTAINER_NAME], check=True)
+        print("TileServer stopped.")
     except subprocess.CalledProcessError:
-        print("tileserver-gl is not installed.")
-        sys.exit(1)
-    except FileNotFoundError:
-        print("tileserver-gl is not found. Please install it.")
-        sys.exit(1)
+        print("No running TileServer container found or error stopping it.")
 
 
-def start_tileserver(mbtiles_path):
-    """Start the tileserver-gl process."""
-    # Define the command to start the tile server
-    command = ["tileserver-gl", "resources/mbtiles/" + mbtiles_path]
-
-    # Start the subprocess
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    print(f"Starting tileserver-gl with {mbtiles_path}...")
-
-    # Capture the output and errors
-    stdout, stderr = process.communicate()
-
-    # Print the output and errors
-    print("Output:", stdout.decode())
-    print("Errors:", stderr.decode())
-
-
-def run_tileserver(mbtiles_path):
-    """Main function to check tileserver installation and start it."""
-    try:
-        check_tileserver_installed()
-        start_tileserver(mbtiles_path)
-    except Exception as e:
-        print(f"Error: {e}")
-
-
-# Main entry point for running the module
 if __name__ == "__main__":
-    # Argument parsing
-    parser = argparse.ArgumentParser(
-        description="Start tileserver-gl with a specific .mbtiles file."
-    )
-    parser.add_argument(
+    parser = argparse.ArgumentParser(description="Start or stop tileserver-gl via Docker.")
+    subparsers = parser.add_subparsers(dest="command", help="Sub-command help")
+
+    # Start command
+    parser_start = subparsers.add_parser("start", help="Start TileServer with a .mbtiles file")
+    parser_start.add_argument(
         "mbtiles_file",
         nargs="?",
         default="ontario-latest.osm.mbtiles",
-        help="The path to the .mbtiles file",
+        help="Path to the .mbtiles file relative to project root.",
     )
+
+    # Stop command
+    subparsers.add_parser("stop", help="Stop the running TileServer container")
+
     args = parser.parse_args()
 
-    # Run the tileserver with the provided .mbtiles file
-    run_tileserver(args.mbtiles_file)
+    if args.command == "start":
+        start_tileserver_with_docker(args.mbtiles_file)
+    elif args.command == "stop":
+        stop_tileserver()
+    else:
+        parser.print_help()
