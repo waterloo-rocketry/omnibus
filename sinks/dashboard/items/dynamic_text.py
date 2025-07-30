@@ -1,4 +1,4 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter, QSizePolicy
 from pyqtgraph.Qt.QtCore import QTimer, Qt
 from pyqtgraph.parametertree.parameterTypes import (
     SimpleParameter,
@@ -59,6 +59,7 @@ class DynamicTextItem(DashboardItem):
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
         self.parameters.param('add_new').sigActivated.connect(self.on_add_new_change)
         self.parameters.param('buffer size').sigValueChanged.connect(self.on_buffer_size_change)
+        self.parameters.param('dynamic_size_policy').sigValueChanged.connect(self.update_size_policy)
 
         self.expired_timeout = QTimer()
         self.expired_timeout.setSingleShot(True)
@@ -70,6 +71,7 @@ class DynamicTextItem(DashboardItem):
         publisher.subscribe(series, self.on_data_update)
 
         self.widget = QLabel()
+        self.update_size_policy(None)  # Set initial size policy
         self.widget.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(self.widget)
 
@@ -79,14 +81,21 @@ class DynamicTextItem(DashboardItem):
         self.buffer_size = self.parameters.param('buffer size').value()
         self.buffer = []
 
+    def update_size_policy(self, _):
+        if self.parameters.param('dynamic_size_policy').value():
+            self.widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        else:
+            self.widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+
     def add_parameters(self):
         font_param = {'name': 'font size', 'type': 'int', 'value': 12}
         series_param = SeriesListParameter()
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
         buffer_size_param = {'name': 'buffer size', 'type': 'int', 'value': 1}
+        dynamic_size_policy_param = {'name': 'dynamic_size_policy', 'type': 'bool', 'value': False, 'title': 'dynamic size'}
         new_param_button = ActionParameter(name='add_new',
                                                 title="Add New")
-        return [font_param, series_param, offset_param, buffer_size_param, new_param_button]
+        return [dynamic_size_policy_param, font_param, series_param, offset_param, buffer_size_param, new_param_button]
 
     def on_series_change(self, _, value):
         publisher.unsubscribe_from_all(self.on_data_update)
