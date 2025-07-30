@@ -591,7 +591,7 @@ class Dashboard(QWidget):
             for item_type in registry.get_items():
                 if widget["class"] == item_type.get_name():
                     item = item_type(self, widget["params"])
-                    rect = self.add(item, widget["pos"])
+                    rect: QGraphicsRectItem = self.add(item, widget["pos"])
                     if "locked" in widget and widget["locked"] is not None:
                         locked_item_pairs.append((widget["locked"], rect))
                     break

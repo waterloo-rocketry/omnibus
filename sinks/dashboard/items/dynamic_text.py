@@ -1,3 +1,6 @@
+from collections import OrderedDict
+import json
+
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter, QSizePolicy
 from pyqtgraph.Qt.QtCore import QTimer, Qt
 from pyqtgraph.parametertree.parameterTypes import (
@@ -80,6 +83,40 @@ class DynamicTextItem(DashboardItem):
 
         self.buffer_size = self.parameters.param('buffer size').value()
         self.buffer = []
+
+        # Restore the conditions if any exist
+        if len(args) == 2:
+            _, params = args
+            state = json.loads(params, object_pairs_hook=OrderedDict)
+            conditions = [(k, v["children"]) for k, v in state["children"].items() if "children" in v and v["children"]]
+            for condition_name, condition_states in conditions:
+                self.add_condition(condition_name, condition_states["condition"]["value"],
+                                   condition_states["value"]["value"], condition_states["color"]["value"])
+
+    def add_condition(self, condition_name=None, condition_state="==", condition_value=0, condition_color = None):
+        # Increment number of conditions and get string representation
+        self.condition_count += 1
+        cond_count_str = str(self.condition_count)
+
+        # Insert a new GroupParameter into the ParameterTree
+        #   with 3 children: a condition (</>, <=/>=, =/!=),
+        #                    a value,
+        #                    a ColorParameter
+        condition_label = condition_name if condition_name else 'condition_label' + cond_count_str
+        self.parameters.insertChild(pos=(len(self.parameters.childs)-1),
+                                    child=GroupParameter(name='condition_label' + cond_count_str,
+                                                         title=condition_label))
+
+        condition_reference = self.parameters.param(condition_label)
+        list_of_comparisons = ['>', '<', '>=', '<=', '==', '!=', 'contains']
+        condition_reference.addChild(child=ListParameter(name='condition',
+                                                         type='list',
+                                                         default=condition_state,
+                                                         limits=list_of_comparisons))
+        condition_reference.addChild(child={'name': 'value',
+                                            'type': 'str',
+                                            'value': condition_value})
+        condition_reference.addChild(child=ColorParameter(name='color', value=condition_color))
 
     def update_size_policy(self, _):
         if self.parameters.param('dynamic_size_policy').value():
@@ -173,29 +210,7 @@ class DynamicTextItem(DashboardItem):
         self.offset = offset
 
     def on_add_new_change(self, _):
-        # Increment number of conditions and get string representation
-        self.condition_count += 1
-        cond_count_str = str(self.condition_count)
-
-        # Insert a new GroupParameter into the ParameterTree
-        #   with 3 children: a condition (</>, <=/>=, =/!=),
-        #                    a value,
-        #                    a ColorParameter
-        condition_label = 'Condition ' + cond_count_str
-        self.parameters.insertChild(pos=(len(self.parameters.childs)-1),
-                                    child=GroupParameter(name='condition_label' + cond_count_str,
-                                                         title=condition_label))
-
-        condition_reference = self.parameters.param('condition_label' + cond_count_str)
-        list_of_comparisons = ['>', '<', '>=', '<=', '==', '!=', 'contains']
-        condition_reference.addChild(child=ListParameter(name='condition',
-                                                         type='list',
-                                                         default='==',
-                                                         limits=list_of_comparisons))
-        condition_reference.addChild(child={'name': 'value',
-                                            'type': 'str',
-                                            'value': '0'})
-        condition_reference.addChild(child=ColorParameter(name='color'))
+        self.add_condition()
 
     def on_buffer_size_change(self, _, bufsize):
         self.buffer_size = bufsize
