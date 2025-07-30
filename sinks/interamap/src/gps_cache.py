@@ -84,7 +84,7 @@ class GPS_Cache(QThread):
         """Export the map to KML file."""
         file_name = f"waterloo_rocketry_gps_{datetime.now().strftime('%Y%m%d_%H%M%S')}.kmz"
         file_path = os.path.join(self.relative_path, "shared", file_name)
-        gps_points_placemarks: (str, kml.Folder) = {}
+        gps_points_placemarks: dict[str, kml.Folder] = {}
         gps_linestring_placemarks = kml.Folder()
 
         # add points to placemarks
@@ -135,8 +135,14 @@ class GPS_Cache(QThread):
                 )
             )
 
-        k = kml.KML(features=[kml.Document(name="Points", features=list(gps_points_placemarks.values())),
-                              kml.Document(name="LineStrings", features=[gps_linestring_placemarks])])
+        # Flatten Documents into one
+        main_doc = kml.Document(name="Waterloo Rocketry GPS")
+        for folder in gps_points_placemarks.values():
+            main_doc.append(folder)
+        main_doc.append(gps_linestring_placemarks)
+
+        k = kml.KML(features=[main_doc])
+
         try:
             # k.write(pathlib.Path('points.kml'), prettyprint=True) # Debug: write directly as kml file
             with zipfile.ZipFile(file_path, "w") as kmz:
