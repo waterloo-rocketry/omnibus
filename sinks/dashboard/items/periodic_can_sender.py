@@ -1,4 +1,4 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox, QLabel, QRadioButton, QButtonGroup, QVBoxLayout
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox, QLabel, QRadioButton, QButtonGroup, QVBoxLayout, QMessageBox
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.parametertree.parameterTypes import ListParameter
 from .dashboard_item import DashboardItem
@@ -65,6 +65,11 @@ class PeriodicCanSender(DashboardItem):
 
         self.parameters.param('period').sigValueChanged.connect(self.on_period_change)
         self.parameters.param('actuator').sigValueChanged.connect(self.on_actuator_change)
+
+        if self.dashboard.parsley_instance == "None":
+            QMessageBox.warning(self, "Warning", "No Parsley instance selected." \
+            "\nPlease select a Parsley instance using the Parsley dropdown.")
+            return
 
         publisher.subscribe_clock(60, self.on_clock_update)
 
