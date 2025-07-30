@@ -87,11 +87,15 @@ class DynamicTextItem(DashboardItem):
         # Restore the conditions if any exist
         if len(args) == 2:
             _, params = args
-            state = json.loads(params, object_pairs_hook=OrderedDict)
-            conditions = [(k, v["children"]) for k, v in state["children"].items() if "children" in v and v["children"]]
-            for condition_name, condition_states in conditions:
-                self.add_condition(condition_name, condition_states["condition"]["value"],
-                                   condition_states["value"]["value"], condition_states["color"]["value"])
+            try:
+                state = json.loads(params, object_pairs_hook=OrderedDict)
+                conditions = [(k, v["children"]) for k, v in state["children"].items() if "children" in v and v["children"]]
+                for condition_name, condition_states in conditions:
+                    self.add_condition(condition_name, condition_states["condition"]["value"],
+                                       condition_states["value"]["value"], condition_states["color"]["value"])
+            except (json.JSONDecodeError, KeyError, TypeError) as e: 
+                print("Unable to restore condition:", e)
+                pass 
 
     def add_condition(self, condition_name=None, condition_state="==", condition_value=0, condition_color = None):
         # Increment number of conditions and get string representation
