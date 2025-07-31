@@ -55,6 +55,7 @@ class MapWindow(QMainWindow):
         self.map_view = MapView(self)
         self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.map_view.update_gps_label.connect(self.update_gps_status)
+        self.map_view.point_storage.storage_update.connect(self.update_marker_button_states)
 
         # Add the map view to the splitter
         self.main_splitter.addWidget(self.map_view)
@@ -169,7 +170,7 @@ class MapWindow(QMainWindow):
         marker_actions_layout = QHBoxLayout()
 
         # Center markers button
-        self.center_markers_button = QPushButton("Center Markers", self)
+        self.center_markers_button = QPushButton("Refresh Map", self)
         self.center_markers_button.setToolTip("Center the map view on all markers")
         self.center_markers_button.clicked.connect(self.map_view.refresh_map)
         marker_actions_layout.addWidget(self.center_markers_button)
@@ -185,6 +186,8 @@ class MapWindow(QMainWindow):
         self.export_points_button.setToolTip("Export all markers to a KMZ file")
         self.export_points_button.clicked.connect(self.map_view.point_storage.export_points)
         marker_actions_layout.addWidget(self.export_points_button)
+
+        self.update_marker_button_states()
 
         # Add the horizontal layout to the toolbar
         self.toolbar_layout.addLayout(marker_actions_layout)
@@ -246,7 +249,7 @@ class MapWindow(QMainWindow):
                 previous_state = self.map_view.rt_parser.running
                 self.start_stop_realtime_data()
                 running = self.map_view.rt_parser.running
-                if previous_state == running == False:
+                if previous_state is False and running is False:
                     QMessageBox.warning(self, "No Connection", "No real-time data connection established yet.")
                 if running:
                     start_stop_button.setText("Stop Real-time Parser")
@@ -371,6 +374,25 @@ class MapWindow(QMainWindow):
                 "Invalid input for latitude or longitude. Please enter valid numbers."
             )
 
+    def update_marker_button_states(self):
+        """Update marker button states based on available markers."""
+        has_markers = (self.map_view.point_storage.get_gps_points() or 
+                    self.map_view.point_storage.get_linestring_gps())
+        self.clear_markers_button.setEnabled(bool(has_markers))
+        self.export_points_button.setEnabled(bool(has_markers))
+        self.center_markers_button.setEnabled(bool(has_markers))
+
+        # Update styles based on enabled state
+        def set_button_style(button):
+            if button.isEnabled():
+                button.setStyleSheet("")
+            else:
+                button.setStyleSheet("background-color: grey; color: white;")
+
+        set_button_style(self.clear_markers_button)
+        set_button_style(self.export_points_button)
+        set_button_style(self.center_markers_button)
+
     def clear_markers(self):
         """Function to clear all markers from the map."""
         reply = QMessageBox.question(
@@ -399,3 +421,6 @@ class MapWindow(QMainWindow):
             QMessageBox.No
         )
         return reply == QMessageBox.Yes
+
+    def quit(self):
+        self.map_view.quit()
