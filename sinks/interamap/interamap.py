@@ -3,6 +3,7 @@ import sys
 import os
 
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
 from tileserver import start_tileserver, stop_tileserver
 from src.main_window import MapWindow
@@ -39,6 +40,8 @@ def interamap_driver():
     # Load and apply QSS stylesheet
     stylesheet = load_stylesheet(path+"/resources/styles/lightmode.qss")
     app.setStyleSheet(stylesheet)
+    # Set application logo
+    app.setWindowIcon(QIcon(path + "/resources/logo.png"))
 
     window = MapWindow()
     

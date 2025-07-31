@@ -74,7 +74,6 @@ class MapWindow(QMainWindow):
         
         # HTTP Share Server
         self.share_server = ThreadedHTTPServer(os.path.join(self.relative_path, "shared"))
-            
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:

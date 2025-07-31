@@ -22,6 +22,7 @@ class GPS_Cache(QThread):
 
     def __init__(self):
         QThread.__init__(self)
+        self.setObjectName("GPS_Cache")
         self.gps_points = []
         self.gps_linestrings = []
         self.relative_path = os.path.dirname(

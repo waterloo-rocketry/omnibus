@@ -137,6 +137,7 @@ class RTParser(QThread):
 
     def __init__(self):
         super().__init__()
+        self.setObjectName("RTParserThread")
         self.receiver = Receiver("")
         self.running = False
 
