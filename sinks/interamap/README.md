@@ -38,7 +38,7 @@ To launch the interamap map, follow the instructions below:
             (Note: tilemaker don't have a compiled distribution (At least for MacOS), you need to compile it yourself)  
     
             (Side: For MacOS, check about this [issue](https://github.com/systemed/tilemaker/issues/690), for dependencies error)
-    2. Edit the `sinks/interamap/src/config.py` file to change the `ONLINE_MODE` flag to `True`
+    2. Edit the `sinks/interamap/config.py` file to change the `ONLINE_MODE` flag to `False` 
     3. Run the following command to start the Interamap:
 
         ```bash

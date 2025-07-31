@@ -18,7 +18,7 @@ from src.map_view import MapView
 
 from src.http_server import get_share_url, ThreadedHTTPServer
 from src.url_to_qrcode import QRCodeWindow
-from src.config import BoardID
+from config import BoardID
 
 class MapWindow(QMainWindow):
     def __init__(self):

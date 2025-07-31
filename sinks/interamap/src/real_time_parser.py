@@ -10,7 +10,7 @@ from PySide6.QtCore import QThread, Signal
 
 try:
     from src.data_struct import Point_GPS, Info_GPS
-    from src.config import BoardID, BOARD_FIELDS
+    from config import BoardID, BOARD_FIELDS
 except ImportError:
     from data_struct import Point_GPS, Info_GPS
     from config import BoardID, BOARD_FIELDS # type: ignore

@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from tileserver import start_tileserver, stop_tileserver
 from src.main_window import MapWindow
 
-from src.config import ONLINE_MODE, MBTILES_PATH
+from config import ONLINE_MODE, MBTILES_PATH
 import subprocess
 
 def confirm_quit():
