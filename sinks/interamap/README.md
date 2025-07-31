@@ -42,7 +42,7 @@ To launch the interamap map, follow the instructions below:
     3. Run the following command to start the Interamap:
 
         ```bash
-        python main.py
+        python sinks/interamap/main.py
         ```
         (Note: For offline mode, dark mode map is not available)
     4. Run the following command to manually start the tileserver: (This is optional, only use if tileserver is not started automatically)
