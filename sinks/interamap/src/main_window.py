@@ -221,7 +221,9 @@ class MapWindow(QMainWindow):
                 QSizePolicy.Fixed, QSizePolicy.Fixed
             )
             self.gps_status_label.setWordWrap(True)
-            
+            self.gps_status_label.setStyleSheet(
+                "border: 1px solid #888; border-radius: 5px; padding: 4px;"
+            )
             self.toolbar_layout.insertWidget(self.get_current_index_to_feature_ui()-2, self.gps_status_label)
             
             start_stop_button = QPushButton("Start/Stop Real-time Data", self)
