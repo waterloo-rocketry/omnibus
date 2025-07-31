@@ -3,7 +3,7 @@ import sys
 import os
 
 from PySide6.QtWidgets import QApplication, QMessageBox
-from tileserver import start_tileserver_with_docker, stop_tileserver
+from tileserver import start_tileserver, stop_tileserver
 from src.main_window import MapWindow
 
 from src.config import ONLINE_MODE, MBTILES_PATH
@@ -41,7 +41,7 @@ def interamap_driver():
     
     if not ONLINE_MODE:
         try:
-            start_tileserver_with_docker(MBTILES_PATH)
+            start_tileserver(MBTILES_PATH)
             app.aboutToQuit.connect(stop_tileserver)
         except Exception as e:
             print(f"Failed to start TileServer: {e}")

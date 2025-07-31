@@ -1,68 +1,109 @@
-import subprocess
+#!/usr/bin/env python3
+"""
+tileserver_ctl.py – Start or stop a tileserver-gl container via the Docker SDK
+"""
+
 import os
 import sys
 import argparse
+import docker
+from docker.errors import NotFound, APIError
 
 CONTAINER_NAME = "tileserver-omnibus-interamap"
+IMAGE_NAME = "maptiler/tileserver-gl"
+HOST_PORT = 8080
+CONTAINER_PORT = "8080/tcp"
 
-def start_tileserver_with_docker(mbtiles_path):
-    """Start the tileserver-gl Docker container in detached mode."""
+
+def start_tileserver(mbtiles_path: str) -> None:
+    """
+    Start (or replace) a tileserver-gl container in detached mode,
+    serving the given .mbtiles file.
+    """
+    # Resolve absolute paths
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    mbtiles_abs_path = os.path.abspath(os.path.join(script_dir, "resources/mbtiles", os.path.basename(mbtiles_path)))
+    mbtiles_abs_path = os.path.abspath(
+        os.path.join(script_dir, "resources/mbtiles", os.path.basename(mbtiles_path))
+    )
     host_dir = os.path.dirname(mbtiles_abs_path)
-    container_mbtiles_path = os.path.basename(mbtiles_abs_path)
+    container_mbtiles = os.path.basename(mbtiles_abs_path)
 
-    command = [
-        "docker", "run", "--rm", "-d",  # Run in detached mode
-        "--name", CONTAINER_NAME,
-        "-v", f"{host_dir}:/data",
-        "-p", "8080:8080",
-        "maptiler/tileserver-gl",
-        "--file", f"{container_mbtiles_path}"
-    ]
+    client = docker.from_env()
 
-    print(f"Starting tileserver-gl via Docker with {mbtiles_path}...")
+    # If a container with this name exists, remove it first so we can start fresh
     try:
-        result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        container_id = result.stdout.decode().strip()
-        print(f"TileServer is running in container: {container_id}")
-    except subprocess.CalledProcessError as e:
+        old = client.containers.get(CONTAINER_NAME)
+        print(f"A container named {CONTAINER_NAME} already exists – removing it…")
+        old.remove(force=True)
+    except NotFound:
+        pass  # Nothing to remove
+
+    print(f"Starting {IMAGE_NAME} with {container_mbtiles}…")
+
+    try:
+        container = client.containers.run(
+            IMAGE_NAME,
+            name=CONTAINER_NAME,
+            detach=True,
+            remove=True,  # equivalent to `--rm`
+            volumes={host_dir: {"bind": "/data", "mode": "ro"}},
+            ports={CONTAINER_PORT: HOST_PORT},
+            command=["--file", container_mbtiles],
+        )
+        print(f"TileServer is running in container: {container.id[:12]}")
+        print(f"Visit http://localhost:{HOST_PORT}/")
+    except APIError as err:
         print("Failed to start TileServer:")
-        print(e.stderr.decode())
+        print(err.explanation)
         sys.exit(1)
 
 
-def stop_tileserver():
-    """Stop the running tileserver-gl Docker container."""
-    print(f"Stopping container '{CONTAINER_NAME}'...")
+def stop_tileserver() -> None:
+    """
+    Stop the running tileserver-gl container, if any.
+    """
+    client = docker.from_env()
     try:
-        subprocess.run(["docker", "stop", CONTAINER_NAME], check=True)
+        container = client.containers.get(CONTAINER_NAME)
+        print(f"Stopping container '{CONTAINER_NAME}'…")
+        container.stop()
+        # If `remove=True` was set at run-time the container is already gone.
         print("TileServer stopped.")
-    except subprocess.CalledProcessError:
-        print("No running TileServer container found or error stopping it.")
+    except NotFound:
+        print("No running TileServer container found.")
+    except APIError as err:
+        print("Error stopping TileServer:")
+        print(err.explanation)
+        sys.exit(1)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Start or stop tileserver-gl via Docker.")
-    subparsers = parser.add_subparsers(dest="command", help="Sub-command help")
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Start or stop tileserver-gl via the Docker SDK."
+    )
+    subparsers = parser.add_subparsers(dest="command")
 
-    # Start command
-    parser_start = subparsers.add_parser("start", help="Start TileServer with a .mbtiles file")
+    # Start
+    parser_start = subparsers.add_parser("start", help="Start TileServer")
     parser_start.add_argument(
         "mbtiles_file",
         nargs="?",
         default="ontario-latest.osm.mbtiles",
-        help="Path to the .mbtiles file relative to project root.",
+        help="Path to the .mbtiles file (relative to project root).",
     )
 
-    # Stop command
-    subparsers.add_parser("stop", help="Stop the running TileServer container")
+    # Stop
+    subparsers.add_parser("stop", help="Stop TileServer")
 
     args = parser.parse_args()
 
     if args.command == "start":
-        start_tileserver_with_docker(args.mbtiles_file)
+        start_tileserver(args.mbtiles_file)
     elif args.command == "stop":
         stop_tileserver()
     else:
         parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
