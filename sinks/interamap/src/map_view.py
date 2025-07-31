@@ -1,17 +1,15 @@
-from typing import List
-import time
-import threading
 import logging
 import random
+import threading
+import time
+from typing import List
 
+import flask
+from PySide6.QtCore import Signal
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
 
 from config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN, ZOOM_DEFAULT, GRADIENT_COLORS
-from src.gps_cache import GPS_Cache
-from PySide6.QtCore import Signal
-import flask
-
 from src.gps_cache import GPS_Cache, Info_GPS
 from src.real_time_parser import RTParser
 
@@ -20,7 +18,6 @@ if not ONLINE_MODE:
     Need to run the following command to download required js and css files (only once, with internet connection):
     $ python -m offline_folium
     """
-    from offline_folium import offline
 
 import folium
 from folium.plugins import Realtime
@@ -73,7 +70,11 @@ class MapView(QWebEngineView):
         self.refresh_map()
 
     def __del__(self):
+        self.quit()
+
+    def quit(self):
         self.stop_realtime_data()
+        self.rt_parser.wait(1000) # join rt_parser thread with timeout of 1s
         self.rt_parser.terminate()
 
     def refresh_map(self):
@@ -237,6 +238,7 @@ class MapView(QWebEngineView):
 
     def stop_realtime_data(self):
         self.emit_update_signal("Stopped")
+        print("Stopping real-time data...")
         self.rt_parser.stop()
 
     def start_stop_realtime_data(self):

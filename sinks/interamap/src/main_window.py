@@ -358,3 +358,6 @@ class MapWindow(QMainWindow):
             QMessageBox.No
         )
         return reply == QMessageBox.Yes
+
+    def quit(self):
+        self.map_view.quit()

@@ -67,6 +67,7 @@ def interamap_driver():
         if should_force_close:
             event.accept()  # Allow close without asking
         elif window.confirm_quit():
+            window.quit()
             event.accept()
         else:
             event.ignore()
