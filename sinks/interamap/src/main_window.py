@@ -51,6 +51,9 @@ class MapWindow(QMainWindow):
         main_layout = QHBoxLayout(self.main_widget)
         main_layout.addWidget(self.main_splitter)
 
+        # Set Light / Dark Mode
+        self.mode = "light" # "light" or "dark"
+
         # Initialize the map view and set it to expand
         self.map_view = MapView(self)
         self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -101,15 +104,12 @@ class MapWindow(QMainWindow):
 
         # Custom Toggle Button for Dark Mode
         self.toggle_button = QPushButton(self)
-        self.toggle_button.setCheckable(True)
-        self.toggle_button.setText("Light")
-        self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
+        self.initial_toggle_mode_button()
         self.toggle_button.setFixedSize(80, 30)  # Set fixed size for the toggle button
         self.toggle_button.setSizePolicy(
             QSizePolicy.Fixed, QSizePolicy.Fixed
         )  # Prevent the button from expanding
         self.toggle_button.clicked.connect(self.toggle_dark_mode)
-
 
         # Create a container layout to align the toggle button to the left
         self.top_bar = QVBoxLayout()
@@ -310,8 +310,12 @@ class MapWindow(QMainWindow):
             self.map_view.load_kmz_file(file_path)
 
     def toggle_dark_mode(self):
+        self.mode = "dark" if self.mode=="light" else "light"
+        self.initial_toggle_mode_button()
+
+    def initial_toggle_mode_button(self):
         """Toggle between Dark Mode and Light Mode."""
-        if self.toggle_button.isChecked():
+        if self.mode == "dark":
             # Switch to Dark Mode
             self.load_stylesheet(self.relative_path + "/resources/styles/darkmode.qss")
             self.toggle_button.setText("Dark")
