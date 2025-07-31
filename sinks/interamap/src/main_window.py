@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QSplitter,
     QComboBox,
     QFileDialog,
+    QMessageBox,
 )
 from PySide6.QtCore import Qt
 
@@ -68,10 +69,26 @@ class MapWindow(QMainWindow):
             [800, 200]
         )  # Adjust these values to set the initial sizes
         
+        # Enable window dragging for frameless window
+        self.old_pos = None
         
         # HTTP Share Server
         self.share_server = ThreadedHTTPServer(os.path.join(self.relative_path, "shared"))
             
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.old_pos = event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        if self.old_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            new_pos = event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos()
+            delta = new_pos - self.old_pos
+            self.move(self.x() + delta.x(), self.y() + delta.y())
+            self.old_pos = new_pos
+
+    def mouseReleaseEvent(self, event):
+        self.old_pos = None
 
     def init_side_toolbar(self):
         """Initialize the side toolbar with buttons and input fields."""
@@ -329,3 +346,14 @@ class MapWindow(QMainWindow):
         """Function to display the QR code for the shared server URL."""
         qr_window = QRCodeWindow(get_share_url())
         qr_window.show()
+
+    def confirm_quit(self) -> bool:
+        """Prompt the user with a confirmation dialog."""
+        reply = QMessageBox.question(
+            self,
+            "Confirm Exit",
+            "Are you sure you want to quit?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        return reply == QMessageBox.Yes

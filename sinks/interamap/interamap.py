@@ -12,22 +12,11 @@ import subprocess
 
 should_force_close = False
 
-def confirm_quit():
-    """Prompt the user with a confirmation dialog."""
-    reply = QMessageBox.question(
-        None,
-        "Confirm Exit",
-        "Are you sure you want to quit?",
-        QMessageBox.Yes | QMessageBox.No,
-        QMessageBox.No,
-    )
-    return reply == QMessageBox.Yes
-
-def handle_sigint(*args):
+def handle_sigint(window, *args):
     """Handle Ctrl+C gracefully."""
     global should_force_close
     print("Ctrl+C detected. Exiting gracefully...")
-    if confirm_quit():
+    if window.confirm_quit():
         should_force_close = True  # Tell the closeEvent not to prompt again
         QApplication.quit()
 
@@ -38,9 +27,7 @@ def load_stylesheet(file_name):
         return file.read()
 
 def interamap_driver():
-    # Set up signal handling for graceful shutdown
-    signal.signal(signal.SIGINT, handle_sigint)
-    app = QApplication(sys.argv)
+    app: QApplication = QApplication(sys.argv)
 
     # Workaround: Allow Python to process signals while Qt is running
     timer = QTimer()
@@ -49,25 +36,35 @@ def interamap_driver():
 
     # Get relative path to the file 
     path = os.path.dirname(os.path.realpath(__file__))
-    
-    if not ONLINE_MODE:
-        try:
-            start_tileserver(MBTILES_PATH)
-            app.aboutToQuit.connect(stop_tileserver)
-        except Exception as e:
-            print(f"Failed to start TileServer: {e}")
 
     # Load and apply QSS stylesheet
     stylesheet = load_stylesheet(path+"/resources/styles/lightmode.qss")
     app.setStyleSheet(stylesheet)
 
     window = MapWindow()
+    
+    # Setup Offline TileServer if not in online mode
+    if not ONLINE_MODE:
+        try:
+            start_tileserver(MBTILES_PATH)
+            app.aboutToQuit.connect(stop_tileserver)
+        except Exception as e:
+            QMessageBox.warning(
+                window,
+                "TileServer Error",
+                f"Failed to start TileServer:\n{e}\n\nThe map may not function correctly in offline mode.",
+                QMessageBox.StandardButton.Ok
+            )
+            print(f"Failed to start TileServer: {e}")
+
+    # Set up signal handling for graceful shutdown
+    signal.signal(signal.SIGINT, lambda *args: handle_sigint(window, *args))
 
     # Override closeEvent to show confirm dialog
     def custom_close_event(event):
         if should_force_close:
             event.accept()  # Allow close without asking
-        elif confirm_quit():
+        elif window.confirm_quit():
             event.accept()
         else:
             event.ignore()

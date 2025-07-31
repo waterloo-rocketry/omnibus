@@ -8,6 +8,7 @@ import sys
 import argparse
 import docker
 from docker.errors import NotFound, APIError
+from docker.client import DockerClient
 
 CONTAINER_NAME = "tileserver-omnibus-interamap"
 IMAGE_NAME = "maptiler/tileserver-gl"
@@ -21,14 +22,14 @@ def start_tileserver(mbtiles_path: str) -> None:
     serving the given .mbtiles file.
     """
     # Resolve absolute paths
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    mbtiles_abs_path = os.path.abspath(
+    script_dir: str = os.path.dirname(os.path.abspath(__file__))
+    mbtiles_abs_path: str = os.path.abspath(
         os.path.join(script_dir, "resources/mbtiles", os.path.basename(mbtiles_path))
     )
-    host_dir = os.path.dirname(mbtiles_abs_path)
+    host_dir: str = os.path.dirname(mbtiles_abs_path)
     container_mbtiles = os.path.basename(mbtiles_abs_path)
 
-    client = docker.from_env()
+    client: DockerClient = docker.from_env()
 
     # If a container with this name exists, remove it first so we can start fresh
     try:
