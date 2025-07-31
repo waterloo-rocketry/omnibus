@@ -240,11 +240,11 @@ class MapView(QWebEngineView):
         self.rt_parser.stop()
 
     def start_stop_realtime_data(self):
-        if not self.rt_parser.running:
-            self.rt_parser.start()
+        if self.rt_parser.running:
+            self.stop_realtime_data()
             self.refresh_map()
         else:
-            self.stop_realtime_data()
+            self.rt_parser.start()
             self.refresh_map()
 
     def emit_update_signal(self, gps_text):

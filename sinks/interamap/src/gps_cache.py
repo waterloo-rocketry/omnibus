@@ -3,10 +3,12 @@ from datetime import datetime
 from enum import IntEnum
 import os
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtWidgets import QMessageBox, QApplication
+from PySide6.QtCore import QThread, Signal, Qt
 from fastkml import kml, geometry, times
 
 from src.data_struct import Point_GPS, Info_GPS, LineString_GPS
+import webbrowser
 
 
 class GPS_Cache(QThread):
@@ -151,6 +153,21 @@ class GPS_Cache(QThread):
         except Exception as e:
             print(f"Error exporting points: {e}")
 
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])
+
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Export Complete")
+        msg.setText("Exported points to KML file successfully.")
+        msg.setInformativeText(f"<a href='file://{os.path.abspath(os.path.join(self.relative_path, 'shared'))}'>Open Folder</a>")
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.setTextFormat(Qt.RichText)
+        msg.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        msg.buttonClicked.connect(lambda btn: webbrowser.open(f"file://{os.path.abspath(os.path.join(self.relative_path, 'shared'))}"))
+        msg.exec()
+        
         print(f"Exported points to {file_path}")
 
     def __str__(self):
