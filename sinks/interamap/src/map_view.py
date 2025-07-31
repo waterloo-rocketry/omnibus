@@ -75,7 +75,6 @@ class MapView(QWebEngineView):
     def quit(self):
         self.stop_realtime_data()
         self.rt_parser.wait(1000) # join rt_parser thread with timeout of 1s
-        self.rt_parser.terminate()
 
     def refresh_map(self):
         """Create a folium map with the current tile style."""
