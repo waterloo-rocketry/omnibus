@@ -8,7 +8,6 @@ from tileserver import start_tileserver, stop_tileserver
 from src.main_window import MapWindow
 
 from config import ONLINE_MODE, MBTILES_PATH
-import subprocess
 
 should_force_close = False
 
