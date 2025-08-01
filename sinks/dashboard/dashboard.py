@@ -411,11 +411,6 @@ class Dashboard(QWidget):
             self.lockable_actions.append(new_action)
 
     def send_can_message(self, stream, payload):
-        if self.parsley_instance == "None":
-            QMessageBox.warning(self, "Warning", "No Parsley instance selected." \
-            "\nPlease select a Parsley instance using the Parsley dropdown.")
-            return
-        
         payload['parsley'] = self.parsley_instance
         self.omnibus_sender.send("CAN/Commands", payload)
 
