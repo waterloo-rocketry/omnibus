@@ -134,6 +134,7 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
 
 class RTParser(QThread):
     gps_RT_data = Signal(object)
+    state = Signal(bool)
 
     def __init__(self):
         super().__init__()
@@ -143,9 +144,11 @@ class RTParser(QThread):
 
     def run(self):
         self.running = True
+        self.state.emit(True) # Used for updating UI state
         self.extract_gps_data()
 
     def stop(self):
+        self.state.emit(False) # Used for updating UI state
         self.running = False
 
     def __del__(self):
