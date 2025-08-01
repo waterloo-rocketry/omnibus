@@ -1,4 +1,10 @@
-# Omnibus
+Omnibus
+=========
+[![Release](https://img.shields.io/github/v/release/waterloo-rocketry/omnibus)](https://github.com/waterloo-rocketry/omnibus/releases)
+[![License](https://img.shields.io/github/license/waterloo-rocketry/omnibus)](LICENSE)
+[![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/waterloo-rocketry/omnibus)
+
 
 ## Omni-what?
 
