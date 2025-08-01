@@ -3,10 +3,12 @@ from datetime import datetime
 from enum import IntEnum
 import os
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtWidgets import QMessageBox, QApplication
+from PySide6.QtCore import QThread, Signal, Qt
 from fastkml import kml, geometry, times
 
 from src.data_struct import Point_GPS, Info_GPS, LineString_GPS
+import webbrowser
 
 
 class GPS_Cache(QThread):
@@ -22,6 +24,7 @@ class GPS_Cache(QThread):
 
     def __init__(self):
         QThread.__init__(self)
+        self.setObjectName("GPS_Cache")
         self.gps_points = []
         self.gps_linestrings = []
         self.relative_path = os.path.dirname(
@@ -84,7 +87,7 @@ class GPS_Cache(QThread):
         """Export the map to KML file."""
         file_name = f"waterloo_rocketry_gps_{datetime.now().strftime('%Y%m%d_%H%M%S')}.kmz"
         file_path = os.path.join(self.relative_path, "shared", file_name)
-        gps_points_placemarks: (str, kml.Folder) = {}
+        gps_points_placemarks: dict[str, kml.Folder] = {}
         gps_linestring_placemarks = kml.Folder()
 
         # add points to placemarks
@@ -135,8 +138,14 @@ class GPS_Cache(QThread):
                 )
             )
 
-        k = kml.KML(features=[kml.Document(name="Points", features=list(gps_points_placemarks.values())),
-                              kml.Document(name="LineStrings", features=[gps_linestring_placemarks])])
+        # Flatten Documents into one
+        main_doc = kml.Document(name="Waterloo Rocketry GPS")
+        for folder in gps_points_placemarks.values():
+            main_doc.append(folder)
+        main_doc.append(gps_linestring_placemarks)
+
+        k = kml.KML(features=[main_doc])
+
         try:
             # k.write(pathlib.Path('points.kml'), prettyprint=True) # Debug: write directly as kml file
             with zipfile.ZipFile(file_path, "w") as kmz:
@@ -144,6 +153,21 @@ class GPS_Cache(QThread):
         except Exception as e:
             print(f"Error exporting points: {e}")
 
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])
+
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Export Complete")
+        msg.setText("Exported points to KML file successfully.")
+        msg.setInformativeText(f"<a href='file://{os.path.abspath(os.path.join(self.relative_path, 'shared'))}'>Open Folder</a>")
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.setTextFormat(Qt.RichText)
+        msg.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        msg.buttonClicked.connect(lambda btn: webbrowser.open(f"file://{os.path.abspath(os.path.join(self.relative_path, 'shared'))}"))
+        msg.exec()
+        
         print(f"Exported points to {file_path}")
 
     def __str__(self):

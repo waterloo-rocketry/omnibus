@@ -3,13 +3,14 @@ import queue
 import sys
 import time
 from typing import Any
+import traceback
 
 from omnibus import Receiver
 from PySide6.QtCore import QThread, Signal
 
 try:
     from src.data_struct import Point_GPS, Info_GPS
-    from src.config import BoardID, BOARD_FIELDS
+    from config import BoardID, BOARD_FIELDS
 except ImportError:
     from data_struct import Point_GPS, Info_GPS
     from config import BoardID, BOARD_FIELDS # type: ignore
@@ -47,7 +48,7 @@ def parse_gps_info(data):
     info_data = data.get("data", {"num_sats": 0, "quality": 0})
     num_sats = info_data.get("num_sats", 0)
     quality = info_data.get("quality", 0)
-    board_id = data.get("board_id")
+    board_id = data.get("board_type_id")
     return Info_GPS(num_sats=num_sats, quality=quality, board_id=board_id)
 
 
@@ -110,16 +111,18 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
             # Check for a complete set of messages for each board
             for board, keys in BOARD_FIELDS.items():
                 if all(key in gps[board] for key in keys if key != "GPS_INFO"):
-                    if gps[board]["GPS_INFO"].num_sats >= MIN_SATELLITE:
+                    if "GPS_INFO" in gps[board] and gps[board]["GPS_INFO"].get("num_sats", 0) >= MIN_SATELLITE:
                         process_func(parse_gps_data(gps[board], data))
                     else:
-                        print(f"Insufficient satellites ({gps[board]['GPS_INFO'].num_sats} < {MIN_SATELLITE}), discarding GPS data.")
+                        num_sats = gps[board].get("GPS_INFO", {}).get("num_sats", None)
+                        print(f"Insufficient satellites ({num_sats} < {MIN_SATELLITE}), discarding GPS data.")
                     gps[board].clear()
 
         except queue.Empty:
             continue
         except Exception as e:
             print(f"Error while extracting GPS data: {e}", file=sys.stderr)
+            traceback.print_exc()
             continue
 
         # After timeout just clear the block wait for the next Point_GPS
@@ -131,17 +134,21 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
 
 class RTParser(QThread):
     gps_RT_data = Signal(object)
+    state = Signal(bool)
 
     def __init__(self):
         super().__init__()
+        self.setObjectName("RTParserThread")
         self.receiver = Receiver("")
         self.running = False
 
     def run(self):
         self.running = True
+        self.state.emit(True) # Used for updating UI state
         self.extract_gps_data()
 
     def stop(self):
+        self.state.emit(False) # Used for updating UI state
         self.running = False
 
     def __del__(self):
