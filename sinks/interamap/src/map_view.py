@@ -18,6 +18,7 @@ if not ONLINE_MODE:
     Need to run the following command to download required js and css files (only once, with internet connection):
     $ python -m offline_folium
     """
+    from offline_folium import offline
 
 import folium
 from folium.plugins import Realtime
