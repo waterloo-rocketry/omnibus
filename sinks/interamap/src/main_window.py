@@ -226,12 +226,13 @@ class MapWindow(QMainWindow):
 
         if self.map_view.rt_parser.running:
             self.map_view.stop_realtime_data()
+            self.map_view.refresh_map() # Refresh the map to clear real-time layers
 
         if self.data_source == 1:  # Real-time Data Source
             # if is real-time data source selected, then add the following
 
             # Display GPS satellite connection status (satellite number and quality)
-            self.start_stop_realtime_data()
+            self.map_view.start_stop_realtime_data()
             self.gps_status_label = QLabel("GPS Status: Not Connected")
             self.gps_status_label.setFixedWidth(200)  # Set fixed width for the label
             self.gps_status_label.setSizePolicy(
@@ -247,7 +248,7 @@ class MapWindow(QMainWindow):
             start_stop_button.setStyleSheet("")
             def toggle_parser():
                 previous_state = self.map_view.rt_parser.running
-                self.start_stop_realtime_data()
+                self.map_view.start_stop_realtime_data()
                 running = self.map_view.rt_parser.running
                 if previous_state is False and running is False:
                     QMessageBox.warning(self, "No Connection", "No real-time data connection established yet.")
@@ -363,9 +364,6 @@ class MapWindow(QMainWindow):
         """Load and apply the stylesheet from the provided path."""
         with open(stylesheet_path, "r") as file:
             self.setStyleSheet(file.read())
-
-    def start_stop_realtime_data(self):
-        self.map_view.start_stop_realtime_data()
 
     def add_marker(self):
         """Function to add a marker on the map at specified coordinates."""
