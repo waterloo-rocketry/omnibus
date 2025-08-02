@@ -81,10 +81,10 @@ class PeriodicCanSender(DashboardItem):
                     'msg_prio': 'HIGHEST',
                     'msg_type': 'ACTUATOR_CMD',
                     'board_type_id': 'DAQ',
-                    'board_inst_id': 'GENERIC',
+                    'board_inst_id': 'GROUND',
                     'time': 0,
                     'actuator': self.actuator,
-                    'cmd_state': 'ACTUATOR_ON' if self.radio_on.isChecked() else 'ACTUATOR_OFF'
+                    'cmd_state': 'ACT_STATE_ON' if self.radio_on.isChecked() else 'ACT_STATE_OFF'
                 },
 
             }
