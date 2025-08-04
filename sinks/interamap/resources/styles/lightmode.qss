@@ -84,6 +84,7 @@ QComboBox {
 /* Dropdown menu */
 QComboBox QAbstractItemView {
     background-color: #ffffff;
+    color: #000000;
     selection-background-color: #4CAF50;  /* Highlight color */
     selection-color: #000000;             /* Ensure black text */
     border: 1px solid #4CAF50;
@@ -109,4 +110,40 @@ QComboBox::drop-down {
     subcontrol-origin: padding;
     subcontrol-position: right;
     width: 20px;
+}
+
+/* QMessageBox styling */
+QMessageBox {
+    background-color: #fefefe;
+    border: 2px solid #cccccc;
+    border-radius: 10px;
+}
+
+/* QLabel inside QMessageBox (text content) */
+QMessageBox QLabel {
+    color: #333333;
+    font-size: 14px;
+    padding: 10px;
+}
+
+/* QPushButtons in QMessageBox */
+QMessageBox QPushButton {
+    background-color: #0078d7;
+    color: white;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: bold;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #005a9e;
+}
+
+QMessageBox QPushButton:pressed {
+    background-color: #004578;
+}
+
+QMessageBox QPushButton:disabled {
+    background-color: #cccccc;
+    color: #666666;
 }

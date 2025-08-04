@@ -9,6 +9,7 @@ from pyqtgraph.Qt.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QMessageBox,
     QSizePolicy
 )
 
@@ -181,6 +182,10 @@ class CanSender(DashboardItem):
     # whenever the SEND button (or equilvalent) is activated, pulse PyQT input widgets for visual feedback
     # and upon a successful CAN message encoding, emit the encoded message
     def send_can_message(self):
+        if self.dashboard.parsley_instance == "None":
+            QMessageBox.warning(self, "Warning", "No Parsley instance selected." \
+            "\nPlease select a Parsley instance using the Parsley dropdown.")
+            return
         try:
             can_message = {
                 'data': {

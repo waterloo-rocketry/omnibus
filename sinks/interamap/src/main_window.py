@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QSplitter,
     QComboBox,
     QFileDialog,
+    QMessageBox,
 )
 from PySide6.QtCore import Qt
 
@@ -18,7 +19,7 @@ from src.map_view import MapView
 
 from src.http_server import get_share_url, ThreadedHTTPServer
 from src.url_to_qrcode import QRCodeWindow
-from src.config import BoardID
+from config import BoardID
 
 class MapWindow(QMainWindow):
     def __init__(self):
@@ -50,10 +51,14 @@ class MapWindow(QMainWindow):
         main_layout = QHBoxLayout(self.main_widget)
         main_layout.addWidget(self.main_splitter)
 
+        # Set Light / Dark Mode
+        self.mode = "light" # "light" or "dark"
+
         # Initialize the map view and set it to expand
         self.map_view = MapView(self)
         self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.map_view.update_gps_label.connect(self.update_gps_status)
+        self.map_view.point_storage.storage_update.connect(self.update_marker_button_states)
 
         # Add the map view to the splitter
         self.main_splitter.addWidget(self.map_view)
@@ -68,10 +73,25 @@ class MapWindow(QMainWindow):
             [800, 200]
         )  # Adjust these values to set the initial sizes
         
+        # Enable window dragging for frameless window
+        self.old_pos = None
         
         # HTTP Share Server
         self.share_server = ThreadedHTTPServer(os.path.join(self.relative_path, "shared"))
-            
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.old_pos = event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        if self.old_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            new_pos = event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos()
+            delta = new_pos - self.old_pos
+            self.move(self.x() + delta.x(), self.y() + delta.y())
+            self.old_pos = new_pos
+
+    def mouseReleaseEvent(self, event):
+        self.old_pos = None
 
     def init_side_toolbar(self):
         """Initialize the side toolbar with buttons and input fields."""
@@ -84,15 +104,12 @@ class MapWindow(QMainWindow):
 
         # Custom Toggle Button for Dark Mode
         self.toggle_button = QPushButton(self)
-        self.toggle_button.setCheckable(True)
-        self.toggle_button.setText("Light")
-        self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
+        self.initial_toggle_mode_button()
         self.toggle_button.setFixedSize(80, 30)  # Set fixed size for the toggle button
         self.toggle_button.setSizePolicy(
             QSizePolicy.Fixed, QSizePolicy.Fixed
         )  # Prevent the button from expanding
         self.toggle_button.clicked.connect(self.toggle_dark_mode)
-
 
         # Create a container layout to align the toggle button to the left
         self.top_bar = QVBoxLayout()
@@ -116,21 +133,12 @@ class MapWindow(QMainWindow):
         self.data_source_ui.currentIndexChanged.connect(self.toggle_data_source)
         self.toolbar_layout.addWidget(self.data_source_ui)
 
-        if self.data_source != 0:
+        # Tool only for Real-time Data Source
+        if self.data_source == 1:
 
             # Add a label to indicate the map markers operator section
             self.map_markers_label = QLabel("Map Markers:")
             self.toolbar_layout.addWidget(self.map_markers_label)
-
-            # Add button to clear all markers
-            self.clear_markers_button = QPushButton("Clear Markers", self)
-            self.clear_markers_button.clicked.connect(self.clear_markers)
-            self.toolbar_layout.addWidget(self.clear_markers_button)
-
-            # Export points button
-            self.export_points_button = QPushButton("Export Points", self)
-            self.export_points_button.clicked.connect(self.map_view.point_storage.export_points)
-            self.toolbar_layout.addWidget(self.export_points_button)
 
             # Start Share Server button and another button to show qr code
             share_server_layout = QHBoxLayout()
@@ -156,8 +164,33 @@ class MapWindow(QMainWindow):
             
             self.toolbar_layout.addLayout(share_server_layout)
 
-        else:
-            self.toolbar_layout.addStretch(1)
+        self.toolbar_layout.addStretch(1)
+
+        # Group marker-related actions in a horizontal layout for better UX
+        marker_actions_layout = QHBoxLayout()
+
+        # Center markers button
+        self.center_markers_button = QPushButton("Refresh Map", self)
+        self.center_markers_button.setToolTip("Center the map view on all markers")
+        self.center_markers_button.clicked.connect(self.map_view.refresh_map)
+        marker_actions_layout.addWidget(self.center_markers_button)
+
+        # Clear markers button
+        self.clear_markers_button = QPushButton("Clear Markers", self)
+        self.clear_markers_button.setToolTip("Remove all markers from the map")
+        self.clear_markers_button.clicked.connect(self.clear_markers)
+        marker_actions_layout.addWidget(self.clear_markers_button)
+
+        # Export markers button
+        self.export_points_button = QPushButton("Export to KMZ", self)
+        self.export_points_button.setToolTip("Export all markers to a KMZ file")
+        self.export_points_button.clicked.connect(self.map_view.point_storage.export_points)
+        marker_actions_layout.addWidget(self.export_points_button)
+
+        self.update_marker_button_states()
+
+        # Add the horizontal layout to the toolbar
+        self.toolbar_layout.addLayout(marker_actions_layout)
         
         return self.side_toolbar
     
@@ -193,25 +226,46 @@ class MapWindow(QMainWindow):
 
         if self.map_view.rt_parser.running:
             self.map_view.stop_realtime_data()
+            self.map_view.refresh_map() # Refresh the map to clear real-time layers
 
         if self.data_source == 1:  # Real-time Data Source
             # if is real-time data source selected, then add the following
 
             # Display GPS satellite connection status (satellite number and quality)
-            self.start_stop_realtime_data()
+            self.map_view.start_stop_realtime_data()
             self.gps_status_label = QLabel("GPS Status: Not Connected")
             self.gps_status_label.setFixedWidth(200)  # Set fixed width for the label
             self.gps_status_label.setSizePolicy(
                 QSizePolicy.Fixed, QSizePolicy.Fixed
             )
             self.gps_status_label.setWordWrap(True)
-            
+            self.gps_status_label.setStyleSheet(
+                "border: 1px solid #888; border-radius: 5px; padding: 4px;"
+            )
             self.toolbar_layout.insertWidget(self.get_current_index_to_feature_ui()-2, self.gps_status_label)
             
-            start_stop_button = QPushButton("Start/Stop Real-time Data", self)
-            start_stop_button.clicked.connect(
-                self.start_stop_realtime_data
-            )
+            start_stop_button = QPushButton("Start Real-time Parser", self)
+            start_stop_button.setStyleSheet("")
+            def toggle_parser():
+                previous_state = self.map_view.rt_parser.running
+                self.map_view.start_stop_realtime_data()
+                running = self.map_view.rt_parser.running
+                if previous_state is False and running is False:
+                    QMessageBox.warning(self, "No Connection", "No real-time data connection established yet.")
+                if running:
+                    start_stop_button.setText("Stop Real-time Parser")
+                    start_stop_button.setStyleSheet("background-color: #f1c40f; color: black;")
+                else:
+                    start_stop_button.setText("Start Real-time Parser")
+                    start_stop_button.setStyleSheet("")
+            start_stop_button.clicked.connect(toggle_parser)
+            # Set initial state
+            if self.map_view.rt_parser.running:
+                start_stop_button.setText("Stop Real-time Parser")
+                start_stop_button.setStyleSheet("background-color: #f1c40f; color: black;")
+            else:
+                start_stop_button.setText("Start Real-time Parser")
+                start_stop_button.setStyleSheet("")
 
             self.toolbar_layout.insertWidget(
                 self.start_index_to_feature_ui, start_stop_button
@@ -257,8 +311,12 @@ class MapWindow(QMainWindow):
             self.map_view.load_kmz_file(file_path)
 
     def toggle_dark_mode(self):
+        self.mode = "dark" if self.mode=="light" else "light"
+        self.initial_toggle_mode_button()
+
+    def initial_toggle_mode_button(self):
         """Toggle between Dark Mode and Light Mode."""
-        if self.toggle_button.isChecked():
+        if self.mode == "dark":
             # Switch to Dark Mode
             self.load_stylesheet(self.relative_path + "/resources/styles/darkmode.qss")
             self.toggle_button.setText("Dark")
@@ -307,9 +365,6 @@ class MapWindow(QMainWindow):
         with open(stylesheet_path, "r") as file:
             self.setStyleSheet(file.read())
 
-    def start_stop_realtime_data(self):
-        self.map_view.start_stop_realtime_data()
-
     def add_marker(self):
         """Function to add a marker on the map at specified coordinates."""
         try:
@@ -321,11 +376,53 @@ class MapWindow(QMainWindow):
                 "Invalid input for latitude or longitude. Please enter valid numbers."
             )
 
+    def update_marker_button_states(self):
+        """Update marker button states based on available markers."""
+        has_markers = (self.map_view.point_storage.get_gps_points() or 
+                    self.map_view.point_storage.get_linestring_gps())
+        self.clear_markers_button.setEnabled(bool(has_markers))
+        self.export_points_button.setEnabled(bool(has_markers))
+        self.center_markers_button.setEnabled(bool(has_markers))
+
+        # Update styles based on enabled state
+        def set_button_style(button):
+            if button.isEnabled():
+                button.setStyleSheet("")
+            else:
+                button.setStyleSheet("background-color: grey; color: white;")
+
+        set_button_style(self.clear_markers_button)
+        set_button_style(self.export_points_button)
+        set_button_style(self.center_markers_button)
+
     def clear_markers(self):
         """Function to clear all markers from the map."""
+        reply = QMessageBox.question(
+            self,
+            "Confirm Clear",
+            "Are you sure you want to clear all markers?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply != QMessageBox.Yes:
+            return
         self.map_view.clear_all_markers()
 
     def show_qr_code(self):
         """Function to display the QR code for the shared server URL."""
         qr_window = QRCodeWindow(get_share_url())
         qr_window.show()
+
+    def confirm_quit(self) -> bool:
+        """Prompt the user with a confirmation dialog."""
+        reply = QMessageBox.question(
+            self,
+            "Confirm Exit",
+            "Are you sure you want to quit?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        return reply == QMessageBox.Yes
+
+    def quit(self):
+        self.map_view.quit()

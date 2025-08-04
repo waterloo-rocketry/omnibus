@@ -4,7 +4,7 @@ import http.server
 import socketserver
 import socket
 import threading
-from src.config import HTTP_SERVER_PORT
+from config import HTTP_SERVER_PORT
 
 def check_permissions(folder: str) -> bool:
     """Return True if the folder is readable, otherwise False."""

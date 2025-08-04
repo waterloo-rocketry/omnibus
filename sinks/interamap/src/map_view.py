@@ -1,17 +1,15 @@
-from typing import List
-import time
-import threading
 import logging
 import random
+import threading
+import time
+from typing import List
 
+import flask
+from PySide6.QtCore import Signal
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
 
-from src.config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN, ZOOM_DEFAULT, GRADIENT_COLORS
-from src.gps_cache import GPS_Cache
-from PySide6.QtCore import Signal
-import flask
-
+from config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN, ZOOM_DEFAULT, GRADIENT_COLORS
 from src.gps_cache import GPS_Cache, Info_GPS
 from src.real_time_parser import RTParser
 
@@ -59,6 +57,9 @@ class MapView(QWebEngineView):
         # Initialize Real-time Parser and Real-time data handler
         self.rt_parser = RTParser()
         self.rt_parser.gps_RT_data.connect(self.storage_rt_info)
+        # Avoid QThread Race Condition Issue cause MapView not updating
+        self.rt_parser.state.connect(self.toggle_parse_state)
+        self.parse_state = False
 
         # Initialize a Point Storage object to store GPS points
         self.point_storage = GPS_Cache()
@@ -73,8 +74,11 @@ class MapView(QWebEngineView):
         self.refresh_map()
 
     def __del__(self):
+        self.quit()
+
+    def quit(self):
         self.stop_realtime_data()
-        self.rt_parser.terminate()
+        self.rt_parser.wait(1000) # join rt_parser thread with timeout of 1s
 
     def refresh_map(self):
         """Create a folium map with the current tile style."""
@@ -195,7 +199,7 @@ class MapView(QWebEngineView):
 
     def update_map(self):
         """Update the map with the current GPS data."""
-        if self.rt_parser.running:
+        if self.parse_state:
             self.add_realtime_layer()
         else:
             self.draw_gps_data(
@@ -237,15 +241,15 @@ class MapView(QWebEngineView):
 
     def stop_realtime_data(self):
         self.emit_update_signal("Stopped")
+        print("Stopping real-time data...")
         self.rt_parser.stop()
 
     def start_stop_realtime_data(self):
-        if not self.rt_parser.running:
-            self.rt_parser.start()
-            self.refresh_map()
-        else:
+        if self.rt_parser.running:
             self.stop_realtime_data()
-            self.refresh_map()
+        else:
+            self.rt_parser.start()
+        self.refresh_map()
 
     def emit_update_signal(self, gps_text):
         # Emit the signal with the new text when the button is clicked
@@ -323,6 +327,11 @@ class MapView(QWebEngineView):
             if board_id
             else data
         )
+
+    def toggle_parse_state(self, state: bool):
+        """Toggle the state of the real-time parser."""
+        self.parse_state = state
+        self.update_map()
 
     def change_data_source(self, data_source: str):
         if data_source == "All":
