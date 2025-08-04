@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "\n----- Upgrading pip -----"
-pip install --upgrade pip || exit 1
+python -m pip install --upgrade pip || exit 1
 echo "\n----- Installing tools -----"
 pip install wheel || exit 1
 
