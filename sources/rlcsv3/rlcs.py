@@ -13,8 +13,10 @@ MESSAGE_FORMAT = [
     Enum("OV102 Command", 8, VALVE_COMMAND),
     Enum("OV103 Command", 8, VALVE_COMMAND),
     Enum("IV301 Command", 8, VALVE_COMMAND),
-    Enum("Injector Valve Command", 8, VALVE_COMMAND),
     Enum("NV201 Command", 8, VALVE_COMMAND),
+    Enum("CDV401 Command", 8, VALVE_COMMAND),
+    Enum("Injector Valve Command", 8, VALVE_COMMAND),
+    Enum("OV302 Command", 8, VALVE_COMMAND),
 
     Enum("Tank Heating 1 Command", 8, VALVE_COMMAND),
     Enum("Tank Heating 2 Command", 8, VALVE_COMMAND),
