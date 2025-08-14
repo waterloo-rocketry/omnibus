@@ -15,7 +15,7 @@ def send_actuator(actuator: str, state: bool):
                 'board_inst_id': 'GROUND',
                 "time": 0,
                 "actuator": actuator,
-                "req_state": 'ACT_STATE_ON' if state else 'ACT_STATE_OFF'
+                "cmd_state": 'ACT_STATE_ON' if state else 'ACT_STATE_OFF'
             }
         }
     }
