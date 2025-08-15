@@ -23,8 +23,8 @@ def send_actuator(actuator: str, state: bool):
 
 
 def command(state: dict[str, str | int | float]):
-    if "Injector Valve Command" in state:
-        if state["Injector Valve Command"] == "OPEN":
+    if "QD301 Command" in state:
+        if state["QD301 Command"] == "OPEN":
             send_actuator("ACTUATOR_OX_INJECTOR_VALVE", True)
-        if state["Injector Valve Command"] == "CLOSED":
+        if state["QD301 Command"] == "CLOSED":
             send_actuator("ACTUATOR_OX_INJECTOR_VALVE", False)
