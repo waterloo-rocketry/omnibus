@@ -1,0 +1,9 @@
+[project]
+name = "ni-source"
+version = "0.1.0"
+description = "NI DAQ box source"
+requires-python = ">=3.11"
+dependencies = ["omnibus", "nidaqmx"]
+
+[tool.uv.sources]
+omnibus = {workspace = true}
