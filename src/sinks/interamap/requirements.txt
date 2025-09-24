@@ -1,0 +1,10 @@
+geocoder
+folium
+fastkml
+PySide6
+offline_folium
+lxml
+qrcode
+pillow
+branca
+docker
