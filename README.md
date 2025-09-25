@@ -14,52 +14,55 @@ Omnibus is a unified data bus which manages the connection of various data sourc
 
 ### Requirements
 
-Python 3.11 is required exact to run Omnibus. For Linux users, a python package with C headers (such as `python3-dev`) is necessary. For Windows users, it's recommended to install and run Omnibus through [Git Bash](https://git-scm.com/download/win) for a smoother Unix-like experience.
-
-Note that the production build of Omnibus targets **Python 3.11**. All code contributions must be compatible with that version. See `CONTRIBUTING.md` for more info.
+**You must have the `uv` Python package manager and builder installed. Visit https://docs.astral.sh/uv/getting-started/installation/ to get started. If you don't know otherwise, choose the "Standalone Installer"**
 
 ### Installation
 
 1. Clone this repo
-   - If you have git configured with SSH, run `git clone git@github.com:waterloo-rocketry/omnibus.git`
-   - If you don't have git configured with SSH (or you're not sure what that means), run `git clone https://github.com/waterloo-rocketry/omnibus.git`
 2. Enter the newly-cloned repo with `cd omnibus`
-3. Create a virtual environment:
-   - First install the virtualenv library: `pip install virtualenv`
-   - Create the venv: `python -m venv venv`
-4. Activate the virtual environment:
-   - For Mac/Linux: `source venv/bin/activate`
-   - For Windows using Git Bash: `source venv/Scripts/activate`
-5. There are two ways to install Omnibus. The setup script is the easiest method, but if it doesn't work you can manually install the required packages
-   1. Setup script:
-      - For Mac/Linux or Windows Git Bash: `source setup.sh`
-   2. Manual installation:
-      - Upgrade pip version: `pip install --upgrade pip`
-      - Run `pip install wheel`, which will help install the rest of the packages more quickly
-      - Install Python dependencies with `pip install -r requirements.txt`. You'll also need to run that command in each of the following folders:
-        - `sources/ni/`
-        - `sources/parsley/`
-        - `sinks/dashboard/`
-        - If you get a permission error, try `pip install --user -r requirements.txt` instead.
-      - Install the Omnibus library locally with `pip install -e .`
-        - Don't forget the `.`! This allows the sources and sinks (and you) to import Omnibus
-      - Initialize the `Parsley` submodule with `git submodule update --init --recursive` and install the library locally with `pip install -e ./parsley`
+3. In a terminal, run `uv python install`
+4. Run `uv sync --locked --all-packages`
+
+### Update
+1. Run `git pull`
+2. Run `uv sync --locked --all-packages`
 
 ## Usage
+To use Omnibus typically, you'll need at minimum a server and the dashboard running. You will probably also want to connect it to one or many data sources.
 
-Omnibus works by running sources (to send data), sinks (to receive data) and a server to connect them together.
-The easiest way to run Omnibus is through the launcher script `python launcher.py`. This will open a GUI (or prompt by text if you pass in the `--text` flag) where you can select the sources and sinks to run. You can also manually run the different components of Omnibus using the commands described below.
-
-Known limitation of the launcher script: currently, CLI flags can't be passed to a source/sink so one requiring them (such as `parsley`) need to be run manually.
+Run the following commands at the base of the omnibus folder.
 
 ### Server
 
-Start the Omnibus server by activating your `venv`, then running `python -m omnibus`.
+`uv run omnibus-server`
 
-### Sources/Sinks
+### Dashboard
 
-Depending on your configuration, you'll need to run one or more sources or sinks. Each one is started independently in the same way: `python <sources-or-sinks>/<name>/main.py`. For example, you can start the Dashboard by running `python sinks/dashboard/main.py`.
+`uv run src/dashboard/main.py`
 
-### Theme
+### Logging
 
-Omnibus uses the same theme as your operating system's default theme (light or dark). If you would like to switch themes, consider changing the theme of your system accordingly.
+`uv run src/sinks/globallog/main.py`
+
+### Other Sources/Sinks
+
+`uv run src/[sources|sinks]/[sink_name]/main.py`
+
+All data sources are located under `src/sources`. The main ones you're going to use are `parsley` for data from onboard avionics boards and `rlcsv3` for connecting to RLCS clientside.
+
+Some additional debugging sinks are available under `src/sinks`.
+
+
+## Development Instructions
+Follow all of the above setup instructions.
+Note that the production build of Omnibus targets **Python 3.11**. All code contributions must be compatible with that version. See `CONTRIBUTING.md` for more info.
+
+1. Make sure you have CPython 3.11 installed either through your system or by running `uv python install`
+2. Run `uv sync --all-packages` (this is different from the locked version)
+3. To source the venv:
+    - MacOS / Linux / Git Bash on Windows: `source .venv/bin/activate`
+    - Windows Powershell: `source .venv/Scripts/Activate.ps1`
+4. Recommended dev environment: VSCode + Python extension. Your venv should be sourced automatically.
+
+Look at the DeepWiki link to get an understanding of the architecture. See `CONTRIBUTING.md` for more info about contributing.
+    
