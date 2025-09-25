@@ -69,4 +69,3 @@ members = [
 include = ["omnibus/**"] # Eventually this should include the entire project
 exclude = ["**/__pycache__", "**/node_modules", "**/__init__.py"]
 # strict = ["omnibus/**"] # Eventually omnibus library should do strict type checking
-
