@@ -742,7 +742,7 @@ requires-dist = [
     { name = "matplotlib" },
     { name = "msgpack" },
     { name = "msgpack-types" },
-    { name = "parsley", editable = "parsley" },
+    { name = "parsley", git = "https://github.com/waterloo-rocketry/parsley.git" },
     { name = "pytest" },
     { name = "pyzmq" },
 ]
@@ -780,14 +780,8 @@ wheels = [
 [[package]]
 name = "parsley"
 version = "2025.4"
-source = { editable = "parsley" }
+source = { git = "https://github.com/waterloo-rocketry/parsley.git#a6a7b3ac9ff24d553200bcb60f03a4b314061cc8" }
 dependencies = [
-    { name = "crc8" },
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
     { name = "crc8" },
     { name = "pytest" },
 ]
