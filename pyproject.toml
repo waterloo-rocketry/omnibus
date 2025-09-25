@@ -45,14 +45,14 @@ dependencies = [
     "matplotlib",
     "dash",
     "gitpython",
-    "parsley"
+    "parsley",
 ]
 
 [project.scripts]
 omnibus-server = "omnibus.server:server"
 
 [tool.uv.sources]
-parsley = {path = "parsley", editable = true}
+parsley = { git = "https://github.com/waterloo-rocketry/parsley.git" }
 
 [tool.uv.workspace]
 members = [
