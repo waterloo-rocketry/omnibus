@@ -142,7 +142,7 @@ class Dashboard(QWidget):
 
         # Determine the specific directory you want to always open
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.save_directory = os.path.join(script_dir, "..", "..", "sinks", "dashboard", "saved-files")
+        self.save_directory = os.path.join(script_dir, "saved-files")
 
         # The file from which the dashboard is loaded
         self.file_location = os.path.join(self.save_directory, "savefile.json")
