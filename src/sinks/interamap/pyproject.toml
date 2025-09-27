@@ -1,0 +1,22 @@
+[project]
+name = "interamap"
+version = "0.1.0"
+description = "Interactie Mapping Tool for GPS Data"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "omnibus",
+    "geocoder",
+    "folium",
+    "fastkml",
+    "PySide6",
+    "offline_folium",
+    "lxml",
+    "qrcode",
+    "pillow",
+    "branca",
+    "docker",
+]
+
+[tool.uv.sources]
+omnibus = {workspace = true}

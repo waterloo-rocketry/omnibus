@@ -5,7 +5,6 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-name = "omnibus"
-module-root = ""
 
 [project]
 name = "omnibus"
@@ -56,13 +55,31 @@ dev = [
 omnibus-server = "omnibus.server:server"
 
 [tool.uv.sources]
-parsley = {path = "parsley", editable = true}
+parsley = { git = "https://github.com/waterloo-rocketry/parsley.git" }
 
 [tool.uv.workspace]
-members = []
+members = [
+    "src/sources/fakeni",
+    "src/sources/ni",
+    "src/sources/parsley",
+    "src/sources/rlcsv3",
+    "src/dashboard",
+    "src/globallog",
+    "src/sinks/interamap",
+]
 
 [tool.pyright]
-include = ["omnibus/**"] # Eventually this should include the entire project
+include = ["src/omnibus/**"] # Eventually this should include the entire project
 exclude = ["**/__pycache__", "**/node_modules", "**/__init__.py"]
 # strict = ["omnibus/**"] # Eventually omnibus library should do strict type checking
+extraPaths = ["src/**"]
 
+executionEnvironments = [
+    {root = "src/dashboard"},
+    {root = "src/sources/ni"},
+    {root = "src/sources/parsley"},
+    {root = "src/sources/rlcsv3"},
+    {root = "src/globallog"},
+    {root = "src/sources/fakeni"},
+    {root = "src/sinks/interamap"}
+]

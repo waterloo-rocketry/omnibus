@@ -1,0 +1,9 @@
+[project]
+name = "parsley-source"
+version = "0.1.0"
+description = "Data source from CAN messages parsed using parsley"
+requires-python = ">=3.11"
+dependencies = ["omnibus", "pyserial"]
+
+[tool.uv.sources]
+omnibus = {workspace = true}

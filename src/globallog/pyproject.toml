@@ -1,0 +1,9 @@
+[project]
+name = "globallog"
+version = "0.1.0"
+description = "Global Omnibus Logger"
+requires-python = ">=3.11"
+dependencies = ["omnibus"]
+
+[tool.uv.sources]
+omnibus = {workspace = true}
