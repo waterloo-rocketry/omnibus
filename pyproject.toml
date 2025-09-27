@@ -1,9 +1,68 @@
 # pyproject.toml
 [build-system]
-requires = ["setuptools >= 64"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "omnibus"
+module-root = ""
+
+[project]
+name = "omnibus"
+version = "1.1.0"
+description = "A unified data bus"
+readme = "README.md"
+license = "MIT"
+classifiers = [
+    'Development Status :: 2 - Pre-Alpha',
+
+    'Operating System :: OS Independent',
+    'Operating System :: POSIX :: Linux',
+    'Operating System :: MacOS :: MacOS X',
+    'Operating System :: Microsoft :: Windows :: Windows 10',
+
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+
+    'Intended Audience :: Developers',
+    'Intended Audience :: Science/Research',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+    'Topic :: Scientific/Engineering',
+]
+
+authors = [
+    {name = "Waterloo Rocketry", email = "contact@waterloorocketry.com"}
+]
+
+requires-python = "~=3.11.0"
+
+dependencies = [
+    "msgpack>=1.1.0",
+    "msgpack-types>=0.5.0",
+    "pyzmq>=27.1.0",
+    "matplotlib>=3.10.0",
+    "gitpython >= 3.1.0",
+    "parsley>=2025.4"
+]
+
+[project.optional-dependencies]
+dev = [
+    "autopep8",
+    "flake8",
+    "pytest",
+]
+
+[project.scripts]
+omnibus-server = "omnibus.server:server"
+
+[tool.uv.sources]
+parsley = {path = "parsley", editable = true}
+
+[tool.uv.workspace]
+members = []
 
 [tool.pyright]
 include = ["omnibus/**"] # Eventually this should include the entire project
 exclude = ["**/__pycache__", "**/node_modules", "**/__init__.py"]
 # strict = ["omnibus/**"] # Eventually omnibus library should do strict type checking
+
