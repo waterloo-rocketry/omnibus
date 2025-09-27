@@ -1,7 +1,0 @@
-dash
-pandas
-msgpack
-numpy
-PySide6
-pyqtgraph
-pyzmq
