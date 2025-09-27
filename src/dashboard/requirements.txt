@@ -1,4 +1,0 @@
-numpy
-PySide6<=6.7.2 # Cap due to pyqtgraph bug in versions 
-pyqtgraph
-pyopengl

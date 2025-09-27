@@ -69,7 +69,17 @@ members = [
 ]
 
 [tool.pyright]
-include = ["omnibus/**"] # Eventually this should include the entire project
+include = ["src/omnibus/**"] # Eventually this should include the entire project
 exclude = ["**/__pycache__", "**/node_modules", "**/__init__.py"]
 # strict = ["omnibus/**"] # Eventually omnibus library should do strict type checking
+extraPaths = ["src/**"]
 
+executionEnvironments = [
+    {root = "src/dashboard"},
+    {root = "src/sources/ni"},
+    {root = "src/sources/parsley"},
+    {root = "src/sources/rlcsv3"},
+    {root = "src/globallog"},
+    {root = "src/sources/fakeni"},
+    {root = "src/sinks/interamap"}
+]
