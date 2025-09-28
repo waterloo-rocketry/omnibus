@@ -1,0 +1,18 @@
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Waterloo Rocketry GPS</name>
+    <Folder>
+      <name>GPS</name>
+      <Placemark>
+        <name>GPS Point</name>
+        <description>Time: 2024-11-22 18:45:57 Board ID: GPS</description>
+        <TimeStamp>
+          <when>2024-11-22T18:45:57</when>
+        </TimeStamp>
+        <Point>
+          <coordinates>-82.5585,49.50566666666667,435.6</coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

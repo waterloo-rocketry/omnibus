@@ -1,9 +1,0 @@
-autopep8
-msgpack
-msgpack-types
-pytest
-pyzmq
-flake8
-matplotlib
-dash
-gitpython

@@ -1,0 +1,9 @@
+[project]
+name = "fakeni-source"
+version = "0.1.0"
+description = "Simulate fake NI source"
+requires-python = ">=3.11"
+dependencies = ["omnibus"]
+
+[tool.uv.sources]
+omnibus = {workspace = true}
