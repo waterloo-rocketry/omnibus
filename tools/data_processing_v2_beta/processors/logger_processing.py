@@ -50,7 +50,6 @@ class LoggerDataProcessor:
                     parsed_data = {k: v for k, v in parsed_data.items()
                                    if not (k == 'data' and 'time' in v)}
 
-                    print(parsley.format_line(parsed_data))
                     writer.writerow([time] + list(parsed_data.values()))
 
         export_size = os.path.getsize(output_file_path)
