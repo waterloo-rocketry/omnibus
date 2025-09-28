@@ -24,7 +24,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       - name: Install the project
-        run: uv sync --locked --all-packages --extra dev
+        run: uv sync --locked --all-packages --dev
 
       - name: Lint with flake8
         shell: bash

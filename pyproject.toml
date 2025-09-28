@@ -44,7 +44,7 @@ dependencies = [
     "parsley>=2025.4"
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "autopep8",
     "flake8",

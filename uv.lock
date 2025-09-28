@@ -644,7 +644,7 @@ dependencies = [
     { name = "pyzmq" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "autopep8" },
     { name = "flake8" },
@@ -653,17 +653,20 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "autopep8", marker = "extra == 'dev'" },
-    { name = "flake8", marker = "extra == 'dev'" },
     { name = "gitpython", specifier = ">=3.1.0" },
     { name = "matplotlib", specifier = ">=3.10.0" },
     { name = "msgpack", specifier = ">=1.1.0" },
     { name = "msgpack-types", specifier = ">=0.5.0" },
     { name = "parsley", git = "https://github.com/waterloo-rocketry/parsley.git" },
-    { name = "pytest", marker = "extra == 'dev'" },
     { name = "pyzmq", specifier = ">=27.1.0" },
 ]
-provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "autopep8" },
+    { name = "flake8" },
+    { name = "pytest" },
+]
 
 [[package]]
 name = "omnibus-dashboard"
