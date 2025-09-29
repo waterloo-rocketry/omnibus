@@ -58,7 +58,7 @@ def main() -> None:
         if args.fake:
             channel = "DAQ/Fake"
         run_daq_command(args.input_file, args.output, channel)
-    if args.command == "logger":
+    elif args.command == "logger":
         run_logger_command(args.input_file, args.output)
     else:
         raise NotImplementedError(f"Command {args.command} not implemented")
