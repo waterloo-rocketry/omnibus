@@ -1,12 +1,13 @@
 import sys
-
 from sources.parsley.main import FileCommunicator
 
 import os
 import tempfile
 import pytest
 from unittest.mock import patch
+
 from tools.data_processing_v2_beta.processors.logger_processing import LoggerDataProcessor
+
 
 class DummyFileCommunicator(FileCommunicator):
     def __init__(self, pages):
