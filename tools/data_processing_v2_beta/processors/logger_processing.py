@@ -46,9 +46,7 @@ class LoggerDataProcessor:
                         continue
 
                     # split off time
-                    time = parsed_data['data']['time']
-                    parsed_data = {k: v for k, v in parsed_data.items()
-                                   if not (k == 'data' and 'time' in v)}
+                    time = parsed_data["data"].pop("time")
 
                     writer.writerow([time] + list(parsed_data.values()))
 
