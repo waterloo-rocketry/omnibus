@@ -10,6 +10,7 @@ members = [
     "ni-source",
     "omnibus",
     "omnibus-dashboard",
+    "omnibus-data-processing",
     "parsley-source",
     "rlcsv3-source",
 ]
@@ -637,7 +638,6 @@ version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "gitpython" },
-    { name = "matplotlib" },
     { name = "msgpack" },
     { name = "msgpack-types" },
     { name = "parsley" },
@@ -654,7 +654,6 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "gitpython", specifier = ">=3.1.0" },
-    { name = "matplotlib", specifier = ">=3.10.0" },
     { name = "msgpack", specifier = ">=1.1.0" },
     { name = "msgpack-types", specifier = ">=0.5.0" },
     { name = "parsley", git = "https://github.com/waterloo-rocketry/parsley.git" },
@@ -673,6 +672,7 @@ name = "omnibus-dashboard"
 version = "0.1.0"
 source = { virtual = "src/dashboard" }
 dependencies = [
+    { name = "matplotlib" },
     { name = "numpy" },
     { name = "omnibus" },
     { name = "pyopengl" },
@@ -682,12 +682,24 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "matplotlib", specifier = ">=3.10.0" },
     { name = "numpy" },
     { name = "omnibus", editable = "." },
     { name = "pyopengl" },
     { name = "pyqtgraph" },
     { name = "pyside6", specifier = "<=6.7.2" },
 ]
+
+[[package]]
+name = "omnibus-data-processing"
+version = "0.1.0"
+source = { virtual = "tools/data_processing" }
+dependencies = [
+    { name = "matplotlib" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "matplotlib", specifier = ">=3.10.0" }]
 
 [[package]]
 name = "packaging"
