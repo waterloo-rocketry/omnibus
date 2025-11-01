@@ -22,10 +22,12 @@ def get_ip():
     """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         # doesn't need to be reachable
         s.connect(("255.255.255.255", 1))
         return s.getsockname()[0]
-    except Exception:
+    except Exception as e:
+        print(f"Could not get local IP address, defaulting to localhost: {e}")
         return "127.0.0.1"
     finally:
         s.close()
@@ -91,7 +93,7 @@ def server() -> NoReturn:
             monitor.recv_multipart()
             count += 1
         if time.time() - t > 0.2:
-            print(f"\r{count*5: <5} msgs/sec", end="")
+            print(f"\r{count * 5: <5} msgs/sec", end="")
             t = time.time()
             count = 0
 
