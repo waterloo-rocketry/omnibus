@@ -41,7 +41,9 @@ dependencies = [
     "pyzmq>=27.1.0",
     "matplotlib>=3.10.0",
     "gitpython >= 3.1.0",
-    "parsley>=2025.4"
+    "parsley>=2025.4",
+    "socketio>=0.2.1",
+    "python-socketio>=5.14.3",
 ]
 
 [dependency-groups]
@@ -81,5 +83,5 @@ executionEnvironments = [
     {root = "src/sources/rlcsv3"},
     {root = "src/globallog"},
     {root = "src/sources/fakeni"},
-    {root = "src/sinks/interamap"}
+    {root = "src/sinks/interamap"},
 ]
