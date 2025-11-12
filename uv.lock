@@ -672,7 +672,6 @@ name = "omnibus-dashboard"
 version = "0.1.0"
 source = { virtual = "src/dashboard" }
 dependencies = [
-    { name = "matplotlib" },
     { name = "numpy" },
     { name = "omnibus" },
     { name = "pyopengl" },
@@ -682,7 +681,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "matplotlib", specifier = ">=3.10.0" },
     { name = "numpy" },
     { name = "omnibus", editable = "." },
     { name = "pyopengl" },
