@@ -12,7 +12,7 @@ EXPOSE 5075-5077
 RUN apk add --no-cache git
 
 # Copy the project into the image.
-ADD . /app
+COPY . /app
 
 # Sync the project into the new environment, asserting the lockfile is up to date.
 WORKDIR /app
