@@ -1,0 +1,9 @@
+[project]
+name = "omnibus-data-processing"
+version = "0.1.0"
+description = "The Omnibus Data Processing Tool"
+requires-python = "~=3.11.0"
+dependencies = ["matplotlib>=3.10.0"]
+
+[tool.uv.sources]
+omnibus = {workspace = true}
