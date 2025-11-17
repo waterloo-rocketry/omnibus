@@ -1,10 +1,9 @@
-import sys
-from sources.parsley.main import FileCommunicator
-
 import os
 import tempfile
-import pytest
 from unittest.mock import patch
+
+import pytest
+from sources.parsley.main import FileCommunicator
 
 from tools.data_processing_v2_beta.processors.logger_processing import LoggerDataProcessor
 
@@ -33,6 +32,7 @@ def test_process_success(mock_parsley, temp_csv_file):
     mock_parsley.parse_logger.return_value = iter([
         ("sid1", b"data1"),
         ("sid2", b"data2"),
+        ("sid3", b"data3"),
     ])
     # Mock parsley.parse to return expected dicts
     mock_parsley.parse.side_effect = [
@@ -50,6 +50,13 @@ def test_process_success(mock_parsley, temp_csv_file):
             "msg_type": "SENSOR_ANALOG",
             "data": {"time": 2.505, 'sensor_id': 'SENSOR_MOTOR_CURR', 'value': 110},
         },
+        {
+            "board_type_id": "TELEMETRY",
+            "board_inst_id": "GROUND",
+            "msg_prio": "MEDIUM",
+            "msg_type": "SENSOR_ANALOG",
+            "data": {'sensor_id': 'SENSOR_MOTOR_CURR', 'value': 110}, # missing time field
+        },
     ]
     communicator = DummyFileCommunicator([b"page1"])
     processor = LoggerDataProcessor(communicator)
@@ -58,10 +65,11 @@ def test_process_success(mock_parsley, temp_csv_file):
     with open(temp_csv_file, "r") as f:
         lines = f.readlines()
 
-    assert len(lines) == 3  # Header + 2 data lines
+    assert len(lines) == 4  # Header + 2 data lines
     assert "Timestamp (ns) +- 10ns,board_type_id,board_inst_id,msg_prio,msg_type,data" == lines[0].strip()
     assert """1.794,GPS,ROCKET,HIGH,GPS_LATITUDE,"{'hrs': 23, 'mins': 59, 'secs': 44, 'dsecs': 26}\"""" == lines[1].strip()
     assert """2.505,TELEMETRY,GROUND,MEDIUM,SENSOR_ANALOG,"{'sensor_id': 'SENSOR_MOTOR_CURR', 'value': 110}\"""" == lines[2].strip()
+    assert """0,TELEMETRY,GROUND,MEDIUM,SENSOR_ANALOG,"{'sensor_id': 'SENSOR_MOTOR_CURR', 'value': 110}\"""" == lines[3].strip()
 
 @patch("tools.data_processing_v2_beta.processors.logger_processing.parsley")
 def test_process_empty_log(mock_parsley, temp_csv_file):

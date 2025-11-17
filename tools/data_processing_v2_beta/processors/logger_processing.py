@@ -46,7 +46,7 @@ class LoggerDataProcessor:
                         continue
 
                     # split off time
-                    time = parsed_data["data"].pop("time")
+                    time = parsed_data["data"].pop("time", 0)
 
                     writer.writerow([time] + list(parsed_data.values()))
 
