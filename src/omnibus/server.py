@@ -102,7 +102,7 @@ def server(quiet: bool = False) -> NoReturn:
 
 if __name__ == "__main__":  # Entry point for the server
     parser = argparse.ArgumentParser() 
-    # creates a command‑line parser to handle flags/options.
+    # creates a command-line parser to handle flags/options.
     parser.add_argument("--quiet", action="store_true", help="Stop repetitive msgs/sec output")
     ##defines a boolean flag --quiet. If you include --quiet on the command line, 
     ## args.quiet becomes True; if you omit it, it defaults to False.
