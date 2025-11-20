@@ -12,7 +12,7 @@ try:
 except ImportError:
     from util import BuildInfoManager  # pyright: ignore[reportImplicitRelativeImport]
 
-SOURCE_PORT = 5075  
+SOURCE_PORT = 5075
 SINK_PORT = 5076
 BROADCAST_PORT = 5077
 
