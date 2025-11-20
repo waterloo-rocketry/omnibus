@@ -2,6 +2,7 @@ import socket
 import threading
 import time
 from typing import NoReturn
+import argparse
 
 import zmq
 from zmq.devices import ThreadProxy
@@ -52,9 +53,9 @@ def ip_broadcast() -> NoReturn:
             time.sleep(0.5)
 
 
-def server() -> NoReturn:
+def server(quiet: bool = False) -> NoReturn:
     """
-    Run the Omnibus server, display the current messages/sec.
+    Run the Omnibus server, display the current messages/sec if not quiet.
     """
     # Initialize BuildInfoManager to print build info
     bim = BuildInfoManager("Omnibus Server")
@@ -93,13 +94,20 @@ def server() -> NoReturn:
             monitor.recv_multipart()
             count += 1
         if time.time() - t > 0.2:
-            print(f"\r{count * 5: <5} msgs/sec", end="")
+            if not quiet:
+                print(f"\r{count * 5: <5} msgs/sec", end="")
             t = time.time()
             count = 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # Entry point for the server
+    parser = argparse.ArgumentParser() 
+    parser.add_argument("--quiet", action="store_true", help="Stop repetitive msgs/sec output")
+    args = parser.parse_args()
+
     try:
-        server()
+        server(quiet=args.quiet) 
+        #passes the boolean into your server function so it can decide 
+        #whether to print the msgs/sec line.
     except KeyboardInterrupt:
         pass
