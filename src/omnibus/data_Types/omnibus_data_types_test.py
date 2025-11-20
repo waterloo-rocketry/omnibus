@@ -1,8 +1,7 @@
 
 #Write a nominal test
 
-from omnibus_Data_Types import DAQMessage
-
+from .omnibus_Data_Types import DAQMessage
 
 import pytest
 
