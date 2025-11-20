@@ -1,6 +1,3 @@
-
-
-#import pydantic
 from typing import Literal, Self
 from pydantic import BaseModel, model_validator
 #DAQMessage type includes typical omnibus message and 4 more literals
@@ -20,14 +17,3 @@ class DAQMessage(BaseModel):
                                  f"Length of {sensor} data is {len(data_arr)}, while timestamps is {len(self.relative_timestamps)}\n")
             
         return self
-    
-
-    
-
-        
-
-
-
-
-
-
