@@ -3,7 +3,10 @@ name = "rlcsv3-source"
 version = "0.1.0"
 description = "RLCSv3 Data Source"
 requires-python = ">=3.11"
-dependencies = ["omnibus"]
+dependencies = [
+    "omnibus",
+    "pydantic>=2.12.4",
+]
 
 [tool.uv.sources]
 omnibus = {workspace = true}
