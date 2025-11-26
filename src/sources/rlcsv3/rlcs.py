@@ -2,6 +2,8 @@ import parsley
 from parsley.fields import Enum, Numeric
 import math
 
+from omnibus.message_types import RLCSv3Message
+
 Number = int | float
 
 VALVE_COMMAND = {"CLOSED": 0, "OPEN": 1}
@@ -52,7 +54,7 @@ def print_data(parsed: dict[str, str | Number]):
         print(f"{k}:\t{v}")
 
 
-def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
+def parse_rlcs(line: str | bytes) -> RLCSv3Message | None:
     '''parses data as well as checks for data validity
         returns none if data is invalid
     '''
@@ -87,9 +89,12 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     else:
         res.update({"Heater Resistance 2": 0.0})    
 
-    return res
-        
- 
+    message = RLCSv3Message(
+        id=0,  
+        data=res,
+        message_version=2
+    )
+    return message
     
 def parse_thermistor(divider_vlt):
     # Second resistor in voltage divider

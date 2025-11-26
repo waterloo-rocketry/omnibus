@@ -56,7 +56,7 @@ def main():
         commander.command(parsed_data)
 
         if not args.solo:  # if connect to omnibus
-            sender.send(CHANNEL, parsed_data)
+            sender.send(CHANNEL, parsed_data.model_dump()["data"])
 
         rlcs.print_data(parsed_data)
 

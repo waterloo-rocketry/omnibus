@@ -2,6 +2,7 @@ import time
 from omnibus import Sender
 sender = Sender()
 
+from omnibus.message_types import RLCSv3Message
 
 def send_actuator(actuator: str, state: bool):
     message = {
@@ -22,9 +23,9 @@ def send_actuator(actuator: str, state: bool):
     sender.send("CAN/Commands", message)
 
 
-def command(state: dict[str, str | int | float]):
-    if "QD301 Command" in state:
-        if state["QD301 Command"] == "OPEN":
+def command(state: RLCSv3Message):
+    if "QD301 Command" in state.data:
+        if state.data["QD301 Command"] == "OPEN":
             send_actuator("ACTUATOR_OX_INJECTOR_VALVE", True)
-        if state["QD301 Command"] == "CLOSED":
+        if state.data["QD301 Command"] == "CLOSED":
             send_actuator("ACTUATOR_OX_INJECTOR_VALVE", False)
