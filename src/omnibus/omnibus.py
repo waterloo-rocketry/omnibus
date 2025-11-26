@@ -2,11 +2,14 @@ from dataclasses import dataclass
 import socket
 import time
 
+
 import msgpack
 import zmq
 from datetime import datetime
 
 from typing import Any, ClassVar
+
+from .message_types import RLCSv3Message
 
 try:
     from . import server
@@ -256,7 +259,14 @@ class Receiver(OmnibusCommunicator):
             )
         return None
 
-    def recv(self, timeout: int | None = None) -> Any | None:
+    def new_recv(self, timeout: int | None = None) -> RLCSv3Message:
+        ret = RLCSv3Message({}, 2)
+
+        
+        
+        return ret
+
+    def recv(self, timeout: int | None = None) -> RLCSv3Message | None:
         """
         Receive the payload of one message from a sender, discarding metadata.
 

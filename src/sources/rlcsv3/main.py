@@ -6,7 +6,6 @@ from omnibus import Sender
 import rlcs
 import commander
 
-
 def reader(port: str):
     if port == "-":
         return input
@@ -48,17 +47,15 @@ def main():
         if not len(line):
             continue
 
-        parsed_data = rlcs.parse_rlcs(line)
+        parsed_message = rlcs.parse_rlcs(line)
 
-        if not parsed_data:
+        if not parsed_message:
             continue
 
-        commander.command(parsed_data)
+        commander.command(parsed_message.data)
 
         if not args.solo:  # if connect to omnibus
-            sender.send(CHANNEL, parsed_data.model_dump()["data"])
-
-        rlcs.print_data(parsed_data)
+            sender.send(CHANNEL, parsed_message.model_dump()["data"])
 
 
 if __name__ == '__main__':
