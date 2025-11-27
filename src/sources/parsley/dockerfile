@@ -2,16 +2,14 @@
 FROM ghcr.io/astral-sh/uv:python3.11-alpine
 
 # Authors
-LABEL authors="Kenny Jiang <k72jiang@uwaterloo.ca>"
-
-# Expose: XXXXX
+LABEL authors="Waterloo Rocketry <contact@waterloorocketry.com>"
 
 # Install git.
 RUN apk add --no-cache git
 
 # Copy the project into the image.
 WORKDIR /app
-ADD . /app
+COPY . /app
 
 # Sync the project into the new environment, asserting the lockfile is up to date.
 RUN uv sync --project src/sources/parsley --locked
