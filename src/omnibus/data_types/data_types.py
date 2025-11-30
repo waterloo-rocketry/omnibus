@@ -44,19 +44,11 @@ class CANMessage(BaseModel):
     @model_validator(mode = 'after')
     def check_all_parsely_data(self) ->Self:
         """
-        checks all parsely type data for if the name is contained in the parsely library
+        checks all parsely data in the object using the helper function
         """
 
-        message_data = [[self.board_type_id,message_types.board_type_id,"board_type_id"],
-                        [self.board_inst_id,message_types.board_inst_id,"board_inst_id"],
-                        [self.msg_prio,message_types.msg_prio,"msg_prio"],
-                        [self.msg_type,message_types.msg_type,"msg_type"]]
-        
-        for current_data, proper_data, data_title in message_data:
-            if (current_data not in proper_data):
-                raise ValueError(f"{current_data} is not a valid {data_title}")
-        
-        return self
+        check_all_parsely_data_helper(self)
+
     
 class ParselyMessage(BaseModel):
     """
@@ -74,16 +66,29 @@ class ParselyMessage(BaseModel):
     @model_validator(mode = 'after')
     def check_all_parsely_data(self) ->Self:
         """
-        checks all parsely type data making sure that it is
-        contained in the parsely library.
+        checks all parsely data in the object using the helper function
         """
-        message_data = [[self.board_type_id,message_types.board_type_id,"board_type_id"],
+
+        check_all_parsely_data_helper(self)
+
+        return self
+
+
+def check_all_parsely_data_helper(self):
+    """
+    takes an object and checks all parsely data if the string belongs 
+    to the parsely library
+    """
+
+    message_data = [[self.board_type_id,message_types.board_type_id,"board_type_id"],
                         [self.board_inst_id,message_types.board_inst_id,"board_inst_id"],
                         [self.msg_prio,message_types.msg_prio,"msg_prio"],
                         [self.msg_type,message_types.msg_type,"msg_type"]]
         
-        for current_data, proper_data, data_title in message_data:
-            if (current_data not in proper_data):
+    for current_data, proper_data, data_title in message_data:
+        if (current_data not in proper_data):
                 raise ValueError(f"{current_data} is not a valid {data_title}")
             
-        return self
+    return self
+
+    
