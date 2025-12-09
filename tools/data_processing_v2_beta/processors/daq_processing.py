@@ -68,7 +68,7 @@ class DAQDataProcessor:
         """
         Begin data processing. Blocking call.
         """
-        return self._unpack_and_stream_to_csv(output_file_path)
+        return self.unpack_and_stream_to_csv(output_file_path)
     
     def _validate_and_extract_data(self, msg: list[float | str | DAQ_RECEIVED_MESSAGE_TYPE]) -> DAQ_RECEIVED_MESSAGE_TYPE | None:
 
@@ -113,7 +113,7 @@ class DAQDataProcessor:
         
         return unpacked_data
 
-    def _unpack_and_stream_to_csv(self, output_file_path: str) -> str:
+    def unpack_and_stream_to_csv(self, output_file_path: str) -> str:
 
         with open(output_file_path, "w", newline="") as outfile:
             writer = csv.writer(outfile)
