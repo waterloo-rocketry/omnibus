@@ -88,13 +88,6 @@ def parse_rlcs(line: str | bytes) -> RLCSv3Message | None:
     except Exception as e:
         print(f"Error creating Pydantic model: {e}")
         return None # Return None on failure to be consistent
-
-    message = RLCSv3Message(
-        id=0,  
-        data=res,
-        message_version=2
-    )
-    return message
     
 def parse_thermistor(divider_vlt):
     # Second resistor in voltage divider
