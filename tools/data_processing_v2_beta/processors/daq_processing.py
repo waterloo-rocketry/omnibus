@@ -1,12 +1,12 @@
 # pyright: strict
 
 import csv
-import os
 import msgpack
-from io import BufferedReader
-from typing import cast, TypedDict
-from dataclasses import dataclass
+import os
 import sys
+from typing import BinaryIO, TextIO, cast, TypedDict, Any
+from dataclasses import dataclass
+
 
 MESSAGE_FORMAT_VERSION = 2
 
@@ -17,6 +17,7 @@ DAQ_EXPECTED_RECEIVE_DATA_FORMAT = {
     "sample_rate": int,
     "message_format_version": int,
 }
+
 
 @dataclass(frozen=True)
 class DAQ_RECEIVED_MESSAGE_TYPE(TypedDict):
@@ -41,7 +42,6 @@ class DAQ_RECEIVED_MESSAGE_TYPE(TypedDict):
     Timestamps are based on initial time t_0 = time.time_ns(), meaning they should be always unique.
     Unit is nanoseconds
     """
-    # Example: [19, 22, 25] <- 1.3 and 2.3 from above was read at t0 = 19
 
     # Rate at which the messages were read, in Hz, dt = 1/sample_rate
     sample_rate: int
@@ -50,16 +50,15 @@ class DAQ_RECEIVED_MESSAGE_TYPE(TypedDict):
     # Increment MESSAGE_FORMAT_VERSION both here and in the NI source whenever the structure changes
     message_format_version: int
 
+
 class DAQDataProcessor:
 
     _all_available_sensors: list[str] = []
-    _log_file_stream: BufferedReader
+    _log_file_stream: BinaryIO
     _expected_channel: str
     # So we can pop as we process entries since log messages are first-in-first-out
 
-    def __init__(
-        self, log_file_stream: BufferedReader, daq_channel: str = "DAQ"
-    ) -> None:
+    def __init__(self, log_file_stream: BinaryIO, daq_channel: str = "DAQ") -> None:
         self._log_file_stream = log_file_stream
         self._expected_channel = daq_channel
 
@@ -68,9 +67,15 @@ class DAQDataProcessor:
         """
         Begin data processing. Blocking call.
         """
-        return self.unpack_and_stream_to_csv(output_file_path)
-    
-    def _validate_and_extract_data(self, msg: list[float | str | DAQ_RECEIVED_MESSAGE_TYPE]) -> DAQ_RECEIVED_MESSAGE_TYPE | None:
+        with open(output_file_path, "w", newline="") as outfile:
+            self.unpack_and_stream_to_csv(outfile)
+
+        export_size = os.path.getsize(output_file_path)
+        return "{:.2f} MB".format(export_size / (1024 * 1024))
+
+    def validate_and_extract_data(
+        self, msg: list[float | str | DAQ_RECEIVED_MESSAGE_TYPE]
+    ) -> DAQ_RECEIVED_MESSAGE_TYPE | None:
 
         # Example ["DAQ", 12345.02, {data here}]
         assert len(msg) == 3
@@ -84,10 +89,11 @@ class DAQDataProcessor:
 
         if channel != self._expected_channel:
             return None
-        
+
         # Verify the message version
-        if ("message_format_version" not in unpacked_data) or (
-            unpacked_data["message_format_version"] != MESSAGE_FORMAT_VERSION
+        if (
+            "message_format_version" not in unpacked_data
+            or unpacked_data["message_format_version"] != MESSAGE_FORMAT_VERSION
         ):
             raise AssertionError(
                 "[FATAL] [DAQ Unpacker] This version of data processing is not compatible with the DAQ messages provided!"
@@ -101,7 +107,7 @@ class DAQDataProcessor:
                     file=sys.stderr,
                 )
                 return None
-            # Cast to object to check that item's type
+
             if not isinstance(
                 unpacked_data[key], DAQ_EXPECTED_RECEIVE_DATA_FORMAT[key]
             ):
@@ -110,34 +116,41 @@ class DAQDataProcessor:
                     file=sys.stderr,
                 )
                 return None
-        
+
         return unpacked_data
 
-    def unpack_and_stream_to_csv(self, output_file_path: str) -> str:
+    def unpack_and_stream_to_csv(self, outfile: TextIO) -> None:
+        writer = csv.writer(outfile)
 
-        with open(output_file_path, "w", newline="") as outfile:
-            writer = csv.writer(outfile)
-            
-            unpacker = msgpack.Unpacker(
-                self._log_file_stream  # pyright: ignore[reportArgumentType]
-            )
-            wrote_header_flag = False
+        # msgpack's typing is overly strict; BinaryIO is correct at runtime
+        unpacker = msgpack.Unpacker(cast(Any, self._log_file_stream))
 
-            for msg in unpacker:
-                assert type(msg) is list
-                msg = cast(list[float | str | DAQ_RECEIVED_MESSAGE_TYPE], msg)
-                unpacked_data = self._validate_and_extract_data(msg)
-                if unpacked_data is None:
-                    continue
+        wrote_header = False
+        sensors: list[str] = []
 
-                sensors = list(unpacked_data["data"].keys())
-                if not wrote_header_flag:
-                    writer.writerow(["Timestamp (ns) +- 10ns"] + sensors)
-                    wrote_header_flag = True
-                
-                for i, timestamp in enumerate(unpacked_data["relative_timestamps_nanoseconds"]):
-                    values = [unpacked_data["data"][sensor][i] for sensor in sensors]
-                    writer.writerow([timestamp] + values)
-            
-        export_size = os.path.getsize(output_file_path)
-        return "{:.2f} MB".format(export_size / (1024 * 1024))
+        for msg in unpacker:
+            if not isinstance(msg, list):
+                continue
+
+            msg = cast(list[float | str | DAQ_RECEIVED_MESSAGE_TYPE], msg)
+            unpacked_data = self.validate_and_extract_data(msg)
+            if unpacked_data is None:
+                continue
+
+            data = unpacked_data["data"]
+            timestamps = unpacked_data["relative_timestamps_nanoseconds"]
+
+            if not wrote_header:
+                sensors = sorted(data.keys())
+                writer.writerow(["Timestamp (ns) +- 10ns"] + sensors)
+                wrote_header = True
+
+            sample_count = len(timestamps)
+            for sensor in sensors:
+                if len(data[sensor]) != sample_count:
+                    raise ValueError("Mismatched sensor data lengths")
+
+            for i in range(sample_count):
+                writer.writerow(
+                    [timestamps[i]] + [data[sensor][i] for sensor in sensors]
+                )
