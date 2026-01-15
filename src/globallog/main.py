@@ -1,8 +1,8 @@
 # Global logger - Saves messages passed through bus to asc-time.log
-
+import argparse
 import signal
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 import msgpack
 
@@ -10,8 +10,21 @@ from omnibus import Receiver
 
 # Will log all messages passing through bus
 CHANNEL = ""
+
+# Controls whether logged timestamps use producer time or local UTC time
+parser=argparse.ArgumentParser(description="Omnibus Global Logger")
+parser.add_argument(
+    "-l",
+    "--local-timestamps",
+    action="store_true",
+    help="Use receiver (local) timestamps instead of producer timestamps",
+)
+args = parser.parse_args()
+USE_LOCAL_TIMESTAMPS = args.local_timestamps
+
 # Retrieves current date and time
 CURTIME = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+
 # Creates filename
 fname = CURTIME + ".log"
 # We use a shorter reconnect attempt here because globallog should be
@@ -61,7 +74,13 @@ with open(fname, "wb") as f:
             # Try receiving message with timeout (if possible) to avoid blocking
             msg = receiver.recv_message(timeout=10)  # 10 ms timeout
             if msg:
-                f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
+                timestamp = (
+                    datetime.now(timezone.utc).timestamp()
+                    if USE_LOCAL_TIMESTAMPS
+                    else msg.timestamp
+                )
+                
+                f.write(msgpack.packb([msg.channel, timestamp, msg.payload]))
 
     finally:
         f.close()
