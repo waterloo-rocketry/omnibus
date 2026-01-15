@@ -2,7 +2,8 @@
 import argparse
 import signal
 import sys
-from datetime import datetime, timezone
+import time
+from datetime import datetime
 
 import msgpack
 
@@ -11,7 +12,7 @@ from omnibus import Receiver
 # Will log all messages passing through bus
 CHANNEL = ""
 
-# Controls whether logged timestamps use producer time or local UTC time
+# Controls whether logged timestamps use producer time or local time
 parser=argparse.ArgumentParser(description="Omnibus Global Logger")
 parser.add_argument(
     "-l",
@@ -75,7 +76,7 @@ with open(fname, "wb") as f:
             msg = receiver.recv_message(timeout=10)  # 10 ms timeout
             if msg:
                 timestamp = (
-                    datetime.now(timezone.utc).timestamp()
+                    time.time() 
                     if USE_LOCAL_TIMESTAMPS
                     else msg.timestamp
                 )
