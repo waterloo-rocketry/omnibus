@@ -297,7 +297,9 @@ def main():
                 
                 # Send the CAN message over the channel
                 if sender:
-                    sender.send(channel=SEND_CHANNEL, payload=parsed_data)
+                    message_with_id = dict(parsed_data)
+                    message_with_id["parsley_instance_id"] = sender_id  # Add the instance ID
+                    sender.send(channel=SEND_CHANNEL, payload=message_with_id)
 
             except ValueError as e:
                 print(e)
