@@ -299,6 +299,7 @@ def main():
                 if sender:
                     message_with_id = dict(parsed_data)
                     message_with_id["parsley_instance_id"] = sender_id  # Add the instance ID
+                    message_with_id["message_version"] = 2
                     sender.send(channel=SEND_CHANNEL, payload=message_with_id)
 
             except ValueError as e:
