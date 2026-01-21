@@ -70,7 +70,7 @@ class FakeSerialCommunicator:
                 "msg_prio": "HIGH",
                 "msg_type": "SENSOR_ANALOG",
                 "time": 1234,
-                "sensor_id": "SENSOR_PRESSURE_CC0",
+                "sensor_id": "SENSOR_PT_CHANNEL_1",
                 "value": 800,
             },
         ]
@@ -298,8 +298,9 @@ def main():
                 # Send the CAN message over the channel
                 if sender:
                     message_with_id = dict(parsed_data)
-                    message_with_id["parsley_instance_id"] = sender_id  # Add the instance ID
+                    message_with_id["parsley"] = sender_id  # Add the instance ID
                     message_with_id["message_version"] = 2
+                    print("SENDING:", message_with_id)
                     sender.send(channel=SEND_CHANNEL, payload=message_with_id)
 
             except ValueError as e:
