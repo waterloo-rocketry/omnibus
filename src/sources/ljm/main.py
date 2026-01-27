@@ -4,6 +4,7 @@ The main module for the LabJack DAQ source.
 
 import argparse
 import sys
+import threading
 import time
 from typing import TypedDict, cast
 
@@ -41,6 +42,19 @@ CHANNEL = "DAQ"
 # Increment whenever data format change, so that new incompatible tools don't
 # attempt to read old logs / messages.
 MESSAGE_FORMAT_VERSION = 2  # Backwards compatible with original version.
+
+
+# Lock for print with lock.
+printLock = threading.Lock()
+
+
+# Print with lock.
+# Ensuring that print statements are thread-safe
+# for main and stream callback.
+def printWithLock(string):
+    global printLock
+    with printLock:
+        print(string)
 
 
 class DAQ_SEND_MESSAGE_TYPE(TypedDict):
