@@ -3,6 +3,7 @@ The main module for the LabJack DAQ source.
 """
 
 import sys
+import threading
 import time
 from typing import NoReturn, TypedDict, cast
 
@@ -42,6 +43,19 @@ CHANNEL = "DAQ"
 MESSAGE_FORMAT_VERSION = 2  # Backwards compatible with original version.
 
 
+# Lock for print with lock.
+printLock = threading.Lock()
+
+
+# Print with lock.
+# Ensuring that print statements are thread-safe
+# for main and stream callback.
+def printWithLock(string):
+    global printLock
+    with printLock:
+        print(string)
+
+
 class DAQ_SEND_MESSAGE_TYPE(TypedDict):
     timestamp: float
     data: dict[str, list[float]]
@@ -72,6 +86,15 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
     # Arbitrary constant that validates that the received message format is compatible.
     # Increment MESSAGE_FORMAT_VERSION both here and in the Data Processing script whenever the structure changes.
     message_format_version: int
+
+
+# TODO: Implement all the other stuff needed for read callback (stream information class, etc.)
+def ljm_stream_read_callback(arg):
+    # TODO: Implement data reading and processing. Plus Omnibus send.
+    # Consult:
+    # - read_data of NI (also commented below)
+    # - https://github.com/labjack/labjack-ljm-python/blob/master/Examples/More/Stream/stream_callback.py
+    pass
 
 
 # def read_data(ai: nidaqmx.Task) -> NoReturn:
@@ -167,6 +190,8 @@ def main():
         # Setup sensors.
         numAddresses, aScanListNames = calibration.Sensor.setup(handle)
         aScanList = ljm.namesToAddresses(numAddresses, aScanListNames)[0]
+
+        # Start LJM stream.
         ljm.eStreamStart(
             handle, config.SCANS_PER_READ, numAddresses, aScanList, config.SCAN_RATE
         )
@@ -175,16 +200,15 @@ def main():
         print(f"Stream started with a scan rate of {config.SCAN_RATE}Hz")
 
         try:
-            # TODO: Read data from the stream.
-            data = ljm.eStreamRead(handle)
-            print(f"Received data: {data}")
-            print(f"Data size: {len(data[0])}")
+            ljm.setStreamCallback(handle, ljm_stream_read_callback)
+            printWithLock("Stream running and callback set.")
         except KeyboardInterrupt:
-            print("KeyboardInterrupt Triggered")
+            printWithLock("KeyboardInterrupt Triggered")
     except ljm.LJMError as e:
         print(f"Error handling LabJack device: {e}")
         sys.exit(1)
 
+    # Stop LJM stream.
     print("Stopping stream...")
     ljm.eStreamStop(handle)
     ljm.close(handle)
