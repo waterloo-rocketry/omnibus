@@ -2,6 +2,7 @@
 FROM ghcr.io/astral-sh/uv:python3.11-alpine
 
 # Authors
+LABEL authors="Qian Qian <q23qian@uwaterloo.ca>"
 LABEL authors="Waterloo Rocketry <contact@waterloorocketry.com>"
 
 # Expose the port the server will run on (5075, 5076, 5077).
