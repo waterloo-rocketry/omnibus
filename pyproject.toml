@@ -69,7 +69,8 @@ members = [
     "src/dashboard",
     "src/globallog",
     "src/sinks/interamap",
-    "packages/omnibus-ws-server",
+    "src/bridge",
+    "tools/data_processing",
 ]
 
 [tool.pyright]
@@ -86,5 +87,6 @@ executionEnvironments = [
     {root = "src/globallog"},
     {root = "src/sources/fakeni"},
     {root = "src/sinks/interamap"},
+    {root = "src/bridge"},
     {root = "tools/data_processing"}
 ]
