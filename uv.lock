@@ -854,10 +854,9 @@ wheels = [
 [[package]]
 name = "parsley"
 version = "2025.4"
-source = { git = "https://github.com/waterloo-rocketry/parsley.git#a6a7b3ac9ff24d553200bcb60f03a4b314061cc8" }
+source = { git = "https://github.com/waterloo-rocketry/parsley.git#815e430b245b18d9971e0c1b9b16c5e98b463bf6" }
 dependencies = [
     { name = "crc8" },
-    { name = "pytest" },
 ]
 
 [[package]]
