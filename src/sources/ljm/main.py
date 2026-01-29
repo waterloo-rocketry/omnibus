@@ -212,6 +212,16 @@ def main():
         num_addresses, a_scan_list_names = calibration.Sensor.setup(handle)
         a_scan_list = ljm.namesToAddresses(num_addresses, a_scan_list_names)[0]
 
+        # Stream Configuration
+        stream_info.aScanListNames = aScanListNames
+        stream_info.numAddresses = numAddresses
+        stream_info.aScanList = aScanList
+        stream_info.scanRate = config.SCAN_RATE
+        stream_info.scansPerRead = config.SCANS_PER_READ
+        stream_info.done = False
+        stream_info.aDataSize = stream_info.numAddresses * stream_info.scansPerRead
+        stream_info.handle = handle
+
         # Start LJM stream.
         scan_rate = ljm.eStreamStart(
             handle, config.SCANS_PER_READ, num_addresses, a_scan_list, config.SCAN_RATE
