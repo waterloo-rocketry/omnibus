@@ -180,16 +180,9 @@ def ljm_stream_read_callback(arg):
                 if not data or num_of_messages_read < config.READ_BULK
                 else relative_timestamps[-1] + READ_PERIOD
             )
-
             
         with open(f"log_{now}.dat", "ab") as log:
                 log.write(msgpack.packb(data_parsed))
-                
-        # Abort logging to prevent further errors.
-        stream_info.done = True
-        ljm.eStreamStop(stream_info.handle)
-        ljm.close(stream_info.handle)
-        sys.exit(1)
 
         # Send data to omnibus.
         sender.send(CHANNEL, data_parsed)
