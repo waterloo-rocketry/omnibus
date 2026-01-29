@@ -105,7 +105,6 @@ class StreamInfo:
         self.totSkip: int = 0
         self.totScans: int = 0
         self.relative_last_read_time: int = 0
-        self.log: Optional[BufferedWriter] = None
 
 READ_PERIOD: int = int(1 / cast(int, config.RATE) * 1000000000)
 rates = []
@@ -182,16 +181,15 @@ def ljm_stream_read_callback(arg):
                 else relative_timestamps[-1] + READ_PERIOD
             )
 
-        # stream_info.log.write(msgpack.packb(data_parsed))
-        if stream_info.log is not None:
-            stream_info.log.write(msgpack.packb(data_parsed))
-        else:
-            printWithLock("Log file is not initialized.")
-            # Abort logging to prevent further errors.
-            stream_info.done = True
-            ljm.eStreamStop(stream_info.handle)
-            ljm.close(stream_info.handle)
-            sys.exit(1)
+            
+        with open(f"log_{now}.dat", "ab") as log:
+                log.write(msgpack.packb(data_parsed))
+                
+        # Abort logging to prevent further errors.
+        stream_info.done = True
+        ljm.eStreamStop(stream_info.handle)
+        ljm.close(stream_info.handle)
+        sys.exit(1)
 
         # Send data to omnibus.
         sender.send(CHANNEL, data_parsed)
@@ -264,10 +262,8 @@ def main():
         print(f"Stream started with a scan rate of {stream_info.scanRate}Hz")
 
         try:
-            with open(f"log_{now}.dat", "wb") as log:
-                stream_info.log = log
-                ljm.setStreamCallback(stream_info.handle, ljm_stream_read_callback)
-                printWithLock("Stream running and callback set.")
+            ljm.setStreamCallback(stream_info.handle, ljm_stream_read_callback)
+            printWithLock("Stream running and callback set.")
         except KeyboardInterrupt:
             printWithLock("KeyboardInterrupt Triggered")
     except ljm.LJMError as e:
