@@ -11,7 +11,7 @@ from omnibus import Sender
 from typing import cast
 
 READ_BULK = 25  # mimic how the real NI box samples in bulk for better performance
-SAMPLE_RATE = 1000  # total samples/second
+SAMPLE_RATE = 100  # total samples/second
 CHANNELS = 8  # number of analog channels to read from
 
 parser = argparse.ArgumentParser()
@@ -72,6 +72,7 @@ try:
 
         sender.send(CHANNEL, data)
         time.sleep(max(READ_BULK/SAMPLE_RATE - (time.time() - start), 0))
+        time.sleep(0.5)
 finally:
     if log:
         log.close()

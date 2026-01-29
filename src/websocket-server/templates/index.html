@@ -9,28 +9,21 @@
 
     <script>
       const log = (msg) => {
-        document.getElementById("log").textContent += msg + "\n";
+        document.getElementById("log").textContent = msg + "\n";
       };
       log("HTML loaded");
     </script>
 
-    <!-- IMPORTANT: load the client from YOUR server -->
-    <!-- <script src="/socket.io/socket.io.js"></script> -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
 
     <script>
       const socket = io(); // connects to same host:port that served this page
-
       socket.on("connect", () => log("connected id=" + socket.id));
       socket.on("connect_error", (err) => log("connect_error " + err));
       socket.on("omnibus_message", (data) => {
-        log("omnibus_message");
-        log(JSON.stringify(data, null, 2));
+        log("omnibus_message\n" + JSON.stringify(data, null, 2));
       });
       socket.on("disconnect", () => log("disconnected"));
     </script>
-
-  
   </body>
 </html>

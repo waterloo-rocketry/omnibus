@@ -3,10 +3,7 @@ import time
 from dataclasses import dataclass, asdict
 from typing import Any
 
-import zmq
-import msgpack
-
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 from omnibus import Message as OmnibusMessage
 from omnibus import Sender, Receiver
@@ -34,25 +31,19 @@ def create_app():
         return render_template("index.html")
     
     @app.route("/send-legacy-omnibus-information", methods=["POST"])
-    def get_legacy_omnibus_information():
-        #translate from legacy omnibus endpoint to websocket message
-        message = da_receiver.recv()
-        print(f">>> received legacy omnibus message: {message}")
-        msg = OmnibusMessage("peepep", time.time(), {"data": message})
-        emit("omnibus_message", asdict(msg))
-        
-        print(f">>> emitting websocket message: {msg}")
-        return render_template("index.html")
+    def send_legacy_omnibus_information():
+        data = request.get_json()
+        print(f"Received POST: {data}")
+        socketio.emit("omnibus_message", data)
+        return "OK"
 
     @socketio.on("connect")
     def connect():
-        get_legacy_omnibus_information()
         
-        '''
         print(">>> client connected")
         msg = OmnibusMessage("test_channel", time.time(), {"hello": "world"})
         emit("omnibus_message", asdict(msg))
-        '''
+        
 
     @socketio.on("publish")
     def publish_data(data):
