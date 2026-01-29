@@ -52,7 +52,6 @@ printLock = threading.Lock()
 # Ensuring that print statements are thread-safe
 # for main and stream callback.
 def printWithLock(string):
-    global printLock
     with printLock:
         print(string)
 
