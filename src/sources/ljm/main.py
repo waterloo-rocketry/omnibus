@@ -242,6 +242,10 @@ def main():
         stream_info.done = False
         stream_info.aDataSize = stream_info.numAddresses * stream_info.scansPerRead
         stream_info.handle = handle
+        
+        # Relative timestamp starting point, starts at current time and scales by READ_PERIOD.
+        # Use current time to have a unique starting point on every collection, ns to prevent floating point error.
+        stream_info.relative_last_read_time = time.time_ns()
 
         # Start LJM stream.
         stream_info.scanRate = ljm.eStreamStart(
