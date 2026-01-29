@@ -6,7 +6,7 @@ from io import BufferedWriter
 import sys
 import threading
 import time
-from typing import NoReturn, TypedDict, cast
+from typing import NoReturn, Optional, TypedDict, cast
 
 import msgpack
 
@@ -52,7 +52,6 @@ printLock = threading.Lock()
 # Ensuring that print statements are thread-safe
 # for main and stream callback.
 def printWithLock(string):
-    global printLock
     with printLock:
         print(string)
 
@@ -106,7 +105,7 @@ class StreamInfo:
         self.totSkip: int = 0
         self.totScans: int = 0
         self.relative_last_read_time: int = 0
-        self.log: BufferedWriter = None  # type: ignore[assignment]
+        self.log: Optional[BufferedWriter] = None
 
 READ_PERIOD: int = int(1 / cast(int, config.RATE) * 1000000000)
 rates = []
@@ -119,10 +118,6 @@ now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-0
 # Function to pass to the callback function. This needs have one
 # parameter/argument, which will be the handle.
 def ljm_stream_read_callback(arg):
-    # TODO: Implement data reading and processing. Plus Omnibus send.
-    # Consult:
-    # - read_data of NI (also commented below)
-    # - https://github.com/labjack/labjack-ljm-python/blob/master/Examples/More/Stream/stream_callback.py
     if stream_info.handle != arg:
         print("myStreamReadCallback - Unexpected argument: %d" % (arg))
         return
@@ -139,8 +134,8 @@ def ljm_stream_read_callback(arg):
         # Read from the stream.
         ret = ljm.eStreamRead(stream_info.handle)
         stream_info.aData = ret[0]
-        deviceScanBacklog = ret[1]
-        ljmScanBackLog = ret[2]
+        _deviceScanBacklog = ret[1]
+        _ljmScanBackLog = ret[2]
 
         # Convert aData to DAQ data format.
         # aData is a interleaved list of readings,
@@ -187,7 +182,16 @@ def ljm_stream_read_callback(arg):
                 else relative_timestamps[-1] + READ_PERIOD
             )
 
-        stream_info.log.write(msgpack.packb(data_parsed))
+        # stream_info.log.write(msgpack.packb(data_parsed))
+        if stream_info.log is not None:
+            stream_info.log.write(msgpack.packb(data_parsed))
+        else:
+            printWithLock("Log file is not initialized.")
+            # Abort logging to prevent further errors.
+            stream_info.done = True
+            ljm.eStreamStop(stream_info.handle)
+            ljm.close(stream_info.handle)
+            sys.exit(1)
 
         # Send data to omnibus.
         sender.send(CHANNEL, data_parsed)
