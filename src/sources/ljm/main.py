@@ -2,10 +2,11 @@
 The main module for the LabJack DAQ source.
 """
 
+from io import BufferedWriter
 import sys
 import threading
 import time
-from typing import NoReturn, TypedDict, cast
+from typing import NoReturn, Optional, TypedDict, cast
 
 import msgpack
 
@@ -51,7 +52,6 @@ printLock = threading.Lock()
 # Ensuring that print statements are thread-safe
 # for main and stream callback.
 def printWithLock(string):
-    global printLock
     with printLock:
         print(string)
 
@@ -88,86 +88,123 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
     message_format_version: int
 
 
-# TODO: Implement all the other stuff needed for read callback (stream information class, etc.)
+# Class to hold stream information.
+class StreamInfo:
+    def __init__(self):
+        self.handle: int = 0
+        self.scanRate: float = 0
+        self.scansPerRead: int = 0
+        self.streamLengthMS: int = 0
+        self.done: bool = False
+        self.numAddresses: int = 0
+        self.aScanList = []
+        self.aScanListNames = []
+        self.aDataSize: int = 0
+        self.aData: list[float] = []
+        self.streamRead: int = 0
+        self.totSkip: int = 0
+        self.totScans: int = 0
+        self.relative_last_read_time: int = 0
+
+READ_PERIOD: int = int(1 / cast(int, config.RATE) * 1000000000)
+rates = []
+
+# Relative timestamp starting point, starts at current time and scales by READ_PERIOD
+# Use current time to have a unique starting point on every collection, ns to prevent floating point error
+
+
+now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
+# Function to pass to the callback function. This needs have one
+# parameter/argument, which will be the handle.
 def ljm_stream_read_callback(arg):
-    # TODO: Implement data reading and processing. Plus Omnibus send.
-    # Consult:
-    # - read_data of NI (also commented below)
-    # - https://github.com/labjack/labjack-ljm-python/blob/master/Examples/More/Stream/stream_callback.py
-    pass
+    if stream_info.handle != arg:
+        print("myStreamReadCallback - Unexpected argument: %d" % (arg))
+        return
+    
+    # Check if stream is done so that we don't output the print statement below.
+    if stream_info.done:
+        return
+    
+    rates.append(time.time())
+    if len(rates) > 50:
+        rates.pop(0)
+
+    try:
+        # Read from the stream.
+        ret = ljm.eStreamRead(stream_info.handle)
+        stream_info.aData = ret[0]
+        _deviceScanBacklog = ret[1]
+        _ljmScanBackLog = ret[2]
+
+        # Convert aData to DAQ data format.
+        # aData is a interleaved list of readings,
+        # i.e. [chan0_scan0, chan1_scan0, ..., chanN_scan0,
+        #   chan0_scan1, chan1_scan1, ..., chanN_scan1, ...,
+        #   chan0_scanM, chan1_scanM, ..., chanN_scanM].
+        # and we need to convert it to a nested list of
+        # [[chan0_scan0, chan0_scan1, ..., chan0_scanM],
+        #  [chan1_scan0, chan1_scan1, ..., chan1_scanM],
+        #  ...
+        #  [chanN_scan0, chanN_scan1, ..., chanN_scanM]]
+        # Note that N = stream_info.numAddresses - 1,
+        # and M = stream_info.scansPerRead - 1
+        data: list[list[float | int]] = []
+        for i in range(stream_info.numAddresses):
+            data.append(
+                [
+                    stream_info.aData[j * stream_info.numAddresses + i]
+                    for j in range(stream_info.scansPerRead)
+                ]
+            )
+
+        num_of_messages_read = 0 if not data else len(data[0])
+
+        relative_timestamps = list(
+            range(stream_info.relative_last_read_time,
+                stream_info.relative_last_read_time + READ_PERIOD * num_of_messages_read,
+                READ_PERIOD,)
+        )
+
+        data_parsed: DAQ_SEND_MESSAGE_TYPE = {
+                "timestamp": time.time(),
+                "data": calibration.Sensor.parse(data),  # apply calibration
+                "relative_timestamps_nanoseconds": relative_timestamps,
+                "sample_rate": cast(int, config.RATE),
+                "message_format_version": MESSAGE_FORMAT_VERSION,
+            }
+
+        # Calculate next staring timestamp.
+        # Reset the timestamps to a new starting point if there were problems reading.
+        stream_info.relative_last_read_time = (
+                time.time_ns()
+                if not data or num_of_messages_read < config.READ_BULK
+                else relative_timestamps[-1] + READ_PERIOD
+            )
+            
+        with open(f"log_{now}.dat", "ab") as log:
+                log.write(msgpack.packb(data_parsed))
+
+        # Send data to omnibus.
+        sender.send(CHANNEL, data_parsed)
+
+        print(
+                f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ",
+                end="",
+            )
+
+    # If LJM has called this callback, the data is valid, but LJM_eStreamRead
+    # may return LJME_STREAM_NOT_RUNNING if another thread (such as the Python
+    # main thread) has stopped stream.
+    except ljm.LJMError as err:
+        if err.errorCode == ljm.errorcodes.STREAM_NOT_RUNNING:
+            printWithLock("eStreamRead returned LJME_STREAM_NOT_RUNNING.")
+        else:
+            printWithLock(err)
 
 
-# def read_data(ai: nidaqmx.Task) -> NoReturn:
-#     # See config.py.example, config.RATE should be float
-#     # Converting to nanoseconds to avoid floating point inaccuracy
-#     READ_PERIOD: int = int(1 / cast(int, config.RATE) * 1000000000)
-
-#     rates = []
-
-#     # Relative timestamp starting point, starts at current time and scales by READ_PERIOD
-#     # Use current time to have a unique starting point on every collection, ns to prevent floating point error
-#     relative_last_read_time: float = time.time_ns()
-
-#     now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
-#     with open(f"log_{now}.dat", "wb") as log:
-#         while True:
-#             # use a list of 50 timestamps to keep track of the sample rate
-#             rates.append(time.time())
-#             if len(rates) > 50:
-#                 rates.pop(0)
-
-#             # read data config.READ_BULK at a time
-#             # ai.read returns a single array if there is only one sensor and a nested array otherwise
-#             data: list[float | int] | list[list[float | int]] = cast(
-#                 list[float | int] | list[list[float | int]],
-#                 ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5),
-#             )
-#             assert type(data) is list  # Ensure the above behaviour is enforced
-
-#             # make sure the data is a nested list to ensure consistency
-#             if data and not isinstance(data[0], list):
-#                 data = cast(list[list[float | int]], [data])
-
-#             # Ensure that list is either empty or nested
-#             assert (not data) or (type(data[0]) is list)
-#             data = cast(list[list[float | int]], data)
-
-#             num_of_messages_read = 0 if not data else len(data[0])
-
-
-#             relative_timestamps = list(
-#                 range(
-#                     relative_last_read_time,
-#                     relative_last_read_time + READ_PERIOD * num_of_messages_read,
-#                     READ_PERIOD,
-#                 )
-#             )
-
-#             data_parsed: DAQ_SEND_MESSAGE_TYPE = {
-#                 "timestamp": time.time(),
-#                 "data": calibration.Sensor.parse(data),  # apply calibration
-#                 "relative_timestamps_nanoseconds": relative_timestamps,
-#                 "sample_rate": cast(int, config.RATE),
-#                 "message_format_version": MESSAGE_FORMAT_VERSION,
-#             }
-
-#             # Calculate next staring timestamp
-#             # Reset the timestamps to a new starting point if there were problems reading
-#             relative_last_read_time = (
-#                 time.time_ns()
-#                 if not data or num_of_messages_read < config.READ_BULK
-#                 else relative_timestamps[-1] + READ_PERIOD
-#             )
-
-#             # we can concatenate msgpack outputs as a backup logging option
-#             log.write(msgpack.packb(data_parsed))
-
-#             sender.send(CHANNEL, data_parsed)  # send data to omnibus
-
-#             print(
-#                 f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ",
-#                 end="",
-#             )
+# Create the global StreamInfo class which is used to pass information between
+# the callback and main code.
+stream_info = StreamInfo()
 
 
 def main():
@@ -191,16 +228,34 @@ def main():
         numAddresses, aScanListNames = calibration.Sensor.setup(handle)
         aScanList = ljm.namesToAddresses(numAddresses, aScanListNames)[0]
 
+        # Stream Configuration
+        stream_info.aScanListNames = aScanListNames
+        stream_info.numAddresses = numAddresses
+        stream_info.aScanList = aScanList
+        stream_info.scanRate = config.SCAN_RATE
+        stream_info.scansPerRead = config.SCANS_PER_READ
+        stream_info.done = False
+        stream_info.aDataSize = stream_info.numAddresses * stream_info.scansPerRead
+        stream_info.handle = handle
+        
+        # Relative timestamp starting point, starts at current time and scales by READ_PERIOD.
+        # Use current time to have a unique starting point on every collection, ns to prevent floating point error.
+        stream_info.relative_last_read_time = time.time_ns()
+
         # Start LJM stream.
-        ljm.eStreamStart(
-            handle, config.SCANS_PER_READ, numAddresses, aScanList, config.SCAN_RATE
+        stream_info.scanRate = ljm.eStreamStart(
+            stream_info.handle,
+            stream_info.scansPerRead,
+            stream_info.numAddresses,
+            stream_info.aScanList,
+            stream_info.scanRate,
         )
-        print(f"Number of addresses set up: {numAddresses}")
-        print(f"Scan list names: {aScanListNames}")
-        print(f"Stream started with a scan rate of {config.SCAN_RATE}Hz")
+        print(f"Number of addresses set up: {stream_info.numAddresses}")
+        print(f"Scan list names: {stream_info.aScanListNames}")
+        print(f"Stream started with a scan rate of {stream_info.scanRate}Hz")
 
         try:
-            ljm.setStreamCallback(handle, ljm_stream_read_callback)
+            ljm.setStreamCallback(stream_info.handle, ljm_stream_read_callback)
             printWithLock("Stream running and callback set.")
         except KeyboardInterrupt:
             printWithLock("KeyboardInterrupt Triggered")
@@ -210,6 +265,7 @@ def main():
 
     # Stop LJM stream.
     print("Stopping stream...")
+    stream_info.done = True
     ljm.eStreamStop(handle)
     ljm.close(handle)
 
