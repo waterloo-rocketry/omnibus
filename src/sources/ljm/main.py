@@ -203,9 +203,11 @@ def ljm_stream_read_callback(arg):
     # main thread) has stopped stream.
     except ljm.LJMError as err:
         if err.errorCode == ljm.errorcodes.STREAM_NOT_RUNNING:
-            printWithLock("eStreamRead returned LJME_STREAM_NOT_RUNNING.")
+            printWithLock(
+                "Error handling LJM Stream Read Callback: eStreamRead returned LJME_STREAM_NOT_RUNNING."
+            )
         else:
-            printWithLock(err)
+            printWithLock(f"Error handling LJM Stream Read Callback: {err}")
 
 
 # Create the global StreamInfo class which is used to pass information between
@@ -275,15 +277,15 @@ def main():
             threading.Event().wait()
         except KeyboardInterrupt:
             printWithLock("KeyboardInterrupt Triggered")
+
+        # Stop LJM stream.
+        print("Stopping stream...")
+        stream_info.done = True
+        ljm.eStreamStop(handle)
+        ljm.close(handle)
     except ljm.LJMError as e:
         print(f"Error handling LabJack device: {e}")
         sys.exit(1)
-
-    # Stop LJM stream.
-    print("Stopping stream...")
-    stream_info.done = True
-    ljm.eStreamStop(handle)
-    ljm.close(handle)
 
 
 if __name__ == "__main__":
