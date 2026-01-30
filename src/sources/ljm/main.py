@@ -2,11 +2,11 @@
 The main module for the LabJack DAQ source.
 """
 
-from io import BufferedWriter
+import signal
 import sys
 import threading
 import time
-from typing import NoReturn, Optional, TypedDict, cast
+from typing import TypedDict, cast
 
 import msgpack
 
@@ -106,7 +106,8 @@ class StreamInfo:
         self.totScans: int = 0
         self.relative_last_read_time: int = 0
 
-READ_PERIOD: int = int(1 / cast(int, config.RATE) * 1000000000)
+
+READ_PERIOD: int = int(1 / cast(int, config.SCAN_RATE) * 1000000000)
 rates = []
 
 # Relative timestamp starting point, starts at current time and scales by READ_PERIOD
@@ -114,17 +115,19 @@ rates = []
 
 
 now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
+
+
 # Function to pass to the callback function. This needs have one
 # parameter/argument, which will be the handle.
 def ljm_stream_read_callback(arg):
     if stream_info.handle != arg:
         print("myStreamReadCallback - Unexpected argument: %d" % (arg))
         return
-    
+
     # Check if stream is done so that we don't output the print statement below.
     if stream_info.done:
         return
-    
+
     rates.append(time.time())
     if len(rates) > 50:
         rates.pop(0)
@@ -160,37 +163,40 @@ def ljm_stream_read_callback(arg):
         num_of_messages_read = 0 if not data else len(data[0])
 
         relative_timestamps = list(
-            range(stream_info.relative_last_read_time,
-                stream_info.relative_last_read_time + READ_PERIOD * num_of_messages_read,
-                READ_PERIOD,)
+            range(
+                stream_info.relative_last_read_time,
+                stream_info.relative_last_read_time
+                + READ_PERIOD * num_of_messages_read,
+                READ_PERIOD,
+            )
         )
 
         data_parsed: DAQ_SEND_MESSAGE_TYPE = {
-                "timestamp": time.time(),
-                "data": calibration.Sensor.parse(data),  # apply calibration
-                "relative_timestamps_nanoseconds": relative_timestamps,
-                "sample_rate": cast(int, config.RATE),
-                "message_format_version": MESSAGE_FORMAT_VERSION,
-            }
+            "timestamp": time.time(),
+            "data": calibration.Sensor.parse(data),  # apply calibration
+            "relative_timestamps_nanoseconds": relative_timestamps,
+            "sample_rate": cast(int, stream_info.scanRate),
+            "message_format_version": MESSAGE_FORMAT_VERSION,
+        }
 
         # Calculate next staring timestamp.
         # Reset the timestamps to a new starting point if there were problems reading.
         stream_info.relative_last_read_time = (
-                time.time_ns()
-                if not data or num_of_messages_read < config.READ_BULK
-                else relative_timestamps[-1] + READ_PERIOD
-            )
-            
+            time.time_ns()
+            if not data or num_of_messages_read < config.SCANS_PER_READ
+            else relative_timestamps[-1] + READ_PERIOD
+        )
+
         with open(f"log_{now}.dat", "ab") as log:
-                log.write(msgpack.packb(data_parsed))
+            log.write(msgpack.packb(data_parsed))
 
         # Send data to omnibus.
         sender.send(CHANNEL, data_parsed)
 
         print(
-                f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ",
-                end="",
-            )
+            f"\rRate: {config.SCANS_PER_READ * len(rates) / (time.time() - rates[0]): >6.0f}  ",
+            end="",
+        )
 
     # If LJM has called this callback, the data is valid, but LJM_eStreamRead
     # may return LJME_STREAM_NOT_RUNNING if another thread (such as the Python
@@ -237,7 +243,7 @@ def main():
         stream_info.done = False
         stream_info.aDataSize = stream_info.numAddresses * stream_info.scansPerRead
         stream_info.handle = handle
-        
+
         # Relative timestamp starting point, starts at current time and scales by READ_PERIOD.
         # Use current time to have a unique starting point on every collection, ns to prevent floating point error.
         stream_info.relative_last_read_time = time.time_ns()
@@ -252,11 +258,21 @@ def main():
         )
         print(f"Number of addresses set up: {stream_info.numAddresses}")
         print(f"Scan list names: {stream_info.aScanListNames}")
-        print(f"Stream started with a scan rate of {stream_info.scanRate}Hz")
+        print(f"Stream started with a scan rate of {stream_info.scanRate} Hz")
+        if stream_info.scanRate != config.SCAN_RATE:
+            print(
+                f"Warning: Configured scan rate ({config.SCAN_RATE} Hz) does not match actual scan rate ({stream_info.scanRate} Hz)."
+            )
 
         try:
             ljm.setStreamCallback(stream_info.handle, ljm_stream_read_callback)
             printWithLock("Stream running and callback set.")
+            # Make sure SIGINT is properly handled to stop the stream.
+            # see: https://github.com/python/cpython/issues/80116
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
+            # Hang the main thread until an interrupt is triggered to stop the stream.
+            printWithLock("Press Ctrl+C to stop...")
+            threading.Event().wait()
         except KeyboardInterrupt:
             printWithLock("KeyboardInterrupt Triggered")
     except ljm.LJMError as e:
