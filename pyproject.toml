@@ -41,7 +41,11 @@ dependencies = [
     "pyzmq>=27.1.0",
     "matplotlib>=3.10.0",
     "gitpython >= 3.1.0",
-    "parsley>=2025.4"
+    "parsley>=2025.4",
+    "flask-socketio>=5.4",
+    "eventlet>=0.40.3",
+    "python-socketio[client]>=5.11",
+    "python-engineio>=4.8",
 ]
 
 [dependency-groups]
@@ -66,6 +70,7 @@ members = [
     "src/dashboard",
     "src/globallog",
     "src/sinks/interamap",
+    "packages/omnibus-ws-server",
 ]
 
 [tool.pyright]
