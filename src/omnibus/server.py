@@ -57,6 +57,17 @@ def server(quiet: bool = False) -> NoReturn:
     """
     Run the Omnibus server, display the current messages/sec if not quiet.
     """
+    # Use argparse to handle the `--quiet` flag.
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Suppress messages/sec output",
+    )
+    args = parser.parse_args()
+    quiet = args.quiet
+
     # Initialize BuildInfoManager to print build info
     bim = BuildInfoManager("Omnibus Server")
     bim.print_startup_screen()
