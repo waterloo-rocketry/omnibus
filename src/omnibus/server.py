@@ -53,7 +53,7 @@ def ip_broadcast() -> NoReturn:
             time.sleep(0.5)
 
 
-def server() -> NoReturn:
+def server(quiet: bool = False) -> NoReturn:
     """
     Run the Omnibus server, display the current messages/sec if not quiet.
     """
@@ -112,7 +112,13 @@ def server() -> NoReturn:
 
 
 if __name__ == "__main__":  # Entry point for the server
+    parser = argparse.ArgumentParser() 
+    parser.add_argument("--quiet", action="store_true", help="Stop repetitive msgs/sec output")
+    args = parser.parse_args()
+
     try:
-        server()
+        server(quiet=args.quiet) 
+        #passes the boolean into your server function so it can decide 
+        #whether to print the msgs/sec line.
     except KeyboardInterrupt:
         pass
