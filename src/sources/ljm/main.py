@@ -94,13 +94,10 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate):
                 rates.pop(0)
 
             # Read from the stream.
-            read = ljm.eStreamRead(handle)
-            aData = read[0]
-            _deviceScanBacklog = read[1]
-            _ljmScanBackLog = read[2]
+            sensor_values, _deviceScanBacklog, _ljmScanBackLog = ljm.eStreamRead(handle)
 
-            # Convert aData to DAQ data format.
-            # aData is a interleaved list of readings,
+            # Convert sensor_values to DAQ data format.
+            # sensor_values is a interleaved list of readings,
             # i.e. [chan0_scan0, chan1_scan0, ..., chanN_scan0,
             #   chan0_scan1, chan1_scan1, ..., chanN_scan1, ...,
             #   chan0_scanM, chan1_scanM, ..., chanN_scanM].
@@ -114,7 +111,10 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate):
             data: list[list[float | int]] = []
             for i in range(num_addresses):
                 data.append(
-                    [aData[j * num_addresses + i] for j in range(scans_per_read)]
+                    [
+                        sensor_values[j * num_addresses + i]
+                        for j in range(scans_per_read)
+                    ]
                 )
 
             num_of_messages_read = 0 if not data else len(data[0])
