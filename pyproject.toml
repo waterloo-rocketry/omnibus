@@ -60,6 +60,7 @@ parsley = { git = "https://github.com/waterloo-rocketry/parsley.git" }
 members = [
     "src/sources/fakeni",
     "src/sources/ni",
+    "src/sources/ljm",
     "src/sources/parsley",
     "src/sources/rlcsv3",
     "src/dashboard",
@@ -77,6 +78,7 @@ extraPaths = ["src/**"]
 executionEnvironments = [
     {root = "src/dashboard"},
     {root = "src/sources/ni"},
+    {root = "src/sources/ljm"},
     {root = "src/sources/parsley"},
     {root = "src/sources/rlcsv3"},
     {root = "src/globallog"},
