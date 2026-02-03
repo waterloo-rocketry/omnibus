@@ -20,6 +20,8 @@ jobs:
         include:
           - dockerfile: ./src/omnibus/Dockerfile
             image: ghcr.io/waterloo-rocketry/omnibus-server
+          - dockerfile: ./src/sources/ljm/Dockerfile
+            image: ghcr.io/waterloo-rocketry/omnibus-source-ljm
     permissions:
       contents: read
       packages: write
