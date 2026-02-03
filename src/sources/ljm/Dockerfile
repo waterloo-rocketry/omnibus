@@ -21,6 +21,9 @@ RUN if [ "$(uname -m)" = "x86_64" ]; then \
     wget --progress=bar:force:noscroll -O ljm.zip https://files.labjack.com/installers/LJM/Linux/AArch64/release/LabJack-LJM_2025-05-07.zip; \
     echo "Checking sha256sum..."; \
     echo "47b7804b7636e367d3d6ce5cde84057549826880d0d8d496fd610c1c6765c798 ljm.zip" | sha256sum --check; \
+    else \
+    echo "Unsupported architecture: $(uname -m)" >&2; \
+    exit 1; \
     fi
 
 # Install LabJack LJM
