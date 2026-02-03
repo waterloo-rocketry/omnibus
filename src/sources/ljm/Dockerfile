@@ -31,14 +31,10 @@ RUN unzip ljm.zip
 RUN ./labjack_ljm_installer.run -- --without-kipling --no-restart-device-rules || [ $? -eq 2 ] # There's no udev folder in the container so script will always exit with $? == 2
 
 # Cleanup LJM Install Files
-
 WORKDIR /
 RUN rm -r /ljm
 
 ## OMNIBUS SETUP
-# Expose the port the server will run on (5075, 5076, 5077).
-EXPOSE 5075-5077
-
 # Copy the project into the image.
 COPY . /app
 
@@ -46,5 +42,5 @@ COPY . /app
 WORKDIR /app
 RUN uv sync --locked --no-editable --no-dev --package ljm-source
 
-# Run the server.
+# Run the source.
 ENTRYPOINT ["src/sources/ljm/docker_entrypoint.sh"]
