@@ -8,12 +8,10 @@ For now, the server IP is hard-coded, this is only for the prototype.
 from omnibus import Receiver
 from omnibus.omnibus import OmnibusCommunicator
 
-from translator import Message, zmq_to_message
-
+from .translator import Message, zmq_to_message
 
 # Hardcoded for prototype - skip auto-discovery
 DEFAULT_SERVER_IP = "127.0.0.1"
-
 
 class ZmqReceiver:
     """
