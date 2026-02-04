@@ -105,5 +105,5 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    print(">>> Starting SocketIO server on http://0.0.0.0:6767")
-    socketio.run(app, host="0.0.0.0", port=6767, debug=False, use_reloader=True)
+    print(">>> Starting SocketIO server on http://127.0.0.1:6767")
+    socketio.run(app, host="127.0.0.1", port=6767, debug=True, use_reloader=True)
