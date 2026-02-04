@@ -1,76 +1,109 @@
 import os
-import time
-from dataclasses import dataclass, asdict
-from typing import Any
-
-from flask import Flask, render_template, request
+from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 from omnibus import Message as OmnibusMessage
-from omnibus import Sender, Receiver
+from omnibus import Sender
+import msgpack
 
-
-
+# Flask-SocketIO server configuration
 socketio = SocketIO(
     cors_allowed_origins="*",
     async_mode="eventlet",
-    logger=True,
-    engineio_logger=True,
+    logger=False,
+    engineio_logger=False
 )
 
-#only when it recievs a post request to /send-legacy-omnibus-information as opposed to always sending
 def create_app():
+    """Create and configure the Flask-SocketIO application."""
     here = os.path.dirname(os.path.abspath(__file__))
     app = Flask(__name__, template_folder=os.path.join(here, "templates"))
     app.config["SECRET_KEY"] = "secret"
     socketio.init_app(app)
-    da_sender = Sender()
-    da_receiver = Receiver("")
+
+    # Omnibus sender for forwarding messages to ZeroMQ
+    omnibus_sender = Sender()
+
+    def decode_msgpack(data):
+        """Decode msgpack binary"""
+        return msgpack.unpackb(data, raw=False)
 
     def parse_client_message(data):
-        channel = data.get("channel", "")
-        timestamp = data.get("timestamp", 0.0)
-        payload = data.get("payload", "")
+        """
+        Parse incoming WebSocket message.
+        Expected format: [channel, [timestamp, payload]]
+        Returns: OmnibusMessage or None if invalid
+        """
+        if not isinstance(data, list) or len(data) != 2:
+            print(">>> Invalid message format from client")
+            return None
+        
+        channel = data[0]
+        ts_payload = data[1]
+        
+        if not isinstance(ts_payload, list) or len(ts_payload) != 2:
+            print(">>> Invalid message format from client")
+            return None
+        
+        timestamp, payload = ts_payload
         return OmnibusMessage(channel, timestamp, payload)
-
-    def forward_to_omnibus(msg: OmnibusMessage) -> None:
-        da_sender.send(msg)
 
     @app.route("/")
     def index():
+        """Serve the test client HTML page."""
         return render_template("index.html")
-    
-    @app.route("/send-legacy-omnibus-information", methods=["POST"])
-    def send_legacy_omnibus_information():
-        data = request.get_json()
-        print(f"Received POST: {data}")
-        socketio.emit("omnibus_message", data)
-        return "OK"
 
     @socketio.on("connect")
-    def connect():
+    def handle_connect():
+        """Handle client connection."""
+        print(">>> Client connected")
+
+    @socketio.on("omnibus_message")
+    def handle_omnibus_message(data):
+        """
+        Receive omnibus_message from bridge and rebroadcast to all web clients.
+        This is the main relay point for Omnibus → WebSocket flow.
+        Bridge sends msgpack-encoded: [channel, [timestamp, payload]]
+        """
+        # Decode msgpack from bridge
+        decoded = decode_msgpack(data)
         
-        print(">>> client connected")
-        msg = OmnibusMessage("test_channel", time.time(), {"hello": "world"})
-        emit("omnibus_message", asdict(msg))
+        msg = parse_client_message(decoded)
+        if msg is None:
+            print(">>> Invalid message format from bridge")
+            return
         
+        # Re-encode as msgpack and broadcast to all web clients
+        packed = msgpack.packb([msg.channel, [msg.timestamp, msg.payload]])
+        emit(msg.channel, packed, broadcast=True, include_self=False)
 
     @socketio.on("publish")
-    def publish_data(data):
-
-        msg = parse_client_message(data)
-        forward_to_omnibus(msg)
-        emit("omnibus", {"forward": True, "channel": msg.channel})
-
+    def handle_publish(data):
+        """
+        Receive message from client, forward to Omnibus, and broadcast to clients.
+        Client sends msgpack-encoded: [channel, [timestamp, payload]]
+        """
+        # Decode msgpack from browser
+        decoded = decode_msgpack(data)
+        msg = parse_client_message(decoded)
+        if msg is None:
+            print(">>> Invalid message format from client")
+            return
         
+        # Forward to Omnibus ZeroMQ Backend (uses msgpack internally)
+        omnibus_sender.send_message(msg)
+        
+        # Broadcast msgpack to channel-specific listeners in case was meant to go to a seperate web client instance
+        packed = msgpack.packb([msg.channel, [msg.timestamp, msg.payload]])
+        emit(msg.channel, packed, broadcast=True, include_self=False)
 
     @socketio.on("disconnect")
-    def disconnect():
-        print(">>> client disconnected")
+    def handle_disconnect():
+        """Handle client disconnection."""
+        print(">>> Client disconnected")
 
     return app
 
-
 if __name__ == "__main__":
-    print(">>> starting socketio.run on 0.0.0.0:8080")
     app = create_app()
-    socketio.run(app, host="0.0.0.0", port=8080, debug=True)
+    print(">>> Starting SocketIO server on http://0.0.0.0:6767")
+    socketio.run(app, host="0.0.0.0", port=6767, debug=False, use_reloader=True)

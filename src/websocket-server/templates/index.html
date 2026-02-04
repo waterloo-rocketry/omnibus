@@ -4,26 +4,56 @@
     <title>Omnibus Socket.IO Test</title>
   </head>
   <body>
-    <h1>Socket.IO HTML Client</h1>
+    <h1>Socket.IO HTML Client For Testing</h1>
+
+    <button id="sendBtn">Send Info Back</button>
+    
+
     <pre id="log"></pre>
 
     <script>
       const log = (msg) => {
-        document.getElementById("log").textContent = msg + "\n";
+          const logElem = document.getElementById("log");
+          logElem.textContent = msg;
+          logElem.scrollTop = logElem.scrollHeight;
       };
       log("HTML loaded");
     </script>
 
+
+    <!-- Socket.IO -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- msgpack-lite for browser msgpack encoding -->
+    <script src="https://unpkg.com/msgpack-lite/dist/msgpack.min.js"></script>
 
     <script>
       const socket = io(); // connects to same host:port that served this page
       socket.on("connect", () => log("connected id=" + socket.id));
       socket.on("connect_error", (err) => log("connect_error " + err));
-      socket.on("omnibus_message", (data) => {
-        log("omnibus_message\n" + JSON.stringify(data, null, 2));
+      socket.on("DAQ/Fake", (data) => {
+        // Decode msgpack binary from server
+        try {
+          const decoded = msgpack.decode(new Uint8Array(data));
+          log("omnibus_message\n" + JSON.stringify(decoded, null, 2));
+        } catch (e) {
+          log("omnibus_message decode error: " + e);
+        }
       });
       socket.on("disconnect", () => log("disconnected"));
+
+
+      document.getElementById("sendBtn").onclick = () => {
+        console.log("Send Info Back button clicked");
+        const msg = {
+          channel: "send_back",
+          timestamp: Date.now(),
+          payload: { info: "Hello from HTML client!" },
+        };
+        log("sending publish\n" + JSON.stringify(msg, null, 2));
+        // Encode as msgpack: [channel, [timestamp, payload]]
+        const packed = msgpack.encode([msg.channel, [msg.timestamp, msg.payload]]);
+        socket.emit("publish", packed);
+      };
     </script>
   </body>
 </html>
