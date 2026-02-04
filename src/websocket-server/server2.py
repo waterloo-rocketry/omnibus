@@ -23,11 +23,14 @@ def create_app():
     # Omnibus sender for forwarding messages to ZeroMQ
     omnibus_sender = Sender()
 
-    def decode_msgpack(data):
+    def get_msgpack_data(data) -> OmnibusMessage | None:
         """Decode msgpack binary"""
-        return msgpack.unpackb(data, raw=False)
+        decoded = msgpack.unpackb(data, raw=False)
+        
+        msg = parse_client_message(decoded)
+        return msg
 
-    def parse_client_message(data):
+    def parse_client_message(data) -> OmnibusMessage | None:
         """
         Parse incoming WebSocket message.
         Expected format: [channel, [timestamp, payload]]
@@ -53,21 +56,19 @@ def create_app():
         return render_template("index.html")
 
     @socketio.on("connect")
-    def handle_connect():
+    def handle_connect() -> None:
         """Handle client connection."""
         print(">>> Client connected")
 
     @socketio.on("omnibus_message")
-    def handle_omnibus_message(data):
+    def handle_omnibus_message(data) -> None:
         """
         Receive omnibus_message from bridge and rebroadcast to all web clients.
         This is the main relay point for Omnibus → WebSocket flow.
         Bridge sends msgpack-encoded: [channel, [timestamp, payload]]
         """
         # Decode msgpack from bridge
-        decoded = decode_msgpack(data)
-        
-        msg = parse_client_message(decoded)
+        msg = get_msgpack_data(data)
         if msg is None:
             print(">>> Invalid message format from bridge")
             return
@@ -77,14 +78,13 @@ def create_app():
         emit(msg.channel, packed, broadcast=True, include_self=False)
 
     @socketio.on("publish")
-    def handle_publish(data):
+    def handle_publish(data) -> None:
         """
         Receive message from client, forward to Omnibus, and broadcast to clients.
         Client sends msgpack-encoded: [channel, [timestamp, payload]]
         """
         # Decode msgpack from browser
-        decoded = decode_msgpack(data)
-        msg = parse_client_message(decoded)
+        msg = get_msgpack_data(data)
         if msg is None:
             print(">>> Invalid message format from client")
             return
@@ -97,7 +97,7 @@ def create_app():
         emit(msg.channel, packed, broadcast=True, include_self=False)
 
     @socketio.on("disconnect")
-    def handle_disconnect():
+    def handle_disconnect() -> None:
         """Handle client disconnection."""
         print(">>> Client disconnected")
 
