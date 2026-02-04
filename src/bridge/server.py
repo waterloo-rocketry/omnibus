@@ -11,11 +11,13 @@ def main():
     # Connect to WebSocket server
     sio = socketio.Client(logger=False, engineio_logger=False)
     
-    try:
-        sio.connect("http://localhost:6767")
-    except exceptions.ConnectionError:
-        print(">>> Could not connect to WebSocket server at http://localhost:6767")
-        return
+    while True:
+        try:
+            sio.connect("http://127.0.0.1:6767")
+            break
+        except exceptions.ConnectionError:
+            print(">>> Waiting for WebSocket server at http://127.0.0.1:6767...")
+            time.sleep(1)
     
     # Subscribe to all Omnibus channels
     receiver = Receiver("")
