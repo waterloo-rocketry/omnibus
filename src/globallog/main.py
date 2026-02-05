@@ -22,6 +22,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 USE_LOCAL_TIMESTAMPS = args.local_timestamps
+print("USE_LOCAL_TIMESTAMPS =", USE_LOCAL_TIMESTAMPS) # Test for flag
 
 # Retrieves current date and time
 CURTIME = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
