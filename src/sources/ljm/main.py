@@ -2,6 +2,7 @@
 The main module for the LabJack DAQ source.
 """
 
+import argparse
 import sys
 import time
 from typing import TypedDict, cast
@@ -76,7 +77,7 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 
 # Function to pass to the callback function. This needs have one
 # parameter/argument, which will be the handle.
-def read_data(handle, num_addresses, scans_per_read, scan_rate):
+def read_data(handle, num_addresses, scans_per_read, scan_rate, *, quiet=False, no_built_in_log=False):
     # Converting to nanoseconds to avoid floating point inaccuracy.
     READ_PERIOD: int = int(1 / cast(int, scan_rate) * 1000000000)
 
@@ -86,8 +87,12 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate):
     # Use current time to have a unique starting point on every collection, ns to prevent floating point error.
     relative_last_read_time: float = time.time_ns()
 
-    now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
-    with open(f"log_{now}.dat", "wb") as log:
+    log = None
+    if not no_built_in_log:
+        now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
+        log = open(f"log_{now}.dat", "wb")
+
+    try:
         while True:
             rates.append(time.time())
             if len(rates) > 50:
@@ -143,18 +148,36 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate):
                 else relative_timestamps[-1] + READ_PERIOD
             )
 
-            log.write(msgpack.packb(data_parsed))
+            if log:
+                log.write(msgpack.packb(data_parsed))
 
             # Send data to omnibus.
             sender.send(CHANNEL, data_parsed)
 
-            print(
-                f"\rRate: {scans_per_read * len(rates) / (time.time() - rates[0]): >6.0f}  ",
-                end="",
-            )
+            if not quiet:
+                print(
+                    f"\rRate: {scans_per_read * len(rates) / (time.time() - rates[0]): >6.0f}  ",
+                    end="",
+                )
+    finally:
+        if log:
+            log.close()
 
 
 def main():
+    parser = argparse.ArgumentParser(description="LabJack DAQ Source")
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress continuous output except for errors and setup information",
+    )
+    parser.add_argument(
+        "--no-built-in-log",
+        action="store_true",
+        help="Disable writing to the built-in log file",
+    )
+    args = parser.parse_args()
+
     try:
         # Open first found LabJack T7 device with any connection type and any indentifier.
         handle = ljm.openS("T7", "ANY", "ANY")
@@ -188,9 +211,12 @@ def main():
             )
 
         try:
-            read_data(handle, num_addresses, config.SCANS_PER_READ, scan_rate)
+            read_data(
+                handle, num_addresses, config.SCANS_PER_READ, scan_rate,
+                quiet=args.quiet, no_built_in_log=args.no_built_in_log,
+            )
         except KeyboardInterrupt:
-            print("KeyboardInterrupt Triggered")
+            pass
 
         # Stop LJM stream.
         print("Stopping stream...")
