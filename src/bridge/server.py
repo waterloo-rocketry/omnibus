@@ -2,14 +2,13 @@ import time
 import socketio
 from omnibus import Receiver
 from socketio import exceptions
-import msgpack
 
 def main():
     print("[bridge] Starting bridge relay loop...")
 
-    # Connect to WebSocket server
+    # Connect to WebSocket server with native msgpack serialization
     sio = socketio.Client(logger=False, engineio_logger=False, serializer="msgpack")
-    
+
     while True:
         try:
             sio.connect("http://127.0.0.1:6767")
@@ -17,7 +16,7 @@ def main():
         except exceptions.ConnectionError:
             print(">>> Waiting for WebSocket server at http://127.0.0.1:6767...")
             time.sleep(1)
-    
+
     # Subscribe to all Omnibus channels
     receiver = Receiver("")
 
@@ -30,14 +29,10 @@ def main():
                 print(">>> Ignoring loop-back message on 'send_back' channel")
                 print(msg)
                 continue
-
-            # Broadcast message to WebSocket clients
-            # Format: msgpack([channel, [timestamp, payload]])
-            message_data = [msg.channel, [msg.timestamp, msg.payload]]
-            packed_message = msgpack.packb(message_data)
-            
-            # Emit msgpack-encoded binary to server
-            sio.emit("omnibus_message", packed_message)
+        
+            # serialized with msgpack by the socketio client
+            sio.emit(msg.channel, [msg.timestamp, msg.payload])
+            print("sent")
 
         time.sleep(0.01)
 

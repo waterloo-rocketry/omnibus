@@ -13,9 +13,8 @@ authors = [
 dependencies = [
     "msgpack>=1.1.0",
     "pyzmq>=27.1.0",
-    "flask>=3.0.0",
-    "flask-socketio>=5.4",
-    "eventlet>=0.40.3",
+    "python-socketio>=5.11",
+    "aiohttp>=3.9.0",
     "omnibus",
 ]
 

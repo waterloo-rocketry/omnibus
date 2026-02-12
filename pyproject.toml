@@ -41,10 +41,9 @@ dependencies = [
     "pyzmq>=27.1.0",
     "gitpython >= 3.1.0",
     "parsley>=2025.4",
-    "flask-socketio>=5.4",
-    "eventlet>=0.40.3",
     "python-socketio[client]>=5.11",
     "python-engineio>=4.8",
+    "aiohttp>=3.9.0",
 ]
 
 [dependency-groups]
