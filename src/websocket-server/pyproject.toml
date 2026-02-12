@@ -1,9 +1,23 @@
 [project]
 name = "omnibus-ws-server"
 version = "0.1.0"
-description = "Add your description here"
+description = "WebSocket server for Omnibus messaging system"
 readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
+license = "MIT"
+requires-python = "~=3.11.0"
 
+authors = [
+    {name = "Waterloo Rocketry", email = "contact@waterloorocketry.com"}
 ]
+
+dependencies = [
+    "msgpack>=1.1.0",
+    "pyzmq>=27.1.0",
+    "flask>=3.0.0",
+    "flask-socketio>=5.4",
+    "eventlet>=0.40.3",
+    "omnibus",
+]
+
+[tool.uv.sources]
+omnibus = { workspace = true }
