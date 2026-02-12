@@ -8,6 +8,9 @@ services:
     network_mode: host
     depends_on:
       - omnibus-server
+    volumes:
+      - ./data:/data
+    command: ["--outfolder", "/data"]
 
   omnibus-source-ljm:
     image: ghcr.io/waterloo-rocketry/omnibus-source-ljm:main
