@@ -1,6 +1,6 @@
 import pytest
 
-from calibration import LinearCalibration, ThermistorCalibration, Sensor, Connection
+from calibration import Connection, LinearCalibration, Sensor, ThermistorCalibration
 
 
 class TestLinearCalibration:
@@ -41,7 +41,9 @@ class TestThermistorCalibration:
 
 class TestSensorParser:
     def test_parsing(self):
-        _ = Sensor("Test", "TEST", 10, Connection.SINGLE, LinearCalibration(5, 0, "units"))
-        parsed = Sensor.parse([[1,2,3,4,5]])
+        _ = Sensor(
+            "Test", "TEST", 10, Connection.SINGLE, LinearCalibration(5, 0, "units")
+        )
+        parsed = Sensor.parse([[1, 2, 3, 4, 5]])
         assert "Test (units)" in parsed
-        assert parsed["Test (units)"] == [5,10,15,20,25]
+        assert parsed["Test (units)"] == [5, 10, 15, 20, 25]
