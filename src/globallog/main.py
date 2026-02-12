@@ -3,7 +3,6 @@
 import argparse
 import os
 import signal
-import sys
 from datetime import datetime
 
 import msgpack
@@ -80,12 +79,10 @@ with open(fname, "wb") as f:
             msg = receiver.recv_message(timeout=10)  # 10 ms timeout
             if msg:
                 f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
-
     finally:
-        f.close()
         if not args.quiet:
             # Shows cursor
             print("\033[?25h", end="")
-        print("Program has exited gracefully.")
-        print(f"Data has been logged to {fname}")
-        sys.exit(0)  # Exit the program
+
+print("Program has exited gracefully.")
+print(f"Data has been logged to {fname}")
