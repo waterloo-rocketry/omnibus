@@ -70,6 +70,7 @@ members = [
     "src/globallog",
     "src/sinks/interamap",
     "src/bridge",
+    "src/websocket-server",
     "tools/data_processing"
 ]
 
@@ -88,5 +89,6 @@ executionEnvironments = [
     {root = "src/sources/fakeni"},
     {root = "src/sinks/interamap"},
     {root = "src/bridge"},
+    {root = "src/websocket-server"},
     {root = "tools/data_processing"}
 ]
