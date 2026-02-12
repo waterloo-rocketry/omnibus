@@ -122,8 +122,8 @@ class DAQDataProcessor:
     def unpack_and_stream_to_csv(self, outfile: TextIO) -> None:
         writer = csv.writer(outfile)
 
-        # msgpack's typing is overly strict; BinaryIO is correct at runtime
-        unpacker = msgpack.Unpacker(cast(Any, self._log_file_stream))
+    
+        unpacker = msgpack.Unpacker(self._log_file_stream) #pyright: ignore
 
         wrote_header = False
         sensors: list[str] = []
@@ -146,11 +146,12 @@ class DAQDataProcessor:
                 wrote_header = True
 
             sample_count = len(timestamps)
+
             for sensor in sensors:
                 if len(data[sensor]) != sample_count:
                     raise ValueError("Mismatched sensor data lengths")
 
-            for i in range(sample_count):
+            for i, timestamp in enumerate(timestamps):
                 writer.writerow(
-                    [timestamps[i]] + [data[sensor][i] for sensor in sensors]
+                    [timestamp] + [data[sensor][i] for sensor in sensors]
                 )
