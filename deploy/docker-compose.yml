@@ -1,23 +1,18 @@
 services:
   omnibus-server:
     image: ghcr.io/waterloo-rocketry/omnibus-server:main
-    ports:
-      - "5075:5075"
-      - "5076:5076"
-      - "5077:5077"
+    network_mode: host
 
   omnibus-globallog:
     image: ghcr.io/waterloo-rocketry/omnibus-globallog:main
+    network_mode: host
     depends_on:
       - omnibus-server
-    environment:
-      OMNIBUS_SERVER_HOST: omnibus-server
 
   omnibus-source-ljm:
     image: ghcr.io/waterloo-rocketry/omnibus-source-ljm:main
+    network_mode: host
     depends_on:
       - omnibus-server
-    environment:
-      OMNIBUS_SERVER_HOST: omnibus-server
     volumes:
       - ./config:/config
