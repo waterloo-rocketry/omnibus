@@ -40,7 +40,8 @@ dependencies = [
     "msgpack-types>=0.5.0",
     "pyzmq>=27.1.0",
     "gitpython >= 3.1.0",
-    "parsley>=2025.4"
+    "parsley>=2025.4",
+    "pydantic>=2.12.5",
 ]
 
 [dependency-groups]
