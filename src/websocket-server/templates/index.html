@@ -7,7 +7,6 @@
     <h1>Socket.IO HTML Client For Testing</h1>
 
     <button id="sendBtn">Send Info Back</button>
-    
 
     <pre id="log"></pre>
 
@@ -17,30 +16,28 @@
           logElem.textContent = msg;
           logElem.scrollTop = logElem.scrollHeight;
       };
-      log("HTML loaded");
+      log("HTML loaded, connecting...");
     </script>
 
+    <script type="module">
+      import { io } from "https://esm.sh/socket.io-client@4.7.5";
+      import msgpackParser from "https://esm.sh/socket.io-msgpack-parser@3.0.2";
 
-    <!-- Socket.IO -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <!-- msgpack-lite for browser msgpack encoding -->
-    <script src="https://unpkg.com/msgpack-lite/dist/msgpack.min.js"></script>
+      const log = (msg) => {
+          const logElem = document.getElementById("log");
+          logElem.textContent = msg;
+          logElem.scrollTop = logElem.scrollHeight;
+      };
 
-    <script>
-      const socket = io(); // connects to same host:port that served this page
+      // Connect with msgpack parser to match server's serializer="msgpack"
+      const socket = io({ parser: msgpackParser });
       socket.on("connect", () => log("connected id=" + socket.id));
       socket.on("connect_error", (err) => log("connect_error " + err));
       socket.on("DAQ/Fake", (data) => {
-        // Decode msgpack binary from server
-        try {
-          const decoded = msgpack.decode(new Uint8Array(data));
-          log("omnibus_message\n" + JSON.stringify(decoded, null, 2));
-        } catch (e) {
-          log("omnibus_message decode error: " + e);
-        }
+        // Data arrives as a JS object (deserialized by socket.io-msgpack-parser)
+        log("omnibus_message\n" + JSON.stringify(data, null, 2));
       });
       socket.on("disconnect", () => log("disconnected"));
-
 
       document.getElementById("sendBtn").onclick = () => {
         console.log("Send Info Back button clicked");
@@ -50,9 +47,7 @@
           payload: { info: "Hello from HTML client!" },
         };
         log("sending publish\n" + JSON.stringify(msg, null, 2));
-        // Encode as msgpack: [channel, [timestamp, payload]]
-        const packed = msgpack.encode([msg.channel, [msg.timestamp, msg.payload]]);
-        socket.emit("publish", packed);
+        socket.emit("publish", [msg.channel, [msg.timestamp, msg.payload]]);
       };
     </script>
   </body>
