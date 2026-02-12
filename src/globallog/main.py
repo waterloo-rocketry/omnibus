@@ -1,19 +1,34 @@
 # Global logger - Saves messages passed through bus to asc-time.log
 
+import argparse
+import os
 import signal
-import sys
 from datetime import datetime
 
 import msgpack
 
 from omnibus import Receiver
 
+parser = argparse.ArgumentParser(description="Global Omnibus Logger")
+parser.add_argument(
+    "--outfolder",
+    type=str,
+    default=".",
+    help="Directory to write the log file to (default: current directory)",
+)
+parser.add_argument(
+    "--quiet",
+    action="store_true",
+    help="Suppress continuous output except for errors",
+)
+args = parser.parse_args()
+
 # Will log all messages passing through bus
 CHANNEL = ""
 # Retrieves current date and time
 CURTIME = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
 # Creates filename
-fname = CURTIME + ".log"
+fname = os.path.join(args.outfolder, CURTIME + ".log")
 # We use a shorter reconnect attempt here because globallog should be
 # receiving a lot of messages anyways and data integrity is a lot more important
 # Even if the reset does affect a few messages, some data is better than no data.
@@ -38,23 +53,25 @@ signal.signal(signal.SIGTERM, graceful_exit)  # Handles termination signal
 # Creates new file
 with open(fname, "wb") as f:
     print(f"Data will be logged to {fname}")
-    # Hides cursor for continous print
-    print("\033[?25l", end="")
+    if not args.quiet:
+        # Hides cursor for continous print
+        print("\033[?25l", end="")
 
     try:
         while not exit_program:
-            # Cool continuously updating print statment
-            print("\rLogging... (Press Ctrl + C to stop)", end="")
+            if not args.quiet:
+                # Cool continuously updating print statment
+                print("\rLogging... (Press Ctrl + C to stop)", end="")
 
-            if counter % (20 * 5) == 0:
-                print("   ", end="")
-            elif counter % 20 == 0:
-                for i in range(dots):
-                    print(".", end="")
-                if dots == 3:
-                    dots = 0
-                else:
-                    dots += 1
+                if counter % (20 * 5) == 0:
+                    print("   ", end="")
+                elif counter % 20 == 0:
+                    for i in range(dots):
+                        print(".", end="")
+                    if dots == 3:
+                        dots = 0
+                    else:
+                        dots += 1
 
             counter += 1
 
@@ -62,11 +79,10 @@ with open(fname, "wb") as f:
             msg = receiver.recv_message(timeout=10)  # 10 ms timeout
             if msg:
                 f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
-
     finally:
-        f.close()
-        # Shows cursor
-        print("\033[?25h", end="")
-        print("Program has exited gracefully.")
-        print(f"Data has been logged to {fname}")
-        sys.exit(0)  # Exit the program
+        if not args.quiet:
+            # Shows cursor
+            print("\033[?25h", end="")
+
+print("Program has exited gracefully.")
+print(f"Data has been logged to {fname}")
