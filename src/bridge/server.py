@@ -4,12 +4,11 @@ from omnibus import Receiver
 from socketio import exceptions
 import msgpack
 
-
 def main():
     print("[bridge] Starting bridge relay loop...")
 
     # Connect to WebSocket server
-    sio = socketio.Client(logger=False, engineio_logger=False)
+    sio = socketio.Client(logger=False, engineio_logger=False, serializer="msgpack")
     
     while True:
         try:
@@ -26,7 +25,7 @@ def main():
         msg = receiver.recv_message(0)
 
         if msg:
-            # Filter out loop-back messages
+            # Filter out loop-back messages #IN ACRUAL NON TEST DO LOOP_BACK
             if msg.channel == "send_back":
                 print(">>> Ignoring loop-back message on 'send_back' channel")
                 print(msg)

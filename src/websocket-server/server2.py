@@ -1,3 +1,4 @@
+#use socketio not flask socketio to get msgpack working and the channels
 import os
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
@@ -60,7 +61,7 @@ def create_app():
         """Handle client connection."""
         print(">>> Client connected")
 
-    @socketio.on("omnibus_message")
+    @socketio.on("omnibus_message") #on any
     def handle_omnibus_message(data) -> None:
         """
         Receive omnibus_message from bridge and rebroadcast to all web clients.
