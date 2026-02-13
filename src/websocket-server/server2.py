@@ -1,45 +1,39 @@
-import os
-import socketio
-from aiohttp import web
+from flask import Flask, render_template, request
+from flask_socketio import SocketIO
 from omnibus import Message as OmnibusMessage
 from omnibus import Sender
 
-# python-socketio async server with native msgpack serialization
-sio = socketio.AsyncServer(
+app = Flask(__name__)
+socketio = SocketIO(
+    app,
     cors_allowed_origins="*",
     serializer="msgpack",
     logger=False,
     engineio_logger=False,
 )
 
-# Serve the test HTML page
-here = os.path.dirname(os.path.abspath(__file__))
-aiohttp_app = web.Application()
-sio.attach(aiohttp_app)
-
 # Omnibus sender for forwarding messages to ZeroMQ
 omnibus_sender = Sender()
 
-async def index(request):
-    return web.FileResponse(os.path.join(here, "templates", "index.html"))
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-aiohttp_app.router.add_get("/", index)
-
-@sio.on("connect")  # type: ignore[misc]
-async def handle_connect(sid, environ, auth):
+@socketio.on("connect")  # type: ignore[misc]
+def handle_connect(auth):
     """Handle client connection."""
-    print(f">>> Client connected: {sid}")
+    print(f">>> Client connected: {request.sid}")
 
-@sio.on("*")  # type: ignore[misc]
-async def handle_channel_message(event, sid, data):
+@socketio.on("*")  # type: ignore[misc]
+def handle_channel_message(event, data):
     """
     Gets all channel messages and then sends
     Rebroadcast to all other clients on the same channel/event.
     """
-    await sio.emit(event, data, skip_sid=sid)
+    socketio.emit(event, data, skip_sid=request.sid)
 
-@sio.on("publish")  # type: ignore[misc]
-async def handle_publish(sid, data):
+@socketio.on("publish")  # type: ignore[misc]
+def handle_publish(data):
     """
     Receive message from client, forward to Omnibus, and broadcast to clients.
     """
@@ -50,13 +44,13 @@ async def handle_publish(sid, data):
     omnibus_sender.send_message(OmnibusMessage(channel, timestamp, payload))
 
     # Broadcast to channel-specific listeners
-    await sio.emit(channel, [timestamp, payload], skip_sid=sid)
+    socketio.emit(channel, [timestamp, payload], skip_sid=request.sid)
 
-@sio.on("disconnect")  # type: ignore[misc]
-async def handle_disconnect(sid):
+@socketio.on("disconnect")  # type: ignore[misc]
+def handle_disconnect():
     """Handle client disconnection."""
-    print(f">>> Client disconnected: {sid}")
+    print(f">>> Client disconnected: {request.sid}")
 
 if __name__ == "__main__":
     print(">>> Starting SocketIO server on http://127.0.0.1:6767")
-    web.run_app(aiohttp_app, host="127.0.0.1", port=6767)
+    socketio.run(app, host="127.0.0.1", port=6767)
