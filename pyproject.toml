@@ -43,7 +43,8 @@ dependencies = [
     "parsley>=2025.4",
     "python-socketio[client]>=5.11",
     "python-engineio>=4.8",
-    "aiohttp>=3.9.0",
+    "flask-socketio>=5.3",
+    "flask>=3.0",
 ]
 
 [dependency-groups]
