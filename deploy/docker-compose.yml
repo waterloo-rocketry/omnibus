@@ -2,10 +2,12 @@ services:
   omnibus-server:
     image: ghcr.io/waterloo-rocketry/omnibus-server:main
     network_mode: host
+    restart: unless-stopped
 
   omnibus-globallog:
     image: ghcr.io/waterloo-rocketry/omnibus-globallog:main
     network_mode: host
+    restart: unless-stopped
     depends_on:
       - omnibus-server
     volumes:
@@ -15,6 +17,7 @@ services:
   omnibus-source-ljm:
     image: ghcr.io/waterloo-rocketry/omnibus-source-ljm:main
     network_mode: host
+    restart: unless-stopped
     depends_on:
       - omnibus-server
     volumes:
