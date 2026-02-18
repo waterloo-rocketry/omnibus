@@ -2,6 +2,8 @@ import parsley
 from parsley.fields import Enum, Numeric
 import math
 
+from omnibus.message_types import RLCSv3Message
+
 Number = int | float
 
 VALVE_COMMAND = {"CLOSED": 0, "OPEN": 1}
@@ -52,7 +54,7 @@ def print_data(parsed: dict[str, str | Number]):
         print(f"{k}:\t{v}")
 
 
-def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
+def parse_rlcs(line: str | bytes) -> RLCSv3Message | None:
     '''parses data as well as checks for data validity
         returns none if data is invalid
     '''
@@ -66,30 +68,26 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
         return
     #Convert adc bits to voltage to allow for kelvin resistance calculation
     for key in ["Heater Thermistor Voltage 1","Heater Thermistor Voltage 2"]:
-        if key in res:
-            res[key] = parse_adc_to_voltage(res[key], 10, 4.096)
-    for index, key in enumerate(["Heater Resistance 1","Heater Resistance 2"]):
-        if key in res and 2+index < len(key_list_kelvin):
-            res[key] = parse_kelvin_resistance(res[key],key_list_kelvin[2+index],key_list_kelvin[index])
+        res[key] = parse_adc_to_voltage(res[key], 10, 4.096)
 
-    if "Heater Thermistor Voltage 1" in res:
-        res.update({"Heater Thermistor Temp 1": parse_thermistor(res["Heater Thermistor Voltage 1"])})
-    if "Heater Thermistor Voltage 2" in res:
-        res.update({"Heater Thermistor Temp 2": parse_thermistor(res["Heater Thermistor Voltage 2"])})
+    res["Heater Thermistor Temp 1"] = parse_thermistor(res["Heater Thermistor Voltage 1"])
+    res["Heater Thermistor Temp 2"] = parse_thermistor(res["Heater Thermistor Voltage 2"])
 
     if res["Heater Current 1"] != 0:
-        res.update({"Heater Resistance 1": (res["Heater Kelvin High 1 Voltage"] - res["Heater Kelvin Low 1 Voltage"])/res["Heater Current 1"]})
+        res["Heater Resistance 1"] = (res["Heater Kelvin High 1 Voltage"] - res["Heater Kelvin Low 1 Voltage"])/res["Heater Current 1"]
     else:
-        res.update({"Heater Resistance 1": 0.0})  
+        res["Heater Resistance 1"] = 0.0
 
     if res["Heater Current 2"] != 0:
-        res.update({"Heater Resistance 2": (res["Heater Kelvin High 2 Voltage"] - res["Heater Kelvin Low 2 Voltage"])/res["Heater Current 2"]})
+        res["Heater Resistance 2"] = (res["Heater Kelvin High 2 Voltage"] - res["Heater Kelvin Low 2 Voltage"])/res["Heater Current 2"]
     else:
-        res.update({"Heater Resistance 2": 0.0})    
+        res["Heater Resistance 2"] = 0.0
 
-    return res
-        
- 
+    try:
+        return RLCSv3Message(id=0, data=res, message_version=2)
+    except Exception as e:
+        print(f"Error creating Pydantic model: {e}")
+        return None # Return None on failure to be consistent
     
 def parse_thermistor(divider_vlt):
     # Second resistor in voltage divider
@@ -119,7 +117,6 @@ def parse_kelvin_resistance(voltageP,voltageN,current):
         return (voltageP - voltageN) / current 
     else:
         return 0.0
-
 
 def parse_adc_to_voltage(adc_value,adc_bits, vref):
     return float(adc_value) / (2 ** adc_bits) * vref
