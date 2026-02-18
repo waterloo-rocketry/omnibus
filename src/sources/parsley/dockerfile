@@ -2,7 +2,7 @@
 FROM ghcr.io/astral-sh/uv:python3.11-alpine
 
 # Authors
-LABEL authors="Waterloo Rocketry <contact@waterloorocketry.com>"
+LABEL authors="Waterloo Rocketry <k72jiang@uwaterloo.ca>"
 
 # Install git.
 RUN apk add --no-cache git
