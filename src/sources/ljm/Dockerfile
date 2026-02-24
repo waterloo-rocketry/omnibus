@@ -34,7 +34,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
     bash \
-    libusb-1.0-0-dev
+    libusb-1.0-0-dev \
+    git
 
 # Install LJM from the downloader stage
 RUN --mount=type=bind,from=downloader,source=/ljm,target=/ljm \
