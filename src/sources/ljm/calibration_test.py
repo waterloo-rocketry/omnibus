@@ -1,6 +1,6 @@
 import pytest
 
-from calibration import Connection, LinearCalibration, Sensor, ThermistorCalibration
+from calibration import Connection, LinearCalibration, Sensor, ThermistorCalibration, KThermocoupleCalibration
 
 
 class TestLinearCalibration:
@@ -38,6 +38,13 @@ class TestThermistorCalibration:
         assert c.calibrate(2) == pytest.approx(14.9, 0.1)
         assert c.calibrate(1) == pytest.approx(-7, 0.1)
 
+class TestThermocoupleCalibration:
+    def test_thermocouple(self):
+        c = KThermocoupleCalibration()
+        assert c.calibrate(1.612/1000) == pytest.approx(40, 0.1)
+        assert c.calibrate(-0.392/1000) == pytest.approx(-10, 0.1)
+        assert c.calibrate(0) == pytest.approx(0, 0.1)
+        assert c.calibrate(2.023/1000) == pytest.approx(50, 0.1)
 
 class TestSensorParser:
     def test_parsing(self):
