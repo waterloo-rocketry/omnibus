@@ -13,6 +13,8 @@ from msgpack.exceptions import PackException
 # they only work in single-ended mode
 # or as the negative channel in differential mode.
 CHANNEL_TO_NEGATIVE_CHANNEL = {
+
+    # ----- Built-in AIN -----
     "AIN0": 1,
     "AIN1": -1,
     "AIN2": 3,
@@ -27,6 +29,147 @@ CHANNEL_TO_NEGATIVE_CHANNEL = {
     "AIN11": -1,
     "AIN12": 13,
     "AIN13": -1,
+
+    # ----- Extended (Mux80) -----
+    # Group 0
+    "AIN16": 24,
+    "AIN17": -1,
+    "AIN18": 26,
+    "AIN19": -1,
+    "AIN20": 28,
+    "AIN21": -1,
+    "AIN22": 30,
+    "AIN23": -1,
+
+    # Group 1
+    "AIN24": 32,
+    "AIN25": -1,
+    "AIN26": 34,
+    "AIN27": -1,
+    "AIN28": 36,
+    "AIN29": -1,
+    "AIN30": 38,
+    "AIN31": -1,
+
+    # Group 2
+    "AIN32": 40,
+    "AIN33": -1,
+    "AIN34": 42,
+    "AIN35": -1,
+    "AIN36": 44,
+    "AIN37": -1,
+    "AIN38": 46,
+    "AIN39": -1,
+
+    # Group 3
+    "AIN40": 48,
+    "AIN41": -1,
+    "AIN42": 50,
+    "AIN43": -1,
+    "AIN44": 52,
+    "AIN45": -1,
+    "AIN46": 54,
+    "AIN47": -1,
+
+    # Group 4
+    "AIN48": 56,
+    "AIN49": -1,
+    "AIN50": 58,
+    "AIN51": -1,
+    "AIN52": 60,
+    "AIN53": -1,
+    "AIN54": 62,
+    "AIN55": -1,
+
+    # Group 5
+    "AIN56": 64,
+    "AIN57": -1,
+    "AIN58": 66,
+    "AIN59": -1,
+    "AIN60": 68,
+    "AIN61": -1,
+    "AIN62": 70,
+    "AIN63": -1,
+
+    # Group 6
+    "AIN64": 72,
+    "AIN65": -1,
+    "AIN66": 74,
+    "AIN67": -1,
+    "AIN68": 76,
+    "AIN69": -1,
+    "AIN70": 78,
+    "AIN71": -1,
+
+    # Group 7
+    "AIN72": 80,
+    "AIN73": -1,
+    "AIN74": 82,
+    "AIN75": -1,
+    "AIN76": 84,
+    "AIN77": -1,
+    "AIN78": 86,
+    "AIN79": -1,
+
+    # Group 8
+    "AIN80": 88,
+    "AIN81": -1,
+    "AIN82": 90,
+    "AIN83": -1,
+    "AIN84": 92,
+    "AIN85": -1,
+    "AIN86": 94,
+    "AIN87": -1,
+
+    # Group 9
+    "AIN88": 96,
+    "AIN89": -1,
+    "AIN90": 98,
+    "AIN91": -1,
+    "AIN92": 100,
+    "AIN93": -1,
+    "AIN94": 102,
+    "AIN95": -1,
+
+    # Group 10
+    "AIN96": 104,
+    "AIN97": -1,
+    "AIN98": 106,
+    "AIN99": -1,
+    "AIN100": 108,
+    "AIN101": -1,
+    "AIN102": 110,
+    "AIN103": -1,
+
+    # Group 11
+    "AIN104": 112,
+    "AIN105": -1,
+    "AIN106": 114,
+    "AIN107": -1,
+    "AIN108": 116,
+    "AIN109": -1,
+    "AIN110": 118,
+    "AIN111": -1,
+
+    # Group 12
+    "AIN112": 120,
+    "AIN113": -1,
+    "AIN114": 122,
+    "AIN115": -1,
+    "AIN116": 124,
+    "AIN117": -1,
+    "AIN118": 126,
+    "AIN119": -1,
+
+    # Group 13 (no valid differential pairs beyond 126)
+    "AIN120": -1,
+    "AIN121": -1,
+    "AIN122": -1,
+    "AIN123": -1,
+    "AIN124": -1,
+    "AIN125": -1,
+    "AIN126": -1,
+    "AIN127": -1,
 }
 
 
