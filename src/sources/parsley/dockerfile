@@ -1,4 +1,3 @@
-# Dockerfile for building the image for omnibus-server.
 FROM ghcr.io/astral-sh/uv:python3.11-alpine
 
 # Authors
