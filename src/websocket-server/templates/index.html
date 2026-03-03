@@ -16,7 +16,7 @@
           logElem.textContent = msg;
           logElem.scrollTop = logElem.scrollHeight;
       };
-      log("HTML loaded, connecting...");
+      log("HTML loaded");
     </script>
 
     <script type="module">
@@ -29,25 +29,21 @@
           logElem.scrollTop = logElem.scrollHeight;
       };
 
-      // Connect with msgpack parser to match server's serializer="msgpack"
       const socket = io({ parser: msgpackParser });
       socket.on("connect", () => log("connected id=" + socket.id));
       socket.on("connect_error", (err) => log("connect_error " + err));
-      socket.on("DAQ/Fake", (data) => {
-        // Data arrives as a JS object (deserialized by socket.io-msgpack-parser)
-        log("omnibus_message\n" + JSON.stringify(data, null, 2));
-      });
       socket.on("disconnect", () => log("disconnected"));
 
+      socket.onAny((event, data) => {
+        log("[" + event + "]\n" + JSON.stringify(data, null, 2));
+      });
+
       document.getElementById("sendBtn").onclick = () => {
-        console.log("Send Info Back button clicked");
-        const msg = {
-          channel: "send_back",
-          timestamp: Date.now(),
-          payload: { info: "Hello from HTML client!" },
-        };
-        log("sending publish\n" + JSON.stringify(msg, null, 2));
-        socket.emit("publish", [msg.channel, [msg.timestamp, msg.payload]]);
+        const channel = "send_back";
+        const timestamp = Date.now() / 1000;
+        const payload = { info: "Hello from HTML client!" };
+        log("sending on '" + channel + "'\n" + JSON.stringify(payload, null, 2));
+        socket.emit(channel, [timestamp, payload]);
       };
     </script>
   </body>

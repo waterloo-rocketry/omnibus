@@ -58,6 +58,7 @@ dev = [
     "autopep8",
     "flake8",
     "pytest",
+    "pytest-cov>=7.0.0",
 ]
 
 [project.scripts]
