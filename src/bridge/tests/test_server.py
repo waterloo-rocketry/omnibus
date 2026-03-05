@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import Mock, patch
 
-import server
+import relay
 
 # Helper capture @sio.on callbacks registered inside main()
 
@@ -27,9 +27,9 @@ def _make_capturing_sio():
 class TestAutoDiscovery:
     #The bridge must use Omnibus auto-discovery
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_receiver_subscribes_to_all_channels(self, mock_client_class, mock_receiver_class, mock_time):
         # Reciever captures all omnibus channels
         mock_sio, _ = _make_capturing_sio()
@@ -39,13 +39,13 @@ class TestAutoDiscovery:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_receiver_class.assert_called_once_with("")
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_socketio_client_uses_msgpack_serializer(self, mock_client_class, mock_receiver_class, mock_time):
         # Must use msgpack
         mock_sio, _ = _make_capturing_sio()
@@ -55,13 +55,13 @@ class TestAutoDiscovery:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_client_class.assert_called_once_with(logger=False, engineio_logger=False, serializer="msgpack", reconnection=False)
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_does_not_preset_server_ip(self, mock_client_class, mock_receiver_class, mock_time):
         # must not preset server_ip — let omnibus auto-discover it
         
@@ -76,7 +76,7 @@ class TestAutoDiscovery:
         OmnibusCommunicator.server_ip = None
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         assert OmnibusCommunicator.server_ip is None
 
@@ -85,9 +85,9 @@ class TestAutoDiscovery:
 class TestRelayLoop:
     #ZMQ messages must be forwarded to the WebSocket server via SocketIO
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_uses_blocking_receive(self, mock_client_class, mock_receiver_class, mock_time):
         # Confirm recv_message is called with None
         mock_sio, _ = _make_capturing_sio()
@@ -97,13 +97,13 @@ class TestRelayLoop:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_receiver.recv_message.assert_called_with(None)
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_registers_wildcard_listener(self, mock_client_class, mock_receiver_class, mock_time):
         # '*' wildcard needed to track what the WS server broadcasts back
         mock_sio, callbacks = _make_capturing_sio()
@@ -113,13 +113,13 @@ class TestRelayLoop:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         assert "*" in callbacks #sio.on('*') must be called
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_emits_message_with_correct_channel(self, mock_client_class, mock_receiver_class, mock_time):
         # Each received ZMQ message is emitted on the correct channel
         mock_sio, _ = _make_capturing_sio()
@@ -135,13 +135,13 @@ class TestRelayLoop:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_sio.emit.assert_called_once_with("sensors/temperature", [1234567890.0, {"value": 25.5}])
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_emits_timestamp_and_payload_as_list(self, mock_client_class, mock_receiver_class, mock_time):
         #Data is forwarded as [timestamp, payload] to match the wire format
         mock_sio, _ = _make_capturing_sio()
@@ -157,13 +157,13 @@ class TestRelayLoop:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         assert mock_sio.emit.call_args[0][1] == [42.0, "raw_data"]
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_skips_none_from_receiver(self, mock_client_class, mock_receiver_class, mock_time):
         #A None return from the receiver does not cause an emit
         mock_sio, _ = _make_capturing_sio()
@@ -174,7 +174,7 @@ class TestRelayLoop:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_sio.emit.assert_not_called()
 
@@ -184,9 +184,9 @@ class TestRelayLoop:
 class TestOnWsBroadcast:
     # Must only record broadcasts of proper format
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_non_list_data_is_ignored(self, mock_client_class, mock_receiver_class, mock_time):
         #Non-list data from the WS server is not added to the dedup deque
         
@@ -211,13 +211,13 @@ class TestOnWsBroadcast:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_sio.emit.assert_called_once_with("ch", [1.0, "x"])
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_empty_list_data_is_ignored(self, mock_client_class, mock_receiver_class, mock_time):
         #An empty list broadcast is not added to the deque
         mock_sio, callbacks = _make_capturing_sio()
@@ -241,7 +241,7 @@ class TestOnWsBroadcast:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_sio.emit.assert_called_once_with("ch", [2.0, "y"])
 
@@ -249,9 +249,9 @@ class TestOnWsBroadcast:
 class TestLoopBackPrevention:
     #Messages injected into ZMQ by the WS server must not be re-relayed
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_ws_originated_message_is_skipped(self, mock_client_class, mock_receiver_class, mock_time):
         #When the WS server has already broadcast (channel, ts), the matching ZMQ message is dropped so WS clients don't receive it twice.
         mock_sio, callbacks = _make_capturing_sio()
@@ -277,13 +277,13 @@ class TestLoopBackPrevention:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_sio.emit.assert_not_called()
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_non_ws_originated_message_is_relayed(self, mock_client_class, mock_receiver_class, mock_time):
         #A ZMQ message with no matching WS broadcast is relayed normally
         mock_sio, callbacks = _make_capturing_sio()
@@ -300,13 +300,13 @@ class TestLoopBackPrevention:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_sio.emit.assert_called_once_with("telemetry", [999.0, "data"])
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_dedup_is_consumed_after_match(self, mock_client_class, mock_receiver_class, mock_time):
         #After skipping a WS-originated message it is not in deque anymore
         mock_sio, callbacks = _make_capturing_sio()
@@ -335,7 +335,7 @@ class TestLoopBackPrevention:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         # Only the second copy should have been emitted
         mock_sio.emit.assert_called_once_with("telemetry", [1.0, "x"])
@@ -344,9 +344,9 @@ class TestLoopBackPrevention:
 class TestConnectionRetry:
     #The bridge must keep trying to reach the WebSocket server on startup.
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_retries_on_connection_error(self, mock_client_class, mock_receiver_class, mock_time):
         #Bridge retries if the WebSocket server is not yet available
         from socketio.exceptions import ConnectionError as SioConnectionError
@@ -361,13 +361,13 @@ class TestConnectionRetry:
         mock_time.sleep = Mock()
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         assert mock_sio.connect.call_count == 2
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_sleeps_between_connection_retries(self, mock_client_class, mock_receiver_class, mock_time):
         #Bridge sleeps for 1 second between each reconnection attempt
         from socketio.exceptions import ConnectionError as SioConnectionError
@@ -382,13 +382,13 @@ class TestConnectionRetry:
         mock_time.sleep = Mock()
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_time.sleep.assert_any_call(1)
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_connects_with_bridge_auth(self, mock_client_class, mock_receiver_class, mock_time):
         #Bridge identifies itself to the WS server via auth role='bridge'
         mock_sio, _ = _make_capturing_sio()
@@ -399,7 +399,7 @@ class TestConnectionRetry:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         mock_sio.connect.assert_called_once_with(
             "http://127.0.0.1:6767", auth={"role": "bridge"}
@@ -410,9 +410,9 @@ class TestConnectionRetry:
 class TestMidRunReconnection:
     #Bridge must recover if server2 goes down
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_reconnects_when_disconnected_before_emit(self, mock_client_class, mock_receiver_class, mock_time):
         #If sio.connected is False when a message arrives, bridge reconnects
         
@@ -446,15 +446,15 @@ class TestMidRunReconnection:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         # Initial connect + one reconnect after the drop
         assert mock_sio.connect.call_count == 2
         mock_sio.disconnect.assert_called_once()
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_reconnects_on_emit_failure(self, mock_client_class, mock_receiver_class, mock_time):
         #If sio.emit raises (server dropped mid-relay), bridge reconnects
         mock_sio, _ = _make_capturing_sio()
@@ -473,15 +473,15 @@ class TestMidRunReconnection:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         # Initial connect + reconnect triggered by emit failure
         assert mock_sio.connect.call_count == 2
         mock_sio.disconnect.assert_called_once()
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_reconnect_survives_disconnect_raising(self, mock_client_class, mock_receiver_class, mock_time):
         #If sio.disconnect() raises during reconnect, the bridge still reconnects
         mock_sio, _ = _make_capturing_sio()
@@ -501,14 +501,14 @@ class TestMidRunReconnection:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         # disconnect raised but connect was still called (reconnect proceeded)
         assert mock_sio.connect.call_count == 2
 
-    @patch("server.time")
-    @patch("server.Receiver")
-    @patch("server.socketio.Client")
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
     def test_reconnect_uses_bridge_auth(self, mock_client_class, mock_receiver_class, mock_time):
         #Reconnect still authenticates as bridge, not as a plain client
         mock_sio, _ = _make_capturing_sio()
@@ -527,7 +527,7 @@ class TestMidRunReconnection:
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
-            server.main()
+            relay.main()
 
         for call in mock_sio.connect.call_args_list:
             assert call == (("http://127.0.0.1:6767",), {"auth": {"role": "bridge"}}), (
