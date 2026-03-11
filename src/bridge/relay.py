@@ -1,3 +1,4 @@
+import argparse
 import logging
 import time
 import socketio
@@ -5,32 +6,32 @@ from omnibus import Receiver
 from socketio import exceptions
 from omnibus import WS_ORIGINATED_SUFFIX
 
-WS_URL = "http://127.0.0.1:6767"
 BRIDGE_AUTH = {"role": "bridge"}
 
 logger = logging.getLogger(__name__)
 
-def connect_with_retry(sio: socketio.Client) -> None:
+def connect_with_retry(sio: socketio.Client, ws_url: str) -> None:
     # Attempts to reconnect to the WS server if it disconnects
     while True:
         try:
-            sio.connect(WS_URL, auth=BRIDGE_AUTH)
-            print(f">>> Connected to WebSocket server at {WS_URL}")
+            sio.connect(ws_url, auth=BRIDGE_AUTH)
+            print(f">>> Connected to WebSocket server at {ws_url}")
             return
         except exceptions.ConnectionError:
-            print(f">>> Waiting for WebSocket server at {WS_URL}...")
+            print(f">>> Waiting for WebSocket server at {ws_url}...")
             time.sleep(1)
 
-def reconnect(sio: socketio.Client) -> None:
+def reconnect(sio: socketio.Client, ws_url: str) -> None:
     # Clean up broken connection and attempt to reconnect
     print(">>> WebSocket server connection lost, reconnecting...")
     try:
         sio.disconnect()
     except Exception as e:
         logger.warning(f"Error disconnecting from WS server: {e}")
-    connect_with_retry(sio)
+    connect_with_retry(sio, ws_url)
 
-def main() -> None:
+def main(ws_url: str = "http://127.0.0.1:6767") -> None:
+
     print("Starting bridge relay loop...")
 
     sio = socketio.Client(
@@ -40,7 +41,7 @@ def main() -> None:
         reconnection=False,  # Manually manage reconnection
     )
 
-    connect_with_retry(sio)
+    connect_with_retry(sio, ws_url)
 
     # Subscribe to all Omnibus channels
     receiver = Receiver("")
@@ -50,7 +51,7 @@ def main() -> None:
 
         # Reconnect if WebSocket server went down
         if not sio.connected:
-            reconnect(sio)
+            reconnect(sio, ws_url)
 
         # Skip messages that originated from a WS client.
         # They already went into ZMQ with suffix appended, we don't re-broadcast.
@@ -65,14 +66,13 @@ def main() -> None:
             print(f"[bridge] relayed '{msg.channel}'")
         except (exceptions.ConnectionError, exceptions.BadNamespaceError) as e:
             print(f">>> Error sending message to WS server: {e}")
-            reconnect(sio)
+            reconnect(sio, ws_url)
             try:
                 sio.emit(msg.channel, payload) 
                 print(f"[bridge] relayed '{msg.channel}' after reconnecting")
             except (exceptions.ConnectionError, exceptions.BadNamespaceError) as retry_error:
                 logger.error("Failed to relay %s after reconnect: %s", msg.channel, retry_error)
                 continue
-            print(f"[bridge] relayed '{msg.channel}' after reconnecting")
         except Exception as e: 
             print(f">>> Unexpected error: {e}")
             raise
@@ -80,4 +80,8 @@ def main() -> None:
         
 
 if __name__ == "__main__":  # pragma: no cover
-    main()
+    parser = argparse.ArgumentParser(description="Omnibus bridge relay")
+    parser.add_argument("--host", default="127.0.0.1", help="WebSocket server host (default: 127.0.0.1)")
+    parser.add_argument("--port", type=int, default=6767, help="WebSocket server port (default: 6767)")
+    args = parser.parse_args()
+    main(ws_url=f"http://{args.host}:{args.port}")
