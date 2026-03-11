@@ -357,7 +357,7 @@ class TestMidRunReconnection:
         msg.timestamp = 2.0
         msg.payload = "y"
 
-        mock_sio.emit.side_effect = exceptions.ConnectionError("dropped")
+        mock_sio.emit.side_effect = [exceptions.ConnectionError("dropped"), None]
 
         mock_receiver = Mock()
         mock_receiver.recv_message.side_effect = [msg, SystemExit()]
@@ -385,7 +385,7 @@ class TestMidRunReconnection:
         msg.timestamp = 1.0
         msg.payload = "x"
 
-        mock_sio.emit.side_effect = exceptions.ConnectionError("dropped")
+        mock_sio.emit.side_effect = [exceptions.ConnectionError("dropped"), None]
 
         mock_receiver = Mock()
         mock_receiver.recv_message.side_effect = [msg, SystemExit()]
@@ -411,7 +411,7 @@ class TestMidRunReconnection:
         msg.timestamp = 3.0
         msg.payload = "z"
 
-        mock_sio.emit.side_effect = exceptions.ConnectionError("dropped")
+        mock_sio.emit.side_effect = [exceptions.ConnectionError("dropped"), None]
 
         mock_receiver = Mock()
         mock_receiver.recv_message.side_effect = [msg, SystemExit()]
