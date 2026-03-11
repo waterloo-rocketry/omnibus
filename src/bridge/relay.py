@@ -48,6 +48,8 @@ def main(ws_url: str = "http://127.0.0.1:6767") -> None:
 
     while True:
         msg = receiver.recv_message(None)
+        if msg is None:
+            continue
 
         # Reconnect if WebSocket server went down
         if not sio.connected:
@@ -71,13 +73,11 @@ def main(ws_url: str = "http://127.0.0.1:6767") -> None:
                 sio.emit(msg.channel, payload) 
                 print(f"[bridge] relayed '{msg.channel}' after reconnecting")
             except (exceptions.ConnectionError, exceptions.BadNamespaceError) as retry_error:
-                logger.error("Failed to relay %s after reconnect: %s", msg.channel, retry_error)
+                logger.error("Failed to relay %s after reconnect, dropping frame: %s", msg.channel, retry_error)
                 continue
         except Exception as e: 
             print(f">>> Unexpected error: {e}")
             raise
-
-        
 
 if __name__ == "__main__":  # pragma: no cover
     parser = argparse.ArgumentParser(description="Omnibus bridge relay")
