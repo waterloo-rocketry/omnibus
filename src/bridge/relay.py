@@ -59,12 +59,15 @@ def main() -> None:
             print(f"[bridge] skipping message on '{msg.channel}' (originated from WS client)")
             continue
 
+        payload = [msg.timestamp, msg.payload]
         try:
-            sio.emit(msg.channel, [msg.timestamp, msg.payload]) 
+            sio.emit(msg.channel, payload) 
             print(f"[bridge] relayed '{msg.channel}'")
         except (exceptions.ConnectionError, exceptions.BadNamespaceError) as e:
             print(f">>> Error sending message to WS server: {e}")
             reconnect(sio)
+            sio.emit(msg.channel, payload)  # Retry once after reconnecting
+            print(f"[bridge] relayed '{msg.channel}' after reconnecting")
         except Exception as e: 
             print(f">>> Unexpected error: {e}")
             raise

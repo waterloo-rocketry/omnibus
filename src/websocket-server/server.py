@@ -44,8 +44,10 @@ def handle_channel_message(event, data):
         emit(event, data, broadcast=True, include_self=False)
     else: # WS-client-originated: emit to all and tell bridge to ignore it
         emit(event, data, broadcast=True)
-        if isinstance(data, list) and len(data) >= 2:
+        if isinstance(data, list) and len(data) == 2:
             Sender().send_message(OmnibusMessage(event + WS_ORIGINATED_SUFFIX, data[0], data[1]))
+        else:
+            app.logger.warning("Dropping malformed WS payload for event '%s': %r", event, data)
 
 @socketio.on("disconnect")
 def handle_disconnect():
