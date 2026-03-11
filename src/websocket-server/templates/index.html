@@ -13,7 +13,7 @@
     <script>
       const log = (msg) => {
           const logElem = document.getElementById("log");
-          logElem.textContent = msg;
+          logElem.textContent += msg;
           logElem.scrollTop = logElem.scrollHeight;
       };
       log("HTML loaded");
@@ -25,7 +25,7 @@
 
       const log = (msg) => {
           const logElem = document.getElementById("log");
-          logElem.textContent = msg;
+          logElem.textContent += msg;
           logElem.scrollTop = logElem.scrollHeight;
       };
 
