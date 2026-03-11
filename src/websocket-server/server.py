@@ -61,5 +61,4 @@ def handle_disconnect():
 
 if __name__ == "__main__":  # pragma: no cover
     print(">>> Starting SocketIO server on http://0.0.0.0:6767")
-    _ = Sender()  # Pre-create the sender to avoid lazy initialization issues on the bridge side
     socketio.run(app, host="0.0.0.0", port=6767)
