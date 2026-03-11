@@ -66,7 +66,12 @@ def main() -> None:
         except (exceptions.ConnectionError, exceptions.BadNamespaceError) as e:
             print(f">>> Error sending message to WS server: {e}")
             reconnect(sio)
-            sio.emit(msg.channel, payload)  # Retry once after reconnecting
+            try:
+                sio.emit(msg.channel, payload) 
+                print(f"[bridge] relayed '{msg.channel}' after reconnecting")
+            except (exceptions.ConnectionError, exceptions.BadNamespaceError) as retry_error:
+                logger.error("Failed to relay %s after reconnect: %s", msg.channel, retry_error)
+                continue
             print(f"[bridge] relayed '{msg.channel}' after reconnecting")
         except Exception as e: 
             print(f">>> Unexpected error: {e}")
