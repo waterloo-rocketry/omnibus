@@ -424,3 +424,26 @@ class TestMidRunReconnection:
             assert call == (("http://127.0.0.1:6767",), {"auth": {"role": "bridge"}}), (
                 f"Expected bridge auth on every connect call, got: {call}"
             )
+
+    @patch("relay.time")
+    @patch("relay.Receiver")
+    @patch("relay.socketio.Client")
+    def test_unexpected_emit_exception_propagates(self, mock_client_class, mock_receiver_class, mock_time):
+        # non-connection exceptions on emit should bubble up, not be swallowed
+        mock_sio, _ = _make_capturing_sio()
+        mock_client_class.return_value = mock_sio
+        mock_sio.connected = True
+
+        msg = Mock()
+        msg.channel = "ch"
+        msg.timestamp = 1.0
+        msg.payload = "x"
+
+        mock_sio.emit.side_effect = RuntimeError("unexpected")
+
+        mock_receiver = Mock()
+        mock_receiver.recv_message.side_effect = [msg]
+        mock_receiver_class.return_value = mock_receiver
+
+        with pytest.raises(RuntimeError, match="unexpected"):
+            relay.main()
