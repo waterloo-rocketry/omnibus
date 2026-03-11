@@ -846,15 +846,15 @@ requires-dist = [
 ]
 
 [[package]]
-name = "omnibus-ws-server"
+name = "omnibus-data-processing"
 version = "0.1.0"
-source = { virtual = "packages/omnibus-ws-server" }
+source = { virtual = "tools/data_processing" }
 dependencies = [
-    { name = "flask-socketio" },
+    { name = "matplotlib" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "flask-socketio", specifier = ">=5.5.1" }]
+requires-dist = [{ name = "matplotlib", specifier = ">=3.10.0" }]
 
 [[package]]
 name = "omnibus-ws-server"

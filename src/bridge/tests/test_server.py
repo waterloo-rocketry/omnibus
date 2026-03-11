@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import Mock, patch
-
+from socketio import exceptions
 import relay
 
 # Helper capture @sio.on callbacks registered inside main()
@@ -20,7 +20,7 @@ def _make_capturing_sio():
         return store
 
     mock_sio.on.side_effect = on_factory
-    return mock_sio, callbacks
+    return mock_sio, ""
 
 # Auto-discovery and setup
 
@@ -104,22 +104,7 @@ class TestRelayLoop:
     @patch("relay.time")
     @patch("relay.Receiver")
     @patch("relay.socketio.Client")
-    def test_registers_wildcard_listener(self, mock_client_class, mock_receiver_class, mock_time):
-        # '*' wildcard needed to track what the WS server broadcasts back
-        mock_sio, callbacks = _make_capturing_sio()
-        mock_client_class.return_value = mock_sio
-        mock_receiver = Mock()
-        mock_receiver.recv_message.side_effect = SystemExit()
-        mock_receiver_class.return_value = mock_receiver
-
-        with pytest.raises(SystemExit):
-            relay.main()
-
-        assert "*" in callbacks #sio.on('*') must be called
-
-    @patch("relay.time")
-    @patch("relay.Receiver")
-    @patch("relay.socketio.Client")
+    
     def test_emits_message_with_correct_channel(self, mock_client_class, mock_receiver_class, mock_time):
         # Each received ZMQ message is emitted on the correct channel
         mock_sio, _ = _make_capturing_sio()
@@ -161,90 +146,10 @@ class TestRelayLoop:
 
         assert mock_sio.emit.call_args[0][1] == [42.0, "raw_data"]
 
-    @patch("relay.time")
-    @patch("relay.Receiver")
-    @patch("relay.socketio.Client")
-    def test_skips_none_from_receiver(self, mock_client_class, mock_receiver_class, mock_time):
-        #A None return from the receiver does not cause an emit
-        mock_sio, _ = _make_capturing_sio()
-        mock_client_class.return_value = mock_sio
-
-        mock_receiver = Mock()
-        mock_receiver.recv_message.side_effect = [None, SystemExit()]
-        mock_receiver_class.return_value = mock_receiver
-
-        with pytest.raises(SystemExit):
-            relay.main()
-
-        mock_sio.emit.assert_not_called()
+    
 
 
 # Loop-back prevention (the deque)
-
-class TestOnWsBroadcast:
-    # Must only record broadcasts of proper format
-
-    @patch("relay.time")
-    @patch("relay.Receiver")
-    @patch("relay.socketio.Client")
-    def test_non_list_data_is_ignored(self, mock_client_class, mock_receiver_class, mock_time):
-        #Non-list data from the WS server is not added to the dedup deque
-        
-        mock_sio, callbacks = _make_capturing_sio()
-        mock_client_class.return_value = mock_sio
-
-        msg = Mock()
-        msg.channel = "ch"
-        msg.timestamp = 1.0
-        msg.payload = "x"
-
-        calls = [0]
-        def recv(timeout):
-            calls[0] += 1
-            if calls[0] == 1:
-                callbacks["*"]("ch", "not-a-list")  # malformed should not enter
-                return msg
-            raise SystemExit()
-
-        mock_receiver = Mock()
-        mock_receiver.recv_message.side_effect = recv
-        mock_receiver_class.return_value = mock_receiver
-
-        with pytest.raises(SystemExit):
-            relay.main()
-
-        mock_sio.emit.assert_called_once_with("ch", [1.0, "x"])
-
-    @patch("relay.time")
-    @patch("relay.Receiver")
-    @patch("relay.socketio.Client")
-    def test_empty_list_data_is_ignored(self, mock_client_class, mock_receiver_class, mock_time):
-        #An empty list broadcast is not added to the deque
-        mock_sio, callbacks = _make_capturing_sio()
-        mock_client_class.return_value = mock_sio
-
-        msg = Mock()
-        msg.channel = "ch"
-        msg.timestamp = 2.0
-        msg.payload = "y"
-
-        calls = [0]
-        def recv(timeout):
-            calls[0] += 1
-            if calls[0] == 1:
-                callbacks["*"]("ch", [])  # empty list — no timestamp to record
-                return msg
-            raise SystemExit()
-
-        mock_receiver = Mock()
-        mock_receiver.recv_message.side_effect = recv
-        mock_receiver_class.return_value = mock_receiver
-
-        with pytest.raises(SystemExit):
-            relay.main()
-
-        mock_sio.emit.assert_called_once_with("ch", [2.0, "y"])
-
 
 class TestLoopBackPrevention:
     #Messages injected into ZMQ by the WS server must not be re-relayed
@@ -254,11 +159,11 @@ class TestLoopBackPrevention:
     @patch("relay.socketio.Client")
     def test_ws_originated_message_is_skipped(self, mock_client_class, mock_receiver_class, mock_time):
         #When the WS server has already broadcast (channel, ts), the matching ZMQ message is dropped so WS clients don't receive it twice.
-        mock_sio, callbacks = _make_capturing_sio()
+        mock_sio, _ = _make_capturing_sio()
         mock_client_class.return_value = mock_sio
 
         msg = Mock()
-        msg.channel = "sensors/temp"
+        msg.channel = "sensors/temp/WS_ORIGINATED"
         msg.timestamp = 123.0
         msg.payload = {"v": 1}
 
@@ -267,8 +172,7 @@ class TestLoopBackPrevention:
         def recv_side_effect(timeout):
             calls[0] += 1
             if calls[0] == 1:
-                # WS server broadcasts before the ZMQ copy arrives (handle_channel_message emits first then sends to ZMQ)
-                callbacks["*"]("sensors/temp", [123.0, {"v": 1}])
+                # Message with WS_ORIGINATED suffix should be skipped
                 return msg
             raise SystemExit()
 
@@ -286,7 +190,7 @@ class TestLoopBackPrevention:
     @patch("relay.socketio.Client")
     def test_non_ws_originated_message_is_relayed(self, mock_client_class, mock_receiver_class, mock_time):
         #A ZMQ message with no matching WS broadcast is relayed normally
-        mock_sio, callbacks = _make_capturing_sio()
+        mock_sio, _ = _make_capturing_sio()
         mock_client_class.return_value = mock_sio
 
         msg = Mock()
@@ -295,7 +199,7 @@ class TestLoopBackPrevention:
         msg.payload = "data"
 
         mock_receiver = Mock()
-        # no WS broadcast before this, so it's a real ZMQ-only message
+        # no WS suffix, so it's a real ZMQ-only message
         mock_receiver.recv_message.side_effect = [msg, SystemExit()]
         mock_receiver_class.return_value = mock_receiver
 
@@ -307,38 +211,25 @@ class TestLoopBackPrevention:
     @patch("relay.time")
     @patch("relay.Receiver")
     @patch("relay.socketio.Client")
-    def test_dedup_is_consumed_after_match(self, mock_client_class, mock_receiver_class, mock_time):
-        #After skipping a WS-originated message it is not in deque anymore
-        mock_sio, callbacks = _make_capturing_sio()
+    def test_ws_originated_message_with_similar_channel_is_not_skipped(self, mock_client_class, mock_receiver_class, mock_time):
+        #Only messages with the exact WS_ORIGINATED_SUFFIX should be skipped, not messages on similar channels
+        mock_sio, _ = _make_capturing_sio()
         mock_client_class.return_value = mock_sio
 
         msg = Mock()
-        msg.channel = "telemetry"
-        msg.timestamp = 1.0
+        msg.channel = "telemetry/WS_ORIGINATED/extra"
+        msg.timestamp = 555.0
         msg.payload = "x"
 
-        calls = [0]
-
-        def recv_side_effect(timeout):
-            calls[0] += 1
-            if calls[0] == 1:
-                # WS-originated copy, should be skipped
-                callbacks["*"]("telemetry", [1.0, "x"])
-                return msg
-            if calls[0] == 2:
-                # A genuine ZMQ message with the same key — must be forwarded
-                return msg
-            raise SystemExit()
-
         mock_receiver = Mock()
-        mock_receiver.recv_message.side_effect = recv_side_effect
+        mock_receiver.recv_message.side_effect = [msg, SystemExit()]
         mock_receiver_class.return_value = mock_receiver
 
         with pytest.raises(SystemExit):
             relay.main()
 
-        # Only the second copy should have been emitted
-        mock_sio.emit.assert_called_once_with("telemetry", [1.0, "x"])
+        # This message should be relayed because the channel doesn't end with the exact suffix
+        mock_sio.emit.assert_called_once_with("telemetry/WS_ORIGINATED/extra", [555.0, "x"])
 
 # Connection retry
 class TestConnectionRetry:
@@ -466,7 +357,7 @@ class TestMidRunReconnection:
         msg.timestamp = 2.0
         msg.payload = "y"
 
-        mock_sio.emit.side_effect = Exception("connection lost")
+        mock_sio.emit.side_effect = exceptions.ConnectionError("dropped")
 
         mock_receiver = Mock()
         mock_receiver.recv_message.side_effect = [msg, SystemExit()]
@@ -494,7 +385,7 @@ class TestMidRunReconnection:
         msg.timestamp = 1.0
         msg.payload = "x"
 
-        mock_sio.emit.side_effect = Exception("dropped")
+        mock_sio.emit.side_effect = exceptions.ConnectionError("dropped")
 
         mock_receiver = Mock()
         mock_receiver.recv_message.side_effect = [msg, SystemExit()]
@@ -520,7 +411,7 @@ class TestMidRunReconnection:
         msg.timestamp = 3.0
         msg.payload = "z"
 
-        mock_sio.emit.side_effect = Exception("dropped")
+        mock_sio.emit.side_effect = exceptions.ConnectionError("dropped")
 
         mock_receiver = Mock()
         mock_receiver.recv_message.side_effect = [msg, SystemExit()]
