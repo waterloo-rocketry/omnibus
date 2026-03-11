@@ -1,14 +1,17 @@
+import logging
 import time
-from collections import deque
 import socketio
 from omnibus import Receiver
 from socketio import exceptions
+from omnibus import WS_ORIGINATED_SUFFIX
 
 WS_URL = "http://127.0.0.1:6767"
 BRIDGE_AUTH = {"role": "bridge"}
 
+logger = logging.getLogger(__name__)
+
 def connect_with_retry(sio: socketio.Client) -> None:
-    # Attemps to recconnect to the WS server if it disconnects
+    # Attempts to reconnect to the WS server if it disconnects
     while True:
         try:
             sio.connect(WS_URL, auth=BRIDGE_AUTH)
@@ -19,15 +22,15 @@ def connect_with_retry(sio: socketio.Client) -> None:
             time.sleep(1)
 
 def reconnect(sio: socketio.Client) -> None:
-    # Clean up brokwn connection and attempt to reconnect
+    # Clean up broken connection and attempt to reconnect
     print(">>> WebSocket server connection lost, reconnecting...")
     try:
         sio.disconnect()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Error disconnecting from WS server: {e}")
     connect_with_retry(sio)
 
-def main():
+def main() -> None:
     print("Starting bridge relay loop...")
 
     sio = socketio.Client(
@@ -37,18 +40,6 @@ def main():
         reconnection=False,  # Manually manage reconnection
     )
 
-    # Bounded deque of (channel, timestamp) pairs that the WS server has already broadcast to web clients.  The bridge uses this to skip re-broadcasting messages
-    _ws_originated: deque[tuple[str, float]] = deque(maxlen=256)
-
-    @sio.on("*")  # type: ignore[misc]
-    def on_ws_broadcast(event: str, data: list) -> None:
-        # When the websocket server sends a message to clients this fires first
-        # Adds message to deque so that when the message is relayed back from ZMQ, the bridge can skip it to avoid duplicates
-        # If not skipped the message would be broadcast to clients twice, once from the WS server and once from the bridge when it relays back to clients
-        
-        if isinstance(data, list) and len(data) >= 1:
-            _ws_originated.append((event, data[0]))
-
     connect_with_retry(sio)
 
     # Subscribe to all Omnibus channels
@@ -57,27 +48,28 @@ def main():
     while True:
         msg = receiver.recv_message(None)
 
-        if msg is None:
-            continue
-
-        # Reconnect if server2 went down
+        # Reconnect if WebSocket server went down
         if not sio.connected:
             reconnect(sio)
 
-        # Skip messages that the WS server already broadcast to clients
-        # Re-emitting them would cause duplicate delivery
-        key = (msg.channel, msg.timestamp)
-        if key in _ws_originated:
-            _ws_originated.remove(key)
-            print(f"[bridge] skipping WS-originated message on '{msg.channel}'")
+        # Skip messages that originated from a WS client.
+        # They already went into ZMQ with suffix appended, we don't re-broadcast.
+        
+        if msg.channel.endswith(WS_ORIGINATED_SUFFIX):
+            print(f"[bridge] skipping message on '{msg.channel}' (originated from WS client)")
             continue
 
         try:
-            sio.emit(msg.channel, [msg.timestamp, msg.payload])
+            sio.emit(msg.channel, [msg.timestamp, msg.payload]) 
             print(f"[bridge] relayed '{msg.channel}'")
-        except Exception:
-            # Server dropped
+        except (exceptions.ConnectionError, exceptions.BadNamespaceError) as e:
+            print(f">>> Error sending message to WS server: {e}")
             reconnect(sio)
+        except Exception as e: 
+            print(f">>> Unexpected error: {e}")
+            raise
+
+        
 
 if __name__ == "__main__":  # pragma: no cover
     main()
