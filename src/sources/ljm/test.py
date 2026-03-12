@@ -44,14 +44,6 @@ sys.modules["omnibus"] = fake_omnibus
 
 import main
 
-
-# Tests for the LabJack streaming and data‑processing logic in `ljm/main.py`.
-#
-# The earlier version of this file merely checked that LJM functions were
-# invoked; the goal here is to exercise the conversion/calibration logic that
-# occurs inside the callback and to make sure the message sent to Omnibus has a
-# valid structure.
-
 # Basic test class
 class TestLabJackMock(unittest.TestCase):
     def setUp(self):
@@ -128,7 +120,6 @@ class TestLabJackMock(unittest.TestCase):
 
         # The log file should have been opened for append and written to once.
         fake_open.assert_called()
-
 
 
 if __name__ == "__main__":
