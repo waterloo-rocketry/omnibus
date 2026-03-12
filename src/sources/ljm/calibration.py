@@ -9,24 +9,37 @@ from msgpack.exceptions import PackException
 # A map between a channel name and
 # the channel number of its negative channel
 # in differential mode.
-# -1 (assigned to odd-numbered channels) means
-# they only work in single-ended mode
-# or as the negative channel in differential mode.
 CHANNEL_TO_NEGATIVE_CHANNEL = {
-    "AIN0": 1,
-    "AIN1": -1,
-    "AIN2": 3,
-    "AIN3": -1,
-    "AIN4": 5,
-    "AIN5": -1,
-    "AIN6": 7,
-    "AIN7": -1,
-    "AIN8": 9,
-    "AIN9": -1,
-    "AIN10": 11,
-    "AIN11": -1,
-    "AIN12": 13,
-    "AIN13": -1,
+    "AIN87": 95,
+    "AIN86": 94,
+    "AIN85": 93,
+    "AIN84": 92,
+    "AIN83": 91,
+    "AIN82": 90,
+    "AIN81": 89,
+    "AIN80": 88,
+    "AIN71": 79,
+    "AIN70": 78,
+    "AIN69": 77,
+    "AIN68": 76,
+    "AIN67": 75,
+    "AIN66": 74,
+    "AIN65": 73,
+    "AIN64": 72,
+    "AIN53": 61,
+    "AIN52": 60,
+    "AIN51": 59,
+    "AIN50": 58,
+    "AIN49": 57,
+    "AIN48": 56,
+    "AIN55": 63,
+    "AIN54": 62,
+    "AIN96": 104,
+    "AIN97": 105,
+    "AIN98": 106,
+    "AIN99": 107,
+    "AIN100": 108,
+    "AIN101": 109,
 }
 
 
@@ -158,9 +171,12 @@ class Sensor:
             ljm.eWriteName(handle, f"{sensor.channel}_RANGE", sensor.input_range)
             negChannelValue = ljm.constants.GND
             if sensor.connection == Connection.DIFFERENTIAL:
-                negChannelValue = CHANNEL_TO_NEGATIVE_CHANNEL[sensor.channel]
-                if negChannelValue == -1:
-                    raise ValueError(f"Invalid negative channel for {sensor.channel}")
+                try:
+                    negChannelValue = CHANNEL_TO_NEGATIVE_CHANNEL[sensor.channel]
+                except KeyError:
+                    raise ValueError(
+                        f"{sensor.channel} does not have a valid negative channel."
+                    )
             ljm.eWriteName(handle, f"{sensor.channel}_NEGATIVE_CH", negChannelValue)
             list_of_addresses.append(sensor.channel)
 

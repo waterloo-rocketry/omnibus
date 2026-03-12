@@ -342,11 +342,15 @@ name = "globallog"
 version = "0.1.0"
 source = { virtual = "src/globallog" }
 dependencies = [
+    { name = "msgpack" },
     { name = "omnibus" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "omnibus", editable = "." }]
+requires-dist = [
+    { name = "msgpack", specifier = ">=1.1.1" },
+    { name = "omnibus", editable = "." },
+]
 
 [[package]]
 name = "hightime"
