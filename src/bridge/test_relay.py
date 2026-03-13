@@ -6,7 +6,6 @@ from socketio import exceptions
 import relay
 
 # Helper capture @sio.on callbacks registered inside main()
-
 def _make_capturing_sio():
     # intercepts sio.on() so we can grab the callbacks main() registers
     # after main() runs, call callbacks["*"]("ch", [ts, data]) to simulate a WS broadcast
@@ -145,11 +144,6 @@ class TestRelayLoop:
             relay.main()
 
         assert mock_sio.emit.call_args[0][1] == [42.0, "raw_data"]
-
-    
-
-
-# Loop-back prevention (the deque)
 
 class TestLoopBackPrevention:
     #Messages injected into ZMQ by the WS server must not be re-relayed

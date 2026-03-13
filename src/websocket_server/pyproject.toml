@@ -18,5 +18,8 @@ dependencies = [
     "omnibus",
 ]
 
+[project.scripts]
+omnibus-ws-server = "main:main"
+
 [tool.uv.sources]
 omnibus = { workspace = true }

@@ -1,4 +1,3 @@
-import argparse
 from dataclasses import dataclass
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
@@ -30,6 +29,9 @@ def index():
 def handle_connect(auth):
     # handles client connection including bridge
     if isinstance(auth, dict) and auth.get("role") == "bridge":
+        if state.bridge_sid is not None:
+            print(f">>> Rejected second bridge: {request.sid}")
+            return False
         state.bridge_sid = request.sid
         print(f">>> Bridge connected: {request.sid}")
     else:
@@ -46,7 +48,15 @@ def handle_channel_message(event, data):
     else: # WS-client-originated: emit to all and tell bridge to ignore it
         emit(event, data, broadcast=True)
         if isinstance(data, list) and len(data) == 2:
-            Sender().send_message(OmnibusMessage(event + WS_ORIGINATED_SUFFIX, data[0], data[1]))
+            print(f"[WS client] relaying '{event}' to ZMQ")
+            
+            def _relay_task(channel_event, payload0, payload1): # Create a new sender per event, is thread-safe
+                sender = Sender()
+                socketio.sleep(0.05) #Give time for handshake to complete
+                sender.send_message(OmnibusMessage(channel_event, payload0, payload1))
+                socketio.sleep(0.1) #Give time for ZMQ to flush
+
+            socketio.start_background_task(_relay_task, event + WS_ORIGINATED_SUFFIX, data[0], data[1]) # Start a background task to relay the message to ZMQ  must do this way because sender.send() garbage collects the socket immediately before it can send
         else:
             app.logger.warning("Dropping malformed WS payload for event '%s': %r", event, data)
 
@@ -58,11 +68,3 @@ def handle_disconnect():
         print(f">>> Bridge disconnected: {request.sid}")
     else:
         print(f">>> Client disconnected: {request.sid}")
-
-if __name__ == "__main__":  # pragma: no cover
-    parser = argparse.ArgumentParser(description="WebSocket server for Omnibus bridge")
-    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=6767, help="Port to listen on (default: 6767)")
-    args = parser.parse_args()
-    print(f">>> Starting SocketIO server on {args.host}:{args.port}")
-    socketio.run(app, host=args.host, port=args.port)

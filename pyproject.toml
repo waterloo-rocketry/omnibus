@@ -63,6 +63,8 @@ dev = [
 
 [project.scripts]
 omnibus-server = "omnibus.server:server"
+omnibus-ws-server = "main:main"
+omnibus-ws-bridge = "relay:main"
 
 [tool.uv.sources]
 parsley = { git = "https://github.com/waterloo-rocketry/parsley.git"}
@@ -78,7 +80,7 @@ members = [
     "src/globallog",
     "src/sinks/interamap",
     "src/bridge",
-    "src/websocket-server",
+    "src/websocket_server",
     "tools/data_processing"
 ]
 
@@ -98,6 +100,6 @@ executionEnvironments = [
     {root = "src/sources/fakeni"},
     {root = "src/sinks/interamap"},
     {root = "src/bridge"},
-    {root = "src/websocket-server"},
+    {root = "src/websocket_server"},
     {root = "tools/data_processing"}
 ]
