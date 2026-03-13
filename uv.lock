@@ -12,6 +12,7 @@ members = [
     "omnibus-bridge",
     "omnibus-dashboard",
     "omnibus-data-processing",
+    "omnibus-ws-server",
     "parsley-source",
     "rlcsv3-source",
 ]
@@ -854,6 +855,27 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "matplotlib", specifier = ">=3.10.0" }]
+
+[[package]]
+name = "omnibus-ws-server"
+version = "0.1.0"
+source = { virtual = "src/websocket_server" }
+dependencies = [
+    { name = "flask" },
+    { name = "flask-socketio" },
+    { name = "msgpack" },
+    { name = "omnibus" },
+    { name = "pyzmq" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "flask", specifier = ">=3.0" },
+    { name = "flask-socketio", specifier = ">=5.3" },
+    { name = "msgpack", specifier = ">=1.1.0" },
+    { name = "omnibus", editable = "." },
+    { name = "pyzmq", specifier = ">=27.1.0" },
+]
 
 [[package]]
 name = "packaging"

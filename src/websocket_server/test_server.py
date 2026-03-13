@@ -14,6 +14,11 @@ def reset_globals():
     yield
     reset()
 
+@pytest.fixture(autouse=True)
+def sync_background_tasks(monkeypatch):
+    monkeypatch.setattr(server.socketio, "start_background_task", lambda f, *a, **kw: f(*a, **kw))
+    monkeypatch.setattr(server.socketio, "sleep", lambda x: None)
+
 class TestHandleConnect:
     # Connect handler must identify bridge via auth role and store its SID
 
@@ -61,8 +66,8 @@ class TestHandleConnect:
 
         assert server.state.bridge_sid is None
 
-    def test_second_bridge_overwrites_first(self):
-        # bridge restart scenario: new SID replaces old one immediately
+    def test_second_bridge_is_rejected(self):
+        # only one bridge allowed at a time
         mock_request = Mock()
         mock_request.sid = "bridge-sid-first"
         with patch("server.request", new=mock_request):
@@ -71,8 +76,9 @@ class TestHandleConnect:
 
         mock_request.sid = "bridge-sid-second"
         with patch("server.request", new=mock_request):
-            server.handle_connect(auth={"role": "bridge"})
-        assert server.state.bridge_sid == "bridge-sid-second"
+            result = server.handle_connect(auth={"role": "bridge"})
+        assert result is False
+        assert server.state.bridge_sid == "bridge-sid-first"
 
     def test_connect_does_not_raise(self):
         # handle_connect completes without raising for any auth value
@@ -218,7 +224,7 @@ class TestHandleChannelMessageFromClient:
 
         with patch("server.request", new=mock_request), \
              patch("server.emit"), \
-                patch("server.Sender") as mock_sender_class:
+             patch("server.Sender") as mock_sender_class:
 
             server.handle_channel_message("ch", [1.0])  # only 1 element
         

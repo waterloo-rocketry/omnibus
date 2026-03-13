@@ -17,5 +17,8 @@ dependencies = [
     "omnibus",
 ]
 
+[project.scripts]
+omnibus-ws-bridge = "relay:main"
+
 [tool.uv.sources]
 omnibus = { workspace = true }
