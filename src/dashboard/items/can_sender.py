@@ -2,7 +2,7 @@ import time
 from math import ceil, log10
 from typing import List
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics, QFont
+from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics, QFont, QStandardItemModel, QStandardItem
 from pyqtgraph.Qt.QtWidgets import (
     QComboBox,
     QGridLayout,
@@ -19,6 +19,26 @@ from .registry import Register
 from .dashboard_item import DashboardItem
 from utils import EventTracker
 from publisher import publisher
+
+
+class CheckableComboBox(QComboBox):
+    """QComboBox that stays open when checkable items are clicked."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.view().pressed.connect(self._on_item_pressed)
+        self._skip_hide = False
+
+    def _on_item_pressed(self, index):
+        item = self.model().itemFromIndex(index)
+        if item and item.isCheckable():
+            self._skip_hide = True
+            item.setCheckState(Qt.Unchecked if item.checkState() == Qt.Checked else Qt.Checked)
+
+    def hidePopup(self):
+        if self._skip_hide:
+            self._skip_hide = False
+        else:
+            super().hidePopup()
 
 
 @Register
@@ -98,7 +118,14 @@ class CanSender(DashboardItem):
         for field in fields:
             self.widget_index += 1
             if isinstance(field, pf.Switch) or isinstance(field, pf.Enum):
-                dropdown_items = list(field.get_keys())
+                
+                all_keys = list(field.get_keys())
+                dropdown_items = []
+                
+                for k in all_keys:
+                    if not isinstance(field, pf.Switch) or k in field.map_key_enum: # if it is a switch only include if it is defined in field.map_key_enum (UNDEFINED isn't)
+                        dropdown_items.append(k)
+
                 dropdown_max_length = max(len(item) for item in dropdown_items)
 
                 dropdown = QComboBox()
@@ -110,6 +137,42 @@ class CanSender(DashboardItem):
                 dropdown.setFocusPolicy(Qt.StrongFocus)  # allows tabbing between widgets
                 # calculate the width of the widget
                 max_text_width = self.get_widget_text_width(dropdown, dropdown_max_length)
+                self.widget_widths[self.widget_index] = max_text_width + self.WIDGET_TEXT_PADDING
+                dropdown.setFixedWidth(self.widget_widths[self.widget_index])
+                self.widgets[self.widget_index] = dropdown
+            elif isinstance(field, pf.Bitfield) and field.map_name_offset is not None:
+                # Named bitfield: checkable combobox where each flag can be toggled
+                model = QStandardItemModel()
+                header = QStandardItem(field.default)  # shows current selection summary
+                header.setFlags(Qt.NoItemFlags)
+                model.appendRow(header)
+                for flag_name in field.map_name_offset.keys():
+                    item = QStandardItem(flag_name)
+                    item.setCheckable(True)
+                    item.setCheckState(Qt.Unchecked)
+                    model.appendRow(item)
+
+                def make_updater(m, h, f):
+                    def update(_):
+                        selected = []
+                        
+                        for i in range(1, m.rowCount()):
+                            if m.item(i).checkState() == Qt.Checked:
+                                selected.append(m.item(i).text())
+                        
+                        if selected:
+                            h.setText('|'.join(selected))
+                        else:
+                            h.setText(f.default)
+                    return update
+                model.itemChanged.connect(make_updater(model, header, field))
+
+                dropdown = CheckableComboBox()
+                dropdown.setModel(model)
+                dropdown.setCurrentIndex(0)
+                dropdown.setMaxVisibleItems(15)
+                dropdown.setFocusPolicy(Qt.StrongFocus)
+                max_text_width = self.get_widget_text_width(dropdown, max(len(k) for k in field.map_name_offset.keys()))
                 self.widget_widths[self.widget_index] = max_text_width + self.WIDGET_TEXT_PADDING
                 dropdown.setFixedWidth(self.widget_widths[self.widget_index])
                 self.widgets[self.widget_index] = dropdown
@@ -214,7 +277,24 @@ class CanSender(DashboardItem):
         for index in range(self.widget_index):
             widget = self.widgets[index]
             field = self.fields[index]
-            text = widget.text() if isinstance(widget, QLineEdit) else widget.currentText()
+            if isinstance(field, pf.Bitfield) and field.map_name_offset is not None:
+                m = widget.model()
+                selected = []
+                for i in range(1, m.rowCount()):
+                    if m.item(i).checkState() == Qt.Checked:
+                        selected.append(m.item(i).text())
+
+                text = None
+                if selected:
+                    text = '|'.join(selected) 
+                else:
+                    text = field.default
+            else:
+                text = None
+                if isinstance(widget, QLineEdit):
+                    text = widget.text()  
+                else:
+                    text = widget.currentText()
             try:
                 if isinstance(field, pf.Numeric):
                     text = float(text)
