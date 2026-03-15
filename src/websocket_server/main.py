@@ -1,6 +1,6 @@
 import argparse
 from omnibus import Sender
-from server import app, socketio
+from server import app, socketio, start_relay_sender
 
 def main():
     parser = argparse.ArgumentParser(description="WebSocket server for Omnibus bridge")
@@ -9,6 +9,7 @@ def main():
     args = parser.parse_args()
    
     _ = Sender() #Trigger auto discovery
+    start_relay_sender()
     print(f">>> Starting SocketIO server on {args.host}:{args.port}")
     socketio.run(app, host=args.host, port=args.port)
 

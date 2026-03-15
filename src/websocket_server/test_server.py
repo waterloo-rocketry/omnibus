@@ -1,60 +1,91 @@
-#Tests for the WebSocket server (server.py).
+# Tests for the WebSocket server (server.py).
+# Uses the Flask-SocketIO test client for integration-level tests where possible,
+# falling back to mocks only for edge cases the test client can't simulate.
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 import pytest
+from socketio.packet import Packet as DefaultPacket
 import server
 
-def reset():
+
+@pytest.fixture(autouse=True)
+def clean_state():
+    """Reset global state and drain the relay queue before and after every test."""
     server.state.bridge_sid = None
-
-@pytest.fixture(autouse=True)
-def reset_globals():
-    # Reset globals before and after every test
-    reset()
+    while not server._relay_queue.empty():
+        server._relay_queue.get_nowait()
     yield
-    reset()
+    server.state.bridge_sid = None
+    while not server._relay_queue.empty():
+        server._relay_queue.get_nowait()
+
 
 @pytest.fixture(autouse=True)
-def sync_background_tasks(monkeypatch):
-    monkeypatch.setattr(server.socketio, "start_background_task", lambda f, *a, **kw: f(*a, **kw))
-    monkeypatch.setattr(server.socketio, "sleep", lambda x: None)
+def use_default_packet():
+    """Swap the msgpack serializer for the default JSON packet class.
 
-class TestHandleConnect:
-    # Connect handler must identify bridge via auth role and store its SID
+    The Flask-SocketIO test client constructs raw socketio.packet.Packet
+    objects internally, which are incompatible with the MsgPackPacket
+    class used in production. This fixture swaps the packet class for
+    the duration of each test so the test client works correctly.
+    The serializer choice does not affect handler logic.
+    """
+    original = server.socketio.server.packet_class
+    server.socketio.server.packet_class = DefaultPacket
+    yield
+    server.socketio.server.packet_class = original
+
+
+def make_bridge():
+    """Create and return a test client connected as the bridge."""
+    return server.socketio.test_client(
+        server.app, auth={"role": "bridge"}
+    )
+
+
+def make_client(**kwargs):
+    """Create and return a test client connected as a regular WS client."""
+    return server.socketio.test_client(server.app, **kwargs)
+
+
+class TestConnect:
 
     def test_bridge_connect_stores_sid(self):
-        # bridge SID is stored when auth role is 'bridge'
-        mock_request = Mock()
-        mock_request.sid = "bridge-sid-123"
-
-        with patch("server.request", new=mock_request):
-            server.handle_connect(auth={"role": "bridge"})
-
-        assert server.state.bridge_sid == "bridge-sid-123"
+        bridge = make_bridge()
+        assert bridge.is_connected()
+        assert server.state.bridge_sid is not None
+        bridge.disconnect()
 
     def test_regular_client_does_not_set_bridge_sid(self):
-        # non-bridge client leaves bridge_sid unchanged
-        mock_request = Mock()
-        mock_request.sid = "client-xyz"
-
-        with patch("server.request", new=mock_request):
-            server.handle_connect(auth=None)
-
+        client = make_client()
+        assert client.is_connected()
         assert server.state.bridge_sid is None
+        client.disconnect()
 
     def test_connect_with_wrong_role_does_not_set_bridge_sid(self):
-        # auth with a non-bridge role does not set the bridge SID
-        mock_request = Mock()
-        mock_request.sid = "other-sid"
-
-        with patch("server.request", new=mock_request):
-            server.handle_connect(auth={"role": "client"})
-
+        client = make_client(auth={"role": "client"})
+        assert client.is_connected()
         assert server.state.bridge_sid is None
+        client.disconnect()
 
-    def test_msgpack_exttype_auth_does_not_raise(self):
-        # browser clients using msgpack send auth as ExtType (not dict)
-        # isinstance(auth, dict) guard must stop a crash on .get()
+    def test_second_bridge_is_rejected(self):
+        bridge1 = make_bridge()
+        first_sid = server.state.bridge_sid
+        assert first_sid is not None
+
+        bridge2 = server.socketio.test_client(
+            server.app, auth={"role": "bridge"}
+        )
+        # Second bridge should be rejected (not connected)
+        assert not bridge2.is_connected()
+        assert server.state.bridge_sid == first_sid
+        bridge1.disconnect()
+
+    def test_msgpack_exttype_auth_does_not_crash(self):
+        # Browser clients using msgpack may send auth as ExtType (not dict).
+        # The isinstance(auth, dict) guard must prevent a crash on .get().
+        # The test client can't send a non-dict auth, so we call the handler directly.
+        from unittest.mock import Mock
         mock_request = Mock()
         mock_request.sid = "browser-sid"
 
@@ -62,208 +93,175 @@ class TestHandleConnect:
             pass
 
         with patch("server.request", new=mock_request):
-            server.handle_connect(auth=FakeExtType())  # must not raise
+            server.handle_connect(auth=FakeExtType())
 
         assert server.state.bridge_sid is None
 
-    def test_second_bridge_is_rejected(self):
-        # only one bridge allowed at a time
-        mock_request = Mock()
-        mock_request.sid = "bridge-sid-first"
-        with patch("server.request", new=mock_request):
-            server.handle_connect(auth={"role": "bridge"})
-        assert server.state.bridge_sid == "bridge-sid-first"
 
-        mock_request.sid = "bridge-sid-second"
-        with patch("server.request", new=mock_request):
-            result = server.handle_connect(auth={"role": "bridge"})
-        assert result is False
-        assert server.state.bridge_sid == "bridge-sid-first"
-
-    def test_connect_does_not_raise(self):
-        # handle_connect completes without raising for any auth value
-        mock_request = Mock()
-        mock_request.sid = "new-client"
-
-        with patch("server.request", new=mock_request):
-            server.handle_connect(auth=None)  # must not raise
-
-class TestHandleDisconnect:
-    # Disconnect handler must clear bridge SID when bridge leaves
+class TestDisconnect:
 
     def test_bridge_disconnect_clears_sid(self):
-        # _bridge_sid is cleared when the bridge disconnects
-        server.state.bridge_sid = "bridge-sid-123"
-        mock_request = Mock()
-        mock_request.sid = "bridge-sid-123"
-
-        with patch("server.request", new=mock_request):
-            server.handle_disconnect()
-
+        bridge = make_bridge()
+        assert server.state.bridge_sid is not None
+        bridge.disconnect()
         assert server.state.bridge_sid is None
 
-    def test_regular_client_disconnect_does_not_clear_bridge_sid(self):
-        # _bridge_sid is preserved when a non-bridge client disconnects
-        server.state.bridge_sid = "bridge-sid-123"
-        mock_request = Mock()
-        mock_request.sid = "some-other-client"
+    def test_regular_client_disconnect_preserves_bridge_sid(self):
+        bridge = make_bridge()
+        client = make_client()
+        bridge_sid = server.state.bridge_sid
 
-        with patch("server.request", new=mock_request):
-            server.handle_disconnect()
+        client.disconnect()
+        assert server.state.bridge_sid == bridge_sid
+        bridge.disconnect()
 
-        assert server.state.bridge_sid == "bridge-sid-123"
-
-    def test_disconnect_does_not_raise(self):
-        # handle_disconnect completes without raising
-        mock_request = Mock()
-        mock_request.sid = "leaving-client"
-
-        with patch("server.request", new=mock_request):
-            server.handle_disconnect()  # must not raise
+    def test_disconnect_without_bridge_does_not_raise(self):
+        client = make_client()
+        client.disconnect()  # must not raise
 
 
-class TestHandleChannelMessageFromBridge:
-    # Messages from the bridge must be relayed to only WS clients
+class TestBridgeMessages:
+    # Messages from the bridge must be relayed to WS clients but NOT to ZMQ
 
-    def test_bridge_message_broadcast_with_include_self_false(self):
-        # bridge message is emitted with skip_sid so it doesn't echo back to the bridge
-        server.state.bridge_sid = "bridge-sid"
-        mock_request = Mock()
-        mock_request.sid = "bridge-sid"
+    def test_bridge_message_reaches_other_clients(self):
+        bridge = make_bridge()
+        client = make_client()
+        # clear any connect-time events
+        client.get_received()
 
-        with patch("server.request", new=mock_request), \
-             patch("server.emit") as mock_sio, \
-             patch("server.Sender") as mock_sender_class:
+        bridge.emit("telemetry/altitude", [1234567890.0, {"alt": 1000}])
 
-            server.handle_channel_message("telemetry/altitude", [1234567890.0, {"alt": 1000}])
+        received = client.get_received()
+        assert len(received) == 1
+        assert received[0]["name"] == "telemetry/altitude"
+        assert received[0]["args"] == [[1234567890.0, {"alt": 1000}]]
 
-        mock_sio.assert_called_once_with(
-            "telemetry/altitude", [1234567890.0, {"alt": 1000}], broadcast=True, include_self=False
-        )
+        bridge.disconnect()
+        client.disconnect()
+
+    def test_bridge_does_not_receive_own_message(self):
+        bridge = make_bridge()
+        client = make_client()
+        bridge.get_received()  # clear
+
+        bridge.emit("telemetry/temp", [2.0, {"temp": 25}])
+
+        bridge_events = bridge.get_received()
+        assert len(bridge_events) == 0
+
+        bridge.disconnect()
+        client.disconnect()
 
     def test_bridge_message_not_injected_into_zmq(self):
-        # bridge messages must NOT be re-injected into ZMQ, would cause an infinite loop which very bad
-        server.state.bridge_sid = "bridge-sid"
-        mock_request = Mock()
-        mock_request.sid = "bridge-sid"
+        bridge = make_bridge()
 
-        with patch("server.request", new=mock_request), \
-             patch("server.emit"), \
-             patch("server.Sender") as mock_sender_class:
+        bridge.emit("telemetry", [0.0, {}])
 
-            server.handle_channel_message("telemetry", [0.0, {}])
-
-        mock_instance = mock_sender_class.return_value
-        mock_instance.send_message.assert_not_called()
+        assert server._relay_queue.empty()
+        bridge.disconnect()
 
 
-class TestHandleChannelMessageFromClient:
-    # Messages from WS clients must be broadcast to all and injected into ZMQ
+class TestClientMessages:
+    # Messages from WS clients must be broadcast to all AND enqueued for ZMQ relay
 
-    def test_forwards_message_to_omnibus(self):
-        # WS client message is sent to Omnibus via Sender.send_message
-        mock_request = Mock()
-        mock_request.sid = "client-abc"
+    def test_client_message_queued_for_zmq_relay(self):
+        client = make_client()
 
-        with patch("server.request", new=mock_request), \
-             patch("server.emit"), \
-             patch("server.Sender") as mock_sender_class:
+        client.emit("telemetry/altitude", [1234567890.0, {"alt": 1000}])
 
-            server.handle_channel_message("telemetry/altitude", [1234567890.0, {"alt": 1000}])
-        
-        mock_instance = mock_sender_class.return_value
-        mock_instance.send_message.assert_called_once()
-        sent = mock_instance.send_message.call_args[0][0]
-        assert sent.channel == "telemetry/altitude/WS_ORIGINATED"
-        assert sent.timestamp == 1234567890.0
-        assert sent.payload == {"alt": 1000}
+        assert not server._relay_queue.empty()
+        msg = server._relay_queue.get_nowait()
+        assert msg.channel == "telemetry/altitude/WS_ORIGINATED"
+        assert msg.timestamp == 1234567890.0
+        assert msg.payload == {"alt": 1000}
+        client.disconnect()
 
-    def test_broadcasts_to_all_including_sender(self):
-        # WS client message is broadcast to everyone (no skip_sid)
-        mock_request = Mock()
-        mock_request.sid = "client-abc"
+    def test_client_message_broadcast_to_all(self):
+        bridge = make_bridge()
+        client1 = make_client()
+        client2 = make_client()
+        # clear connect-time events
+        bridge.get_received()
+        client1.get_received()
+        client2.get_received()
 
-        with patch("server.request", new=mock_request), \
-             patch("server.emit") as mock_sio, \
-             patch("server.Sender") as mock_sender_class:
+        client1.emit("sensors/temp", [10.0, 42])
 
-            server.handle_channel_message("sensors/temp", [10.0, 42])
+        # client1 (sender) receives its own message back (broadcast=True, no include_self=False)
+        c1_events = client1.get_received()
+        assert len(c1_events) == 1
+        assert c1_events[0]["name"] == "sensors/temp"
 
-        mock_sio.assert_called_once()
-        args, kwargs = mock_sio.call_args
-        assert args == ("sensors/temp", [10.0, 42])
-        assert "skip_sid" not in kwargs
-        assert kwargs.get("broadcast") == True
+        # client2 also receives it
+        c2_events = client2.get_received()
+        assert len(c2_events) == 1
+        assert c2_events[0]["name"] == "sensors/temp"
 
-    
+        # bridge also receives it
+        bridge_events = bridge.get_received()
+        assert len(bridge_events) == 1
+        assert bridge_events[0]["name"] == "sensors/temp"
 
-    def test_broadcasts_before_zmq_send(self):
-        # SocketIO broadcast must happen before ZMQ send
-        # otherwise the bridge sees the ZMQ copy before it knows to skip it
+        bridge.disconnect()
+        client1.disconnect()
+        client2.disconnect()
+
+    def test_client_message_works_without_bridge(self):
+        assert server.state.bridge_sid is None
+        client = make_client()
+
+        client.emit("telemetry", [1.0, {"v": 42}])
+
+        # message is still broadcast
+        events = client.get_received()
+        assert len(events) == 1
+        assert events[0]["name"] == "telemetry"
+        assert events[0]["args"] == [[1.0, {"v": 42}]]
+
+        # and still queued for ZMQ
+        assert not server._relay_queue.empty()
+        msg = server._relay_queue.get_nowait()
+        assert msg.channel == "telemetry/WS_ORIGINATED"
+        client.disconnect()
+
+    def test_no_zmq_relay_for_malformed_data(self):
+        client = make_client()
+
+        client.emit("ch", [1.0])  # only 1 element
+
+        assert server._relay_queue.empty()
+        client.disconnect()
+
+    def test_no_zmq_relay_for_non_list_data(self):
+        client = make_client()
+
+        client.emit("ch", "not-a-list")
+
+        # broadcast still happens
+        events = client.get_received()
+        assert len(events) == 1
+        assert events[0]["name"] == "ch"
+
+        # but no ZMQ relay
+        assert server._relay_queue.empty()
+        client.disconnect()
+
+    def test_broadcast_happens_before_zmq_enqueue(self):
+        # SocketIO broadcast must happen before the ZMQ relay is enqueued.
+        # This ordering test requires mocks since the test client can't
+        # observe internal call ordering.
+        from unittest.mock import Mock
         mock_request = Mock()
         mock_request.sid = "client-abc"
 
         call_order: list[str] = []
-        mock_sender = Mock()
-        mock_sender.send_message.side_effect = lambda _: call_order.append("zmq")
+        original_put = server._relay_queue.put
 
         with patch("server.request", new=mock_request), \
              patch("server.emit") as mock_emit, \
-             patch("server.Sender") as mock_sender_class:
-            
-            mock_sender_class.return_value.send_message.side_effect = lambda _: call_order.append("zmq")
+             patch.object(server._relay_queue, "put",
+                          side_effect=lambda msg: (call_order.append("zmq_enqueue"), original_put(msg))):
             mock_emit.side_effect = lambda *a, **kw: call_order.append("sio")
             server.handle_channel_message("ch", [1.0, "data"])
 
-        assert call_order == ["sio", "zmq"]
-
-    def test_no_zmq_inject_for_malformed_data(self):
-        # data with fewer than 2 elements does not trigger ZMQ send
-        mock_request = Mock()
-        mock_request.sid = "client-abc"
-
-        with patch("server.request", new=mock_request), \
-             patch("server.emit"), \
-             patch("server.Sender") as mock_sender_class:
-
-            server.handle_channel_message("ch", [1.0])  # only 1 element
-        
-        mock_instance = mock_sender_class.return_value
-        mock_instance.send_message.assert_not_called()
-
-    def test_no_zmq_inject_for_non_list_data(self):
-        # non-list data is broadcast but not injected into ZMQ
-        mock_request = Mock()
-        mock_request.sid = "client-abc"
-
-        with patch("server.request", new=mock_request), \
-             patch("server.emit") as mock_sio, \
-             patch("server.Sender") as mock_sender_class:
-
-            server.handle_channel_message("ch", "not-a-list")
-
-        mock_instance = mock_sender_class.return_value
-        mock_sio.assert_called_once()
-        args, kwargs = mock_sio.call_args
-        assert args == ("ch", "not-a-list")
-        assert kwargs.get("broadcast") == True
-        mock_instance.send_message.assert_not_called()
-
-    def test_ws_client_message_works_without_bridge_connected(self):
-        # when no bridge is connected, WS client messages still work normally
-        assert server.state.bridge_sid is None  # no bridge registered
-        mock_request = Mock()
-        mock_request.sid = "client-abc"
-
-        with patch("server.request", new=mock_request), \
-             patch("server.emit") as mock_sio, \
-             patch("server.Sender") as mock_sender_class:
-
-            server.handle_channel_message("telemetry", [1.0, {"v": 42}])
-        
-        mock_instance = mock_sender_class.return_value
-        mock_sio.assert_called_once()
-        args, kwargs = mock_sio.call_args
-        assert args == ("telemetry", [1.0, {"v": 42}])
-        assert kwargs.get("broadcast") == True
-        mock_instance.send_message.assert_called_once()
+        assert call_order == ["sio", "zmq_enqueue"]

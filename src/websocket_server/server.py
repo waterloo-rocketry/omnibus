@@ -1,3 +1,4 @@
+import queue
 from dataclasses import dataclass
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
@@ -20,6 +21,21 @@ class _State:
     bridge_sid: str | None = None
 
 state = _State()
+
+_relay_queue: queue.Queue[OmnibusMessage] = queue.Queue()
+
+def start_relay_sender():
+    """Start the persistent ZMQ sender background thread.
+
+    Must be called after Omnibus auto-discovery so that the server IP
+    is already cached in OmnibusCommunicator.
+    """
+    def _sender_loop():
+        sender = Sender()
+        while True:
+            msg = _relay_queue.get()
+            sender.send_message(msg)
+    socketio.start_background_task(_sender_loop)
 
 @app.route("/")
 def index():
@@ -49,14 +65,7 @@ def handle_channel_message(event, data):
         emit(event, data, broadcast=True)
         if isinstance(data, list) and len(data) == 2:
             print(f"[WS client] relaying '{event}' to ZMQ")
-            
-            def _relay_task(channel_event, payload0, payload1): # Create a new sender per event, is thread-safe
-                sender = Sender()
-                socketio.sleep(0.05) #Give time for handshake to complete
-                sender.send_message(OmnibusMessage(channel_event, payload0, payload1))
-                socketio.sleep(0.1) #Give time for ZMQ to flush
-
-            socketio.start_background_task(_relay_task, event + WS_ORIGINATED_SUFFIX, data[0], data[1]) # Start a background task to relay the message to ZMQ  must do this way because sender.send() garbage collects the socket immediately before it can send
+            _relay_queue.put(OmnibusMessage(event + WS_ORIGINATED_SUFFIX, data[0], data[1]))
         else:
             app.logger.warning("Dropping malformed WS payload for event '%s': %r", event, data)
 
