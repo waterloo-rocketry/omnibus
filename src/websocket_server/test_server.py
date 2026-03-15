@@ -1,3 +1,4 @@
+# pyright: standard
 # Tests for the WebSocket server (server.py).
 
 import socket
@@ -7,6 +8,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 import socketio
+from socketio.exceptions import ConnectionError, TimeoutError
 
 import server
 from omnibus import Message as OmnibusMessage
@@ -96,7 +98,7 @@ class TestConnect:
             first_sid = server.state.bridge_sid
             assert first_sid is not None
 
-            with pytest.raises(socketio.exceptions.ConnectionError):
+            with pytest.raises(ConnectionError):
                 make_bridge(server_url)
 
             assert server.state.bridge_sid == first_sid
@@ -164,7 +166,7 @@ class TestBridgeMessages:
         bridge = make_bridge(server_url)
         try:
             bridge.emit("telemetry/temp", [0.0, 42])
-            with pytest.raises(socketio.exceptions.TimeoutError):
+            with pytest.raises(TimeoutError):
                 bridge.receive(timeout=0.5)
         finally:
             bridge.disconnect()
