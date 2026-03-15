@@ -21,8 +21,12 @@ def clean_state():
 
 
 @pytest.fixture(autouse=True)
-def use_default_packet():
-    """Swap the msgpack serializer for the default JSON packet class.
+def drain_relay_queue():
+    while not server._relay_queue.empty():
+        server._relay_queue.get_nowait()
+    yield
+    while not server._relay_queue.empty():
+        server._relay_queue.get_nowait()
 
     The Flask-SocketIO test client constructs raw socketio.packet.Packet
     objects internally, which are incompatible with the MsgPackPacket
@@ -129,7 +133,8 @@ class TestBridgeMessages:
         # clear any connect-time events
         client.get_received()
 
-        bridge.emit("telemetry/altitude", [1234567890.0, {"alt": 1000}])
+        with patch("server.request", new=mock_request), \
+             patch("server.emit") as mock_sio:
 
         received = client.get_received()
         assert len(received) == 1
@@ -155,26 +160,32 @@ class TestBridgeMessages:
     def test_bridge_message_not_injected_into_zmq(self):
         bridge = make_bridge()
 
-        bridge.emit("telemetry", [0.0, {}])
+        with patch("server.request", new=mock_request), \
+             patch("server.emit"):
+
+            server.handle_channel_message("telemetry", [0.0, {}])
 
         assert server._relay_queue.empty()
-        bridge.disconnect()
 
 
 class TestClientMessages:
     # Messages from WS clients must be broadcast to all AND enqueued for ZMQ relay
 
-    def test_client_message_queued_for_zmq_relay(self):
-        client = make_client()
+    def test_forwards_message_to_omnibus(self):
+        # WS client message is queued for relay to Omnibus via the sender thread
+        mock_request = Mock()
+        mock_request.sid = "client-abc"
 
-        client.emit("telemetry/altitude", [1234567890.0, {"alt": 1000}])
+        with patch("server.request", new=mock_request), \
+             patch("server.emit"):
 
+            server.handle_channel_message("telemetry/altitude", [1234567890.0, {"alt": 1000}])
+        
         assert not server._relay_queue.empty()
-        msg = server._relay_queue.get_nowait()
-        assert msg.channel == "telemetry/altitude/WS_ORIGINATED"
-        assert msg.timestamp == 1234567890.0
-        assert msg.payload == {"alt": 1000}
-        client.disconnect()
+        sent = server._relay_queue.get_nowait()
+        assert sent.channel == "telemetry/altitude/WS_ORIGINATED"
+        assert sent.timestamp == 1234567890.0
+        assert sent.payload == {"alt": 1000}
 
     def test_client_message_broadcast_to_all(self):
         bridge = make_bridge()
@@ -185,7 +196,8 @@ class TestClientMessages:
         client1.get_received()
         client2.get_received()
 
-        client1.emit("sensors/temp", [10.0, 42])
+        with patch("server.request", new=mock_request), \
+             patch("server.emit") as mock_sio:
 
         # client1 (sender) receives its own message back (broadcast=True, no include_self=False)
         c1_events = client1.get_received()
@@ -202,55 +214,8 @@ class TestClientMessages:
         assert len(bridge_events) == 1
         assert bridge_events[0]["name"] == "sensors/temp"
 
-        bridge.disconnect()
-        client1.disconnect()
-        client2.disconnect()
-
-    def test_client_message_works_without_bridge(self):
-        assert server.state.bridge_sid is None
-        client = make_client()
-
-        client.emit("telemetry", [1.0, {"v": 42}])
-
-        # message is still broadcast
-        events = client.get_received()
-        assert len(events) == 1
-        assert events[0]["name"] == "telemetry"
-        assert events[0]["args"] == [[1.0, {"v": 42}]]
-
-        # and still queued for ZMQ
-        assert not server._relay_queue.empty()
-        msg = server._relay_queue.get_nowait()
-        assert msg.channel == "telemetry/WS_ORIGINATED"
-        client.disconnect()
-
-    def test_no_zmq_relay_for_malformed_data(self):
-        client = make_client()
-
-        client.emit("ch", [1.0])  # only 1 element
-
-        assert server._relay_queue.empty()
-        client.disconnect()
-
-    def test_no_zmq_relay_for_non_list_data(self):
-        client = make_client()
-
-        client.emit("ch", "not-a-list")
-
-        # broadcast still happens
-        events = client.get_received()
-        assert len(events) == 1
-        assert events[0]["name"] == "ch"
-
-        # but no ZMQ relay
-        assert server._relay_queue.empty()
-        client.disconnect()
-
-    def test_broadcast_happens_before_zmq_enqueue(self):
-        # SocketIO broadcast must happen before the ZMQ relay is enqueued.
-        # This ordering test requires mocks since the test client can't
-        # observe internal call ordering.
-        from unittest.mock import Mock
+    def test_broadcasts_before_zmq_enqueue(self):
+        # SocketIO broadcast must happen before the ZMQ relay is enqueued
         mock_request = Mock()
         mock_request.sid = "client-abc"
 
@@ -259,9 +224,56 @@ class TestClientMessages:
 
         with patch("server.request", new=mock_request), \
              patch("server.emit") as mock_emit, \
-             patch.object(server._relay_queue, "put",
-                          side_effect=lambda msg: (call_order.append("zmq_enqueue"), original_put(msg))):
+             patch.object(server._relay_queue, "put", side_effect=lambda msg: (call_order.append("zmq_enqueue"), original_put(msg))):
+            
             mock_emit.side_effect = lambda *a, **kw: call_order.append("sio")
             server.handle_channel_message("ch", [1.0, "data"])
 
         assert call_order == ["sio", "zmq_enqueue"]
+
+    def test_no_zmq_inject_for_malformed_data(self):
+        # data with fewer than 2 elements does not trigger ZMQ send
+        mock_request = Mock()
+        mock_request.sid = "client-abc"
+
+        with patch("server.request", new=mock_request), \
+             patch("server.emit"):
+
+            server.handle_channel_message("ch", [1.0])  # only 1 element
+        
+        assert server._relay_queue.empty()
+
+    def test_no_zmq_inject_for_non_list_data(self):
+        # non-list data is broadcast but not injected into ZMQ
+        mock_request = Mock()
+        mock_request.sid = "client-abc"
+
+        with patch("server.request", new=mock_request), \
+             patch("server.emit") as mock_sio:
+
+            server.handle_channel_message("ch", "not-a-list")
+
+        mock_sio.assert_called_once()
+        args, kwargs = mock_sio.call_args
+        assert args == ("ch", "not-a-list")
+        assert kwargs.get("broadcast") == True
+        assert server._relay_queue.empty()
+
+    def test_ws_client_message_works_without_bridge_connected(self):
+        # when no bridge is connected, WS client messages still work normally
+        assert server.state.bridge_sid is None  # no bridge registered
+        mock_request = Mock()
+        mock_request.sid = "client-abc"
+
+        with patch("server.request", new=mock_request), \
+             patch("server.emit") as mock_sio:
+
+            server.handle_channel_message("telemetry", [1.0, {"v": 42}])
+        
+        mock_sio.assert_called_once()
+        args, kwargs = mock_sio.call_args
+        assert args == ("telemetry", [1.0, {"v": 42}])
+        assert kwargs.get("broadcast") == True
+        assert not server._relay_queue.empty()
+        sent = server._relay_queue.get_nowait()
+        assert sent.channel == "telemetry/WS_ORIGINATED"
