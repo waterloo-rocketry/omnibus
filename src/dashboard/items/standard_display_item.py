@@ -185,6 +185,8 @@ class StandardDisplayItem(DashboardItem):
 
     def on_data_update(self, stream, payload):
         time, point = payload
+        if not isinstance(point, (int, float)):
+            return
         point += self.offset
 
         
