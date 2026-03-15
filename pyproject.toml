@@ -40,7 +40,7 @@ dependencies = [
     "msgpack-types>=0.5.0",
     "pyzmq>=27.1.0",
     "gitpython >= 3.1.0",
-    "parsley>=2025.4"
+    "parsley>=2026.2"
 ]
 
 [dependency-groups]
@@ -54,7 +54,7 @@ dev = [
 omnibus-server = "omnibus.server:server"
 
 [tool.uv.sources]
-parsley = { git = "https://github.com/waterloo-rocketry/parsley.git" }
+parsley = { git = "https://github.com/waterloo-rocketry/parsley.git", tag = "2026.2" }
 
 [tool.uv.workspace]
 members = [
