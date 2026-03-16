@@ -44,83 +44,45 @@ sys.modules["omnibus"] = fake_omnibus
 
 import main
 
-# Basic test class
-class TestLabJackMock(unittest.TestCase):
+class TestLabJackReadData(unittest.TestCase):
     def setUp(self):
-        """Create mocks and reset global state before each test."""
-        # Patch the ljm module inside main so that no actual device calls are made.
         self.mock_ljm = MagicMock()
         main.ljm = self.mock_ljm
 
-        # Prevent the real sender from trying to send anything over the network.
         self.mock_sender = MagicMock()
         main.sender = self.mock_sender
 
-        # Make sure the global stream_info is in a known clean state for callback tests.
-        main.stream_info = main.StreamInfo()
+        main.calibration.Sensor.parse = MagicMock(return_value={'foo': [9, 8, 7]})
+        main.time.time_ns = MagicMock(return_value=1_000_000_000)
+        main.time.time = MagicMock(return_value=1.0)
 
-    def test_basic_stream_start(self):
-        """Starting the stream should make the expected LJM calls."""
-        # Arrange: configure the mock behaviors that main.main() relies on.
-        self.mock_ljm.openS.return_value = 5
-        self.mock_ljm.getHandleInfo.return_value = (1, 2, 3, 0, 0, 0)
-        self.mock_ljm.eStreamStart.return_value = 42
+    def test_read_data_processes_interleaved_sensor_values(self):
+        self.mock_ljm.eStreamRead.side_effect = [
+            ([1, 2, 3, 4, 5, 6], 0, 0),
+            KeyboardInterrupt(),
+        ]
 
-        # Force the callback registration to raise KeyboardInterrupt so main() exits
-        # quickly and the test doesn't hang.
-        def raise_keyboard_interrupt(handle, callback):
-            raise KeyboardInterrupt()
+        with self.assertRaises(KeyboardInterrupt):
+            main.read_data(
+                handle=1,
+                num_addresses=2,
+                scans_per_read=3,
+                scan_rate=1000,
+                quiet=True,
+                no_built_in_log=True,
+            )
 
-        self.mock_ljm.setStreamCallback.side_effect = raise_keyboard_interrupt
+        expected = [[1, 3, 5], [2, 4, 6]]
+        main.calibration.Sensor.parse.assert_called_once_with(expected)
 
-        # Patch file writes so we don't create actual log files.
-        with patch("builtins.open", mock_open()):
-            main.main()
-
-        self.mock_ljm.openS.assert_called_once_with("T7", "ANY", "ANY")
-        self.mock_ljm.eWriteName.assert_any_call(5, "STREAM_TRIGGER_INDEX", 0)
-        self.mock_ljm.eWriteName.assert_any_call(5, "STREAM_CLOCK_SOURCE", 0)
-        self.mock_ljm.eStreamStart.assert_called_once()
-        self.mock_ljm.setStreamCallback.assert_called_once()
-
-    def test_callback_processes_and_sends_data(self):
-        """Callback should convert raw `aData` and send a properly formed message."""
-        # Prepare stream_info so the callback has everything it expects.
-        si = main.stream_info
-        si.handle = 1
-        si.numAddresses = 2
-        si.scansPerRead = 3
-        si.relative_last_read_time = 100
-
-        # Provide a predictable calibration result.
-        main.calibration.Sensor.parse = MagicMock(return_value={"foo": [9, 8, 7]})
-
-        # Mock the raw stream read.  The interleaved sequence below represents
-        # two channels and three scans.
-        self.mock_ljm.eStreamRead.return_value = ([1, 2, 3, 4, 5, 6], 0, 0)
-
-        with patch("builtins.open", mock_open()) as fake_open:
-            # Act: invoke the callback as LJM would.
-            main.ljm_stream_read_callback(si.handle)
-
-        # The nested list conversion should have been performed correctly.
-        expected_nested = [[1, 3, 5], [2, 4, 6]]
-        main.calibration.Sensor.parse.assert_called_once_with(expected_nested)
-
-        # Sender should have been called once with channel and message dict.
         self.mock_sender.send.assert_called_once()
-        sent_channel, msg = self.mock_sender.send.call_args[0]
-        self.assertEqual(sent_channel, main.CHANNEL)
-
-        # Basic structural assertions on the message.
-        self.assertEqual(msg["data"], {"foo": [9, 8, 7]})
-        self.assertEqual(msg["message_format_version"], main.MESSAGE_FORMAT_VERSION)
-        self.assertEqual(msg["sample_rate"], int(main.config.RATE))
-        self.assertEqual(len(msg["relative_timestamps_nanoseconds"]), 3)
-
-        # The log file should have been opened for append and written to once.
-        fake_open.assert_called()
+        channel, payload = self.mock_sender.send.call_args[0]
+        self.assertEqual(channel, main.CHANNEL)
+        self.assertEqual(payload['data'], {'foo': [9, 8, 7]})
+        self.assertEqual(payload['message_format_version'], main.MESSAGE_FORMAT_VERSION)
+        self.assertEqual(payload['sample_rate'], 1000)
+        self.assertEqual(payload['relative_timestamps_nanoseconds'], [1_000_000_000, 1_001_000_000, 1_002_000_000])
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
