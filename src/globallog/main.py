@@ -1,15 +1,10 @@
 # Global logger - Saves messages passed through bus to asc-time.log
-<<<<<<< j84brown/add-client-timestamp
 import argparse
 import signal
 import sys
 import time
-=======
-
-import argparse
 import os
-import signal
->>>>>>> main
+
 from datetime import datetime
 
 import msgpack
