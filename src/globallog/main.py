@@ -93,7 +93,6 @@ with open(fname, "wb") as f:
             # Try receiving message with timeout (if possible) to avoid blocking
             msg = receiver.recv_message(timeout=10)  # 10 ms timeout
             if msg:
-<<<<<<< j84brown/add-client-timestamp
                 timestamp = (
                     time.time() 
                     if USE_LOCAL_TIMESTAMPS
@@ -102,9 +101,6 @@ with open(fname, "wb") as f:
                 
                 f.write(msgpack.packb([msg.channel, timestamp, msg.payload]))
 
-=======
-                f.write(msgpack.packb([msg.channel, msg.timestamp, msg.payload]))
->>>>>>> main
     finally:
         if not args.quiet:
             # Shows cursor
