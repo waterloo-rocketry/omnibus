@@ -21,7 +21,6 @@ from .dashboard_item import DashboardItem
 from utils import EventTracker
 from publisher import publisher
 
-
 class CheckableComboBox(QComboBox):
     """QComboBox that stays open when checkable items are clicked."""
     def __init__(self, parent=None):
@@ -36,11 +35,12 @@ class CheckableComboBox(QComboBox):
             item.setCheckState(Qt.Unchecked if item.checkState() == Qt.Checked else Qt.Checked)
 
     def hidePopup(self):
+        # always reset display to header row (item 0) before hiding or staying open
+        self.setCurrentIndex(0)
         if self._skip_hide:
             self._skip_hide = False
-        else:
-            super().hidePopup()
-
+            return
+        super().hidePopup()
 
 @Register
 class CanSender(DashboardItem):
@@ -161,15 +161,10 @@ class CanSender(DashboardItem):
                     model.appendRow(item)
 
                 def make_updater(m, h, f):
-                    def update(_):
-                        selected = []
-                        for i in range(1, m.rowCount()):
-                            if m.item(i).checkState() == Qt.Checked:
-                                selected.append(m.item(i).text())
-                        if selected:
-                            h.setText('|'.join(selected))
-                        else:
-                            h.setText(f.default)
+                    def update(changed_item):
+                        if changed_item is h:
+                            return
+                        h.setText(self.get_selected_bitfield(m, f.default))
                     return update
                 model.itemChanged.connect(make_updater(model, header, field))
 
@@ -285,15 +280,7 @@ class CanSender(DashboardItem):
             widget = self.widgets[index]
             field = self.fields[index]
             if isinstance(field, pf.Bitfield) and field.map_name_offset is not None:
-                m = widget.model()
-                selected = []
-                for i in range(1, m.rowCount()):
-                    if m.item(i).checkState() == Qt.Checked:
-                        selected.append(m.item(i).text())
-                if selected:
-                    text = '|'.join(selected)
-                else:
-                    text = field.default
+                text = self.get_selected_bitfield(widget.model(), field.default)
             else:
                 if isinstance(widget, QLineEdit):
                     text = widget.text()
@@ -434,6 +421,13 @@ class CanSender(DashboardItem):
             elif isinstance(widget, QComboBox):
                 widget.setCurrentText(value)
 
+    def get_selected_bitfield(self, model, default):
+        selected = []
+        for j in range(1, model.rowCount()):
+            if model.item(j).checkState() == Qt.Checked:
+                selected.append(model.item(j).text())
+        return '|'.join(selected) or default
+
     def get_serialized_parameters(self):
         params = self.parameters.saveState(filter='user')
         values = []
@@ -443,12 +437,7 @@ class CanSender(DashboardItem):
             if isinstance(widget, QLineEdit):
                 values.append(widget.text())
             elif isinstance(field, pf.Bitfield) and field.map_name_offset is not None:
-                m = widget.model()
-                selected = []
-                for j in range(1, m.rowCount()):
-                    if m.item(j).checkState() == Qt.Checked:
-                        selected.append(m.item(j).text())
-                values.append('|'.join(selected))
+                values.append(self.get_selected_bitfield(widget.model(), field.default))
             else:
                 values.append(widget.currentText())
         params['can_fields'] = values
