@@ -35,7 +35,6 @@ class CheckableComboBox(QComboBox):
             item.setCheckState(Qt.Unchecked if item.checkState() == Qt.Checked else Qt.Checked)
 
     def hidePopup(self):
-        # always reset display to header row (item 0) before hiding or staying open
         self.setCurrentIndex(0)
         if self._skip_hide:
             self._skip_hide = False
