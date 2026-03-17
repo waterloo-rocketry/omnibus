@@ -69,7 +69,7 @@ class FakeSerialCommunicator:
                 "board_inst_id": "ROCKET",
                 "msg_prio": "HIGH",
                 "msg_type": "SENSOR_ANALOG16",
-                "msg_metadata": 0x0B,  # SENSOR_PT_CHANNEL_1
+                "msg_metadata": "SENSOR_PT_CHANNEL_1",
                 "time": 1234,
                 "value": 800,
             },
