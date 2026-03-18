@@ -150,6 +150,9 @@ class Sensor:
         )
         self.connection = connection  # Single or Differential
         self.calibration = calibration
+        
+        if (not self.input_range in [10, 1, 0.1, 0.01]):
+            raise ValueError(f"Invalid input range {self.input_range} for sensor {self.name}. Must be 10, 1, 0.1, or 0.01.")
 
         for sensor in Sensor.sensors:
             if sensor.name == self.name:
