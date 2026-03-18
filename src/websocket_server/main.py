@@ -1,6 +1,6 @@
 import argparse
 from omnibus import Sender
-from server import app, socketio, start_relay_sender
+from websocket_server.server import app, socketio, start_relay_sender
 
 def main():
     parser = argparse.ArgumentParser(description="WebSocket server for Omnibus bridge")

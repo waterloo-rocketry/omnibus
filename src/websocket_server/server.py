@@ -46,8 +46,7 @@ def handle_connect(auth):
     # handles client connection including bridge
     if isinstance(auth, dict) and auth.get("role") == "bridge":
         if state.bridge_sid is not None:
-            print(f">>> Rejected second bridge: {request.sid}")
-            return False
+            raise ConnectionRefusedError("Only one bridge connection allowed")
         state.bridge_sid = request.sid
         print(f">>> Bridge connected: {request.sid}")
     else:
