@@ -706,7 +706,7 @@ requires-dist = [
     { name = "gitpython", specifier = ">=3.1.0" },
     { name = "msgpack", specifier = ">=1.1.0" },
     { name = "msgpack-types", specifier = ">=0.5.0" },
-    { name = "parsley", git = "https://github.com/waterloo-rocketry/parsley.git?tag=2026.3" },
+    { name = "parsley", git = "https://github.com/waterloo-rocketry/parsley.git" },
     { name = "pyzmq", specifier = ">=27.1.0" },
 ]
 
@@ -761,7 +761,7 @@ wheels = [
 [[package]]
 name = "parsley"
 version = "2026.3"
-source = { git = "https://github.com/waterloo-rocketry/parsley.git?tag=2026.3#97daccd76f79005a0c40c82d38f217e8e255baf2" }
+source = { git = "https://github.com/waterloo-rocketry/parsley.git#97daccd76f79005a0c40c82d38f217e8e255baf2" }
 dependencies = [
     { name = "crc8" },
     { name = "deprecated" },

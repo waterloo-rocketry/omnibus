@@ -54,7 +54,7 @@ dev = [
 omnibus-server = "omnibus.server:server"
 
 [tool.uv.sources]
-parsley = { git = "https://github.com/waterloo-rocketry/parsley.git", tag = "2026.3" }
+parsley = { git = "https://github.com/waterloo-rocketry/parsley.git"}
 
 [tool.uv.workspace]
 members = [
