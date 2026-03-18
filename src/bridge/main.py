@@ -1,5 +1,5 @@
 import argparse
-from relay import main
+from bridge.relay import main
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Omnibus bridge relay")

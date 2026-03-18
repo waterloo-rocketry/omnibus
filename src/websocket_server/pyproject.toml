@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-omnibus-ws-server = "main:main"
+omnibus-ws-server = "websocket_server.main:main"
 
 [tool.uv.sources]
 omnibus = { workspace = true }

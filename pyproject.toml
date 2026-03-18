@@ -41,10 +41,6 @@ dependencies = [
     "pyzmq>=27.1.0",
     "gitpython >= 3.1.0",
     "parsley>=2025.4",
-    "python-socketio[client]>=5.11",
-    "python-engineio>=4.8",
-    "flask-socketio>=5.3",
-    "flask>=3.0",
 ]
 
 [dependency-groups]
@@ -58,7 +54,7 @@ dev = [
 [project.scripts]
 omnibus-server = "omnibus.server:server"
 omnibus-ws-server = "main:main"
-omnibus-ws-bridge = "relay:main"
+omnibus-ws-bridge = "bridge.relay:main"
 
 [tool.uv.sources]
 parsley = { git = "https://github.com/waterloo-rocketry/parsley.git" }

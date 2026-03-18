@@ -765,14 +765,10 @@ name = "omnibus"
 version = "1.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "flask" },
-    { name = "flask-socketio" },
     { name = "gitpython" },
     { name = "msgpack" },
     { name = "msgpack-types" },
     { name = "parsley" },
-    { name = "python-engineio" },
-    { name = "python-socketio", extra = ["client"] },
     { name = "pyzmq" },
 ]
 
@@ -786,14 +782,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "flask", specifier = ">=3.0" },
-    { name = "flask-socketio", specifier = ">=5.3" },
     { name = "gitpython", specifier = ">=3.1.0" },
     { name = "msgpack", specifier = ">=1.1.0" },
     { name = "msgpack-types", specifier = ">=0.5.0" },
     { name = "parsley", git = "https://github.com/waterloo-rocketry/parsley.git" },
-    { name = "python-engineio", specifier = ">=4.8" },
-    { name = "python-socketio", extras = ["client"], specifier = ">=5.11" },
     { name = "pyzmq", specifier = ">=27.1.0" },
 ]
 
