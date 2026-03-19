@@ -65,12 +65,12 @@ class FakeSerialCommunicator:
         # Fake messages to cycle through
         self.fake_msgs = [
             {
-                "board_type_id": "INJ_SENSOR",
+                "board_type_id": "INJECTOR",
                 "board_inst_id": "ROCKET",
                 "msg_prio": "HIGH",
-                "msg_type": "SENSOR_ANALOG",
+                "msg_type": "SENSOR_ANALOG16",
+                "msg_metadata": "SENSOR_PT_CHANNEL_1",
                 "time": 1234,
-                "sensor_id": "SENSOR_PT_CHANNEL_1",
                 "value": 800,
             },
         ]
@@ -199,12 +199,9 @@ def main():
             exit(1)
         communicator = SerialCommunicator(args.port_or_file, args.baud, 0)
 
-    if args.format == "telemetry":
-        parser = parsley.parse_live_telemetry
-    elif args.format == "logger":
-        parser = parsley.parse_logger
-    else:
-        parser = parsley.parse_usb_debug
+    usb_parser = parsley.USBDebugParser()
+    telemetry_parser = parsley.LiveTelemetryParser()
+    logger_parser = parsley.LoggerParser()
 
     sender_id = f"{gethostname()}/{args.format}/{args.port_or_file}"
 
@@ -259,10 +256,11 @@ def main():
                     initial_page_number = int(buffer[3])
                 else:
                     raise ValueError("Initial page number not found in buffer")
-            logger_generator = parser(buffer, initial_page_number + communicator.page_number - 1) # Magic number 1 used to check the page number
+            logger_generator = logger_parser.parse(buffer, initial_page_number + communicator.page_number - 1) # Magic number 1 used to check the page number
 
         while True:
             try:
+                msg = None
                 if args.format == "telemetry":
                     i = next((i for i, b in enumerate(buffer) if b == 0x02), -1)
                     if i < 0 or i + 1 >= len(buffer):
@@ -272,14 +270,14 @@ def main():
                         break
                     msg = buffer[i : i + msg_len]
                     try:
-                        msg_sid, msg_data = parser(msg)
+                        parsed_object = telemetry_parser.parse(msg)
                         buffer = buffer[i + msg_len :]
                     except ValueError as e:
                         buffer = buffer[i + 1 :]
                         raise e
                 elif args.format == "logger":
-                    msg_sid, msg_data = next(logger_generator, (None, None))
-                    if msg_sid is None or msg_data is None:
+                    parsed_object = next(logger_generator, None)
+                    if parsed_object is None:
                         buffer = b"" # Clear the buffer if no more messages
                         break
                 else:
@@ -289,12 +287,16 @@ def main():
                         break
                     msg = text_buff[:i]
                     buffer = buffer[i + 1 :]
-                    msg_sid, msg_data = parser(msg)
+                    parsed_object = usb_parser.parse(msg)
 
-                parsed_data = parsley.parse(msg_sid, msg_data)
+                if isinstance(parsed_object, parsley.ParsleyError):
+                    print(f"Parse error: {parsed_object.error}")
+                    continue
+
+                parsed_data = parsed_object.model_dump(mode='json')
                 last_valid_message_time = time.time()
                 print(parsley.format_line(parsed_data))
-                
+
                 # Send the CAN message over the channel
                 if sender:
                     message_with_id = dict(parsed_data)
@@ -305,7 +307,8 @@ def main():
 
             except ValueError as e:
                 print(e)
-                print(msg.hex() if args.format == "telemetry" else msg)
+                if msg is not None:
+                    print(msg.hex() if args.format == "telemetry" else msg)
             except Exception:
                 print(traceback.format_exc())
 
