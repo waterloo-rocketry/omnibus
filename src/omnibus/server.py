@@ -1,10 +1,12 @@
 import socket
 import threading
 import time
+import logging
 from typing import NoReturn
 import argparse
 
 import zmq
+logger = logging.getLogger(__name__)
 from zmq.devices import ThreadProxy
 
 try:
@@ -28,7 +30,7 @@ def get_ip():
         s.connect(("255.255.255.255", 1))
         return s.getsockname()[0]
     except Exception as e:
-        print(f"Could not get local IP address, defaulting to localhost: {e}")
+        logger.warning(f"Could not get local IP address, defaulting to localhost: {e}")
         return "127.0.0.1"
     finally:
         s.close()
@@ -89,7 +91,7 @@ def server() -> NoReturn:
     threading.Thread(target=ip_broadcast, daemon=True).start()
 
     local_ip = get_ip()
-    print(f"Serving {local_ip}:{SOURCE_PORT} -> {local_ip}:{SINK_PORT}")
+    logger.info(f"Serving {local_ip}:{SOURCE_PORT} -> {local_ip}:{SINK_PORT}")
 
     # The monitor receives all proxied messages. With normal proxies this means
     # messages going in both directions, but since this is a pub/sub proxy it
@@ -106,7 +108,7 @@ def server() -> NoReturn:
             count += 1
         if time.time() - t > 0.2:
             if not quiet:
-                print(f"\r{count * 5: <5} msgs/sec", end="")
+                logger.info(f"{count * 5: <5} msgs/sec")
             t = time.time()
             count = 0
 

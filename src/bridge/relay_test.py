@@ -291,7 +291,6 @@ class TestConnectionRetry:
         )
 
 # Mid-run reconnection
-
 class TestMidRunReconnection:
     #Bridge must recover if server2 goes down
 

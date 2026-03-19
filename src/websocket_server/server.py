@@ -6,7 +6,6 @@ from omnibus import Message as OmnibusMessage
 from omnibus import Sender
 from omnibus import WS_ORIGINATED_SUFFIX
 
-
 app = Flask(__name__)
 socketio = SocketIO(
     app,
@@ -48,9 +47,9 @@ def handle_connect(auth):
         if state.bridge_sid is not None:
             raise ConnectionRefusedError("Only one bridge connection allowed")
         state.bridge_sid = request.sid
-        print(f">>> Bridge connected: {request.sid}")
+        app.logger.info(f">>> Bridge connected: {request.sid}")
     else:
-        print(f">>> Client connected: {request.sid}")
+        app.logger.info(f">>> Client connected: {request.sid}")
 
 @socketio.on("*")
 def handle_channel_message(event, data):
@@ -63,7 +62,7 @@ def handle_channel_message(event, data):
     else: # WS-client-originated: emit to all and tell bridge to ignore it
         emit(event, data, broadcast=True)
         if isinstance(data, list) and len(data) == 2:
-            print(f"[WS client] relaying '{event}' to ZMQ")
+            app.logger.debug(f"[WS client] relaying '{event}' to ZMQ")
             _relay_queue.put(OmnibusMessage(event + WS_ORIGINATED_SUFFIX, data[0], data[1]))
         else:
             app.logger.warning("Dropping malformed WS payload for event '%s': %r", event, data)
@@ -73,6 +72,6 @@ def handle_disconnect():
     # Handles client disconnection including bridge
     if request.sid == state.bridge_sid:
         state.bridge_sid = None
-        print(f">>> Bridge disconnected: {request.sid}")
+        app.logger.info(f">>> Bridge disconnected: {request.sid}")
     else:
-        print(f">>> Client disconnected: {request.sid}")
+        app.logger.info(f">>> Client disconnected: {request.sid}")

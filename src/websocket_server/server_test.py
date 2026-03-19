@@ -13,7 +13,6 @@ from socketio.exceptions import ConnectionError, TimeoutError
 import server
 from omnibus import Message as OmnibusMessage
 
-
 @pytest.fixture(scope="session")
 def server_url():
     """Start the SocketIO server on a free port in a daemon thread."""
@@ -44,7 +43,6 @@ def server_url():
 
     yield url
 
-
 @pytest.fixture(autouse=True)
 def clean_state():
     server.state.bridge_sid = None
@@ -55,21 +53,17 @@ def clean_state():
     while not server._relay_queue.empty():
         server._relay_queue.get_nowait()
 
-
 def make_bridge(url):
     c = socketio.SimpleClient(serializer="msgpack")
     c.connect(url, auth={"role": "bridge"})
     return c
-
 
 def make_client(url):
     c = socketio.SimpleClient(serializer="msgpack")
     c.connect(url)
     return c
 
-
 class TestConnect:
-
     def test_bridge_connect_stores_sid(self, server_url):
         bridge = make_bridge(server_url)
         try:
@@ -119,9 +113,7 @@ class TestConnect:
 
         assert server.state.bridge_sid is None
 
-
 class TestDisconnect:
-
     def test_bridge_disconnect_clears_sid(self, server_url):
         bridge = make_bridge(server_url)
         assert server.state.bridge_sid is not None
@@ -147,9 +139,7 @@ class TestDisconnect:
         client = make_client(server_url)
         client.disconnect()
 
-
 class TestBridgeMessages:
-
     def test_bridge_message_reaches_other_clients(self, server_url):
         bridge = make_bridge(server_url)
         client = make_client(server_url)
@@ -183,9 +173,7 @@ class TestBridgeMessages:
             client.disconnect()
             bridge.disconnect()
 
-
 class TestClientMessages:
-
     def test_client_message_queued_for_zmq_relay(self, server_url):
         client = make_client(server_url)
         try:
@@ -281,12 +269,10 @@ class TestClientMessages:
 
         assert call_order == ["sio", "zmq_enqueue"]
 
-
 class _StopLoop(Exception):
     pass
 
 class TestRelaySender:
-
     def test_relay_sender_thread_forwards_to_zmq(self):
         # Capture _sender_loop instead of spawning a real thread to avoid
         # a persistent consumer racing with other tests for _relay_queue.
