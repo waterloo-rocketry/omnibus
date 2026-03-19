@@ -1,4 +1,3 @@
-import logging
 import time
 import socketio
 from omnibus import Receiver
@@ -7,31 +6,29 @@ from omnibus import WS_ORIGINATED_SUFFIX
 
 BRIDGE_AUTH = {"role": "bridge"}
 
-logger = logging.getLogger(__name__)
-
 def connect_with_retry(sio: socketio.Client, ws_url: str) -> None:
     # Attempts to reconnect to the WS server if it disconnects
     while True:
         try:
             sio.connect(ws_url, auth=BRIDGE_AUTH)
-            logger.info(f">>> Connected to WebSocket server at {ws_url}")
+            print(f">>> Connected to WebSocket server at {ws_url}")
             return
         except exceptions.ConnectionError:
-            logger.info(f">>> Waiting for WebSocket server at {ws_url}...")
+            print(f">>> Waiting for WebSocket server at {ws_url}...")
             time.sleep(1)
 
 def reconnect(sio: socketio.Client, ws_url: str) -> None:
     # Clean up broken connection and attempt to reconnect
-    logger.info(">>> WebSocket server connection lost, reconnecting...")
+    print(">>> WebSocket server connection lost, reconnecting...")
     try:
         sio.disconnect()
     except Exception as e:
-        logger.warning(f"Error disconnecting from WS server: {e}")
+        print(f"Error disconnecting from WS server: {e}")
     connect_with_retry(sio, ws_url)
 
 def main(ws_url: str = "http://127.0.0.1:6767") -> None:
 
-    logger.info("Starting bridge relay loop...")
+    print("Starting bridge relay loop...")
 
     sio = socketio.Client(
         logger=False,
@@ -58,22 +55,22 @@ def main(ws_url: str = "http://127.0.0.1:6767") -> None:
         # They already went into ZMQ with suffix appended, we don't re-broadcast.
         
         if msg.channel.endswith(WS_ORIGINATED_SUFFIX):
-            logger.debug(f"[bridge] skipping message on '{msg.channel}' (originated from WS client)")
+            print(f"[bridge] skipping message on '{msg.channel}' (originated from WS client)")
             continue
 
         payload = [msg.timestamp, msg.payload]
         try:
             sio.emit(msg.channel, payload) 
-            logger.debug(f"[bridge] relayed '{msg.channel}'")
+            print(f"[bridge] relayed '{msg.channel}'")
         except (exceptions.ConnectionError, exceptions.BadNamespaceError) as e:
-            logger.warning(f">>> Error sending message to WS server: {e}")
+            print(f">>> Error sending message to WS server: {e}")
             reconnect(sio, ws_url)
             try:
                 sio.emit(msg.channel, payload) 
-                logger.debug(f"[bridge] relayed '{msg.channel}' after reconnecting")
+                print(f"[bridge] relayed '{msg.channel}' after reconnecting")
             except (exceptions.ConnectionError, exceptions.BadNamespaceError) as retry_error:
-                logger.error("Failed to relay %s after reconnect, dropping frame: %s", msg.channel, retry_error)
+                print(f"Failed to relay {msg.channel} after reconnect, dropping frame: {retry_error}")
                 continue
         except Exception as e: 
-            logger.exception(f">>> Unexpected error: {e}")
+            print(f">>> Unexpected error: {e}")
             raise
