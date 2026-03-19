@@ -16,6 +16,8 @@ dependencies = [
     "flask-socketio>=5.3",
     "flask>=3.0",
     "omnibus",
+    "gunicorn>=20.1.0",
+    "simple-websocket>=1.0.0",
 ]
 
 [project.scripts]

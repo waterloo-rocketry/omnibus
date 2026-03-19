@@ -45,6 +45,8 @@ dependencies = [
     "python-socketio[client]>=5.11",
     "python-engineio>=4.8",
     "flask>=3.0",
+    "gunicorn>=20.1.0",
+    "simple-websocket>=1.0.0",
 ]
 
 [dependency-groups]
@@ -57,7 +59,7 @@ dev = [
 
 [project.scripts]
 omnibus-server = "omnibus.server:server"
-omnibus-ws-server = "main:main"
+omnibus-ws-server = "websocket_server.main:main"
 omnibus-ws-bridge = "bridge.relay:main"
 
 [tool.uv.sources]
