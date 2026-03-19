@@ -106,7 +106,7 @@ def server() -> NoReturn:
             count += 1
         if time.time() - t > 0.2:
             if not quiet:
-                print(f"{count * 5: <5} msgs/sec")
+                print(f"\r{count * 5: <5} msgs/sec", end="")
             t = time.time()
             count = 0
 
