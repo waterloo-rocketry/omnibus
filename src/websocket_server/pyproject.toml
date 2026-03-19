@@ -1,0 +1,25 @@
+[project]
+name = "omnibus-ws-server"
+version = "0.1.0"
+description = "WebSocket server for Omnibus messaging system"
+readme = "README.md"
+license = "MIT"
+requires-python = "~=3.11.0"
+
+authors = [
+    {name = "Waterloo Rocketry", email = "contact@waterloorocketry.com"}
+]
+
+dependencies = [
+    "msgpack>=1.1.0",
+    "pyzmq>=27.1.0",
+    "flask-socketio>=5.3",
+    "flask>=3.0",
+    "omnibus",
+]
+
+[project.scripts]
+omnibus-ws-server = "websocket_server.main:main"
+
+[tool.uv.sources]
+omnibus = { workspace = true }
