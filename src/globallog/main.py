@@ -108,3 +108,4 @@ with open(fname, "wb") as f:
 
 print("Program has exited gracefully.")
 print(f"Data has been logged to {fname}")
+

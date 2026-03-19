@@ -34,6 +34,9 @@ class Message:
     timestamp: float
     payload: Any
 
+# Suffix appended to channel names for messages originating from WebSocket clients,
+# used by the bridge relay to avoid re-broadcasting them back to WS clients.
+WS_ORIGINATED_SUFFIX = "/WS_ORIGINATED"
 
 class OmnibusCommunicator:
     """
