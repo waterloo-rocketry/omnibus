@@ -47,3 +47,17 @@ class TestSensorParser:
         parsed = Sensor.parse([[1, 2, 3, 4, 5]])
         assert "Test (units)" in parsed
         assert parsed["Test (units)"] == [5, 10, 15, 20, 25]
+        
+
+class TestSensorParserInvalidInputRange:
+    def test_invalid_input_range_int(self):
+        with pytest.raises(ValueError):
+            _ = Sensor(
+                "InvalidSensor", "TEST", 3, Connection.SINGLE, LinearCalibration(5, 0, "units")
+            )
+    
+    def test_invalid_input_range_float(self):
+        with pytest.raises(ValueError):
+            _ = Sensor(
+                "InvalidSensor", "TEST", 0.2, Connection.SINGLE, LinearCalibration(5, 0, "units")
+            )

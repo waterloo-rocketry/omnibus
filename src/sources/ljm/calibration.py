@@ -1,6 +1,6 @@
 import math
 from enum import Enum
-from typing import ClassVar, Self
+from typing import ClassVar, Literal, Self
 
 # Import the LabJack package
 from labjack import ljm
@@ -124,7 +124,7 @@ class Sensor:
 
     name: str
     channel: str
-    input_range: float | int
+    input_range: Literal[10, 1, 0.1, 0.01]
     connection: Connection
     calibration: Calibration
 
@@ -137,7 +137,7 @@ class Sensor:
         self,
         name: str,
         channel: str,
-        input_range: float | int,
+        input_range: Literal[10, 1, 0.1, 0.01],
         connection: Connection,
         calibration: Calibration,
     ) -> None:
@@ -150,6 +150,9 @@ class Sensor:
         )
         self.connection = connection  # Single or Differential
         self.calibration = calibration
+        
+        if self.input_range not in [10, 1, 0.1, 0.01]:
+            raise ValueError(f"Invalid input range {self.input_range} for sensor {self.name}. Must be 10, 1, 0.1, or 0.01.")
 
         for sensor in Sensor.sensors:
             if sensor.name == self.name:
