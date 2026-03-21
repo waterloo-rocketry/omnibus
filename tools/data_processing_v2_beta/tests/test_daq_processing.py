@@ -21,7 +21,7 @@ class TestValidateAndExtractData:
             {
                 "timestamp": 123.0,
                 "data": {"sensor1": [1, 2], "sensor2": [1, 2]},
-                "relative_timestamps_nanoseconds": [100, 200],
+                "relative_timestamps": [0.0000001, 0.0000002],
                 "sample_rate": 1,
                 "message_format_version": MESSAGE_FORMAT_VERSION,
             },
@@ -37,7 +37,7 @@ class TestValidateAndExtractData:
             {
                 "timestamp": 123.0,
                 "data": {"sensor1": [1, 2], "sensor2": [1, 2]},
-                "relative_timestamps_nanoseconds": [100, 200],
+                "relative_timestamps": [0.0000001, 0.0000002],
                 "sample_rate": 1,
                 "message_format_version": MESSAGE_FORMAT_VERSION,
             },
@@ -52,7 +52,7 @@ class TestValidateAndExtractData:
             {
                 "timestamp": 123.0,
                 "data": {"sensor1": [1, 2], "sensor2": [1, 2]},
-                "relative_timestamps_nanoseconds": [100, 200],
+                "relative_timestamps": [0.0000001, 0.0000002],
                 "sample_rate": 1,
                 "message_format_version": 0,  # Wrong version
             },
@@ -67,7 +67,7 @@ class TestValidateAndExtractData:
             {
                 "timestamp": 123.0,
                 # Missing sensor data
-                "relative_timestamps_nanoseconds": [100, 200],
+                "relative_timestamps": [0.0000001, 0.0000002],
                 "sample_rate": 1,
                 "message_format_version": MESSAGE_FORMAT_VERSION,
             },
@@ -97,7 +97,7 @@ class TestUnpackAndStreamToCSV:
             ["DAQ", 1234.0, {
                 "timestamp": 1234.0,
                 "data": {"sensor1": [1.1, 1.2], "sensor2": [2.1, 2.2]},
-                "relative_timestamps_nanoseconds": [100, 200],
+                "relative_timestamps": [0.0000001, 0.0000002],
                 "sample_rate": 1,
                 "message_format_version": MESSAGE_FORMAT_VERSION,
             }]
@@ -115,9 +115,9 @@ class TestUnpackAndStreamToCSV:
 
         lines = buf.getvalue().splitlines()
 
-        assert lines[0] == "Timestamp (ns) +- 10ns,sensor1,sensor2"
-        assert lines[1] == "100,1.1,2.1"
-        assert lines[2] == "200,1.2,2.2"
+        assert lines[0] == "Timestamp (s) +- 10ns,sensor1,sensor2"
+        assert lines[1] == "1e-07,1.1,2.1"
+        assert lines[2] == "2e-07,1.2,2.2"
 
     def test_empty_message_creates_empty_csv(self):
         stream = BytesIO()
@@ -137,7 +137,7 @@ class TestUnpackAndStreamToCSV:
             ["DAQ", 1234.0, {
                 "timestamp": 1234.0,
                 "data": {"sensor1": [1.1], "sensor2": [2.1]},
-                "relative_timestamps_nanoseconds": [100],
+                "relative_timestamps": [0.0000001],
                 "sample_rate": 1,
                 "message_format_version": MESSAGE_FORMAT_VERSION,
             }],
@@ -155,8 +155,8 @@ class TestUnpackAndStreamToCSV:
 
         lines = buf.getvalue().splitlines()
 
-        assert lines[0] == "Timestamp (ns) +- 10ns,sensor1,sensor2"
-        assert lines[1] == "100,1.1,2.1"
+        assert lines[0] == "Timestamp (s) +- 10ns,sensor1,sensor2"
+        assert lines[1] == "1e-07,1.1,2.1"
 
 
 def test_multiple_valid_messages():
@@ -164,14 +164,14 @@ def test_multiple_valid_messages():
         ["DAQ", 0.0, {
             "timestamp": 0.0,
             "data": {"s": [1]},
-            "relative_timestamps_nanoseconds": [100],
+            "relative_timestamps": [0.0000001],
             "sample_rate": 1,
             "message_format_version": MESSAGE_FORMAT_VERSION,
         }],
         ["DAQ", 0.0, {
             "timestamp": 0.0,
             "data": {"s": [2]},
-            "relative_timestamps_nanoseconds": [200],
+            "relative_timestamps": [0.0000002],
             "sample_rate": 1,
             "message_format_version": MESSAGE_FORMAT_VERSION,
         }],
@@ -190,9 +190,9 @@ def test_multiple_valid_messages():
     lines = buf.getvalue().splitlines()
 
     assert lines == [
-        "Timestamp (ns) +- 10ns,s",
-        "100,1",
-        "200,2",
+        "Timestamp (s) +- 10ns,s",
+        "1e-07,1",
+        "2e-07,2",
     ]
 
 
@@ -200,7 +200,7 @@ def test_inconsistent_sensor_lengths():
     msg = ["DAQ", 0.0, {
         "timestamp": 0.0,
         "data": {"sensor 1": [1, 2], "sensor 2": [10]},  # inconsistent
-        "relative_timestamps_nanoseconds": [100, 200],
+        "relative_timestamps": [0.0000001, 0.0000002],
         "sample_rate": 1,
         "message_format_version": MESSAGE_FORMAT_VERSION,
     }]
