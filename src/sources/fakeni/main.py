@@ -70,7 +70,7 @@ try:
             relative_last_read_time_v2 = relative_timestamps[-1] + READ_PERIOD_v2
 
         if log:
-            log.write(msgpack.packb(data))
+            log.write(msgpack.packb([CHANNEL, start, data]))
 
         # Cool continuously updating print statment
         print("\rSending", end="")
