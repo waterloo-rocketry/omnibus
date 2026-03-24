@@ -39,7 +39,6 @@ try:
     READ_PERIOD_v3 = 1 / SAMPLE_RATE
     relative_last_read_time_v2 = time.time_ns()
     relative_last_read_time_v3 = time.time()
-    print(READ_PERIOD_v2 / 1000000)
     while True:
         start = time.time()
         # send a tuple of when the data was recorded and an array of the data for each channel
@@ -48,19 +47,19 @@ try:
                     relative_last_read_time_v3 + READ_PERIOD_v3 * i
                     for i in range(READ_BULK)
             ]
-            ts_key = "relative_timestamps"
+            timestamps_key = "relative_timestamps_seconds"
         else:
             relative_timestamps = list(range(
                     relative_last_read_time_v2,
                     relative_last_read_time_v2 + READ_PERIOD_v2 * READ_BULK,
                     READ_PERIOD_v2,
                 ))
-            ts_key = "relative_timestamps_nanoseconds"
+            timestamps_key = "relative_timestamps_nanoseconds"
             
         data = {
             "timestamp": start,
             "data": {f"Fake{i}": [random.random() for _ in range(READ_BULK)] for i in range(CHANNELS)},
-            ts_key: relative_timestamps,
+            timestamps_key: relative_timestamps,
             "sample_rate": SAMPLE_RATE,
             "message_format_version": MESSAGE_FORMAT_VERSION,
         }
