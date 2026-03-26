@@ -60,6 +60,7 @@ dev = [
 [project.scripts]
 omnibus-server = "omnibus.server:server"
 omnibus-ws-server = "websocket_server.main:main"
+omnibus-ws-server-prod = "websocket_server.prod:main"
 omnibus-ws-bridge = "bridge.relay:main"
 
 [tool.uv.sources]
