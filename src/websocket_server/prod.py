@@ -1,5 +1,6 @@
 import subprocess
 import sys
+from unittest import result
 
 
 def main() -> None:
@@ -17,4 +18,6 @@ def main() -> None:
         "100",
         "websocket_server.wsgi:application",
     ]
-    raise SystemExit(subprocess.call(cmd))
+    
+    result = subprocess.run(cmd)
+    raise SystemExit(result.returncode)
