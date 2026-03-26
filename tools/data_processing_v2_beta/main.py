@@ -14,13 +14,19 @@ def generate_filename(log_name: str) -> str:
     rand_hash = secrets.token_hex(3)
     return f"omnibus-processed-{log_name}-{timestamp}-{rand_hash}.csv"
 
-def run_daq_command(input_file: str, output_file: str | None, channel: str) -> None:
-    from processors.daq_processing import DAQDataProcessor
+def run_daq_command(input_file: str, output_file: str | None, channel: str, v3: bool = False) -> None:
+    if v3:
+        from processors.daq_processing import DAQDataProcessor_V3
+        processor_class = DAQDataProcessor_V3
+    else:
+        from processors.daq_processing import DAQDataProcessor
+        processor_class = DAQDataProcessor
+
     out_file = output_file or generate_filename("daq")
     out_path = os.path.join(os.getcwd(), out_file)
 
     with open(input_file, "rb") as file:
-        processor = DAQDataProcessor(file, channel)
+        processor = processor_class(file, channel)
         size = processor.process(out_path)
         print(f"SUCESS: Processed {size} bytes of DAQ data to {out_path}")
 
@@ -43,6 +49,7 @@ def main() -> None:
     daq_parser.add_argument("input_file", help="Path to the .msgpack log file")
     daq_parser.add_argument("-o", "--output", help="Optional output file name")
     daq_parser.add_argument("--fake", action="store_true", help="Use fake DAQ data")
+    daq_parser.add_argument("--v3", action="store_true", help="Use V3 message format")
 
     # Adding command for logger, and file related flags
     logger_parser = subparsers.add_parser("logger", help="Process Logger Board msgpack")
@@ -57,7 +64,7 @@ def main() -> None:
     if args.command == "daq":
         if args.fake:
             channel = "DAQ/Fake"
-        run_daq_command(args.input_file, args.output, channel)
+        run_daq_command(args.input_file, args.output, channel, v3=args.v3)
     elif args.command == "logger":
         run_logger_command(args.input_file, args.output)
     else:
