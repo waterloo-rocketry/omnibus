@@ -7,7 +7,7 @@ def main():
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
     parser.add_argument("--port", type=int, default=6767, help="Port to listen on (default: 6767)")
     args = parser.parse_args()
-   
+    
     _ = Sender() #Trigger auto discovery
     start_relay_sender()
     print(f">>> Starting SocketIO server on {args.host}:{args.port}")
