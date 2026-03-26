@@ -58,10 +58,10 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
     # }
     # 1.3 and 2.3 are the readings for each sensor at t0, 2.3 and 4.5 for t1, etc.
 
-    relative_timestamps_seconds: list[int]
+    relative_timestamps_seconds: list[float]
     """
-    Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt_ns = 1/sample_rate).
-    There can be variation of +- 1ns for every point, according to NI box data sheet, which is minimal.
+    Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt = 1/sample_rate).
+    There can be variation of +- 1e-9s for every point, according to NI box data sheet, which is minimal.
     Timestamps are based on initial time t_0 = time.time(), meaning they should be always unique.
     Unit is seconds
     """
@@ -77,7 +77,7 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 
 def read_data(ai: nidaqmx.Task) -> NoReturn:
     # See config.py.example, config.RATE should be float
-    # Converting to nanoseconds to avoid floating point inaccuracy
+    # Period between scans in seconds
     READ_PERIOD: float = 1 / cast(int, config.RATE)
 
     rates = []

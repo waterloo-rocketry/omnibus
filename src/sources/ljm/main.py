@@ -60,8 +60,8 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 
     relative_timestamps_seconds: list[float]
     """
-    Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt_ns = 1/sample_rate).
-    There can be variation of +- 1ns for every point.
+    Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt = 1/sample_rate).
+    There can be variation of +- 1e-9s for every point.
     Timestamps are based on initial time t_0 = time.time(), meaning they should be always unique.
     Unit is seconds.
     """
