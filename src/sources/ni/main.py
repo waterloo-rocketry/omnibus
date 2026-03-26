@@ -112,14 +112,9 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
 
             num_of_messages_read = 0 if not data else len(data[0])
 
-
-            relative_timestamps = list(
-                range(
-                    relative_last_read_time,
-                    relative_last_read_time + READ_PERIOD * num_of_messages_read,
-                    READ_PERIOD,
-                )
-            )
+            relative_timestamps = [
+                relative_last_read_time + READ_PERIOD * j for j in range(num_of_messages_read)
+            ]
 
             data_parsed: DAQ_SEND_MESSAGE_TYPE = {
                 "timestamp": time.time(),
