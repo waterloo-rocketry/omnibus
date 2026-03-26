@@ -1,3 +1,4 @@
+import json
 import time
 from math import ceil, log10
 from typing import List
@@ -44,8 +45,8 @@ class CanSender(DashboardItem):
         => if every field successfully encodes its data, long pulse all of the fields once and emit the message to CAN/commands
     """
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, dashboard, params=None):
+        super().__init__(dashboard, params)
         # constants
         self.INVALID_PULSES = 3  # number of pulses to display when a field fails to encode data
         self.INVALID_PULSE_PERIOD = 100  # ms
@@ -91,6 +92,11 @@ class CanSender(DashboardItem):
         self.timer.timeout.connect(self.pulse_widgets)
         self.pulse_indices = []
 
+        # restore previously saved field values if provided
+        if params:
+            state = json.loads(params)
+            self._restore_can_fields(state.get('can_fields', []))
+
     # displays PyQT input widgets for a given CAN message
 
     def display_can_fields(self, fields: List[pf.Field]):
@@ -98,8 +104,17 @@ class CanSender(DashboardItem):
         for field in fields:
             self.widget_index += 1
             if isinstance(field, pf.Switch) or isinstance(field, pf.Enum):
-                dropdown_items = list(field.get_keys())
-                dropdown_max_length = max(len(item) for item in dropdown_items)
+                all_keys = list(field.get_keys())
+                # for Switch fields, exclude keys with no message definition
+                dropdown_items = []
+                for k in all_keys:
+                    if not isinstance(field, pf.Switch) or k in field.map_key_enum:
+                        dropdown_items.append(k)
+
+                dropdown_max_length = 1
+                for item in dropdown_items:
+                    if len(item) > dropdown_max_length:
+                        dropdown_max_length = len(item)
 
                 dropdown = QComboBox()
                 dropdown.addItems(dropdown_items)
@@ -150,7 +165,8 @@ class CanSender(DashboardItem):
             # then display the first row's parsley fields
             if isinstance(field, pf.Switch):
                 self.widgets[self.widget_index].currentTextChanged.connect(self.update_can_msg)
-                nested_fields = field.get_fields(dropdown_items[0])
+                first_item = dropdown_items[0] if dropdown_items else all_keys[0]
+                nested_fields = field.get_fields(first_item)
                 self.display_can_fields(nested_fields)
 
     # recreates the necessary PyQT input widgets whenever a parsley Switch field changes value
@@ -329,6 +345,25 @@ class CanSender(DashboardItem):
                 # backspace was pressed and the current textfield is empty, so
                 # remove a character from the previous textfield
                 previous_widget.setText(previous_widget.text()[:-1])
+
+    def _restore_can_fields(self, values: list):
+        for i, value in enumerate(values):
+            if i >= self.widget_index:
+                break
+            widget = self.widgets[i]
+            if isinstance(widget, QLineEdit):
+                widget.setText(value)
+            elif isinstance(widget, QComboBox):
+                widget.setCurrentText(value)
+
+    def get_serialized_parameters(self):
+        params = self.parameters.saveState(filter='user')
+        values = []
+        for i in range(self.widget_index):
+            widget = self.widgets[i]
+            values.append(widget.text() if isinstance(widget, QLineEdit) else widget.currentText())
+        params['can_fields'] = values
+        return json.dumps(params)
 
     @staticmethod
     def get_name():
