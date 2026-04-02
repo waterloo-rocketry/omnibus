@@ -52,20 +52,16 @@ def handle_connect(auth):
         print(f">>> Client connected: {request.sid}")
 
 @socketio.on("*")
-def handle_channel_message(event, data):
+def handle_channel_message(event, timestamp, payload):
     # Relay all channel messages between ZMQ and WS clients.
     # Messages from the bridge are broadcast to all WS clients except the bridge itself (include_self=False)
     # Messages from WS clients, broadcast to everyone including the sender, Omnibus ZMQ so ZMQ subscribers receive them, tell the bridge to ignore it
-    
     if request.sid == state.bridge_sid: # ZMQ-originated, emit to all
-        emit(event, data, broadcast=True, include_self=False)
+        emit(event, (timestamp, payload), broadcast=True, include_self=False)
     else: # WS-client-originated: emit to all and tell bridge to ignore it
-        emit(event, data, broadcast=True)
-        if isinstance(data, list) and len(data) == 2:
-            print(f"[WS client] relaying '{event}' to ZMQ")
-            _relay_queue.put(OmnibusMessage(event + WS_ORIGINATED_SUFFIX, data[0], data[1]))
-        else:
-            print(f"Dropping malformed WS payload for event '{event}': {data}")
+        emit(event, (timestamp, payload), broadcast=True)
+        print(f"[WS client] relaying '{event}' to ZMQ")
+        _relay_queue.put(OmnibusMessage(event + WS_ORIGINATED_SUFFIX, timestamp, payload))
 
 @socketio.on("disconnect")
 def handle_disconnect():
