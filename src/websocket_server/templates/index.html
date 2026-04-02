@@ -34,8 +34,8 @@
       socket.on("connect_error", (err) => log("connect_error " + err));
       socket.on("disconnect", () => log("disconnected"));
 
-      socket.onAny((event, data) => {
-        log("[" + event + "]\n" + JSON.stringify(data, null, 2));
+      socket.onAny((event, timestamp, payload) => {
+        log("[" + event + "] t=" + timestamp + "\n" + JSON.stringify(payload, null, 2));
       });
 
       document.getElementById("sendBtn").onclick = () => {
@@ -43,7 +43,7 @@
         const timestamp = Date.now() / 1000;
         const payload = { info: "Hello from HTML client!" };
         log("sending on '" + channel + "'\n" + JSON.stringify(payload, null, 2));
-        socket.emit(channel, [timestamp, payload]);
+        socket.emit(channel, timestamp, payload);
       };
     </script>
   </body>
