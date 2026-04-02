@@ -1,7 +1,9 @@
 import sys
+import time
 import types
-import unittest
-from unittest.mock import MagicMock, patch, mock_open
+import pytest
+import multiprocessing as mp
+from unittest.mock import MagicMock
 
 # Prevent main.py from attempting to load the real LabJack library or a
 # non-existent config module during import.  The original tests imported
@@ -27,62 +29,106 @@ fake_config = types.SimpleNamespace(
 )
 sys.modules["config"] = fake_config
 
-# provide a lightweight msgpack stub used by main
-import types as _types
-fake_msgpack = _types.ModuleType("msgpack")
-fake_msgpack.packb = lambda x: b""
-fake_msgpack.unpackb = lambda x: {}
-# add exceptions submodule for calibration import
-fake_exceptions = _types.SimpleNamespace(PackException=Exception)
-fake_msgpack.exceptions = fake_exceptions
-sys.modules["msgpack"] = fake_msgpack
-sys.modules["msgpack.exceptions"] = fake_exceptions
+# Set server IP before importing main to avoid discovery
+from omnibus.omnibus import OmnibusCommunicator
+from omnibus import Receiver, server
 
-# stub the omnibus package and its Sender class used by main
-fake_omnibus = types.SimpleNamespace(Sender=lambda: MagicMock())
-sys.modules["omnibus"] = fake_omnibus
+def get_main():
+    OmnibusCommunicator.server_ip = "127.0.0.1"
+    original_argv = sys.argv[:]
+    sys.argv = [sys.argv[0]]
+    try:
+        import main
+        return main
+    finally:
+        sys.argv = original_argv
+     
+def run_server():
+    import sys
+    sys.argv = [sys.argv[0]]
+    from omnibus import server
+    # Mock get_ip to return localhost
+    original_get_ip = server.get_ip
+    server.get_ip = lambda: "127.0.0.1"
+    try:
+        server.server()
+    finally:
+        server.get_ip = original_get_ip
 
-import main
+@pytest.fixture(scope="module")
+def main_module():
+    return get_main()
 
-class TestLabJackReadData(unittest.TestCase):
-    def setUp(self):
-        self.mock_ljm = MagicMock()
-        main.ljm = self.mock_ljm
+@pytest.fixture(scope="module", autouse=True)
+def omnibus_server(main_module):
+    # Start the Omnibus server in a separate process
+    ctx = mp.get_context("spawn")
+    server_process = ctx.Process(target=run_server)
+    server_process.start()
+    OmnibusCommunicator.server_ip = "127.0.0.1"  # skip discovery
+    
+    start = time.time()
 
-        self.mock_sender = MagicMock()
-        main.sender = self.mock_sender
-
-        main.calibration.Sensor.parse = MagicMock(return_value={'foo': [9, 8, 7]})
-        main.time.time_ns = MagicMock(return_value=1_000_000_000)
-        main.time.time = MagicMock(return_value=1.0)
-
-    def test_read_data_processes_interleaved_sensor_values(self):
-        self.mock_ljm.eStreamRead.side_effect = [
-            ([1, 2, 3, 4, 5, 6], 0, 0),
-            KeyboardInterrupt(),
-        ]
-
-        with self.assertRaises(KeyboardInterrupt):
-            main.read_data(
-                handle=1,
-                num_addresses=2,
-                scans_per_read=3,
-                scan_rate=1000,
-                quiet=True,
-                no_built_in_log=True,
-            )
-
-        expected = [[1, 3, 5], [2, 4, 6]]
-        main.calibration.Sensor.parse.assert_called_once_with(expected)
-
-        self.mock_sender.send.assert_called_once()
-        channel, payload = self.mock_sender.send.call_args[0]
-        self.assertEqual(channel, main.CHANNEL)
-        self.assertEqual(payload['data'], {'foo': [9, 8, 7]})
-        self.assertEqual(payload['message_format_version'], main.MESSAGE_FORMAT_VERSION)
-        self.assertEqual(payload['sample_rate'], 1000)
-        self.assertEqual(payload['relative_timestamps_nanoseconds'], [1_000_000_000, 1_001_000_000, 1_002_000_000])
+    # Wait until the server is alive
+    s = main_module.sender
+    r = Receiver("_ALIVE")
+    while r.recv(1) is None:
+        s.send("_ALIVE", "_ALIVE")
+        if time.time() - start > 5:
+            raise TimeoutError("Server did not start within 5 seconds")
+        
+    yield 
+    
+    # Stop the server    
+    server_process.terminate()
+    server_process.join()
 
 
-if __name__ == '__main__':
-    unittest.main()
+@pytest.fixture
+def test_setup(main_module):    
+    mock_ljm = MagicMock()
+    main_module.ljm = mock_ljm
+    
+    receiver = Receiver(main_module.CHANNEL)
+    time.sleep(0.05)  # let the receiver connect
+
+    main_module.calibration.Sensor.parse = MagicMock(return_value={'foo': [9, 8, 7]})
+    main_module.time.time_ns = MagicMock(return_value=1_000_000_000)
+    main_module.time.time = MagicMock(return_value=1.0)
+    
+    return main_module, mock_ljm, receiver
+
+
+def test_read_data_processes_interleaved_sensor_values(test_setup):
+    main_module, mock_ljm, receiver = test_setup
+    
+    mock_ljm.eStreamRead.side_effect = [
+        ([1, 2, 3, 4, 5, 6], 0, 0),
+        KeyboardInterrupt(),
+    ]
+
+    with pytest.raises(KeyboardInterrupt):
+        main_module.read_data(
+            handle=1,
+            num_addresses=2,
+            scans_per_read=3,
+            scan_rate=1000,
+            quiet=True,
+            no_built_in_log=True,
+        )
+
+    expected = [[1, 3, 5], [2, 4, 6]]
+    main_module.calibration.Sensor.parse.assert_called_once_with(expected)
+
+    # Receive the message from the server
+    message = receiver.recv_message(timeout=1000)  # 1 second timeout
+    assert message is not None
+    assert message.channel == main_module.CHANNEL
+    assert message.payload['data'] == {'foo': [9, 8, 7]}
+    assert message.payload['message_format_version'] == main_module.MESSAGE_FORMAT_VERSION
+    assert message.payload['sample_rate'] == 1000
+    assert message.payload['relative_timestamps_nanoseconds'] == [
+        1_000_000_000,
+        1_001_000_000,
+        1_002_000_000,
+    ]
