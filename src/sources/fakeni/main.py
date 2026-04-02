@@ -47,11 +47,11 @@ try:
                     relative_last_read_time_v3 + READ_PERIOD_v3 * i
                     for i in range(READ_BULK)
             ]
-            timestamps_key = "relative_timestamps_seconds"
+            timestamps_key = "relative_timestamps"
         else:
             relative_timestamps = list(range(
-                    relative_last_read_time_v2,
-                    relative_last_read_time_v2 + READ_PERIOD_v2 * READ_BULK,
+                    int(relative_last_read_time_v2),
+                    int(relative_last_read_time_v2 + READ_PERIOD_v2 * READ_BULK),
                     READ_PERIOD_v2,
                 ))
             timestamps_key = "relative_timestamps_nanoseconds"

@@ -48,7 +48,7 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
     data: dict[str, list[float]]
     """
     Each sensor groups a certain number of readings, the bulk read rate of the DAQ.
-    The length of that list corresponds to the length of relative_timestamps_seconds below.
+    The length of that list corresponds to the length of relative_timestamps below.
     The floating point numbers are arbitrary values depending on the unit of the sensor configured when it was recorded.
     """
     # Example: {
@@ -58,7 +58,7 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
     # }
     # 1.3 and 2.3 are the readings for each sensor at t0, 2.3 and 4.5 for t1, etc.
 
-    relative_timestamps_seconds: list[float]
+    relative_timestamps: list[float]
     """
     Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt = 1/sample_rate).
     There can be variation of +- 1e-9s for every point.
@@ -131,7 +131,7 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate, *, quiet=False, 
             data_parsed: DAQ_SEND_MESSAGE_TYPE = {
                 "timestamp": time.time(),
                 "data": calibration.Sensor.parse(data),  # apply calibration
-                "relative_timestamps_seconds": relative_timestamps,
+                "relative_timestamps": relative_timestamps,
                 "sample_rate": cast(int, scan_rate),
                 "message_format_version": MESSAGE_FORMAT_VERSION,
             }
