@@ -101,21 +101,22 @@ def omnibus_server(main_module):
     server_process.start()
     OmnibusCommunicator.server_ip = "127.0.0.1"  # skip discovery
     
-    start = time.time()
+    try:
+        start = time.time()
 
-    # Wait until the server is alive
-    s = main_module.sender
-    r = Receiver("_ALIVE")
-    while r.recv(1) is None:
-        s.send("_ALIVE", "_ALIVE")
-        if time.time() - start > 5:
-            raise TimeoutError("Server did not start within 5 seconds")
+        # Wait until the server is alive
+        s = main_module.sender
+        r = Receiver("_ALIVE")
+        while r.recv(1) is None:
+            s.send("_ALIVE", "_ALIVE")
+            if time.time() - start > 5:
+                raise TimeoutError("Server did not start within 5 seconds")
         
-    yield 
-    
-    # Stop the server    
-    server_process.terminate()
-    server_process.join()
+        yield
+    finally:
+        # Stop the server    
+        server_process.terminate()
+        server_process.join()
 
 
 @pytest.fixture
