@@ -16,10 +16,13 @@ dependencies = [
     "flask-socketio>=5.3",
     "flask>=3.0",
     "omnibus",
+    "gunicorn>=20.1.0",
+    "simple-websocket>=1.0.0",
 ]
 
 [project.scripts]
 omnibus-ws-server = "websocket_server.main:main"
+omnibus-ws-server-prod = "websocket_server.prod:main"
 
 [tool.uv.sources]
 omnibus = { workspace = true }

@@ -10,7 +10,7 @@ import pytest
 import socketio
 from socketio.exceptions import ConnectionError, TimeoutError
 
-import server
+from websocket_server import server
 from omnibus import Message as OmnibusMessage
 
 @pytest.fixture(scope="session")
@@ -108,7 +108,7 @@ class TestConnect:
         class FakeExtType:
             pass
 
-        with patch("server.request", new=mock_request):
+        with patch("websocket_server.server.request", new=mock_request):
             server.handle_connect(auth=FakeExtType())
 
         assert server.state.bridge_sid is None
@@ -256,8 +256,8 @@ class TestClientMessages:
         call_order: list[str] = []
         original_put = server._relay_queue.put
 
-        with patch("server.request", new=mock_request), \
-             patch("server.emit") as mock_emit, \
+        with patch("websocket_server.server.request", new=mock_request), \
+             patch("websocket_server.server.emit") as mock_emit, \
              patch.object(
                  server._relay_queue, "put",
                  side_effect=lambda msg: (
@@ -289,7 +289,7 @@ class TestRelaySender:
         mock_sender = Mock()
         msg = OmnibusMessage("test/WS_ORIGINATED", 1.0, {"v": 1})
 
-        with patch("server.Sender", return_value=mock_sender), \
+        with patch("websocket_server.server.Sender", return_value=mock_sender), \
              patch.object(
                  server._relay_queue, "get", side_effect=[msg, _StopLoop],
              ):
