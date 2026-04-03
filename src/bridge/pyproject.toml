@@ -1,0 +1,24 @@
+[project]
+name = "omnibus-bridge"
+version = "0.1.0"
+description = "WebSocket bridge for Omnibus messaging system"
+readme = "README.md"
+license = "MIT"
+requires-python = "~=3.11.0"
+
+authors = [
+    {name = "Waterloo Rocketry", email = "contact@waterloorocketry.com"}
+]
+
+dependencies = [
+    "msgpack>=1.1.0",
+    "pyzmq>=27.1.0",
+    "python-socketio[client]>=5.11",
+    "omnibus",
+]
+
+[project.scripts]
+omnibus-ws-bridge = "bridge.relay:main"
+
+[tool.uv.sources]
+omnibus = { workspace = true }
