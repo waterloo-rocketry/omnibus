@@ -1,5 +1,6 @@
 import queue
-from dataclasses import dataclass
+import threading
+from dataclasses import dataclass, field
 from flask import Flask, request
 from flask_socketio import SocketIO, emit
 from omnibus import Message as OmnibusMessage
@@ -18,6 +19,7 @@ socketio = SocketIO(
 @dataclass
 class _State:
     bridge_sid: str | None = None
+    lock: threading.Lock = field(default_factory=threading.Lock)
 
 state = _State()
 
@@ -36,13 +38,14 @@ def start_relay_sender():
             sender.send_message(msg)
     socketio.start_background_task(_sender_loop)
 
-@socketio.on("connect")  
+@socketio.on("connect")
 def handle_connect(auth):
     # handles client connection including bridge
     if isinstance(auth, dict) and auth.get("role") == "bridge":
-        if state.bridge_sid is not None:
-            raise ConnectionRefusedError("Only one bridge connection allowed")
-        state.bridge_sid = request.sid
+        with state.lock:
+            if state.bridge_sid is not None:
+                raise ConnectionRefusedError("Only one bridge connection allowed")
+            state.bridge_sid = request.sid
         print(f">>> Bridge connected: {request.sid}")
     else:
         print(f">>> Client connected: {request.sid}")
@@ -53,7 +56,9 @@ def handle_channel_message(event, data):
     # Messages from the bridge are broadcast to all WS clients except the bridge itself (include_self=False)
     # Messages from WS clients, broadcast to everyone including the sender, Omnibus ZMQ so ZMQ subscribers receive them, tell the bridge to ignore it
     
-    if request.sid == state.bridge_sid: # ZMQ-originated, emit to all
+    with state.lock:
+        is_bridge = request.sid == state.bridge_sid
+    if is_bridge: # ZMQ-originated, emit to all
         emit(event, data, broadcast=True, include_self=False)
     else: # WS-client-originated: emit to all and tell bridge to ignore it
         emit(event, data, broadcast=True)
@@ -66,8 +71,11 @@ def handle_channel_message(event, data):
 @socketio.on("disconnect")
 def handle_disconnect():
     # Handles client disconnection including bridge
-    if request.sid == state.bridge_sid:
-        state.bridge_sid = None
+    with state.lock:
+        is_bridge = request.sid == state.bridge_sid
+        if is_bridge:
+            state.bridge_sid = None
+    if is_bridge:
         print(f">>> Bridge disconnected: {request.sid}")
     else:
         print(f">>> Client disconnected: {request.sid}")
