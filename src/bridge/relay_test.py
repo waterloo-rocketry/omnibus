@@ -121,13 +121,13 @@ class TestRelayLoop:
         with pytest.raises(SystemExit):
             relay.main()
 
-        mock_sio.emit.assert_called_once_with("sensors/temperature", [1234567890.0, {"value": 25.5}])
+        mock_sio.emit.assert_called_once_with("sensors/temperature", (1234567890.0, {"value": 25.5}))
 
     @patch("relay.time")
     @patch("relay.Receiver")
     @patch("relay.socketio.Client")
-    def test_emits_timestamp_and_payload_as_list(self, mock_client_class, mock_receiver_class, mock_time):
-        #Data is forwarded as [timestamp, payload] to match the wire format
+    def test_emits_timestamp_and_payload_as_tuple(self, mock_client_class, mock_receiver_class, mock_time):
+        #Data is forwarded as (timestamp, payload) tuple to match the wire format
         mock_sio, _ = _make_capturing_sio()
         mock_client_class.return_value = mock_sio
 
@@ -143,7 +143,7 @@ class TestRelayLoop:
         with pytest.raises(SystemExit):
             relay.main()
 
-        assert mock_sio.emit.call_args[0][1] == [42.0, "raw_data"]
+        assert mock_sio.emit.call_args[0][1] == (42.0, "raw_data")
 
 class TestLoopBackPrevention:
     #Messages injected into ZMQ by the WS server must not be re-relayed
@@ -200,7 +200,7 @@ class TestLoopBackPrevention:
         with pytest.raises(SystemExit):
             relay.main()
 
-        mock_sio.emit.assert_called_once_with("telemetry", [999.0, "data"])
+        mock_sio.emit.assert_called_once_with("telemetry", (999.0, "data"))
 
     @patch("relay.time")
     @patch("relay.Receiver")
@@ -223,7 +223,7 @@ class TestLoopBackPrevention:
             relay.main()
 
         # This message should be relayed because the channel doesn't end with the exact suffix
-        mock_sio.emit.assert_called_once_with("telemetry/WS_ORIGINATED/extra", [555.0, "x"])
+        mock_sio.emit.assert_called_once_with("telemetry/WS_ORIGINATED/extra", (555.0, "x"))
 
 # Connection retry
 class TestConnectionRetry:
