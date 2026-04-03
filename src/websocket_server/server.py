@@ -1,6 +1,6 @@
 import queue
 from dataclasses import dataclass
-from flask import Flask, render_template, request
+from flask import Flask, request
 from flask_socketio import SocketIO, emit
 from omnibus import Message as OmnibusMessage
 from omnibus import Sender
@@ -35,10 +35,6 @@ def start_relay_sender():
             msg = _relay_queue.get()
             sender.send_message(msg)
     socketio.start_background_task(_sender_loop)
-
-@app.route("/")
-def index():
-    return render_template("index.html")
 
 @socketio.on("connect")  
 def handle_connect(auth):
