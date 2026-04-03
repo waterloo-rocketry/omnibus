@@ -229,20 +229,26 @@ class TestClientMessages:
     def test_no_zmq_relay_for_malformed_data(self, server_url):
         client = make_client(server_url)
         try:
-            # Single-element list is one arg; handler expects two, so socketio drops it
-            client.emit("ch", [1.0])
-            time.sleep(0.5)
-            assert server._relay_queue.empty()
+            with patch("server.print") as mock_print:
+                client.emit("ch", [1.0])
+                time.sleep(0.5)
+                assert server._relay_queue.empty()
+                mock_print.assert_any_call(
+                    ">>> Malformed message on 'ch': expected 2 data args (timestamp, payload), got 1"
+                )
         finally:
             client.disconnect()
 
     def test_no_zmq_relay_for_non_list_data(self, server_url):
         client = make_client(server_url)
         try:
-            # String is one arg; handler expects two, so socketio drops it
-            client.emit("ch", "not-a-list")
-            time.sleep(0.5)
-            assert server._relay_queue.empty()
+            with patch("server.print") as mock_print:
+                client.emit("ch", "not-a-list")
+                time.sleep(0.5)
+                assert server._relay_queue.empty()
+                mock_print.assert_any_call(
+                    ">>> Malformed message on 'ch': expected 2 data args (timestamp, payload), got 1"
+                )
         finally:
             client.disconnect()
 
