@@ -13,23 +13,56 @@ from unittest.mock import MagicMock
 # By injecting mocks into sys.modules before importing, we keep the module
 # import lightweight and safe.
 
-# create a fake labjack.ljm module with the pieces used by main
-fake_ljm = MagicMock()
-# also create the parent package so the import system is happy
-sys.modules["labjack"] = MagicMock()
-sys.modules["labjack.ljm"] = fake_ljm
+@pytest.fixture(scope="module", autouse=True)
+def process_wide_mocks():
+    # Preserve original values for clean teardown
+    original_labjack = sys.modules.get("labjack")
+    original_labjack_ljm = sys.modules.get("labjack.ljm")
+    original_config = sys.modules.get("config")
 
-# create a dummy config module with the constants and setup() used in main
-fake_config = types.SimpleNamespace(
-    RATE=1,
-    SCAN_RATE=1,
-    SCANS_PER_READ=1,
-    READ_BULK=1,
-    setup=lambda: None,
-)
-sys.modules["config"] = fake_config
+    # Fake LabJack module used by main
+    fake_ljm = MagicMock()
+    sys.modules["labjack"] = MagicMock()
+    sys.modules["labjack.ljm"] = fake_ljm
 
-# Set server IP before importing main to avoid discovery
+    # Fake config module used by main
+    fake_config = types.SimpleNamespace(
+        RATE=1,
+        SCAN_RATE=1,
+        SCANS_PER_READ=1,
+        READ_BULK=1,
+        setup=lambda: None,
+    )
+    sys.modules["config"] = fake_config
+
+    # Ensure Omnibus server IP does not leak between tests
+    from omnibus.omnibus import OmnibusCommunicator
+    previous_ip = OmnibusCommunicator.server_ip
+    OmnibusCommunicator.server_ip = "127.0.0.1"
+
+    try:
+        yield
+    finally:
+        # restore sys.modules entries
+        if original_labjack is None:
+            sys.modules.pop("labjack", None)
+        else:
+            sys.modules["labjack"] = original_labjack
+
+        if original_labjack_ljm is None:
+            sys.modules.pop("labjack.ljm", None)
+        else:
+            sys.modules["labjack.ljm"] = original_labjack_ljm
+
+        if original_config is None:
+            sys.modules.pop("config", None)
+        else:
+            sys.modules["config"] = original_config
+
+        # restore Omnibus IP
+        OmnibusCommunicator.server_ip = previous_ip
+
+
 from omnibus.omnibus import OmnibusCommunicator
 from omnibus import Receiver, server
 
@@ -56,7 +89,8 @@ def run_server():
         server.get_ip = original_get_ip
 
 @pytest.fixture(scope="module")
-def main_module():
+def main_module(process_wide_mocks):
+    # Ensure module-scoped process patching is installed before importing main.
     return get_main()
 
 @pytest.fixture(scope="module", autouse=True)
