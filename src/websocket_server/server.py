@@ -60,7 +60,6 @@ def handle_channel_message(event, timestamp, payload):
         emit(event, (timestamp, payload), broadcast=True, include_self=False)
     else: # WS-client-originated: emit to all and tell bridge to ignore it
         emit(event, (timestamp, payload), broadcast=True)
-        print(f"[WS client] relaying '{event}' to ZMQ")
         _relay_queue.put(OmnibusMessage(event + WS_ORIGINATED_SUFFIX, timestamp, payload))
 
 @socketio.on("disconnect")
