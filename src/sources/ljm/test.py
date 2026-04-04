@@ -125,7 +125,17 @@ def test_setup(main_module):
     main_module.ljm = mock_ljm
     
     receiver = Receiver(main_module.CHANNEL)
-    time.sleep(0.05)  # let the receiver connect
+    
+    # Wait for receiver to connect by attempting non-blocking recv
+    start = time.time()
+    while time.time() - start < 1.0:  # 1 second timeout
+        try:
+            receiver.recv_message(timeout=0)
+            break
+        except Exception:
+            time.sleep(0.01)
+    else:
+        raise TimeoutError("Receiver did not connect within 1 second")
 
     main_module.calibration.Sensor.parse = MagicMock(return_value={'foo': [9, 8, 7]})
     main_module.time.time_ns = MagicMock(return_value=1_000_000_000)
