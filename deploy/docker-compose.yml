@@ -14,6 +14,21 @@ services:
       - ./data:/data
     command: ["--outfolder", "/data"]
 
+  omnibus-ws-server:
+    image: ghcr.io/waterloo-rocketry/omnibus-ws-server:main
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - omnibus-server
+
+  omnibus-ws-bridge:
+    image: ghcr.io/waterloo-rocketry/omnibus-ws-bridge:main
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - omnibus-server
+      - omnibus-ws-server
+
   omnibus-source-ljm:
     image: ghcr.io/waterloo-rocketry/omnibus-source-ljm:main
     network_mode: host
