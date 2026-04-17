@@ -3,7 +3,7 @@ import time
 from math import ceil, log10
 from typing import List
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics, QFont
+from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics, QFont, QStandardItemModel, QStandardItem
 from pyqtgraph.Qt.QtWidgets import (
     QComboBox,
     QGridLayout,
@@ -21,6 +21,25 @@ from .dashboard_item import DashboardItem
 from utils import EventTracker
 from publisher import publisher
 
+class CheckableComboBox(QComboBox):
+    """QComboBox that stays open when checkable items are clicked."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.view().pressed.connect(self._on_item_pressed)
+        self._skip_hide = False
+
+    def _on_item_pressed(self, index):
+        item = self.model().itemFromIndex(index)
+        if item and item.isCheckable():
+            self._skip_hide = True
+            item.setCheckState(Qt.Unchecked if item.checkState() == Qt.Checked else Qt.Checked)
+
+    def hidePopup(self):
+        self.setCurrentIndex(0)
+        if self._skip_hide:
+            self._skip_hide = False
+            return
+        super().hidePopup()
 
 @Register
 class CanSender(DashboardItem):
@@ -125,6 +144,35 @@ class CanSender(DashboardItem):
                 dropdown.setFocusPolicy(Qt.StrongFocus)  # allows tabbing between widgets
                 # calculate the width of the widget
                 max_text_width = self.get_widget_text_width(dropdown, dropdown_max_length)
+                self.widget_widths[self.widget_index] = max_text_width + self.WIDGET_TEXT_PADDING
+                dropdown.setFixedWidth(self.widget_widths[self.widget_index])
+                self.widgets[self.widget_index] = dropdown
+            elif isinstance(field, pf.Bitfield) and field.map_name_offset is not None:
+                # named bitfield: checkable combobox where each flag can be toggled
+                model = QStandardItemModel()
+                header = QStandardItem(field.default)  # shows current selection summary
+                header.setFlags(Qt.NoItemFlags)
+                model.appendRow(header)
+                for flag_name in field.map_name_offset.keys():
+                    item = QStandardItem(flag_name)
+                    item.setCheckable(True)
+                    item.setCheckState(Qt.Unchecked)
+                    model.appendRow(item)
+
+                def make_updater(m, h, f):
+                    def update(changed_item):
+                        if changed_item is h:
+                            return
+                        h.setText(self.get_selected_bitfield(m, f.default))
+                    return update
+                model.itemChanged.connect(make_updater(model, header, field))
+
+                dropdown = CheckableComboBox()
+                dropdown.setModel(model)
+                dropdown.setCurrentIndex(0)
+                dropdown.setMaxVisibleItems(15)
+                dropdown.setFocusPolicy(Qt.StrongFocus)
+                max_text_width = self.get_widget_text_width(dropdown, max(len(k) for k in field.map_name_offset.keys()))
                 self.widget_widths[self.widget_index] = max_text_width + self.WIDGET_TEXT_PADDING
                 dropdown.setFixedWidth(self.widget_widths[self.widget_index])
                 self.widgets[self.widget_index] = dropdown
@@ -235,7 +283,13 @@ class CanSender(DashboardItem):
         for index in range(self.widget_index):
             widget = self.widgets[index]
             field = self.fields[index]
-            text = widget.text() if isinstance(widget, QLineEdit) else widget.currentText()
+            if isinstance(field, pf.Bitfield) and field.map_name_offset is not None:
+                text = self.get_selected_bitfield(widget.model(), field.default)
+            else:
+                if isinstance(widget, QLineEdit):
+                    text = widget.text()
+                else:
+                    text = widget.currentText()
             try:
                 if isinstance(field, pf.Numeric):
                     text = float(text)
@@ -359,17 +413,40 @@ class CanSender(DashboardItem):
             if i >= self.widget_index:
                 break
             widget = self.widgets[i]
+            field = self.fields[i]
             if isinstance(widget, QLineEdit):
                 widget.setText(value)
+            elif isinstance(field, pf.Bitfield) and field.map_name_offset is not None:
+                selected = set(value.split('|')) if value else set()
+                m = widget.model()
+                for j in range(1, m.rowCount()):
+                    item = m.item(j)
+                    if item.text() in selected:
+                        item.setCheckState(Qt.Checked)
+                    else:
+                        item.setCheckState(Qt.Unchecked)
             elif isinstance(widget, QComboBox):
                 widget.setCurrentText(value)
+
+    def get_selected_bitfield(self, model, default):
+        selected = []
+        for j in range(1, model.rowCount()):
+            if model.item(j).checkState() == Qt.Checked:
+                selected.append(model.item(j).text())
+        return '|'.join(selected) or default
 
     def get_serialized_parameters(self):
         params = self.parameters.saveState(filter='user')
         values = []
         for i in range(self.widget_index):
             widget = self.widgets[i]
-            values.append(widget.text() if isinstance(widget, QLineEdit) else widget.currentText())
+            field = self.fields[i]
+            if isinstance(widget, QLineEdit):
+                values.append(widget.text())
+            elif isinstance(field, pf.Bitfield) and field.map_name_offset is not None:
+                values.append(self.get_selected_bitfield(widget.model(), field.default))
+            else:
+                values.append(widget.currentText())
         params['can_fields'] = values
         return json.dumps(params)
 
