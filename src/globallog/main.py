@@ -1,7 +1,6 @@
 # Global logger - Saves messages passed through bus to asc-time.log
 import argparse
 import signal
-import sys
 import time
 import os
 
@@ -23,13 +22,6 @@ parser.add_argument(
     action="store_true",
     help="Suppress continuous output except for errors",
 )
-args = parser.parse_args()
-
-# Will log all messages passing through bus
-CHANNEL = ""
-
-# Controls whether logged timestamps use producer time or local time
-parser = argparse.ArgumentParser(description = "Omnibus Global Logger")
 parser.add_argument(
     "-l",
     "--local-timestamps",
@@ -37,6 +29,11 @@ parser.add_argument(
     help="Use receiver (local) timestamps instead of producer timestamps",
 )
 args = parser.parse_args()
+
+# Will log all messages passing through bus
+CHANNEL = ""
+
+# Controls whether logged timestamps use producer time or local time
 USE_LOCAL_TIMESTAMPS = args.local_timestamps
 
 # Retrieves current date and time

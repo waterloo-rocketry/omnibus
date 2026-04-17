@@ -58,16 +58,14 @@ def main(ws_url: str = "http://127.0.0.1:6767") -> None:
             print(f"[bridge] skipping message on '{msg.channel}' (originated from WS client)")
             continue
 
-        payload = [msg.timestamp, msg.payload]
+        payload = (msg.timestamp, msg.payload)
         try:
             sio.emit(msg.channel, payload) 
-            print(f"[bridge] relayed '{msg.channel}'")
         except (exceptions.ConnectionError, exceptions.BadNamespaceError) as e:
             print(f">>> Error sending message to WS server: {e}")
             reconnect(sio, ws_url)
             try:
                 sio.emit(msg.channel, payload) 
-                print(f"[bridge] relayed '{msg.channel}' after reconnecting")
             except (exceptions.ConnectionError, exceptions.BadNamespaceError) as retry_error:
                 print(f"Failed to relay {msg.channel} after reconnect, dropping frame: {retry_error}")
                 continue

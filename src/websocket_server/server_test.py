@@ -144,8 +144,8 @@ class TestBridgeMessages:
         bridge = make_bridge(server_url)
         client = make_client(server_url)
         try:
-            bridge.emit("telemetry/altitude", [1234567890.0, {"alt": 1000}])
-            event, data = client.receive(timeout=2)
+            bridge.emit("telemetry/altitude", (1234567890.0, {"alt": 1000}))
+            event, *data = client.receive(timeout=2)
             assert event == "telemetry/altitude"
             assert data == [1234567890.0, {"alt": 1000}]
         finally:
@@ -155,7 +155,7 @@ class TestBridgeMessages:
     def test_bridge_does_not_receive_own_message(self, server_url):
         bridge = make_bridge(server_url)
         try:
-            bridge.emit("telemetry/temp", [0.0, 42])
+            bridge.emit("telemetry/temp", (0.0, 42))
             with pytest.raises(TimeoutError):
                 bridge.receive(timeout=0.5)
         finally:
@@ -166,7 +166,7 @@ class TestBridgeMessages:
         bridge = make_bridge(server_url)
         client = make_client(server_url)
         try:
-            bridge.emit("telemetry", [0.0, {}])
+            bridge.emit("telemetry", (0.0, {}))
             client.receive(timeout=2)
             assert server._relay_queue.empty()
         finally:
@@ -177,7 +177,7 @@ class TestClientMessages:
     def test_client_message_queued_for_zmq_relay(self, server_url):
         client = make_client(server_url)
         try:
-            client.emit("telemetry/altitude", [1234567890.0, {"alt": 1000}])
+            client.emit("telemetry/altitude", (1234567890.0, {"alt": 1000}))
             client.receive(timeout=2)
             time.sleep(0.1)
 
@@ -194,11 +194,11 @@ class TestClientMessages:
         client1 = make_client(server_url)
         client2 = make_client(server_url)
         try:
-            client1.emit("sensors/temp", [10.0, 42])
+            client1.emit("sensors/temp", (10.0, 42))
 
-            e1, d1 = bridge.receive(timeout=2)
-            e2, d2 = client1.receive(timeout=2)
-            e3, d3 = client2.receive(timeout=2)
+            e1, *d1 = bridge.receive(timeout=2)
+            e2, *d2 = client1.receive(timeout=2)
+            e3, *d3 = client2.receive(timeout=2)
 
             for e in (e1, e2, e3):
                 assert e == "sensors/temp"
@@ -213,9 +213,9 @@ class TestClientMessages:
         assert server.state.bridge_sid is None
         client = make_client(server_url)
         try:
-            client.emit("telemetry", [1.0, {"v": 42}])
+            client.emit("telemetry", (1.0, {"v": 42}))
 
-            event, data = client.receive(timeout=2)
+            event, *data = client.receive(timeout=2)
             assert event == "telemetry"
             assert data == [1.0, {"v": 42}]
 
@@ -229,22 +229,26 @@ class TestClientMessages:
     def test_no_zmq_relay_for_malformed_data(self, server_url):
         client = make_client(server_url)
         try:
-            client.emit("ch", [1.0])
-            client.receive(timeout=2)
-            time.sleep(0.1)
-            assert server._relay_queue.empty()
+            with patch("server.print") as mock_print:
+                client.emit("ch", [1.0])
+                time.sleep(0.5)
+                assert server._relay_queue.empty()
+                mock_print.assert_any_call(
+                    ">>> Malformed message on 'ch': expected 2 data args (timestamp, payload), got 1"
+                )
         finally:
             client.disconnect()
 
     def test_no_zmq_relay_for_non_list_data(self, server_url):
         client = make_client(server_url)
         try:
-            client.emit("ch", "not-a-list")
-            event, data = client.receive(timeout=2)
-            assert event == "ch"
-            assert data == "not-a-list"
-            time.sleep(0.1)
-            assert server._relay_queue.empty()
+            with patch("server.print") as mock_print:
+                client.emit("ch", "not-a-list")
+                time.sleep(0.5)
+                assert server._relay_queue.empty()
+                mock_print.assert_any_call(
+                    ">>> Malformed message on 'ch': expected 2 data args (timestamp, payload), got 1"
+                )
         finally:
             client.disconnect()
 
@@ -265,7 +269,7 @@ class TestClientMessages:
                  ),
              ):
             mock_emit.side_effect = lambda *a, **kw: call_order.append("sio")
-            server.handle_channel_message("ch", [1.0, "data"])
+            server.handle_channel_message("ch", 1.0, "data")
 
         assert call_order == ["sio", "zmq_enqueue"]
 

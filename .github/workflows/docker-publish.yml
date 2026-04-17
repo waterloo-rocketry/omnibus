@@ -24,6 +24,10 @@ jobs:
             image: ghcr.io/waterloo-rocketry/omnibus-source-ljm
           - dockerfile: ./src/globallog/Dockerfile
             image: ghcr.io/waterloo-rocketry/omnibus-globallog
+          - dockerfile: ./src/websocket_server/Dockerfile
+            image: ghcr.io/waterloo-rocketry/omnibus-ws-server
+          - dockerfile: ./src/bridge/Dockerfile
+            image: ghcr.io/waterloo-rocketry/omnibus-ws-bridge
     permissions:
       contents: read
       packages: write
