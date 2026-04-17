@@ -165,9 +165,14 @@ class CanSender(DashboardItem):
             # then display the first row's parsley fields
             if isinstance(field, pf.Switch):
                 self.widgets[self.widget_index].currentTextChanged.connect(self.update_can_msg)
-                first_item = dropdown_items[0] if dropdown_items else all_keys[0]
-                nested_fields = field.get_fields(first_item)
-                self.display_can_fields(nested_fields)
+                first_item = None
+                if dropdown_items:
+                    first_item = dropdown_items[0]
+                elif all_keys:
+                    first_item = all_keys[0]
+                if first_item is not None:
+                    nested_fields = field.get_fields(first_item)
+                    self.display_can_fields(nested_fields)
 
     # recreates the necessary PyQT input widgets whenever a parsley Switch field changes value
     def update_can_msg(self, text: str):
@@ -347,6 +352,9 @@ class CanSender(DashboardItem):
                 previous_widget.setText(previous_widget.text()[:-1])
 
     def _restore_can_fields(self, values: list):
+        # setCurrentText on a Switch dropdown intentionally fires update_can_msg,
+        # which rebuilds self.widgets[i+1:] to match the new message type. Re-read
+        # self.widgets each iteration so we pick up the rebuilt widgets.
         for i, value in enumerate(values):
             if i >= self.widget_index:
                 break
