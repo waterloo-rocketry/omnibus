@@ -170,12 +170,8 @@ class CanSender(DashboardItem):
             # then display the first row's parsley fields
             if isinstance(field, pf.Switch):
                 self.widgets[self.widget_index].currentTextChanged.connect(self.update_can_msg)
-                first_item = None
                 if dropdown_items:
                     first_item = dropdown_items[0]
-                elif all_keys:
-                    first_item = all_keys[0]
-                if first_item is not None:
                     nested_fields = field.get_fields(first_item)
                     self.display_can_fields(nested_fields)
 
