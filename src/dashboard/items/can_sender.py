@@ -94,8 +94,13 @@ class CanSender(DashboardItem):
 
         # restore previously saved field values if provided
         if params:
-            state = json.loads(params)
-            self._restore_can_fields(state.get('can_fields', []))
+            try:
+                state = json.loads(params)
+            except (json.JSONDecodeError, ValueError):
+                pass
+            else:
+                if isinstance(state, dict):
+                    self._restore_can_fields(state.get('can_fields', []))
 
     # displays PyQT input widgets for a given CAN message
 
@@ -362,6 +367,10 @@ class CanSender(DashboardItem):
             if isinstance(widget, QLineEdit):
                 widget.setText(value)
             elif isinstance(widget, QComboBox):
+                if widget.findText(value) == -1:
+                    # Saved selection no longer exists, stop restore to avoid
+                    # applying stale nested values to rebuilt/default widgets
+                    break
                 widget.setCurrentText(value)
 
     def get_serialized_parameters(self):
