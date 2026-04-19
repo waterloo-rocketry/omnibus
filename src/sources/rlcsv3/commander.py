@@ -14,7 +14,7 @@ def send_actuator(actuator: str, state: bool):
                 'board_type_id': 'DAQ',
                 'board_inst_id': 'GROUND',
                 "time": 0,
-                "metadata": actuator,
+                "msg_metadata": actuator,
                 "cmd_state": 'ACT_STATE_ON' if state else 'ACT_STATE_OFF'
             }
         }

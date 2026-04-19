@@ -8,6 +8,7 @@ import random
 
 from omnibus import Sender, Receiver
 import parsley
+from parsley.parse_to_object import _ParsleyParseInternal
 
 from omnibus.omnibus import Message
 
@@ -89,7 +90,7 @@ class FakeSerialCommunicator:
                 self.fake_msgs[self.fake_msg_index]["value"] = random.randint(0, 10)
 
             # Turn the fake message from the dict to the bytes representation that would be read from the serial connection, like from the USB debug board
-            msg_sid, msg_data = parsley.encode_data(self.fake_msgs[self.fake_msg_index])
+            msg_sid, msg_data = _ParsleyParseInternal.encode_data(self.fake_msgs[self.fake_msg_index])
             formatted_msg = f"{msg_sid:03X}"
             if msg_data:
                 formatted_msg += ":" + ",".join(
@@ -124,7 +125,7 @@ def receive_commands(
         return False
 
     can_msg_data = msg.payload["data"]["can_msg"]
-    msg_sid, msg_data = parsley.encode_data(can_msg_data)
+    msg_sid, msg_data = _ParsleyParseInternal.encode_data(can_msg_data)
 
     # Checking parsley instance
     parsley_instance = msg.payload["parsley"]
@@ -295,7 +296,7 @@ def main():
 
                 parsed_data = parsed_object.model_dump(mode='json')
                 last_valid_message_time = time.time()
-                print(parsley.format_line(parsed_data))
+                print(_ParsleyParseInternal.format_line(parsed_data))
 
                 # Send the CAN message over the channel
                 if sender:
