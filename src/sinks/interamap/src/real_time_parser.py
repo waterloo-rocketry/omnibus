@@ -31,11 +31,6 @@ def parse_gps_data(gps_data, data):
     lat = convert_to_decimal_degrees(latitude)
     lon = convert_to_decimal_degrees(longitude)
 
-    if board_id == "PROCESSOR":
-        # For the processor board, timestamp is not available and the coordinates need to be swapped
-        timestamp = None
-        lon, lat = switch_numbers_keep_sign(lon, lat)
-
     # Combine altitude information
     alt = altitude.get("altitude", 0) + altitude.get("daltitude", 0) / 10000
 
