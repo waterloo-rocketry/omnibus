@@ -3,6 +3,11 @@ import pytest
 from parsers import daq_parser
 from parsers import can_parser
 
+@pytest.fixture(autouse=True)
+def _reset_parser_state():
+    import parsers
+    parsers.last_timestamp.clear()
+    parsers.offset_timestamp.clear()
 
 class TestParser:
     def test_daq_parser(self):
