@@ -24,9 +24,7 @@ GRADIENT_COLORS: list[str] = [
 
 class BoardID(Enum):
     GPS_BOARD = "GPS"
-    PROCESSOR_BOARD = "PROCESSOR"
 
 BOARD_FIELDS: dict[str, list[str]] = {
     BoardID.GPS_BOARD.value: ["GPS_INFO", "GPS_TIMESTAMP", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"],
-    BoardID.PROCESSOR_BOARD.value: ["GPS_INFO", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_ALTITUDE"]
 }
