@@ -79,16 +79,6 @@ def daq_parser(msg_data):
     return parsed_messages
 
 
-# map between message types and fields that we need to split data based on
-splits = {
-    "ACTUATOR_CMD": "actuator",
-    "ALT_ARM_CMD": "alt_id",
-    "ACTUATOR_STATUS": "actuator",
-    "ALT_ARM_STATUS": "alt_id",
-    "SENSOR_TEMP": "sensor_id",
-    "SENSOR_ANALOG": "sensor_id",
-    "STATE_EST_DATA": "state_id",
-}
 last_timestamp = {}  # Last timestamp seen for each board + message type
 offset_timestamp = {}  # per-board-and-message offset to account for time rollovers
 
@@ -97,22 +87,20 @@ offset_timestamp = {}  # per-board-and-message offset to account for time rollov
 def can_parser(payload):
     # Payload is a dictionary representing the parsed CAN message. We need to break
     # it into individual streams of data so we can plot / display / etc.
-    # The main complication is that we need to split those streams in a message-
-    # specific way, eg SENSOR_ANALOG messages need a different stream for each
-    # value of SENSOR_ID.
+    # In parsley 2026.3 msg_metadata carries the per-message identity (sensor/actuator/
+    # altimeter id), so we always embed it in the stream prefix to split streams.
 
-    # Example payload: {'board_type_id': 'INJ_SENSOR', 'board_inst_id': 'GENERIC', msg_type': 'SENSOR_ANALOG', 'data': {'time': 37.595, 'sensor_id': 'SENSOR_PRESSURE_CC', 'value': 1310}}
+    # Example payload: {'board_type_id': 'INJECTOR', 'board_inst_id': 'ROCKET',
+    #   'msg_prio': 'LOW', 'msg_type': 'SENSOR_ANALOG32',
+    #   'msg_metadata': 'SENSOR_PT_CHANNEL_1', 'data': {'time': 37.595, 'value': 1310}}
 
     message_type = payload["msg_type"]
     board_type_id = payload["board_type_id"]
     board_inst_id = payload["board_inst_id"]
+    metadata = payload["msg_metadata"]
     data = payload["data"]
 
-    # Build up the common prefix for all data streams, split based on a field if needed.
-    prefix = f"{board_type_id}/{board_inst_id}/{message_type}"
-    if message_type in splits:
-        split = data.pop(splits[message_type])
-        prefix += f"/{split}"
+    prefix = f"{board_type_id}/{board_inst_id}/{message_type}/{metadata}"
 
     error_series = []  # additional series to publish to on error
 
@@ -133,12 +121,7 @@ def can_parser(payload):
     err_topic = f"{board_type_id}/{board_inst_id}/ERROR"
 
     if message_type == "GENERAL_BOARD_STATUS":
-        general_bits = data.get("general_error_bitfield")
         board_bits = data.get("board_error_bitfield")
-    
-        if general_bits != "E_NOMINAL":
-            error_series.append((err_topic, timestamp, general_bits))
-    
         if board_bits != "E_NOMINAL":
             error_series.append((err_topic, timestamp, board_bits))
     
