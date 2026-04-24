@@ -164,7 +164,7 @@ MESSAGE_FORMAT_VERSION_V3 = 3
 DAQ_EXPECTED_RECEIVE_DATA_FORMAT_V3 = {
     "timestamp": float,
     "data": dict,  # data is actually dict[str, list[float]]
-    "relative_timestamps_seconds": list, # actually list[float]
+    "relative_timestamps": list, # actually list[float]
     "sample_rate": int,
     "message_format_version": int,
 }
@@ -176,7 +176,7 @@ class DAQ_RECEIVED_MESSAGE_TYPE_V3(TypedDict):
     data: dict[str, list[float]]
     """    
     Each sensor groups a certain number of readings, the bulk read rate of the DAQ.
-    The length of that list corresponds to the length of relative_timestamps_seconds below.
+    The length of that list corresponds to the length of relative_timestamps below.
     The floating point numbers are arbitrary values depending on the unit of the sensor configured when it was recorded.
     """
     # Example: {
@@ -186,7 +186,7 @@ class DAQ_RECEIVED_MESSAGE_TYPE_V3(TypedDict):
     # }
     # 1.3 and 2.3 are the readings for each sensor at t0, 2.3 and 4.5 for t1, etc.
 
-    relative_timestamps_seconds: list[float]
+    relative_timestamps: list[float]
     """
     Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt_ns = 1/sample_rate).
     There can be variation of +- 1e-9s for every point, according to NI box data sheet, which is minimal.
@@ -289,7 +289,7 @@ class DAQDataProcessor_V3:
                 continue
 
             data = unpacked_data["data"]
-            timestamps = unpacked_data["relative_timestamps_seconds"]
+            timestamps = unpacked_data["relative_timestamps"]
 
             if not wrote_header:
                 sensors = sorted(data.keys())
