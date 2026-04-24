@@ -1,5 +1,6 @@
 import parsley
 from parsley.fields import Enum, Numeric
+from parsley.parse_to_object import _ParsleyParseInternal
 import math
 
 Number = int | float
@@ -45,7 +46,7 @@ MESSAGE_FORMAT = [
     Numeric("Heater Kelvin High 2 Voltage", 16, scale=1/1000, big_endian=False),
 ]
 
-EXPECTED_SIZE = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
+EXPECTED_SIZE = 2 + _ParsleyParseInternal.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
 
 def print_data(parsed: dict[str, str | Number]):
     for k, v in parsed.items():
@@ -59,7 +60,7 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     bit_str = parsley.BitString(data=line[1:-1])
     key_list_kelvin=["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage", "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage"]
     try:
-        res=parsley.parse_fields(bit_str, MESSAGE_FORMAT)
+        res=_ParsleyParseInternal.parse_fields(bit_str, MESSAGE_FORMAT)
     except ValueError as e:
         print("Invalid data: " + str(e))
         return
