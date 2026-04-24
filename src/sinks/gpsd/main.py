@@ -24,8 +24,9 @@ while True:
             **gps.get("GPS_LONGITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "E"}))
         msg += "{quality},{num_sats:02},1.0,".format(
             **gps.get("GPS_INFO", {"quality": 0, "num_sats": 0}))
-        msg += "{altitude}.{daltitude},ft,".format(
-            **gps.get("GPS_ALTITUDE", {"altitude": 0, "daltitude": 0}))
+        gps_alt = gps.get("GPS_ALTITUDE", {"altitude": 0, "daltitude": 0})
+        alt_m = (gps_alt["altitude"] + gps_alt["daltitude"] / 10000) * 0.3048
+        msg += f"{alt_m:.1f},M,"
         msg += "0,M,,,"
         gps = {}
 
