@@ -17,7 +17,6 @@ except ImportError:
 
 
 def parse_gps_data(gps_data, data):
-    # Parse timestamp (or set to None for the processor board)
     gps_timestamp = gps_data.get("GPS_TIMESTAMP", {"hrs": 0, "mins": 0, "secs": 0, "dsecs": 0})
     timestamp = "{hrs:02}:{mins:02}:{secs:02}.{dsecs:02}".format(**gps_timestamp)
 
@@ -31,15 +30,8 @@ def parse_gps_data(gps_data, data):
     lat = convert_to_decimal_degrees(latitude)
     lon = convert_to_decimal_degrees(longitude)
 
-    if board_id == "PROCESSOR":
-        # For the processor board, timestamp is not available and the coordinates need to be swapped
-        timestamp = None
-        lon, lat = switch_numbers_keep_sign(lon, lat)
-
     # Combine altitude information
     alt = altitude.get("altitude", 0) + altitude.get("daltitude", 0) / 10000
-
-    timestamp = timestamp if timestamp is not None else "N/A"
 
     return Point_GPS(lon=lon, lat=lat, alt=alt, num_sats=num_sats, time_stamp=timestamp, board_id=board_id)
 
@@ -50,13 +42,6 @@ def parse_gps_info(data):
     quality = info_data.get("quality", 0)
     board_id = data.get("board_type_id")
     return Info_GPS(num_sats=num_sats, quality=quality, board_id=board_id)
-
-
-def switch_numbers_keep_sign(a, b):
-    # Swap values while keeping the sign for each number
-    new_a = abs(b) if a >= 0 else -abs(b)
-    new_b = abs(a) if b >= 0 else -abs(a)
-    return new_a, new_b
 
 
 def convert_to_decimal_degrees(coord):
