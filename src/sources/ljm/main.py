@@ -37,6 +37,10 @@ try:
     _stream = _cfg["stream"]
     SCANS_PER_READ: int = int(_stream["scans_per_read"])
     SCAN_RATE: int = int(_stream["scan_rate"])
+    if SCANS_PER_READ <= 0 or SCAN_RATE <= 0:
+        raise ValueError(
+            f"scans_per_read ({SCANS_PER_READ}) and scan_rate ({SCAN_RATE}) must both be positive integers."
+        )
 except (KeyError, TypeError, ValueError) as e:
     print(f"Error: Invalid stream configuration in config.yaml: {e}", file=sys.stderr)
     sys.exit(1)
@@ -47,9 +51,31 @@ _CONNECTION_MAP = {
 }
 
 try:
-    for sensor_cfg in _cfg.get("sensors", []):
+    _sensors = _cfg.get("sensors", [])
+    if not isinstance(_sensors, list):
+        raise TypeError("'sensors' must be a list.")
+
+    for i, sensor_cfg in enumerate(_sensors):
+        if not isinstance(sensor_cfg, dict):
+            raise TypeError(f"Sensor at index {i} must be a mapping, got {type(sensor_cfg).__name__}.")
+
+        sensor_name = sensor_cfg.get("name", f"<index {i}>")
+
+        for key in ("name", "channel", "input_range", "connection", "calibration"):
+            if key not in sensor_cfg:
+                raise KeyError(f"Sensor '{sensor_name}' is missing required field '{key}'.")
+
+        if not isinstance(sensor_cfg["connection"], str):
+            raise TypeError(
+                f"Sensor '{sensor_name}': 'connection' must be a string, "
+                f"got {type(sensor_cfg['connection']).__name__}."
+            )
+
         cal_cfg = sensor_cfg["calibration"]
-        cal_type = cal_cfg["type"]
+        if not isinstance(cal_cfg, dict):
+            raise TypeError(f"Sensor '{sensor_name}': 'calibration' must be a mapping.")
+
+        cal_type = cal_cfg.get("type")
 
         if cal_type == "linear":
             cal = calibration.LinearCalibration(
@@ -65,20 +91,17 @@ try:
                 r_inf=cal_cfg["r_inf"],
             )
         else:
-            print(
-                f"Error: Unknown calibration type '{cal_type}' for sensor '{sensor_cfg.get('name', '?')}'.",
-                file=sys.stderr,
+            raise ValueError(
+                f"Sensor '{sensor_name}': unknown calibration type '{cal_type}'. "
+                "Must be 'linear' or 'thermistor'."
             )
-            sys.exit(1)
 
         connection_str = sensor_cfg["connection"].lower()
         if connection_str not in _CONNECTION_MAP:
-            print(
-                f"Error: Invalid connection '{connection_str}' for sensor '{sensor_cfg.get('name', '?')}'. "
-                "Must be 'single' or 'differential'.",
-                file=sys.stderr,
+            raise ValueError(
+                f"Sensor '{sensor_name}': invalid connection '{connection_str}'. "
+                "Must be 'single' or 'differential'."
             )
-            sys.exit(1)
 
         calibration.Sensor(
             name=sensor_cfg["name"],
@@ -87,8 +110,8 @@ try:
             connection=_CONNECTION_MAP[connection_str],
             calibration=cal,
         )
-except KeyError as e:
-    print(f"Error: Missing required sensor field {e} in config.yaml.", file=sys.stderr)
+except (KeyError, TypeError, AttributeError, ValueError) as e:
+    print(f"Error: Invalid sensor configuration in config.yaml: {e}", file=sys.stderr)
     sys.exit(1)
 
 calibration.Sensor.print()  # Print out all sensors and their AIN channels.
