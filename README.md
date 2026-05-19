@@ -37,6 +37,10 @@ Run the following commands at the base of the omnibus folder.
 
 `uv run omnibus-server`
 
+### WebSocket Server
+
+`uv run omnibus-ws-server`
+
 ### Dashboard
 
 `uv run src/dashboard/main.py`

@@ -6,6 +6,7 @@ This directory contains a Docker Compose file for running the full Omnibus stack
 
 - **omnibus-server** — The central Omnibus message bus server.
 - **omnibus-globallog** — Logs all messages passing through the bus to timestamped binary files.
+- **omnibus-ws-server** — Combined WebSocket server that relays between browser clients and the Omnibus network in-process.
 - **omnibus-source-ljm** — LabJack data source.
 
 All services use host networking (`network_mode: host`).
@@ -33,7 +34,7 @@ All services use host networking (`network_mode: host`).
 
 | Variable | Default | Description |
 |---|---|---|
-| `OMNIBUS_SERVER_HOST` | `localhost` | Hostname of the Omnibus server. Used by `omnibus-globallog` and `omnibus-source-ljm` to connect to the bus. |
+| `OMNIBUS_SERVER_HOST` | `localhost` | Hostname of the Omnibus server. Used by `omnibus-globallog`, `omnibus-ws-server`, and `omnibus-source-ljm` to connect to the bus. |
 
 Example:
 
