@@ -1,95 +1,196 @@
-import os
-import tempfile
-from unittest.mock import patch
-
+import csv
+import json
 import pytest
-from sources.parsley.main import FileCommunicator
+from io import StringIO
+
 
 from tools.data_processing_v2_beta.processors.logger_processing import LoggerDataProcessor
 
 
-class DummyFileCommunicator(FileCommunicator):
-    def __init__(self, pages):
-        self.pages = pages
-        self.index = 0
-    def read(self):
-        if self.index < len(self.pages):
-            page = self.pages[self.index]
-            self.index += 1
-            return page
-        return b""
+class FakeMessage:
+   def __init__(self, data: dict):
+       self._data = data
+
+
+   def to_flat_dict(self) -> dict:
+       return self._data
 
 @pytest.fixture
-def temp_csv_file():
-    fd, path = tempfile.mkstemp(suffix=".csv")
-    os.close(fd)
-    yield path
-    os.remove(path)
+def processor():
+   return LoggerDataProcessor()
 
-@patch("tools.data_processing_v2_beta.processors.logger_processing.parsley")
-def test_process_success(mock_parsley, temp_csv_file):
-    # Mock parsley.parse_logger to yield logs
-    mock_parsley.parse_logger.return_value = iter([
-        ("sid1", b"data1"),
-        ("sid2", b"data2"),
-        ("sid3", b"data3"),
-    ])
-    # Mock parsley.parse to return expected dicts
-    mock_parsley.parse.side_effect = [
-        {
-            "board_type_id": "GPS",
-            "board_inst_id": "ROCKET",
-            "msg_prio": "HIGH",
-            "msg_type": "GPS_LATITUDE",
-            "data": {"time": 1.794, 'hrs': 23, 'mins': 59, 'secs': 44, 'dsecs': 26},
-        },
-        {
-            "board_type_id": "TELEMETRY",
-            "board_inst_id": "GROUND",
-            "msg_prio": "MEDIUM",
-            "msg_type": "SENSOR_ANALOG",
-            "data": {"time": 2.505, 'sensor_id': 'SENSOR_MOTOR_CURR', 'value': 110},
-        },
-        {
-            "board_type_id": "TELEMETRY",
-            "board_inst_id": "GROUND",
-            "msg_prio": "MEDIUM",
-            "msg_type": "SENSOR_ANALOG",
-            "data": {'sensor_id': 'SENSOR_MOTOR_CURR', 'value': 110}, # missing time field
-        },
-    ]
-    communicator = DummyFileCommunicator([b"page1"])
-    processor = LoggerDataProcessor(communicator)
-    processor.process(temp_csv_file)
-    # Check output file exists and has correct header
-    with open(temp_csv_file, "r") as f:
-        lines = f.readlines()
+@pytest.fixture
+def sample_messages():
+   return [
+       (
+           "sid1",
+           1.0,
+           FakeMessage(
+               {
+                   "msg_prio": "HIGH",
+                   "board_type_id": "GPS",
+                   "board_inst_id": "ROCKET",
+                   "msg_type": "GPS_LATITUDE",
+                   "pressure": 101.1,
+                   "temp": 20.0,
+               }
+           ),
+       ),
+       (
+           "sid2",
+           2.0,
+           FakeMessage(
+               {
+                   "msg_prio": "MEDIUM",
+                   "board_type_id": "TELEMETRY",
+                   "board_inst_id": "GROUND",
+                   "msg_type": "SENSOR_ANALOG",
+                   "sensor_id": "S1",
+                   "value": 110,
+               }
+           ),
+       ),
+   ]
 
-    assert len(lines) == 4  # Header + 2 data lines
-    assert "Timestamp (ns) +- 10ns,board_type_id,board_inst_id,msg_prio,msg_type,data" == lines[0].strip()
-    assert """1.794,GPS,ROCKET,HIGH,GPS_LATITUDE,"{'hrs': 23, 'mins': 59, 'secs': 44, 'dsecs': 26}\"""" == lines[1].strip()
-    assert """2.505,TELEMETRY,GROUND,MEDIUM,SENSOR_ANALOG,"{'sensor_id': 'SENSOR_MOTOR_CURR', 'value': 110}\"""" == lines[2].strip()
-    assert """0,TELEMETRY,GROUND,MEDIUM,SENSOR_ANALOG,"{'sensor_id': 'SENSOR_MOTOR_CURR', 'value': 110}\"""" == lines[3].strip()
+def test_flatten_message_injects_logger_time(processor):
+   msg = ("sid", 9.9, FakeMessage({"msg_prio": "HIGH"}))
 
-@patch("tools.data_processing_v2_beta.processors.logger_processing.parsley")
-def test_process_empty_log(mock_parsley, temp_csv_file):
-    mock_parsley.parse_logger.return_value = None
-    communicator = DummyFileCommunicator([b"page1"])
-    processor = LoggerDataProcessor(communicator)
-    processor.process(temp_csv_file)
-    with open(temp_csv_file, "r") as f:
-        lines = f.readlines()
-    assert len(lines) == 1  # Only header
-    assert "Timestamp (ns) +- 10ns,board_type_id,board_inst_id,msg_prio,msg_type,data" == lines[0].strip()
 
-@patch("tools.data_processing_v2_beta.processors.logger_processing.parsley")
-def test_process_malformed_data(mock_parsley, temp_csv_file):
-    mock_parsley.parse_logger.return_value = iter([("sid1", b"data1")])
-    mock_parsley.parse.return_value = None  # Malformed data
-    communicator = DummyFileCommunicator([b"page1"])
-    processor = LoggerDataProcessor(communicator)
-    processor.process(temp_csv_file)
-    with open(temp_csv_file, "r") as f:
-        lines = f.readlines()
-    assert len(lines) == 1  # Only header
-    assert "Timestamp (ns) +- 10ns,board_type_id,board_inst_id,msg_prio,msg_type,data" == lines[0].strip()
+   flat = processor._flatten_message(msg)
+
+
+   assert flat["logger_time"] == 9.9
+   assert flat["msg_prio"] == "HIGH"
+
+def test_csv_header_is_correct(processor, sample_messages, tmp_path):
+   path = tmp_path / "out.csv"
+
+
+   processor.process_log_and_write_csv(str(path), sample_messages)
+
+
+   with open(path, "r") as f:
+       reader = csv.reader(f)
+       header = next(reader)
+
+
+   assert header == processor.MASTER_COLUMNS
+
+def test_csv_row_mapping(processor, sample_messages, tmp_path):
+   path = tmp_path / "out.csv"
+
+
+   processor.process_log_and_write_csv(str(path), sample_messages)
+
+
+   with open(path, "r") as f:
+       rows = list(csv.reader(f))
+
+
+   assert len(rows) == 3  # header + 2 rows
+
+
+   idx = processor.column_to_idx
+
+
+   # row 1
+   assert rows[1][idx["msg_prio"]] == "HIGH"
+   assert rows[1][idx["board_type_id"]] == "GPS"
+   assert rows[1][idx["logger_time"]] == "1.0"
+
+def test_json_output_matches_flattened_structure(processor, sample_messages, tmp_path):
+   path = tmp_path / "out.json"
+
+
+   processor.process_log_and_write_json(str(path), sample_messages)
+
+
+   with open(path, "r") as f:
+       data = json.load(f)
+
+
+   assert len(data) == 2
+
+
+   assert data[0]["msg_prio"] == "HIGH"
+   assert data[0]["logger_time"] == 1.0
+
+def test_unknown_fields_are_ignored(processor, tmp_path):
+   msg = (
+       "sid",
+       1.0,
+       FakeMessage({"unknown_field": 123, "msg_prio": "LOW"}),
+   )
+
+
+   path = tmp_path / "out.csv"
+   processor.process_log_and_write_csv(str(path), [msg])
+
+
+   with open(path, "r") as f:
+       rows = list(csv.reader(f))
+
+
+   assert len(rows) == 2
+   assert "unknown_field" not in processor.column_to_idx
+
+def test_missing_fields_do_not_crash(processor, tmp_path):
+   msg = ("sid", 1.0, FakeMessage({}))
+
+
+   path = tmp_path / "out.csv"
+   processor.process_log_and_write_csv(str(path), [msg])
+
+
+   with open(path, "r") as f:
+       rows = list(csv.reader(f))
+
+
+   assert len(rows) == 2  # header + row
+   assert rows[1]  # row exists
+
+def test_list_and_dict_serialization(processor, tmp_path):
+   msg = (
+       "sid",
+       1.0,
+       FakeMessage(
+           {
+               "msg_prio": "HIGH",
+               "pressure": [1, 2, 3],
+               "temp": {"a": 1},
+           }
+       ),
+   )
+
+
+   path = tmp_path / "out.csv"
+   processor.process_log_and_write_csv(str(path), [msg])
+
+
+   with open(path, "r") as f:
+       rows = list(csv.reader(f))
+
+
+   idx = processor.column_to_idx
+
+
+   pressure = json.loads(rows[1][idx["pressure"]])
+   temp = json.loads(rows[1][idx["temp"]])
+
+
+   assert pressure == [1, 2, 3]
+   assert temp == {"a": 1}
+
+def test_empty_input_writes_only_header(processor, tmp_path):
+   path = tmp_path / "out.csv"
+
+
+   processor.process_log_and_write_csv(str(path), [])
+
+
+   with open(path, "r") as f:
+       rows = list(csv.reader(f))
+
+
+   assert rows == [processor.MASTER_COLUMNS]
+
