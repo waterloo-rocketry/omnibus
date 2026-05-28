@@ -89,11 +89,10 @@ class LoggerDataProcessor:
    ) -> dict[str, Any]:
 
 
-       if len(parsed_entry) != 3:
-           raise ValueError(f"Expected 3-item tuple, got {len(parsed_entry)}")
-
-
-       _, logger_time, message = parsed_entry
+       try:
+           _, logger_time, message = parsed_entry
+       except (ValueError, TypeError):
+           raise ValueError(f"Expected 3-item tuple, got {parsed_entry!r}")
 
 
        flat = message.to_flat_dict()
@@ -151,19 +150,12 @@ class LoggerDataProcessor:
    ) -> None:
 
 
+    
        json_data = [
            self._flatten_message(msg)
            for msg in parsed_messages
        ]
   
-       with open(output_file, "w") as f:
-               json.dump(json_data, f, indent=4)
-           # Stream NDJSON to avoid materializing all records in memory.
-           # Use UTF-8 encoding to preserve non-ASCII characters.
        with open(output_file, "w", encoding="utf-8") as f:
-           for msg in parsed_messages:
-               obj = self._flatten_message(msg)
-               line = json.dumps(obj, ensure_ascii=False)
-               f.write(line + "\n")
-
-
+           json.dump(json_data, f, ensure_ascii=False)
+           f.write("\n")
