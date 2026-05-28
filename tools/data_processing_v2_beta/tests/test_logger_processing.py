@@ -106,7 +106,8 @@ def test_json_output_matches_flattened_structure(processor, sample_messages, tmp
 
 
    with open(path, "r") as f:
-       data = json.load(f)
+       lines = [line.strip() for line in f if line.strip()]
+       data = [json.loads(line) for line in lines]
 
 
    assert len(data) == 2
@@ -114,7 +115,6 @@ def test_json_output_matches_flattened_structure(processor, sample_messages, tmp
 
    assert data[0]["msg_prio"] == "HIGH"
    assert data[0]["logger_time"] == 1.0
-
 def test_unknown_fields_are_ignored(processor, tmp_path):
    msg = (
        "sid",
