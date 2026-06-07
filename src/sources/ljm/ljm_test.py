@@ -1,9 +1,10 @@
+import multiprocessing as mp
 import sys
 import time
 import types
-import pytest
-import multiprocessing as mp
 from unittest.mock import MagicMock
+
+import pytest
 
 # Prevent main.py from attempting to load the real LabJack library or a
 # non-existent config module during import.  The original tests imported
@@ -12,6 +13,7 @@ from unittest.mock import MagicMock
 #
 # By injecting mocks into sys.modules before importing, we keep the module
 # import lightweight and safe.
+
 
 @pytest.fixture(scope="module", autouse=True)
 def process_wide_mocks():
@@ -37,6 +39,7 @@ def process_wide_mocks():
 
     # Ensure Omnibus server IP does not leak between tests
     from omnibus.omnibus import OmnibusCommunicator
+
     previous_ip = OmnibusCommunicator.server_ip
     OmnibusCommunicator.server_ip = "127.0.0.1"
 
@@ -63,8 +66,9 @@ def process_wide_mocks():
         OmnibusCommunicator.server_ip = previous_ip
 
 
-from omnibus.omnibus import OmnibusCommunicator
 from omnibus import Receiver, server
+from omnibus.omnibus import OmnibusCommunicator
+
 
 def get_main():
     OmnibusCommunicator.server_ip = "127.0.0.1"
@@ -72,14 +76,18 @@ def get_main():
     sys.argv = [sys.argv[0]]
     try:
         import main
+
         return main
     finally:
         sys.argv = original_argv
-     
+
+
 def run_server():
     import sys
+
     sys.argv = [sys.argv[0]]
     from omnibus import server
+
     # Mock get_ip to return localhost
     original_get_ip = server.get_ip
     server.get_ip = lambda: "127.0.0.1"
@@ -88,10 +96,12 @@ def run_server():
     finally:
         server.get_ip = original_get_ip
 
+
 @pytest.fixture(scope="module")
 def main_module(process_wide_mocks):
     # Ensure module-scoped process patching is installed before importing main.
     return get_main()
+
 
 @pytest.fixture(scope="module", autouse=True)
 def omnibus_server(main_module):
@@ -100,7 +110,7 @@ def omnibus_server(main_module):
     server_process = ctx.Process(target=run_server)
     server_process.start()
     OmnibusCommunicator.server_ip = "127.0.0.1"  # skip discovery
-    
+
     try:
         start = time.time()
 
@@ -111,42 +121,32 @@ def omnibus_server(main_module):
             s.send("_ALIVE", "_ALIVE")
             if time.time() - start > 5:
                 raise TimeoutError("Server did not start within 5 seconds")
-        
+
         yield
     finally:
-        # Stop the server    
+        # Stop the server
         server_process.terminate()
         server_process.join()
 
 
 @pytest.fixture
-def test_setup(main_module):    
+def test_setup(main_module):
     mock_ljm = MagicMock()
     main_module.ljm = mock_ljm
-    
-    receiver = Receiver(main_module.CHANNEL)
-    
-    # Wait for receiver to connect by attempting non-blocking recv
-    start = time.time()
-    while time.time() - start < 1.0:  # 1 second timeout
-        try:
-            receiver.recv_message(timeout=0)
-            break
-        except Exception:
-            time.sleep(0.01)
-    else:
-        raise TimeoutError("Receiver did not connect within 1 second")
 
-    main_module.calibration.Sensor.parse = MagicMock(return_value={'foo': [9, 8, 7]})
+    receiver = Receiver(main_module.CHANNEL)
+    receiver.recv_message(timeout=0)
+
+    main_module.calibration.Sensor.parse = MagicMock(return_value={"foo": [9, 8, 7]})
     main_module.time.time_ns = MagicMock(return_value=1_000_000_000)
     main_module.time.time = MagicMock(return_value=1.0)
-    
+
     return main_module, mock_ljm, receiver
 
 
 def test_read_data_processes_interleaved_sensor_values(test_setup):
     main_module, mock_ljm, receiver = test_setup
-    
+
     mock_ljm.eStreamRead.side_effect = [
         ([1, 2, 3, 4, 5, 6], 0, 0),
         KeyboardInterrupt(),
@@ -169,10 +169,12 @@ def test_read_data_processes_interleaved_sensor_values(test_setup):
     message = receiver.recv_message(timeout=1000)  # 1 second timeout
     assert message is not None
     assert message.channel == main_module.CHANNEL
-    assert message.payload['data'] == {'foo': [9, 8, 7]}
-    assert message.payload['message_format_version'] == main_module.MESSAGE_FORMAT_VERSION
-    assert message.payload['sample_rate'] == 1000
-    assert message.payload['relative_timestamps_nanoseconds'] == [
+    assert message.payload["data"] == {"foo": [9, 8, 7]}
+    assert (
+        message.payload["message_format_version"] == main_module.MESSAGE_FORMAT_VERSION
+    )
+    assert message.payload["sample_rate"] == 1000
+    assert message.payload["relative_timestamps_nanoseconds"] == [
         1_000_000_000,
         1_001_000_000,
         1_002_000_000,
