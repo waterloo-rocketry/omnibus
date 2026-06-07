@@ -148,6 +148,15 @@ def test_setup(main_module, monkeypatch):
     main_module.ljm = mock_ljm
 
     receiver = Receiver(main_module.CHANNEL)
+
+    # Synchronize sender/receiver before running assertions
+    # that depend on receiving a single message.
+    start = time.time()
+    while receiver.recv_message(timeout=1) is None:
+        main_module.sender.send(main_module.CHANNEL, "_SYNC")
+        if time.time() - start > 1:
+            raise TimeoutError("Receiver did not synchronize with sender")
+
     receiver.recv_message(timeout=0)
 
     # Use monkeypatch (instead of direct assignment) so pytest reliably restores
