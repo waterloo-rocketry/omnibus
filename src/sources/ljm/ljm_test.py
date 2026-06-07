@@ -143,16 +143,26 @@ def omnibus_server(main_module):
 
 
 @pytest.fixture
-def test_setup(main_module):
+def test_setup(main_module, monkeypatch):
     mock_ljm = MagicMock()
     main_module.ljm = mock_ljm
 
     receiver = Receiver(main_module.CHANNEL)
     receiver.recv_message(timeout=0)
 
-    main_module.calibration.Sensor.parse = MagicMock(return_value={"foo": [9, 8, 7]})
-    main_module.time.time_ns = MagicMock(return_value=1_000_000_000)
-    main_module.time.time = MagicMock(return_value=1.0)
+    # Use monkeypatch (instead of direct assignment) so pytest reliably restores
+    # patched attributes after this test. This is especially important for
+    # `main_module.time`, which is the process-wide `time` module; leaking a
+    # mocked `time.time()` to later tests can cause timing loops to hang.
+    monkeypatch.setattr(
+        main_module.calibration.Sensor,
+        "parse",
+        MagicMock(return_value={"foo": [9, 8, 7]}),
+    )
+    monkeypatch.setattr(
+        main_module.time, "time_ns", MagicMock(return_value=1_000_000_000)
+    )
+    monkeypatch.setattr(main_module.time, "time", MagicMock(return_value=1.0))
 
     return main_module, mock_ljm, receiver
 
