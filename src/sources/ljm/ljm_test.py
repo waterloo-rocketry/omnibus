@@ -1,7 +1,9 @@
+import importlib.util
 import multiprocessing as mp
 import sys
 import time
 import types
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -73,12 +75,23 @@ from omnibus.omnibus import OmnibusCommunicator
 def get_main():
     OmnibusCommunicator.server_ip = "127.0.0.1"
     original_argv = sys.argv[:]
+    ljm_dir = str(Path(__file__).resolve().parent)
     sys.argv = [sys.argv[0]]
-    try:
-        import main
 
-        return main
+    spec = importlib.util.spec_from_file_location(
+        "ljm_source_main", Path(ljm_dir) / "main.py"
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError("Could not load src/sources/ljm/main.py")
+
+    module = importlib.util.module_from_spec(spec)
+    original_path = sys.path[:]
+    sys.path.insert(0, ljm_dir)  # ensure `import calibration` resolves correctly
+    try:
+        spec.loader.exec_module(module)
+        return module
     finally:
+        sys.path = original_path
         sys.argv = original_argv
 
 
