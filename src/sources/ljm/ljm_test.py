@@ -72,6 +72,10 @@ from omnibus import Receiver, server
 from omnibus.omnibus import OmnibusCommunicator
 
 
+def _is_sync_payload(payload):
+    return isinstance(payload, str) and payload.startswith("_SYNC:")
+
+
 def get_main():
     OmnibusCommunicator.server_ip = "127.0.0.1"
     original_argv = sys.argv[:]
@@ -151,13 +155,32 @@ def test_setup(main_module, monkeypatch):
 
     # Synchronize sender/receiver before running assertions
     # that depend on receiving a single message.
+    sync_token = f"_SYNC:{time.time_ns()}"
     start = time.time()
-    while receiver.recv_message(timeout=1) is None:
-        main_module.sender.send(main_module.CHANNEL, "_SYNC")
+    main_module.sender.send(main_module.CHANNEL, sync_token)
+    while True:
+        message = receiver.recv_message(timeout=10)
+        if message is None:
+            main_module.sender.send(main_module.CHANNEL, sync_token)
+        elif message.payload == sync_token:
+            break
+        elif not _is_sync_payload(message.payload):
+            raise AssertionError(
+                f"Unexpected non-sync message during receiver synchronization: {message.payload!r}"
+            )
+
         if time.time() - start > 1:
             raise TimeoutError("Receiver did not synchronize with sender")
 
-    receiver.recv_message(timeout=0)
+    # Drain only sync traffic so the next read sees the test payload.
+    while True:
+        message = receiver.recv_message(timeout=0)
+        if message is None:
+            break
+        if not _is_sync_payload(message.payload):
+            raise AssertionError(
+                f"Unexpected non-sync message during sync drain: {message.payload!r}"
+            )
 
     # Use monkeypatch (instead of direct assignment) so pytest reliably restores
     # patched attributes after this test. This is especially important for
