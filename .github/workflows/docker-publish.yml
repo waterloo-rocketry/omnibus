@@ -62,5 +62,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && format('{0}:latest', matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
