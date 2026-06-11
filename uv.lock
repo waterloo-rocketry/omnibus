@@ -10,7 +10,6 @@ members = [
     "ljm-source",
     "ni-source",
     "omnibus",
-    "omnibus-bridge",
     "omnibus-dashboard",
     "omnibus-data-processing",
     "omnibus-ws-server",
@@ -850,25 +849,6 @@ dev = [
     { name = "flake8" },
     { name = "pytest" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
-]
-
-[[package]]
-name = "omnibus-bridge"
-version = "0.1.0"
-source = { virtual = "src/bridge" }
-dependencies = [
-    { name = "msgpack" },
-    { name = "omnibus" },
-    { name = "python-socketio", extra = ["client"] },
-    { name = "pyzmq" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "msgpack", specifier = ">=1.1.0" },
-    { name = "omnibus", editable = "." },
-    { name = "python-socketio", extras = ["client"], specifier = ">=5.11" },
-    { name = "pyzmq", specifier = ">=27.1.0" },
 ]
 
 [[package]]

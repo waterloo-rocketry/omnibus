@@ -1,8 +1,9 @@
 import queue
-from dataclasses import dataclass
+import threading
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 from omnibus import Message as OmnibusMessage
+from omnibus import Receiver
 from omnibus import Sender
 from omnibus import WS_ORIGINATED_SUFFIX
 
@@ -15,63 +16,98 @@ socketio = SocketIO(
     engineio_logger=False,
 )
 
-@dataclass
-class _State:
-    bridge_sid: str | None = None
+_zmq_outbound_queue: queue.Queue[OmnibusMessage] = queue.Queue()
+_ws_broadcast_queue: queue.Queue[OmnibusMessage] = queue.Queue()
+_workers_started = False
+_workers_lock = threading.Lock()
 
-state = _State()
 
-_relay_queue: queue.Queue[OmnibusMessage] = queue.Queue()
+def send_messages_to_omnibus(
+    sender: Sender, relay_queue: queue.Queue[OmnibusMessage]
+) -> None:
+    while True:
+        sender.send_message(relay_queue.get())
 
-def start_relay_sender():
-    """Start the persistent ZMQ sender background thread.
 
-    Must be called after Omnibus auto-discovery so that the server IP
-    is already cached in OmnibusCommunicator.
-    """
-    def _sender_loop():
-        sender = Sender()
-        while True:
-            msg = _relay_queue.get()
-            sender.send_message(msg)
-    socketio.start_background_task(_sender_loop)
+def queue_messages_for_websocket(
+    receiver: Receiver, broadcast_queue: queue.Queue[OmnibusMessage]
+) -> None:
+    while True:
+        msg = receiver.recv_message(None)
+        if msg is None:
+            continue
+
+        if msg.channel.endswith(WS_ORIGINATED_SUFFIX):
+            print(
+                f"[websocket_server] skipping message on '{msg.channel}' "
+                + "(originated from WS client)"
+            )
+            continue
+
+        broadcast_queue.put(msg)
+
+
+def broadcast_messages_to_websocket(
+    broadcast_queue: queue.Queue[OmnibusMessage],
+) -> None:
+    while True:
+        msg = broadcast_queue.get()
+        socketio.emit(msg.channel, (msg.timestamp, msg.payload))
+
+
+def _run_zmq_sender() -> None:
+    send_messages_to_omnibus(Sender(), _zmq_outbound_queue)
+
+
+def _run_zmq_receiver() -> None:
+    queue_messages_for_websocket(Receiver(""), _ws_broadcast_queue)
+
+
+def _run_websocket_broadcaster() -> None:
+    broadcast_messages_to_websocket(_ws_broadcast_queue)
+
+
+def _start_worker(name: str, target) -> None:
+    thread = threading.Thread(name=name, target=target, daemon=True)
+    thread.start()
+
+
+def start_background_workers() -> None:
+    global _workers_started
+
+    with _workers_lock:
+        if _workers_started:
+            return
+
+        _start_worker("ws-zmq-sender", _run_zmq_sender)
+        _start_worker("ws-zmq-receiver", _run_zmq_receiver)
+        _start_worker("ws-broadcast", _run_websocket_broadcaster)
+        _workers_started = True
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-@socketio.on("connect")  
+@socketio.on("connect")
 def handle_connect(auth: object):
-    # handles client connection including bridge
-    if isinstance(auth, dict) and auth.get("role") == "bridge":
-        if state.bridge_sid is not None:
-            raise ConnectionRefusedError("Only one bridge connection allowed")
-        state.bridge_sid = request.sid
-        print(f">>> Bridge connected: {request.sid}")
-    else:
-        print(f">>> Client connected: {request.sid}")
+    print(f">>> Client connected: {request.sid}")
 
 @socketio.on("*")
 def handle_channel_message(event: str, *args: object):
-    # Relay all channel messages between ZMQ and WS clients.
-    # Messages must carry exactly two data args: (timestamp, payload).
     if len(args) != 2:
-        print(f">>> Malformed message on '{event}': expected 2 data args (timestamp, payload), got {len(args)}")
+        print(
+            f">>> Malformed message on '{event}': expected 2 data args "
+            + f"(timestamp, payload), got {len(args)}"
+        )
         return
+
     timestamp, payload = args
-    # Messages from the bridge are broadcast to all WS clients except the bridge itself (include_self=False)
-    # Messages from WS clients, broadcast to everyone including the sender, Omnibus ZMQ so ZMQ subscribers receive them, tell the bridge to ignore it
-    if request.sid == state.bridge_sid: # ZMQ-originated, emit to all
-        emit(event, (timestamp, payload), broadcast=True, include_self=False)
-    else: # WS-client-originated: emit to all and tell bridge to ignore it
-        emit(event, (timestamp, payload), broadcast=True)
-        _relay_queue.put(OmnibusMessage(event + WS_ORIGINATED_SUFFIX, timestamp, payload))
+
+    emit(event, (timestamp, payload), broadcast=True)
+    _zmq_outbound_queue.put(
+        OmnibusMessage(event + WS_ORIGINATED_SUFFIX, timestamp, payload)
+    )
 
 @socketio.on("disconnect")
 def handle_disconnect():
-    # Handles client disconnection including bridge
-    if request.sid == state.bridge_sid:
-        state.bridge_sid = None
-        print(f">>> Bridge disconnected: {request.sid}")
-    else:
-        print(f">>> Client disconnected: {request.sid}")
+    print(f">>> Client disconnected: {request.sid}")
