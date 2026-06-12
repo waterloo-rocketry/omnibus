@@ -9,7 +9,6 @@ def main():
     args = parser.parse_args()
    
     _ = Sender() #Trigger auto discovery
-    start_relay_sender()
     print(f">>> Starting SocketIO server on {args.host}:{args.port}")
     socketio.run(app, host=args.host, port=args.port)
 
