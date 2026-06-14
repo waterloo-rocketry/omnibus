@@ -19,7 +19,6 @@ dependencies = [
     "gevent>=26.5.0",
     "gunicorn>=26.0.0",
     "gevent-websocket>=0.10.1",
-    "uwsgi>=2.0.31",
 ]
 
 [project.scripts]
