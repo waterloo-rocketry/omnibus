@@ -1,5 +1,5 @@
 import queue
-import threading
+import sys
 from dataclasses import dataclass
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
@@ -24,16 +24,11 @@ state = _State()
 
 _relay_queue: queue.Queue[OmnibusMessage] = queue.Queue()
 _thread = None
-_thread_lock = threading.Lock()
 
-def start_relay_sender():
-    """Start the persistent ZMQ sender background thread.
-
-    Must be called after Omnibus auto-discovery so that the server IP
-    is already cached in OmnibusCommunicator.
-    """
-    def _sender_loop():
-        global _thread
+def sender_loop():
+    global _thread
+    MAX_RESTARTS = 5
+    for attempt in range(MAX_RESTARTS):
         try:
             sender = Sender()
             while True:
@@ -41,11 +36,20 @@ def start_relay_sender():
                 sender.send_message(msg)
                 socketio.sleep(0)  # Yield to the SocketIO event loop to prevent blocking
         except Exception as exc:
-            print(f">>> Relay sender stopped after error: {exc!r}")
-        finally:
-            with _thread_lock:
-                _thread = None
-    return socketio.start_background_task(_sender_loop)
+            print(exc, file=sys.stderr)
+            attempt += 1
+    print(f">>> Relay sender thread failed after {MAX_RESTARTS} attempts", file=sys.stderr)
+    _thread = None
+
+def start_relay_sender():
+    """Start the persistent ZMQ sender background thread.
+
+    Must be called after Omnibus auto-discovery so that the server IP
+    is already cached in OmnibusCommunicator.
+    """
+    global _thread
+    if _thread is None:
+        _thread = socketio.start_background_task(sender_loop)
 
 @app.route("/")
 def index():
@@ -53,10 +57,6 @@ def index():
 
 @socketio.on("connect")  
 def handle_connect(auth: object):
-    global _thread
-    with _thread_lock:
-        if _thread is None:
-            _thread = start_relay_sender()
     # handles client connection including bridge
     if isinstance(auth, dict) and auth.get("role") == "bridge":
         if state.bridge_sid is not None:
