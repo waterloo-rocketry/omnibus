@@ -28,7 +28,7 @@ _thread = None
 def sender_loop():
     global _thread
     MAX_RESTARTS = 5
-    for attempt in range(MAX_RESTARTS):
+    for _ in range(MAX_RESTARTS):
         try:
             sender = Sender()
             while True:
@@ -37,7 +37,6 @@ def sender_loop():
                 socketio.sleep(0)  # Yield to the SocketIO event loop to prevent blocking
         except Exception as exc:
             print(exc, file=sys.stderr)
-            attempt += 1
     print(f">>> Relay sender thread failed after {MAX_RESTARTS} attempts", file=sys.stderr)
     _thread = None
 
