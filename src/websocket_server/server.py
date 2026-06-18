@@ -1,3 +1,4 @@
+import logging
 import queue
 import sys
 from dataclasses import dataclass
@@ -8,6 +9,7 @@ from omnibus import Sender
 from omnibus import WS_ORIGINATED_SUFFIX
 
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
@@ -35,8 +37,8 @@ def sender_loop():
                 msg = _relay_queue.get()
                 sender.send_message(msg)
                 socketio.sleep(0)  # Yield to the SocketIO event loop to prevent blocking
-        except Exception as exc:
-            print(exc, file=sys.stderr)
+        except Exception:
+            logger.exception("Relay sender loop failed; restarting")
     print(f">>> Relay sender thread failed after {MAX_RESTARTS} attempts", file=sys.stderr)
     _thread = None
 
