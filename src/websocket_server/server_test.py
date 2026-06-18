@@ -113,6 +113,36 @@ class TestConnect:
 
         assert server.state.bridge_sid is None
 
+    def test_relay_sender_starts_once_under_concurrent_connects(self, monkeypatch):
+        monkeypatch.setattr(server, "_thread", None)
+        started = object()
+        start_calls = 0
+        start_calls_lock = threading.Lock()
+
+        def fake_start():
+            nonlocal start_calls
+            with start_calls_lock:
+                start_calls += 1
+            time.sleep(0.05)
+            return started
+
+        mock_request = Mock()
+        mock_request.sid = "browser-sid"
+
+        with patch("server.request", new=mock_request), \
+             patch("server.start_relay_sender", side_effect=fake_start):
+            workers = [
+                threading.Thread(target=server.handle_connect, args=(None,))
+                for _ in range(8)
+            ]
+            for worker in workers:
+                worker.start()
+            for worker in workers:
+                worker.join()
+
+        assert start_calls == 1
+        assert server._thread is started
+
 class TestDisconnect:
     def test_bridge_disconnect_clears_sid(self, server_url):
         bridge = make_bridge(server_url)
@@ -273,11 +303,11 @@ class TestClientMessages:
 
         assert call_order == ["sio", "zmq_enqueue"]
 
-class _StopLoop(Exception):
+class _StopLoop(BaseException):
     pass
 
 class TestRelaySender:
-    def test_relay_sender_thread_forwards_to_zmq(self):
+    def test_relay_sender_thread_forwards_to_zmq(self, monkeypatch):
         # Capture _sender_loop instead of spawning a real thread to avoid
         # a persistent consumer racing with other tests for _relay_queue.
         captured_target = []
@@ -292,12 +322,77 @@ class TestRelaySender:
 
         mock_sender = Mock()
         msg = OmnibusMessage("test/WS_ORIGINATED", 1.0, {"v": 1})
+        main_thread = threading.get_ident()
+        original_queue = server._relay_queue
 
-        with patch("server.Sender", return_value=mock_sender), \
-             patch.object(
-                 server._relay_queue, "get", side_effect=[msg, _StopLoop],
-             ):
+        class FakeRelayQueue:
+            def get(self):
+                if threading.get_ident() != main_thread:
+                    return original_queue.get()
+                return msg
+
+        def fake_sleep(_seconds):
+            if threading.get_ident() == main_thread:
+                raise _StopLoop()
+
+        monkeypatch.setattr(server, "_relay_queue", FakeRelayQueue())
+        monkeypatch.setattr(server.socketio, "sleep", fake_sleep)
+
+        with patch("server.Sender", return_value=mock_sender):
             with pytest.raises(_StopLoop):
                 captured_target[0]()
 
         mock_sender.send_message.assert_called_once_with(msg)
+
+    def test_relay_sender_clears_thread_after_sender_init_error(self, monkeypatch):
+        captured_target = []
+
+        with patch.object(
+            server.socketio, "start_background_task",
+            side_effect=lambda fn: captured_target.append(fn),
+        ):
+            server.start_relay_sender()
+
+        monkeypatch.setattr(server, "_thread", object())
+
+        with patch("server.Sender", side_effect=RuntimeError("boom")), \
+             patch("server.print") as mock_print:
+            captured_target[0]()
+
+        assert server._thread is None
+        mock_print.assert_called_once_with(
+            ">>> Relay sender stopped after error: RuntimeError('boom')"
+        )
+
+    def test_relay_sender_clears_thread_after_send_error(self, monkeypatch):
+        captured_target = []
+
+        with patch.object(
+            server.socketio, "start_background_task",
+            side_effect=lambda fn: captured_target.append(fn),
+        ):
+            server.start_relay_sender()
+
+        msg = OmnibusMessage("test/WS_ORIGINATED", 1.0, {"v": 1})
+        mock_sender = Mock()
+        mock_sender.send_message.side_effect = RuntimeError("boom")
+        main_thread = threading.get_ident()
+        original_queue = server._relay_queue
+
+        class FakeRelayQueue:
+            def get(self):
+                if threading.get_ident() != main_thread:
+                    return original_queue.get()
+                return msg
+
+        monkeypatch.setattr(server, "_relay_queue", FakeRelayQueue())
+        monkeypatch.setattr(server, "_thread", object())
+
+        with patch("server.Sender", return_value=mock_sender), \
+             patch("server.print") as mock_print:
+            captured_target[0]()
+
+        assert server._thread is None
+        mock_print.assert_called_once_with(
+            ">>> Relay sender stopped after error: RuntimeError('boom')"
+        )

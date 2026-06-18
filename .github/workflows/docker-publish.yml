@@ -20,14 +20,19 @@ jobs:
         include:
           - dockerfile: ./src/omnibus/Dockerfile
             image: ghcr.io/waterloo-rocketry/omnibus-server
+            name: omnibus-server
           - dockerfile: ./src/sources/ljm/Dockerfile
             image: ghcr.io/waterloo-rocketry/omnibus-source-ljm
+            name: omnibus-source-ljm
           - dockerfile: ./src/globallog/Dockerfile
             image: ghcr.io/waterloo-rocketry/omnibus-globallog
+            name: omnibus-globallog
           - dockerfile: ./src/websocket_server/Dockerfile
             image: ghcr.io/waterloo-rocketry/omnibus-ws-server
+            name: omnibus-ws-server
           - dockerfile: ./src/bridge/Dockerfile
             image: ghcr.io/waterloo-rocketry/omnibus-ws-bridge
+            name: omnibus-ws-bridge
     permissions:
       contents: read
       packages: write
@@ -62,5 +67,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && format('{0}:latest', matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=build-${{ matrix.name }}
+          cache-to: type=gha,scope=build-${{ matrix.name }},mode=max
+

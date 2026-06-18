@@ -1,4 +1,5 @@
 import queue
+import threading
 from dataclasses import dataclass
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
@@ -22,6 +23,8 @@ class _State:
 state = _State()
 
 _relay_queue: queue.Queue[OmnibusMessage] = queue.Queue()
+_thread = None
+_thread_lock = threading.Lock()
 
 def start_relay_sender():
     """Start the persistent ZMQ sender background thread.
@@ -30,11 +33,19 @@ def start_relay_sender():
     is already cached in OmnibusCommunicator.
     """
     def _sender_loop():
-        sender = Sender()
-        while True:
-            msg = _relay_queue.get()
-            sender.send_message(msg)
-    socketio.start_background_task(_sender_loop)
+        global _thread
+        try:
+            sender = Sender()
+            while True:
+                msg = _relay_queue.get()
+                sender.send_message(msg)
+                socketio.sleep(0)  # Yield to the SocketIO event loop to prevent blocking
+        except Exception as exc:
+            print(f">>> Relay sender stopped after error: {exc!r}")
+        finally:
+            with _thread_lock:
+                _thread = None
+    return socketio.start_background_task(_sender_loop)
 
 @app.route("/")
 def index():
@@ -42,6 +53,10 @@ def index():
 
 @socketio.on("connect")  
 def handle_connect(auth: object):
+    global _thread
+    with _thread_lock:
+        if _thread is None:
+            _thread = start_relay_sender()
     # handles client connection including bridge
     if isinstance(auth, dict) and auth.get("role") == "bridge":
         if state.bridge_sid is not None:

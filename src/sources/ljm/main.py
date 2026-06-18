@@ -40,7 +40,7 @@ sender = Sender()
 CHANNEL = "DAQ"
 # Increment whenever data format change, so that new incompatible tools don't
 # attempt to read old logs / messages.
-MESSAGE_FORMAT_VERSION = 2  # Backwards compatible with original version.
+MESSAGE_FORMAT_VERSION = 3  # Backwards compatible with original version.
 
 
 class DAQ_SEND_MESSAGE_TYPE(TypedDict):
@@ -58,12 +58,12 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
     # }
     # 1.3 and 2.3 are the readings for each sensor at t0, 2.3 and 4.5 for t1, etc.
 
-    relative_timestamps_nanoseconds: list[int]
+    relative_timestamps: list[float]
     """
     Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt_ns = 1/sample_rate * 10^9).
     There can be variation of +- 1ns for every point.
     Timestamps are based on initial time t_0 = time.time_ns(), meaning they should be always unique.
-    Unit is nanoseconds.
+    Unit is seconds.
     """
     # Example: [19, 22, 25] <- 1.3 and 2.3 from above was read at t0 = 19
 
@@ -85,7 +85,7 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate, *, quiet=False, 
 
     # Relative timestamp starting point, starts at current time and scales by READ_PERIOD.
     # Use current time to have a unique starting point on every collection, ns to prevent floating point error.
-    relative_last_read_time: float = time.time_ns()
+    relative_last_read_time: int = time.time_ns()
 
     log = None
     if not no_built_in_log:
@@ -124,7 +124,7 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate, *, quiet=False, 
 
             num_of_messages_read = 0 if not data else len(data[0])
 
-            relative_timestamps = list(
+            relative_timestamps_nanoseconds= list(
                 range(
                     relative_last_read_time,
                     relative_last_read_time + READ_PERIOD * num_of_messages_read,
@@ -132,10 +132,12 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate, *, quiet=False, 
                 )
             )
 
+            relative_timestamps = [ts / 1e9 for ts in relative_timestamps_nanoseconds]
+
             data_parsed: DAQ_SEND_MESSAGE_TYPE = {
                 "timestamp": time.time(),
                 "data": calibration.Sensor.parse(data),  # apply calibration
-                "relative_timestamps_nanoseconds": relative_timestamps,
+                "relative_timestamps": relative_timestamps,
                 "sample_rate": cast(int, scan_rate),
                 "message_format_version": MESSAGE_FORMAT_VERSION,
             }
@@ -145,7 +147,7 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate, *, quiet=False, 
             relative_last_read_time = (
                 time.time_ns()
                 if not data or num_of_messages_read < scans_per_read
-                else relative_timestamps[-1] + READ_PERIOD
+                else relative_timestamps_nanoseconds[-1] + READ_PERIOD
             )
 
             if log:
