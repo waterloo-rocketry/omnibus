@@ -1005,8 +1005,8 @@ wheels = [
 
 [[package]]
 name = "parsley"
-version = "2026.3"
-source = { git = "https://github.com/waterloo-rocketry/parsley.git#97daccd76f79005a0c40c82d38f217e8e255baf2" }
+version = "2026.4"
+source = { git = "https://github.com/waterloo-rocketry/parsley.git#37555524ad81954ebb03018c932eae4963065d1b" }
 dependencies = [
     { name = "crc8" },
     { name = "deprecated" },
