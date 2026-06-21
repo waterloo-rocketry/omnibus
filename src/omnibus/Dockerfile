@@ -16,7 +16,8 @@ COPY . /app
 
 # Sync the project into the new environment, asserting the lockfile is up to date.
 WORKDIR /app
-RUN uv sync --locked
+RUN uv sync --locked --no-dev --no-editable --package omnibus
 
 # Run the server.
-ENTRYPOINT ["uv", "run", "omnibus-server", "--quiet"]
+ENTRYPOINT ["uv", "run", "--no-sync", "omnibus-server"]
+CMD ["--quiet"]
