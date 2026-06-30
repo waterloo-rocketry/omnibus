@@ -217,9 +217,9 @@ class DAQ_RECEIVED_MESSAGE_TYPE_V3(TypedDict):
 
     relative_timestamps: list[int | float]
     """
-    Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt_ns = 1/sample_rate).
+    Corresponding timestamps for each reading of every sensors, calculated from the source's
+    host start time and sample rate (dt = 1 / sample_rate).
     Values may be represented as ints or floats in seconds.
-    Timestamps are based on initial time t_0 = time.time_ns(), meaning they should be always unique.
     Unit is seconds
     """
 
