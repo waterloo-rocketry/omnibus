@@ -38,7 +38,7 @@ if len(system.devices) > 1:
 print(f"Found device {system.devices[0].product_type}.")
 
 sender = Sender()  # omnibus channel
-CHANNEL = "DAQ"
+CHANNEL = "DAQ/ni"
 # Increment whenever data format change, so that new incompatible tools don't
 # attempt to read old logs / messages
 MESSAGE_FORMAT_VERSION = 3  # Backwards compatible with original version
