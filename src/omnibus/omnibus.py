@@ -51,7 +51,13 @@ class OmnibusCommunicator:
         if OmnibusCommunicator.context is None:
             OmnibusCommunicator.context = zmq.Context()
         if OmnibusCommunicator.server_ip is not None:
-            assert server_ip is None or OmnibusCommunicator.server_ip == server_ip, "[FATAL] Omnibus Communicator - Cannot change server IP after it has been set"
+            if (
+                server_ip is not None
+                and OmnibusCommunicator.server_ip != server_ip
+            ):
+                raise ValueError(
+                    "[FATAL] Omnibus Communicator - Cannot change server IP after it has been set"
+                )
             return
         if server_ip is not None:
             OmnibusCommunicator.server_ip = server_ip

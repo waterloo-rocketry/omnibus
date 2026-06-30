@@ -188,7 +188,7 @@ class TestExplicitServerIP:
         OmnibusCommunicator(server_ip="10.0.0.42")
 
         with pytest.raises(
-            AssertionError, match="Cannot change server IP after it has been set"
+            ValueError, match="Cannot change server IP after it has been set"
         ):
             Sender(server_ip="10.0.0.99")
 
