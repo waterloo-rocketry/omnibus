@@ -7,6 +7,12 @@ from datetime import datetime
 
 from sources.parsley.main import FileCommunicator
 
+DAQ_CHANNEL_BY_SOURCE = {
+    "ni": "DAQ/ni",
+    "ljm": "DAQ/ljm",
+    "fake": "DAQ/Fake",
+}
+
 
 def generate_filename(log_name: str) -> str:
     # Creating file name with date + random hash
@@ -14,7 +20,29 @@ def generate_filename(log_name: str) -> str:
     rand_hash = secrets.token_hex(3)
     return f"omnibus-processed-{log_name}-{timestamp}-{rand_hash}.csv"
 
-def run_daq_command(input_file: str, output_file: str | None, channel: str, v3: bool = False) -> None:
+
+def resolve_daq_channel(source: str | None, use_fake: bool = False) -> str | None:
+    if use_fake:
+        return DAQ_CHANNEL_BY_SOURCE["fake"]
+
+    if source is None:
+        return None
+
+    normalized_source = source.strip()
+    if normalized_source == "DAQ" or normalized_source.startswith("DAQ/"):
+        return normalized_source
+
+    return DAQ_CHANNEL_BY_SOURCE.get(
+        normalized_source.lower(), f"DAQ/{normalized_source.lower()}"
+    )
+
+
+def run_daq_command(
+    input_file: str,
+    output_file: str | None,
+    channel: str | None,
+    v3: bool = False,
+) -> None:
     if v3:
         from processors.daq_processing import DAQDataProcessor_V3
         processor_class = DAQDataProcessor_V3
@@ -49,6 +77,10 @@ def main() -> None:
     daq_parser.add_argument("input_file", help="Path to the .msgpack log file")
     daq_parser.add_argument("-o", "--output", help="Optional output file name")
     daq_parser.add_argument("--fake", action="store_true", help="Use fake DAQ data")
+    daq_parser.add_argument(
+        "--source",
+        help="DAQ source to process, such as ni, ljm, fake, or a full DAQ channel name",
+    )
     daq_parser.add_argument("--v3", action="store_true", help="Use V3 message format")
 
     # Adding command for logger, and file related flags
@@ -60,10 +92,8 @@ def main() -> None:
     if not os.path.isfile(args.input_file):
         parser.error(f"Input file '{args.input_file}' does not exist")
 
-    channel = "DAQ"
     if args.command == "daq":
-        if args.fake:
-            channel = "DAQ/Fake"
+        channel = resolve_daq_channel(args.source, use_fake=args.fake)
         run_daq_command(args.input_file, args.output, channel, v3=args.v3)
     elif args.command == "logger":
         run_logger_command(args.input_file, args.output)
