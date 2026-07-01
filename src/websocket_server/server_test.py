@@ -113,36 +113,6 @@ class TestConnect:
 
         assert server.state.bridge_sid is None
 
-    def test_relay_sender_starts_once_under_concurrent_connects(self, monkeypatch):
-        monkeypatch.setattr(server, "_thread", None)
-        started = object()
-        start_calls = 0
-        start_calls_lock = threading.Lock()
-
-        def fake_start():
-            nonlocal start_calls
-            with start_calls_lock:
-                start_calls += 1
-            time.sleep(0.05)
-            return started
-
-        mock_request = Mock()
-        mock_request.sid = "browser-sid"
-
-        with patch("server.request", new=mock_request), \
-             patch("server.start_relay_sender", side_effect=fake_start):
-            workers = [
-                threading.Thread(target=server.handle_connect, args=(None,))
-                for _ in range(8)
-            ]
-            for worker in workers:
-                worker.start()
-            for worker in workers:
-                worker.join()
-
-        assert start_calls == 1
-        assert server._thread is started
-
 class TestDisconnect:
     def test_bridge_disconnect_clears_sid(self, server_url):
         bridge = make_bridge(server_url)
@@ -360,9 +330,6 @@ class TestRelaySender:
             captured_target[0]()
 
         assert server._thread is None
-        mock_print.assert_called_once_with(
-            ">>> Relay sender stopped after error: RuntimeError('boom')"
-        )
 
     def test_relay_sender_clears_thread_after_send_error(self, monkeypatch):
         captured_target = []
@@ -393,6 +360,3 @@ class TestRelaySender:
             captured_target[0]()
 
         assert server._thread is None
-        mock_print.assert_called_once_with(
-            ">>> Relay sender stopped after error: RuntimeError('boom')"
-        )

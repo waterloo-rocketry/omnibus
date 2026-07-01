@@ -4,12 +4,14 @@ import csv
 import msgpack
 import os
 import sys
-from typing import BinaryIO, TextIO, cast, TypedDict, Any
+from typing import BinaryIO, TextIO, cast, TypedDict
 from dataclasses import dataclass
 
 # V2 message format
 
 MESSAGE_FORMAT_VERSION = 2
+DAQ_CHANNEL_PREFIX = "DAQ/"
+LEGACY_DAQ_CHANNEL = "DAQ"
 
 DAQ_EXPECTED_RECEIVE_DATA_FORMAT = {
     "timestamp": float,
@@ -56,12 +58,39 @@ class DAQDataProcessor:
 
     _all_available_sensors: list[str] = []
     _log_file_stream: BinaryIO
-    _expected_channel: str
+    _expected_channel: str | None
+    _auto_detect_channel: bool
+    _warned_alternate_channels: set[str]
     # So we can pop as we process entries since log messages are first-in-first-out
 
-    def __init__(self, log_file_stream: BinaryIO, daq_channel: str = "DAQ") -> None:
+    def __init__(self, log_file_stream: BinaryIO, daq_channel: str | None = None) -> None:
         self._log_file_stream = log_file_stream
         self._expected_channel = daq_channel
+        self._auto_detect_channel = daq_channel is None
+        self._warned_alternate_channels = set()
+
+    def _is_daq_channel(self, channel: str) -> bool:
+        return channel == LEGACY_DAQ_CHANNEL or channel.startswith(DAQ_CHANNEL_PREFIX)
+
+    def _should_process_channel(self, channel: str) -> bool:
+        if not self._is_daq_channel(channel):
+            return False
+
+        if self._expected_channel is None:
+            self._expected_channel = channel
+            return True
+
+        if channel == self._expected_channel:
+            return True
+
+        if self._auto_detect_channel and channel not in self._warned_alternate_channels:
+            print(
+                f"[WARN] [DAQ Unpacker] Detected alternate DAQ source '{channel}' while processing '{self._expected_channel}'. Skipping messages from the alternate source.",
+                file=sys.stderr,
+            )
+            self._warned_alternate_channels.add(channel)
+
+        return False
 
     # TODO: Unpack onto disk rather than into RAM, reduces possibility of OOM error
     def process(self, output_file_path: str) -> str:
@@ -88,7 +117,7 @@ class DAQDataProcessor:
             tuple[str, float, DAQ_RECEIVED_MESSAGE_TYPE], tuple(msg)
         )
 
-        if channel != self._expected_channel:
+        if not self._should_process_channel(channel):
             return None
 
         # Verify the message version
@@ -164,7 +193,7 @@ MESSAGE_FORMAT_VERSION_V3 = 3
 DAQ_EXPECTED_RECEIVE_DATA_FORMAT_V3 = {
     "timestamp": float,
     "data": dict,  # data is actually dict[str, list[float]]
-    "relative_timestamps_seconds": list, # actually list[float]
+    "relative_timestamps": list,  # actually list[int | float]
     "sample_rate": int,
     "message_format_version": int,
 }
@@ -176,7 +205,7 @@ class DAQ_RECEIVED_MESSAGE_TYPE_V3(TypedDict):
     data: dict[str, list[float]]
     """    
     Each sensor groups a certain number of readings, the bulk read rate of the DAQ.
-    The length of that list corresponds to the length of relative_timestamps_seconds below.
+    The length of that list corresponds to the length of relative_timestamps below.
     The floating point numbers are arbitrary values depending on the unit of the sensor configured when it was recorded.
     """
     # Example: {
@@ -186,11 +215,11 @@ class DAQ_RECEIVED_MESSAGE_TYPE_V3(TypedDict):
     # }
     # 1.3 and 2.3 are the readings for each sensor at t0, 2.3 and 4.5 for t1, etc.
 
-    relative_timestamps_seconds: list[float]
+    relative_timestamps: list[int | float]
     """
-    Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt_ns = 1/sample_rate).
-    There can be variation of +- 1e-9s for every point, according to NI box data sheet, which is minimal.
-    Timestamps are based on initial time t_0 = time.time_ns(), meaning they should be always unique.
+    Corresponding timestamps for each reading of every sensors, calculated from the source's
+    host start time and sample rate (dt = 1 / sample_rate).
+    Values may be represented as ints or floats in seconds.
     Unit is seconds
     """
 
@@ -206,12 +235,39 @@ class DAQDataProcessor_V3:
 
     _all_available_sensors: list[str] = []
     _log_file_stream: BinaryIO
-    _expected_channel: str
+    _expected_channel: str | None
+    _auto_detect_channel: bool
+    _warned_alternate_channels: set[str]
     # So we can pop as we process entries since log messages are first-in-first-out
 
-    def __init__(self, log_file_stream: BinaryIO, daq_channel: str = "DAQ") -> None:
+    def __init__(self, log_file_stream: BinaryIO, daq_channel: str | None = None) -> None:
         self._log_file_stream = log_file_stream
         self._expected_channel = daq_channel
+        self._auto_detect_channel = daq_channel is None
+        self._warned_alternate_channels = set()
+
+    def _is_daq_channel(self, channel: str) -> bool:
+        return channel == LEGACY_DAQ_CHANNEL or channel.startswith(DAQ_CHANNEL_PREFIX)
+
+    def _should_process_channel(self, channel: str) -> bool:
+        if not self._is_daq_channel(channel):
+            return False
+
+        if self._expected_channel is None:
+            self._expected_channel = channel
+            return True
+
+        if channel == self._expected_channel:
+            return True
+
+        if self._auto_detect_channel and channel not in self._warned_alternate_channels:
+            print(
+                f"[WARN] [DAQ Unpacker] Detected alternate DAQ source '{channel}' while processing '{self._expected_channel}'. Skipping messages from the alternate source.",
+                file=sys.stderr,
+            )
+            self._warned_alternate_channels.add(channel)
+
+        return False
 
     # TODO: Unpack onto disk rather than into RAM, reduces possibility of OOM error
     def process(self, output_file_path: str) -> str:
@@ -238,7 +294,7 @@ class DAQDataProcessor_V3:
             tuple[str, float, DAQ_RECEIVED_MESSAGE_TYPE_V3], tuple(msg)
         )
 
-        if channel != self._expected_channel:
+        if not self._should_process_channel(channel):
             return None
 
         # Verify the message version
@@ -289,11 +345,11 @@ class DAQDataProcessor_V3:
                 continue
 
             data = unpacked_data["data"]
-            timestamps = unpacked_data["relative_timestamps_seconds"]
+            timestamps = unpacked_data["relative_timestamps"]
 
             if not wrote_header:
                 sensors = sorted(data.keys())
-                writer.writerow(["Timestamp (s) +- 10ns"] + sensors)
+                writer.writerow(["Timestamp (s)"] + sensors)
                 wrote_header = True
 
             sample_count = len(timestamps)
