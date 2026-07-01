@@ -3,7 +3,7 @@ name = "ljm-source"
 version = "0.1.0"
 description = "LabJack LJM DAQ Box Source"
 requires-python = ">=3.11"
-dependencies = ["omnibus", "labjack-ljm"]
+dependencies = ["omnibus", "labjack-ljm", "pyyaml"]
 
 [tool.uv.sources]
 omnibus = {workspace = true}

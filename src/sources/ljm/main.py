@@ -5,9 +5,11 @@ The main module for the LabJack DAQ source.
 import argparse
 import sys
 import time
+from pathlib import Path
 from typing import TypedDict, cast
 
 import msgpack
+import yaml
 
 # Import the LabJack package
 from labjack import ljm
@@ -15,22 +17,101 @@ from omnibus import Sender
 
 import calibration
 
+CONFIG_PATH = Path(__file__).parent / "config.yaml"
+
 try:
-    import config  # pyright: ignore[reportMissingImports]
-except ImportError as e:
+    with open(CONFIG_PATH) as f:
+        _cfg = yaml.safe_load(f)
+except FileNotFoundError:
     print(
-        """Error: Importing config failed! Is config.py in the same folder as ljm source?
-See 'config.py.example' for more info.\n"""
-        + str(e.msg),
+        "Error: config.yaml not found! Is config.yaml in the same folder as the ljm source?\n"
+        "See 'config.yaml.example' for more info.",
         file=sys.stderr,
     )
     sys.exit(1)
-
+except yaml.YAMLError as e:
+    print(f"Error: Failed to parse config.yaml:\n{e}", file=sys.stderr)
+    sys.exit(1)
 
 try:
-    config.setup()  # Initialize the sensors.
-except KeyError as e:
-    print(f"Error: {''.join(e.args)}.", file=sys.stderr)
+    _stream = _cfg["stream"]
+    SCANS_PER_READ: int = int(_stream["scans_per_read"])
+    SCAN_RATE: int = int(_stream["scan_rate"])
+    if SCANS_PER_READ <= 0 or SCAN_RATE <= 0:
+        raise ValueError(
+            f"scans_per_read ({SCANS_PER_READ}) and scan_rate ({SCAN_RATE}) must both be positive integers."
+        )
+except (KeyError, TypeError, ValueError) as e:
+    print(f"Error: Invalid stream configuration in config.yaml: {e}", file=sys.stderr)
+    sys.exit(1)
+
+_CONNECTION_MAP = {
+    "single": calibration.Connection.SINGLE,
+    "differential": calibration.Connection.DIFFERENTIAL,
+}
+
+try:
+    _sensors = _cfg.get("sensors", [])
+    if not isinstance(_sensors, list):
+        raise TypeError("'sensors' must be a list.")
+
+    for i, sensor_cfg in enumerate(_sensors):
+        if not isinstance(sensor_cfg, dict):
+            raise TypeError(f"Sensor at index {i} must be a mapping, got {type(sensor_cfg).__name__}.")
+
+        sensor_name = sensor_cfg.get("name", f"<index {i}>")
+
+        for key in ("name", "channel", "input_range", "connection", "calibration"):
+            if key not in sensor_cfg:
+                raise KeyError(f"Sensor '{sensor_name}' is missing required field '{key}'.")
+
+        if not isinstance(sensor_cfg["connection"], str):
+            raise TypeError(
+                f"Sensor '{sensor_name}': 'connection' must be a string, "
+                f"got {type(sensor_cfg['connection']).__name__}."
+            )
+
+        cal_cfg = sensor_cfg["calibration"]
+        if not isinstance(cal_cfg, dict):
+            raise TypeError(f"Sensor '{sensor_name}': 'calibration' must be a mapping.")
+
+        cal_type = cal_cfg.get("type")
+
+        if cal_type == "linear":
+            cal = calibration.LinearCalibration(
+                slope=cal_cfg["slope"],
+                offset=cal_cfg["offset"],
+                unit=cal_cfg["unit"],
+            )
+        elif cal_type == "thermistor":
+            cal = calibration.ThermistorCalibration(
+                voltage=cal_cfg["voltage"],
+                resistance=cal_cfg["resistance"],
+                B=cal_cfg["B"],
+                r_inf=cal_cfg["r_inf"],
+            )
+        else:
+            raise ValueError(
+                f"Sensor '{sensor_name}': unknown calibration type '{cal_type}'. "
+                "Must be 'linear' or 'thermistor'."
+            )
+
+        connection_str = sensor_cfg["connection"].lower()
+        if connection_str not in _CONNECTION_MAP:
+            raise ValueError(
+                f"Sensor '{sensor_name}': invalid connection '{connection_str}'. "
+                "Must be 'single' or 'differential'."
+            )
+
+        calibration.Sensor(
+            name=sensor_cfg["name"],
+            channel=sensor_cfg["channel"],
+            input_range=sensor_cfg["input_range"],
+            connection=_CONNECTION_MAP[connection_str],
+            calibration=cal,
+        )
+except (KeyError, TypeError, AttributeError, ValueError) as e:
+    print(f"Error: Invalid sensor configuration in config.yaml: {e}", file=sys.stderr)
     sys.exit(1)
 
 calibration.Sensor.print()  # Print out all sensors and their AIN channels.
@@ -209,19 +290,19 @@ def main():
 
         # Start LJM stream.
         scan_rate = ljm.eStreamStart(
-            handle, config.SCANS_PER_READ, num_addresses, a_scan_list, config.SCAN_RATE
+            handle, SCANS_PER_READ, num_addresses, a_scan_list, SCAN_RATE
         )
         print(f"Number of addresses set up: {num_addresses}")
         print(f"Scan list names: {a_scan_list_names}")
         print(f"Stream started with a scan rate of {scan_rate} Hz")
-        if scan_rate != config.SCAN_RATE:
+        if scan_rate != SCAN_RATE:
             print(
-                f"Warning: Configured scan rate ({config.SCAN_RATE} Hz) does not match actual scan rate ({scan_rate} Hz)."
+                f"Warning: Configured scan rate ({SCAN_RATE} Hz) does not match actual scan rate ({scan_rate} Hz)."
             )
 
         try:
             read_data(
-                handle, num_addresses, config.SCANS_PER_READ, scan_rate,
+                handle, num_addresses, SCANS_PER_READ, scan_rate,
                 quiet=args.quiet, no_built_in_log=args.no_built_in_log,
             )
         except KeyboardInterrupt:

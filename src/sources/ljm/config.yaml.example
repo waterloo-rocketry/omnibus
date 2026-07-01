@@ -1,0 +1,53 @@
+#### EXAMPLE CONFIG ####
+## This is the documented sensor calibrations, as well as the port configurations in use on the DAQ Box.
+## To use the LabJack Source, duplicate this file and name it `config.yaml`, uncomment and modify as needed.
+## NOTE: If `config.yaml` is updated, please also update this file as required
+## Last modified 2026-05-18 - John Petruzzella (@jpetruzz)
+
+# LabJack Stream Configuration
+# Configured at 25 readings per read, and 1000 readings per second per channel.
+stream:
+  scans_per_read: 25
+  scan_rate: 1000
+
+# Sensor definitions
+# Each sensor requires:
+#   name:        Human-readable label (must be unique)
+#   channel:     LabJack AIN channel (e.g. AIN0)
+#   input_range: Voltage range — must be one of: 10, 1, 0.1, 0.01
+#   connection:  "single" (single-ended) or "differential"
+#   calibration:
+#     type: "linear" or "thermistor"
+#
+#     linear fields:
+#       slope:  multiplier applied to raw voltage
+#       offset: added after slope (output = slope * V + offset)
+#       unit:   string label for the output unit (e.g. "psi", "V", "C")
+#
+#     thermistor fields:
+#       voltage:    supply voltage powering the thermistor
+#       resistance: voltage divider resistance (ohms)
+#       B:          thermistor B constant
+#       r_inf:      thermistor R_inf constant
+
+sensors:
+  - name: "Test"
+    channel: "AIN0"
+    input_range: 10
+    connection: "differential"
+    calibration:
+      type: "linear"
+      slope: 3
+      offset: 0
+      unit: "V"
+
+  # - name: "Tank Temp"
+  #   channel: "AIN1"
+  #   input_range: 10
+  #   connection: "single"
+  #   calibration:
+  #     type: "thermistor"
+  #     voltage: 5.0
+  #     resistance: 10000
+  #     B: 3950
+  #     r_inf: 0.01
