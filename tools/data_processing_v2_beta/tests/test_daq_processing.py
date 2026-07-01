@@ -234,7 +234,7 @@ class TestValidateAndExtractData_V3:
             {
                 "timestamp": 123.0,
                 "data": {"sensor1": [1, 2], "sensor2": [1, 2]},
-                "relative_timestamps_seconds": [0.0000001, 0.0000002],
+                "relative_timestamps": [0.0000001, 0.0000002],
                 "sample_rate": 1,
                 "message_format_version": MESSAGE_FORMAT_VERSION_V3,
             },
@@ -250,7 +250,7 @@ class TestValidateAndExtractData_V3:
             {
                 "timestamp": 123.0,
                 "data": {"sensor1": [1, 2], "sensor2": [1, 2]},
-                "relative_timestamps_seconds": [0.0000001, 0.0000002],
+                "relative_timestamps": [0.0000001, 0.0000002],
                 "sample_rate": 1,
                 "message_format_version": MESSAGE_FORMAT_VERSION_V3,
             },
@@ -265,7 +265,7 @@ class TestValidateAndExtractData_V3:
             {
                 "timestamp": 123.0,
                 "data": {"sensor1": [1, 2], "sensor2": [1, 2]},
-                "relative_timestamps_seconds": [0.0000001, 0.0000002],
+                "relative_timestamps": [0.0000001, 0.0000002],
                 "sample_rate": 1,
                 "message_format_version": 0,  # Wrong version
             },
@@ -280,7 +280,7 @@ class TestValidateAndExtractData_V3:
             {
                 "timestamp": 123.0,
                 # Missing sensor data
-                "relative_timestamps_seconds": [0.0000001, 0.0000002],
+                "relative_timestamps": [0.0000001, 0.0000002],
                 "sample_rate": 1,
                 "message_format_version": MESSAGE_FORMAT_VERSION_V3,
             },
@@ -310,7 +310,7 @@ class TestUnpackAndStreamToCSV_V3:
             ["DAQ", 1234.0, {
                 "timestamp": 1234.0,
                 "data": {"sensor1": [1.1, 1.2], "sensor2": [2.1, 2.2]},
-                "relative_timestamps_seconds": [0.0000001, 0.0000002],
+                "relative_timestamps": [0.0000001, 0.0000002],
                 "sample_rate": 1,
                 "message_format_version": MESSAGE_FORMAT_VERSION_V3,
             }]
@@ -350,7 +350,7 @@ class TestUnpackAndStreamToCSV_V3:
             ["DAQ", 1234.0, {
                 "timestamp": 1234.0,
                 "data": {"sensor1": [1.1], "sensor2": [2.1]},
-                "relative_timestamps_seconds": [0.0000001],
+                "relative_timestamps": [0.0000001],
                 "sample_rate": 1,
                 "message_format_version": MESSAGE_FORMAT_VERSION_V3,
             }],
@@ -377,14 +377,14 @@ def test_multiple_valid_messages_v3():
         ["DAQ", 0.0, {
             "timestamp": 0.0,
             "data": {"s": [1]},
-            "relative_timestamps_seconds": [0.0000001],
+            "relative_timestamps": [0.0000001],
             "sample_rate": 1,
             "message_format_version": MESSAGE_FORMAT_VERSION_V3,
         }],
         ["DAQ", 0.0, {
             "timestamp": 0.0,
             "data": {"s": [2]},
-            "relative_timestamps_seconds": [0.0000002],
+            "relative_timestamps": [0.0000002],
             "sample_rate": 1,
             "message_format_version": MESSAGE_FORMAT_VERSION_V3,
         }],
@@ -413,7 +413,7 @@ def test_inconsistent_sensor_lengths_v3():
     msg = ["DAQ", 0.0, {
         "timestamp": 0.0,
         "data": {"sensor 1": [1, 2], "sensor 2": [10]},  # inconsistent
-        "relative_timestamps_seconds": [0.0000001, 0.0000002],
+        "relative_timestamps": [0.0000001, 0.0000002],
         "sample_rate": 1,
         "message_format_version": MESSAGE_FORMAT_VERSION_V3,
     }]
