@@ -50,7 +50,7 @@ class FileCommunicator:
         return data
 
     def write(self, msg: bytes):
-        print('Cannot write to file: {msg}')
+        print(f'Cannot write to file: {msg}')
 
     def __enter__(self):
         return self
@@ -290,7 +290,12 @@ def main():
                     parsed_object = usb_parser.parse(msg)
 
                 if isinstance(parsed_object, parsley.ParsleyError):
-                    print(f"Parse error: {parsed_object.error}")
+                    print(
+                        f"Parse error: {parsed_object.error} "
+                        f"[prio={parsed_object.msg_prio} type={parsed_object.msg_type} "
+                        f"board={parsed_object.board_type_id}/{parsed_object.board_inst_id} "
+                        f"metadata={parsed_object.msg_metadata} data={parsed_object.msg_data}]"
+                    )
                     continue
 
                 parsed_data = parsed_object.model_dump(mode='json')
@@ -302,7 +307,6 @@ def main():
                     message_with_id = dict(parsed_data)
                     message_with_id["parsley"] = sender_id  # Add the instance ID
                     message_with_id["message_version"] = 2
-                    print("SENDING:", message_with_id)
                     sender.send(channel=SEND_CHANNEL, payload=message_with_id)
 
             except ValueError as e:
