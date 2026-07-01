@@ -15,6 +15,16 @@ from omnibus import Sender
 
 import calibration
 
+if sys.platform == "win32":
+    import win_precise_time # pyright: ignore[reportMissingImports]
+
+    def get_host_time() -> float:
+        return win_precise_time.time()
+
+else:
+    def get_host_time() -> float:
+        return time.time()
+
 try:
     import config  # pyright: ignore[reportMissingImports]
 except ImportError as e:
@@ -60,14 +70,13 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 
     relative_timestamps: list[float]
     """
-    Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt = 1/sample_rate).
-    There can be variation of +- 1e-9s for every point.
-    Timestamps are based on initial time t_0 = time.time_ns(), meaning they should be always unique.
+    Corresponding timestamps for each reading of every sensors, calculated from the actual
+    scan rate (dt = 1 / scan_rate) from a host start time.
     Unit is seconds.
     """
     # Example: [19, 22, 25] <- 1.3 and 2.3 from above was read at t0 = 19
 
-    # Rate at which the messages were read, in Hz, dt = 1/sample_rate
+    # Configured rate at which the messages were read, in Hz.
     sample_rate: int
 
     # Arbitrary constant that validates that the received message format is compatible.
@@ -78,18 +87,20 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 # Function to pass to the callback function. This needs have one
 # parameter/argument, which will be the handle.
 def read_data(handle, num_addresses, scans_per_read, scan_rate, *, quiet=False, no_built_in_log=False):
-    sample_rate = int(scan_rate)
-    if sample_rate <= 0:
-        raise ValueError("scan_rate must cast to a positive integer")
+    configured_sample_rate = int(config.SCAN_RATE)
+    if configured_sample_rate <= 0:
+        raise ValueError("config.SCAN_RATE must cast to a positive integer")
 
-    # Converting to nanoseconds to avoid floating point inaccuracy.
-    READ_PERIOD_NS = int(1 / sample_rate * 1000000000)
+    if scan_rate <= 0:
+        raise ValueError("scan_rate must be positive")
+
+    read_period_seconds = 1 / scan_rate
 
     rates = []
 
-    # Relative timestamp starting point, starts at current time and scales by READ_PERIOD.
-    # Use current time to have a unique starting point on every collection, ns to prevent floating point error.
-    relative_last_read_time: int = time.time_ns()
+    # Starting point for deriving timestamps from the cumulative sample count.
+    initial_host_start_time = get_host_time()
+    total_samples_read = 0
 
     log = None
     if not no_built_in_log:
@@ -128,34 +139,26 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate, *, quiet=False, 
 
             num_of_messages_read = 0 if not data else len(data[0])
 
-            relative_timestamps_nanoseconds = list(
-                range(
-                    relative_last_read_time,
-                    relative_last_read_time + READ_PERIOD_NS * num_of_messages_read,
-                    READ_PERIOD_NS,
-                )
-            )
-
             relative_timestamps = [
-                timestamp_ns / 1_000_000_000
-                for timestamp_ns in relative_timestamps_nanoseconds
+                initial_host_start_time
+                + (total_samples_read + sample_index) * read_period_seconds
+                for sample_index in range(num_of_messages_read)
             ]
 
             data_parsed: DAQ_SEND_MESSAGE_TYPE = {
-                "timestamp": time.time(),
+                "timestamp": get_host_time(),
                 "data": calibration.Sensor.parse(data),  # apply calibration
                 "relative_timestamps": relative_timestamps,
-                "sample_rate": sample_rate,
+                "sample_rate": configured_sample_rate,
                 "message_format_version": MESSAGE_FORMAT_VERSION,
             }
 
-            # Calculate next staring timestamp.
-            # Reset the timestamps to a new starting point if there were problems reading.
-            relative_last_read_time = (
-                time.time_ns()
-                if not data or num_of_messages_read < scans_per_read
-                else relative_timestamps_nanoseconds[-1] + READ_PERIOD_NS
-            )
+            # Reset the timestamp baseline if there were problems reading.
+            if not data or num_of_messages_read < scans_per_read:
+                initial_host_start_time = get_host_time()
+                total_samples_read = 0
+            else:
+                total_samples_read += num_of_messages_read
 
             if log:
                 log.write(msgpack.packb(data_parsed))

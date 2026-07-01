@@ -8,6 +8,17 @@ import calibration
 
 from typing import cast, NoReturn, TypedDict
 
+if sys.platform == "win32":
+    import win_precise_time as wpt # pyright: ignore[reportMissingImports]
+
+    def get_host_time() -> float:
+        return wpt.time()
+
+else:
+
+    def get_host_time() -> float:
+        return time.time()
+
 try:
     import config  # pyright: ignore[reportMissingImports]
 except ImportError as e:
@@ -60,14 +71,13 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 
     relative_timestamps: list[float]
     """
-    Corresponding timestamps for each reading of every sensors, calculated from sample rate (dt = 1/sample_rate).
-    There can be variation of +- 1e-9s for every point, according to NI box data sheet, which is minimal.
-    Timestamps are based on initial time t_0 = time.time_ns(), meaning they should be always unique.
+    Corresponding timestamps for each reading of every sensors, calculated from the task's
+    actual sample rate (dt = 1 / task.timing.samp_clk_rate) from a host start time.
     Unit is seconds
     """
     # Example: [19, 22, 25] <- 1.3 and 2.3 from above was read at t0 = 19
 
-    # Rate at which the messages were read, in Hz, dt = 1/sample_rate
+    # Configured rate at which the messages were read, in Hz.
     sample_rate: int
 
     # Arbitrary constant that validates that the received message format is compatible
@@ -76,18 +86,21 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 
 
 def read_data(ai: nidaqmx.Task) -> NoReturn:
-    sample_rate = int(config.RATE)
-    if sample_rate <= 0:
+    configured_sample_rate = int(config.RATE)
+    if configured_sample_rate <= 0:
         raise ValueError("config.RATE must cast to a positive integer")
 
-    # Converting to nanoseconds to avoid floating point inaccuracy
-    READ_PERIOD_NS = int(1 / sample_rate * 1000000000)
+    actual_sample_rate = ai.timing.samp_clk_rate
+    if actual_sample_rate <= 0:
+        raise ValueError("task.timing.samp_clk_rate must be positive")
+
+    read_period_seconds = 1 / actual_sample_rate
 
     rates = []
 
-    # Relative timestamp starting point, starts at current time and scales by READ_PERIOD
-    # Use current time to have a unique starting point on every collection, ns to prevent floating point error
-    relative_last_read_time_ns: int = time.time_ns()
+    # Starting point for deriving timestamps from the cumulative sample count.
+    initial_host_start_time = get_host_time()
+    total_samples_read = 0
 
     now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
     with open(f"log_{now}.dat", "wb") as log:
@@ -115,34 +128,26 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
 
             num_of_messages_read = 0 if not data else len(data[0])
 
-
-            relative_timestamps_nanoseconds = list(
-                range(
-                    relative_last_read_time_ns,
-                    relative_last_read_time_ns + READ_PERIOD_NS * num_of_messages_read,
-                    READ_PERIOD_NS,
-                )
-            )
             relative_timestamps = [
-                timestamp_ns / 1_000_000_000
-                for timestamp_ns in relative_timestamps_nanoseconds
+                initial_host_start_time
+                + (total_samples_read + sample_index) * read_period_seconds
+                for sample_index in range(num_of_messages_read)
             ]
 
             data_parsed: DAQ_SEND_MESSAGE_TYPE = {
-                "timestamp": time.time(),
+                "timestamp": get_host_time(),
                 "data": calibration.Sensor.parse(data),  # apply calibration
                 "relative_timestamps": relative_timestamps,
-                "sample_rate": sample_rate,
+                "sample_rate": configured_sample_rate,
                 "message_format_version": MESSAGE_FORMAT_VERSION,
             }
 
-            # Calculate next staring timestamp
-            # Reset the timestamps to a new starting point if there were problems reading
-            relative_last_read_time_ns = (
-                time.time_ns()
-                if not data or num_of_messages_read < config.READ_BULK
-                else relative_timestamps_nanoseconds[-1] + READ_PERIOD_NS
-            )
+            # Reset the timestamp baseline if there were problems reading.
+            if not data or num_of_messages_read < config.READ_BULK:
+                initial_host_start_time = get_host_time()
+                total_samples_read = 0
+            else:
+                total_samples_read += num_of_messages_read
 
             # we can concatenate msgpack outputs as a backup logging option
             log.write(msgpack.packb(data_parsed))
