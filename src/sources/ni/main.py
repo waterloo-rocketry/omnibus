@@ -9,7 +9,7 @@ import calibration
 from typing import cast, NoReturn, TypedDict
 
 if sys.platform == "win32":
-    import win_precise_time as wpt
+    import win_precise_time as wpt # pyright: ignore[reportMissingImports]
 
     def get_host_time() -> float:
         return wpt.time()

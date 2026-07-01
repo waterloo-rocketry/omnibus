@@ -16,13 +16,12 @@ from omnibus import Sender
 import calibration
 
 if sys.platform == "win32":
-    import win_precise_time
+    import win_precise_time # pyright: ignore[reportMissingImports]
 
     def get_host_time() -> float:
         return win_precise_time.time()
 
 else:
-
     def get_host_time() -> float:
         return time.time()
 
