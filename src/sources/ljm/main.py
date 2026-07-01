@@ -37,7 +37,7 @@ calibration.Sensor.print()  # Print out all sensors and their AIN channels.
 
 # Omnibus Channel Configuration
 sender = Sender()
-CHANNEL = "DAQ"
+CHANNEL = "DAQ/ljm"
 # Increment whenever data format change, so that new incompatible tools don't
 # attempt to read old logs / messages.
 MESSAGE_FORMAT_VERSION = 3  # Backwards compatible with original version.
