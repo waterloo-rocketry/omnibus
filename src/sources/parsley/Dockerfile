@@ -17,4 +17,5 @@ RUN uv sync --no-dev --no-editable --locked --package parsley-source
 ENV OMNIBUS_SERVER_HOST="localhost"
 
 # Run the server.
-ENTRYPOINT ["uv","run", "--no-sync", "src/sources/parsley/main.py", "--quiet"]
+ENTRYPOINT ["uv","run", "--no-sync", "src/sources/parsley/main.py"]
+CMD ["--quiet", "/dev/ttyUSB0"]
