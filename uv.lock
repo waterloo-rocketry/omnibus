@@ -1022,13 +1022,17 @@ name = "parsley-source"
 version = "0.1.0"
 source = { virtual = "src/sources/parsley" }
 dependencies = [
+    { name = "crc8" },
     { name = "omnibus" },
+    { name = "parsley" },
     { name = "pyserial" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "crc8", specifier = ">=0.2.1" },
     { name = "omnibus", editable = "." },
+    { name = "parsley", git = "https://github.com/waterloo-rocketry/parsley.git" },
     { name = "pyserial" },
 ]
 
