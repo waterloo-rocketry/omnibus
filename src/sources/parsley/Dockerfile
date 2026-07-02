@@ -11,7 +11,10 @@ WORKDIR /app
 COPY . /app
 
 # Sync the project into the new environment, asserting the lockfile is up to date.
-RUN uv sync --project src/sources/parsley --locked
+RUN uv sync --no-dev --no-editable --locked --package parsley-source
+
+# Set default Omnibus server
+ENV OMNIBUS_SERVER_HOST="localhost"
 
 # Run the server.
-ENTRYPOINT ["uv", "run", "src/sources/parsley/main.py"]
+ENTRYPOINT ["uv","run", "--no-sync", "src/sources/parsley/main.py", "--quiet"]
