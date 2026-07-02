@@ -195,6 +195,9 @@ def test_setup(main_module, monkeypatch):
         main_module.time, "time_ns", MagicMock(return_value=1_000_000_000)
     )
     monkeypatch.setattr(main_module.time, "time", MagicMock(return_value=1.0))
+    # `get_host_time` uses `win_precise_time.time()` on win32 instead of
+    # `time.time()`, so patch it directly to keep the test platform-independent.
+    monkeypatch.setattr(main_module, "get_host_time", MagicMock(return_value=1.0))
 
     return main_module, mock_ljm, receiver
 
@@ -228,9 +231,7 @@ def test_read_data_processes_interleaved_sensor_values(test_setup):
     assert (
         message.payload["message_format_version"] == main_module.MESSAGE_FORMAT_VERSION
     )
-    assert message.payload["sample_rate"] == 1000
-    assert message.payload["relative_timestamps_nanoseconds"] == [
-        1_000_000_000,
-        1_001_000_000,
-        1_002_000_000,
-    ]
+    # sample_rate reflects config.SCAN_RATE (the configured rate), not the
+    # scan_rate argument passed to read_data.
+    assert message.payload["sample_rate"] == main_module.config.SCAN_RATE
+    assert message.payload["relative_timestamps"] == pytest.approx([1.0, 1.001, 1.002])
