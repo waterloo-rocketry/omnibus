@@ -18,4 +18,4 @@ ENV OMNIBUS_SERVER_HOST="localhost"
 
 # Run the server.
 ENTRYPOINT ["uv","run", "--no-sync", "src/sources/parsley/main.py"]
-CMD ["--quiet", "/dev/ttyUSB0"]
+CMD ["--quiet", "/dev/ttyACM0"]
