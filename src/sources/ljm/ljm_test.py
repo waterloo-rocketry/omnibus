@@ -1,0 +1,237 @@
+import importlib.util
+import multiprocessing as mp
+import sys
+import time
+import types
+from pathlib import Path
+from unittest.mock import MagicMock
+
+import pytest
+
+# Prevent main.py from attempting to load the real LabJack library or a
+# non-existent config module during import.  The original tests imported
+# `main` at the top level which triggered those side-effects and produced
+# a DLL-not-found error and a missing-config failure.
+#
+# By injecting mocks into sys.modules before importing, we keep the module
+# import lightweight and safe.
+
+
+@pytest.fixture(scope="module", autouse=True)
+def process_wide_mocks():
+    # Preserve original values for clean teardown
+    original_labjack = sys.modules.get("labjack")
+    original_labjack_ljm = sys.modules.get("labjack.ljm")
+    original_config = sys.modules.get("config")
+
+    # Fake LabJack module used by main
+    fake_ljm = MagicMock()
+    sys.modules["labjack"] = MagicMock()
+    sys.modules["labjack.ljm"] = fake_ljm
+
+    # Fake config module used by main
+    fake_config = types.SimpleNamespace(
+        RATE=1,
+        SCAN_RATE=1,
+        SCANS_PER_READ=1,
+        READ_BULK=1,
+        setup=lambda: None,
+    )
+    sys.modules["config"] = fake_config
+
+    # Ensure Omnibus server IP does not leak between tests
+    from omnibus.omnibus import OmnibusCommunicator
+
+    previous_ip = OmnibusCommunicator.server_ip
+    OmnibusCommunicator.server_ip = "127.0.0.1"
+
+    try:
+        yield
+    finally:
+        # restore sys.modules entries
+        if original_labjack is None:
+            sys.modules.pop("labjack", None)
+        else:
+            sys.modules["labjack"] = original_labjack
+
+        if original_labjack_ljm is None:
+            sys.modules.pop("labjack.ljm", None)
+        else:
+            sys.modules["labjack.ljm"] = original_labjack_ljm
+
+        if original_config is None:
+            sys.modules.pop("config", None)
+        else:
+            sys.modules["config"] = original_config
+
+        # restore Omnibus IP
+        OmnibusCommunicator.server_ip = previous_ip
+
+
+from omnibus import Receiver, server
+from omnibus.omnibus import OmnibusCommunicator
+
+
+def _is_sync_payload(payload):
+    return isinstance(payload, str) and payload.startswith("_SYNC:")
+
+
+def get_main():
+    OmnibusCommunicator.server_ip = "127.0.0.1"
+    original_argv = sys.argv[:]
+    ljm_dir = str(Path(__file__).resolve().parent)
+    sys.argv = [sys.argv[0]]
+
+    spec = importlib.util.spec_from_file_location(
+        "ljm_source_main", Path(ljm_dir) / "main.py"
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError("Could not load src/sources/ljm/main.py")
+
+    module = importlib.util.module_from_spec(spec)
+    original_path = sys.path[:]
+    sys.path.insert(0, ljm_dir)  # ensure `import calibration` resolves correctly
+    try:
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        sys.path = original_path
+        sys.argv = original_argv
+
+
+def run_server():
+    import sys
+
+    sys.argv = [sys.argv[0]]
+    from omnibus import server
+
+    # Mock get_ip to return localhost
+    original_get_ip = server.get_ip
+    server.get_ip = lambda: "127.0.0.1"
+    try:
+        server.server()
+    finally:
+        server.get_ip = original_get_ip
+
+
+@pytest.fixture(scope="module")
+def main_module(process_wide_mocks):
+    # Ensure module-scoped process patching is installed before importing main.
+    return get_main()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def omnibus_server(main_module):
+    # Start the Omnibus server in a separate process
+    ctx = mp.get_context("spawn")
+    server_process = ctx.Process(target=run_server)
+    server_process.start()
+    OmnibusCommunicator.server_ip = "127.0.0.1"  # skip discovery
+
+    try:
+        start = time.time()
+
+        # Wait until the server is alive
+        s = main_module.sender
+        r = Receiver("_ALIVE")
+        while r.recv(1) is None:
+            s.send("_ALIVE", "_ALIVE")
+            if time.time() - start > 5:
+                raise TimeoutError("Server did not start within 5 seconds")
+
+        yield
+    finally:
+        # Stop the server
+        server_process.terminate()
+        server_process.join()
+
+
+@pytest.fixture
+def test_setup(main_module, monkeypatch):
+    mock_ljm = MagicMock()
+    main_module.ljm = mock_ljm
+
+    receiver = Receiver(main_module.CHANNEL)
+
+    # Synchronize sender/receiver before running assertions
+    # that depend on receiving a single message.
+    sync_token = f"_SYNC:{time.time_ns()}"
+    start = time.time()
+    main_module.sender.send(main_module.CHANNEL, sync_token)
+    while True:
+        message = receiver.recv_message(timeout=10)
+        if message is None:
+            main_module.sender.send(main_module.CHANNEL, sync_token)
+        elif message.payload == sync_token:
+            break
+        elif not _is_sync_payload(message.payload):
+            raise AssertionError(
+                f"Unexpected non-sync message during receiver synchronization: {message.payload!r}"
+            )
+
+        if time.time() - start > 1:
+            raise TimeoutError("Receiver did not synchronize with sender")
+
+    # Drain only sync traffic so the next read sees the test payload.
+    while True:
+        message = receiver.recv_message(timeout=0)
+        if message is None:
+            break
+        if not _is_sync_payload(message.payload):
+            raise AssertionError(
+                f"Unexpected non-sync message during sync drain: {message.payload!r}"
+            )
+
+    # Use monkeypatch (instead of direct assignment) so pytest reliably restores
+    # patched attributes after this test. This is especially important for
+    # `main_module.time`, which is the process-wide `time` module; leaking a
+    # mocked `time.time()` to later tests can cause timing loops to hang.
+    monkeypatch.setattr(
+        main_module.calibration.Sensor,
+        "parse",
+        MagicMock(return_value={"foo": [9, 8, 7]}),
+    )
+    monkeypatch.setattr(
+        main_module.time, "time_ns", MagicMock(return_value=1_000_000_000)
+    )
+    monkeypatch.setattr(main_module.time, "time", MagicMock(return_value=1.0))
+    # `get_host_time` uses `win_precise_time.time()` on win32 instead of
+    # `time.time()`, so patch it directly to keep the test platform-independent.
+    monkeypatch.setattr(main_module, "get_host_time", MagicMock(return_value=1.0))
+
+    return main_module, mock_ljm, receiver
+
+
+def test_read_data_processes_interleaved_sensor_values(test_setup):
+    main_module, mock_ljm, receiver = test_setup
+
+    mock_ljm.eStreamRead.side_effect = [
+        ([1, 2, 3, 4, 5, 6], 0, 0),
+        KeyboardInterrupt(),
+    ]
+
+    with pytest.raises(KeyboardInterrupt):
+        main_module.read_data(
+            handle=1,
+            num_addresses=2,
+            scans_per_read=3,
+            scan_rate=1000,
+            quiet=True,
+            no_built_in_log=True,
+        )
+
+    expected = [[1, 3, 5], [2, 4, 6]]
+    main_module.calibration.Sensor.parse.assert_called_once_with(expected)
+
+    # Receive the message from the server
+    message = receiver.recv_message(timeout=1000)  # 1 second timeout
+    assert message is not None
+    assert message.channel == main_module.CHANNEL
+    assert message.payload["data"] == {"foo": [9, 8, 7]}
+    assert (
+        message.payload["message_format_version"] == main_module.MESSAGE_FORMAT_VERSION
+    )
+    # sample_rate reflects config.SCAN_RATE (the configured rate), not the
+    # scan_rate argument passed to read_data.
+    assert message.payload["sample_rate"] == main_module.config.SCAN_RATE
+    assert message.payload["relative_timestamps"] == pytest.approx([1.0, 1.001, 1.002])
