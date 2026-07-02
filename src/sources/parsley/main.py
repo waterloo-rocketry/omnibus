@@ -3,13 +3,17 @@ import time
 import serial
 import crc8
 from socket import gethostname
-import traceback
+import os
 import random
+import sys, signal
+import traceback
 
 from omnibus import Sender, Receiver
 import parsley
 
 from omnibus.omnibus import Message
+
+quiet_flag = False
 
 SEND_CHANNEL = "CAN/Parsley"
 # Note: The Receiver will also listen on the HEARTBEAT_CHANNEL to make sure that it is still alive
@@ -19,6 +23,16 @@ HEARTBEAT_CHANNEL = "Parsley/Health"
 HEARTBEAT_TIME = 1
 KEEPALIVE_TIME = 10
 FAKE_MESSAGE_SPACING = 0.2
+
+
+def print_info(*args, **kwargs):
+    if not quiet_flag:
+        print(*args, **kwargs)
+
+
+def print_error(*args, **kwargs):
+    kwargs.setdefault("file", sys.stderr)
+    print(*args, **kwargs)
 
 
 class SerialCommunicator:
@@ -50,7 +64,7 @@ class FileCommunicator:
         return data
 
     def write(self, msg: bytes):
-        print(f'Cannot write to file: {msg}')
+        print_error(f"Cannot write to file: {msg}")
 
     def __enter__(self):
         return self
@@ -107,7 +121,7 @@ class FakeSerialCommunicator:
             return b""
 
     def write(self, msg):
-        print(f"Fake serial write out: {msg}")
+        print_info(f"Fake serial write out: {msg}")
 
 
 def receive_commands(
@@ -143,13 +157,15 @@ def receive_commands(
         .hexdigest()
         .upper()
     )
-    print(formatted_msg)  # Always print the usb debug style can message
+    print_info(formatted_msg)
     # Send the can message over the specified port
     communicator.write(formatted_msg.encode())
     return True
 
 
 def main():
+    global quiet_flag
+
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
         "port_or_file",
@@ -181,21 +197,35 @@ def main():
         action="store_true",
         help="Don't read from hardware - read from a file instead",
     )
+    argparser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Suppress continuous output except for errors",
+    )
+
+    argparser.add_argument(
+            "--omnibus-server-host",
+            type=str,
+            default=os.getenv("OMNIBUS_SERVER_HOST", "NOT_SPECIFIED"),
+            help="The host of the omnibus server",
+    )
     args = argparser.parse_args()
+    quiet_flag = args.quiet
 
     if args.fake:
         if args.format != "usb":
-            print("Fake mode only supports usb format")
+            print_error("Fake mode only supports usb format")
             exit(1)
         communicator = FakeSerialCommunicator()
     elif args.file:
         if args.format != "logger":
-            print("File mode only supports logger format")
+            print_error("File mode only supports logger format")
             exit(1)
         communicator = FileCommunicator(args.port_or_file)
     else:
         if args.port_or_file == "FAKEPORT":
-            print("Please specify a serial port by name or use --fake")
+            print_error("Please specify a serial port by name or use --fake")
             exit(1)
         communicator = SerialCommunicator(args.port_or_file, args.baud, 0)
 
@@ -209,11 +239,11 @@ def main():
         sender = None
         receiver = None
     elif args.fake:
-        print("Parsley started in fake mode")
-        sender = Sender()
+        print_info("Parsley started in fake mode")
+        sender = Sender(None if args.omnibus_server_host == "NOT_SPECIFIED" else args.omnibus_server_host)
         receiver = Receiver(RECEIVE_CHANNEL, HEARTBEAT_CHANNEL)
     else:
-        sender = Sender()
+        sender = Sender(None if args.omnibus_server_host == "NOT_SPECIFIED" else args.omnibus_server_host)
         receiver = Receiver(RECEIVE_CHANNEL, HEARTBEAT_CHANNEL)
 
     last_valid_message_time = 0
@@ -290,7 +320,7 @@ def main():
                     parsed_object = usb_parser.parse(msg)
 
                 if isinstance(parsed_object, parsley.ParsleyError):
-                    print(
+                    print_error(
                         f"Parse error: {parsed_object.error} "
                         f"[prio={parsed_object.msg_prio} type={parsed_object.msg_type} "
                         f"board={parsed_object.board_type_id}/{parsed_object.board_inst_id} "
@@ -300,7 +330,7 @@ def main():
 
                 parsed_data = parsed_object.model_dump(mode='json')
                 last_valid_message_time = time.time()
-                print(parsley.format_line(parsed_data))
+                print_info(parsley.format_line(parsed_data))
 
                 # Send the CAN message over the channel
                 if sender:
@@ -310,15 +340,16 @@ def main():
                     sender.send(channel=SEND_CHANNEL, payload=message_with_id)
 
             except ValueError as e:
-                print(e)
+                print_error(e)
                 if msg is not None:
-                    print(msg.hex() if args.format == "telemetry" else msg)
+                    print_error(msg.hex() if args.format == "telemetry" else msg)
             except Exception:
-                print(traceback.format_exc())
+                print_error(traceback.format_exc())
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        pass
+    def handle_exit(*_):
+        _ = sys.exit(0)
+    _ = signal.signal(signal.SIGINT, handle_exit)
+    _ = signal.signal(signal.SIGTERM, handle_exit)
+    main()

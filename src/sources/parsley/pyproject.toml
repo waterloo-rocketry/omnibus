@@ -3,7 +3,13 @@ name = "parsley-source"
 version = "0.1.0"
 description = "Data source from CAN messages parsed using parsley"
 requires-python = ">=3.11"
-dependencies = ["omnibus", "pyserial"]
+dependencies = [
+    "crc8>=0.2.1",
+    "omnibus",
+    "parsley",
+    "pyserial",
+]
 
 [tool.uv.sources]
 omnibus = {workspace = true}
+parsley = { git = "https://github.com/waterloo-rocketry/parsley.git" }
