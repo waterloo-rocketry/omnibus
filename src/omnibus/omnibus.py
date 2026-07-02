@@ -47,10 +47,21 @@ class OmnibusCommunicator:
     server_ip: ClassVar[str | None] = None
     context: ClassVar[zmq.Context[zmq.SyncSocket] | None] = None
 
-    def __init__(self):
+    def __init__(self, server_ip: str | None = None):
         if OmnibusCommunicator.context is None:
             OmnibusCommunicator.context = zmq.Context()
-        if OmnibusCommunicator.server_ip is None:
+        if OmnibusCommunicator.server_ip is not None:
+            if (
+                server_ip is not None
+                and OmnibusCommunicator.server_ip != server_ip
+            ):
+                raise ValueError(
+                    "[FATAL] Omnibus Communicator - Cannot change server IP after it has been set"
+                )
+            return
+        if server_ip is not None:
+            OmnibusCommunicator.server_ip = server_ip
+        else:
             OmnibusCommunicator.server_ip = self._recv_ip()
 
     def _recv_ip(self) -> str:
@@ -89,8 +100,8 @@ class Sender(OmnibusCommunicator):
 
     _publisher: zmq.SyncSocket
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, server_ip: str | None = None):
+        super().__init__(server_ip)
         assert (
             OmnibusCommunicator.context is not None
             and OmnibusCommunicator.server_ip is not None
@@ -148,7 +159,7 @@ class Receiver(OmnibusCommunicator):
 
     _subscriber: zmq.SyncSocket
 
-    def __init__(self, *channels: str, seconds_until_reconnect_attempt: int = 5):
+    def __init__(self, *channels: str, server_ip: str | None = None, seconds_until_reconnect_attempt: int = 5):
         """
         Listens to a number of channels and receives all messages sent to them.
 
@@ -163,7 +174,7 @@ class Receiver(OmnibusCommunicator):
                 Receiver should wait before attempting a reconnection when no messages
                 are being received. Default value is 5 seconds. Keyword parameter only.
         """
-        super().__init__()
+        super().__init__(server_ip)
         self._last_online_check = time.time()
         self._channels = channels
         self._seconds_until_attempt_reconnect = seconds_until_reconnect_attempt

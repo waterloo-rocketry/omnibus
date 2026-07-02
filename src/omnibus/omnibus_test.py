@@ -139,6 +139,60 @@ class TestIPBroadcast:
         assert c.server_ip == "timeout"
 
 
+class TestExplicitServerIP:
+    @pytest.fixture(autouse=True)
+    def reset_server_ip(self):
+        OmnibusCommunicator.server_ip = None
+
+    def test_communicator_skips_discovery_when_server_ip_provided(
+        self, monkeypatch
+    ):
+        def fail_recv_ip(_self):
+            pytest.fail("_recv_ip should not be called when server_ip is provided")
+
+        monkeypatch.setattr(OmnibusCommunicator, "_recv_ip", fail_recv_ip)
+
+        communicator = OmnibusCommunicator(server_ip="10.0.0.42")
+
+        assert communicator.server_ip == "10.0.0.42"
+
+    def test_sender_does_not_reset_matching_server_ip(
+        self, monkeypatch
+    ):
+        def fail_recv_ip(_self):
+            pytest.fail("_recv_ip should not be called when server_ip is provided")
+
+        monkeypatch.setattr(OmnibusCommunicator, "_recv_ip", fail_recv_ip)
+
+        Sender(server_ip="10.0.0.42")
+        Sender(server_ip="10.0.0.42")
+
+        assert OmnibusCommunicator.server_ip == "10.0.0.42"
+
+    def test_receiver_does_not_reset_matching_server_ip(
+        self, monkeypatch
+    ):
+        def fail_recv_ip(_self):
+            pytest.fail("_recv_ip should not be called when server_ip is provided")
+
+        monkeypatch.setattr(OmnibusCommunicator, "_recv_ip", fail_recv_ip)
+
+        Receiver("CHAN", server_ip="10.0.0.42")
+        Receiver("CHAN", server_ip="10.0.0.42")
+
+        assert OmnibusCommunicator.server_ip == "10.0.0.42"
+
+    def test_rejects_changing_server_ip_after_it_has_been_cached(
+        self,
+    ):
+        OmnibusCommunicator(server_ip="10.0.0.42")
+
+        with pytest.raises(
+            ValueError, match="Cannot change server IP after it has been set"
+        ):
+            Sender(server_ip="10.0.0.99")
+
+
 class TestNetworkReset:
     @pytest.fixture()
     def start_stop_capable_server(self):
