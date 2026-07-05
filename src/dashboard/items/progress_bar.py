@@ -151,6 +151,9 @@ class ProgressBarItem(DashboardItem):
 
     def on_data_update(self, stream, payload):
         time, point = payload
+        # Plots can only render numeric values, streams have string data, skip those
+        if not isinstance(point, (int, float)):
+            return
         self.data = float(point)
         self.update_data()
 
