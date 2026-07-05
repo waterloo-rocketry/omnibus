@@ -114,9 +114,7 @@ class PlotDashItem(DashboardItem):
 
     def on_data_update(self, stream, payload):
         time, point = payload
-        # Plots can only render numeric values; some streams carry string/enum data
-        # (e.g. board_error_bitfield "E_NOMINAL", arm/actuator states) that would crash
-        # on `point += self.offset`. Skip those instead of erroring.
+        # Plots can only render numeric values, streams have string data, skip those
         if not isinstance(point, (int, float)):
             return
         point += self.offset
