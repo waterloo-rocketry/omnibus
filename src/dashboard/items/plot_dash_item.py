@@ -6,6 +6,7 @@ from .dashboard_item import DashboardItem
 import config
 from .registry import Register
 from .series_parameter import SeriesChecklistParameter
+import numbers
 
 
 @Register
@@ -115,7 +116,7 @@ class PlotDashItem(DashboardItem):
     def on_data_update(self, stream, payload):
         time, point = payload
         # Plots can only render numeric values, streams have string data, skip those
-        if not isinstance(point, (int, float)):
+        if not isinstance(point, numbers.Real):
             return
         point += self.offset
         
