@@ -12,20 +12,24 @@ def process_CAN_message(channel: str, payload: dict) -> None:
     """Extract the regonizable fields from the CAN message and add it to the messages dictionary"""
 
     field_signature = {}
-    # fill in the field signature for all the matches that we have in the format {"msg_type": "ACTUATOR_STATUS", "data.actuator": "ACTUATOR_VENT_VALVE"}
-    if "board_id" in payload:
-        field_signature["board_id"] = payload["board_id"]
+    if "board_type_id" in payload:
+        field_signature["board_type_id"] = payload["board_type_id"]
+    if "board_inst_id" in payload:
+        field_signature["board_inst_id"] = payload["board_inst_id"]
     if "msg_type" in payload:
         field_signature["msg_type"] = payload["msg_type"]
-    if "data" in payload:
-        if "sensor_id" in payload["data"]:
-            field_signature["data.sensor_id"] = payload["data"]["sensor_id"]
-        if "actuator" in payload["data"]:
-            field_signature["data.actuator"] = payload["data"]["actuator"]
+    if "msg_metadata" in payload:
+        field_signature["msg_metadata"] = payload["msg_metadata"]
 
     sig_text = str(field_signature)
-    messages[(channel, payload.get("board_id", ""), payload.get("msg_type", ""), payload.get(
-        "data", {}).get("sensor_id", ""), payload.get("data", {}).get("actuator", ""), sig_text)] = payload
+    messages[(
+        channel,
+        payload.get("board_type_id", ""),
+        payload.get("board_inst_id", ""),
+        payload.get("msg_type", ""),
+        payload.get("msg_metadata", ""),
+        sig_text,
+    )] = payload
 
 
 def process_DAQ_message(channel: str, payload: dict) -> None:
@@ -65,7 +69,7 @@ def main():
 
     if args.channel.startswith("CAN"):
         process_file(args, process_CAN_message, [
-                     "channel", "board_id", "msg_type", "sensor_id", "actuator", "signature", "sample"])
+                     "channel", "board_type_id", "board_inst_id", "msg_type", "msg_metadata", "signature", "sample"])
     elif args.channel.startswith("DAQ"):
         process_file(args, process_DAQ_message, ["channel", "field", "sample"])
     else:

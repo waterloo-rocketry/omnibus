@@ -76,41 +76,25 @@ class CanProcessingField:
 # Then you define the CSV name, paste the signature from the discovery script, and choose a value from the dictionary you want to export
 
 CAN_FIELDS: List[CanProcessingField] = [
-    # 0x10
-    CanProcessingField("sensor_mag_y", {
-                       "board_type_id": "PROCESSOR", "msg_type": "SENSOR_MAG_Y", "data.imu_id": "IMU_PROC_ALTIMU10"}, "data.mag"),
-    # 0x11
-    CanProcessingField("sensor_mag_y", {
-                       "board_type_id": "PROCESSOR", "msg_type": "SENSOR_MAG_Y", "data.imu_id": "IMU_PROC_ALTIMU10"}, "data.mag"),
-    # 0x12
-    CanProcessingField("sensor_mag_z", {
-                       "board_type_id": "PROCESSOR", "msg_type": "SENSOR_MAG_Z", "data.imu_id": "IMU_PROC_ALTIMU10"}, "data.mag"),
-
-    # 0x014
     CanProcessingField("battery_current", {
-                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_CURR"}, "data.value"),
+                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG16", "msg_metadata": "SENSOR_BATT_CURR"}, "data.value"),
     CanProcessingField("battery_voltage", {
-                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_BATT_VOLT"}, "data.value"),
+                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG16", "msg_metadata": "SENSOR_BATT_VOLT"}, "data.value"),
     CanProcessingField("charge_current", {
-                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_CHARGE_CURR"}, "data.value"),
-    CanProcessingField("motor_current", {
-                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_MOTOR_CURR"}, "data.value"),
+                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG16", "msg_metadata": "SENSOR_CHARGE_CURR"}, "data.value"),
+    CanProcessingField("charge_voltage", {
+                       "board_type_id": "POWER", "msg_type": "SENSOR_ANALOG16", "msg_metadata": "SENSOR_CHARGE_VOLT"}, "data.value"),
 ]
 
 # General Fields is for everyboard shared field, it will based on the board id
-# dynamic added it use Template as csv name with field ${board_type_id}, other than 
+# dynamic added it use Template as csv name with field ${board_type_id}, other than
 # that it stay same as auto_fields.
 general_fields = [
     {
         "temp_name": "${board_type_id}_board_status",
         "signature": {'msg_type': 'GENERAL_BOARD_STATUS'},
-        "fields": ["data.general_error_bitfield", "data.board_error_bitfield"]
-    }, # 0x001
-    {
-        "temp_name": "${board_type_id}_state_est_data",
-        "signature": {'msg_type': 'STATE_EST_DATA'},
-        "fields": ["data.state_id", "data.data"]
-    }, # 0x01A
+        "fields": ["data.board_error_bitfield"]
+    },  # 0x001
 ]
 
 # Auto-add fields with multiple values for the same signature
@@ -118,54 +102,69 @@ general_fields = [
 auto_fields = [
     {
         "base_name": "altimeter_stratologger",
-        "signature": {'board_type_id': 'ARMING', 'msg_type': 'ALT_ARM_STATUS', "data.alt_id": "ALTIMETER_STRATOLOGGER"},
+        "signature": {'board_type_id': 'ALTIMETER', 'msg_type': 'ALT_ARM_STATUS', "msg_metadata": "ALTIMETER_STRATOLOGGER"},
         "fields": ["data.alt_arm_state", "data.drogue_v", "data.main_v"]
-    }, # 0x008
+    },  # 0x009 ALT_ARM_STATUS
     {
         "base_name": "altimeter_raven",
-        "signature": {'board_type_id': 'ARMING', 'msg_type': 'ALT_ARM_STATUS', "data.alt_id": "ALTIMETER_RAVEN"},
+        "signature": {'board_type_id': 'ALTIMETER', 'msg_type': 'ALT_ARM_STATUS', "msg_metadata": "ALTIMETER_RAVEN"},
         "fields": ["data.alt_arm_state", "data.drogue_v", "data.main_v"]
-    }, # 0x008
+    },  # 0x009 ALT_ARM_STATUS
     {
-        "base_name": "x_imu",
-        "signature": {'board_type_id': 'PROCESSOR', 'msg_type': 'SENSOR_IMU_X', "data.imu_id": "IMU_PROC_ALTIMU10"},
-        "fields": ["data.linear_accel", "data.angular_velocity"]
-    }, # 0x00d
+        "base_name": "altimeter_srad",
+        "signature": {'board_type_id': 'ALTIMETER', 'msg_type': 'ALT_ARM_STATUS', "msg_metadata": "ALTIMETER_SRAD"},
+        "fields": ["data.alt_arm_state", "data.drogue_v", "data.main_v"]
+    },  # 0x009 ALT_ARM_STATUS
     {
-        "base_name": "y_imu",
-        "signature": {'board_type_id': 'PROCESSOR', 'msg_type': 'SENSOR_IMU_Y', "data.imu_id": "IMU_PROC_ALTIMU10"},
-        "fields": ["data.linear_accel", "data.angular_velocity"]
-    }, # 0x00e
+        "base_name": "canard_lsm6dsv32x_accel",
+        "signature": {'msg_type': 'SENSOR_3D_ANALOG16', "msg_metadata": "DEM_3D_SENSOR_CANARD_LSM6DSV32X_ACCEL"},
+        "fields": ["data.value_x", "data.value_y", "data.value_z"]
+    },  # 0x00D SENSOR_3D_ANALOG16
     {
-        "base_name": "z_imu",
-        "signature": {'board_type_id': 'PROCESSOR', 'msg_type': 'SENSOR_IMU_Z', "data.imu_id": "IMU_PROC_ALTIMU10"},
-        "fields": ["data.linear_accel", "data.angular_velocity"]
-    }, # 0x00f
+        "base_name": "canard_lsm6dsv32x_gyro",
+        "signature": {'msg_type': 'SENSOR_3D_ANALOG16', "msg_metadata": "DEM_3D_SENSOR_CANARD_LSM6DSV32X_GYRO"},
+        "fields": ["data.value_x", "data.value_y", "data.value_z"]
+    },  # 0x00D SENSOR_3D_ANALOG16
     {
-        "base_name": "power_baro",
-        "signature": {'board_type_id': 'POWER', 'msg_type': 'SENSOR_BARO', "data.imu_id": "IMU_PROC_ALTIMU10"},
-        "fields": ["data.pressure", "data.temp"]
-    }, # 0x013
+        "base_name": "canard_mti630_accel",
+        "signature": {'msg_type': 'SENSOR_3D_ANALOG16', "msg_metadata": "DEM_3D_SENSOR_CANARD_MTI630_ACCEL"},
+        "fields": ["data.value_x", "data.value_y", "data.value_z"]
+    },  # 0x00D SENSOR_3D_ANALOG16
+    {
+        "base_name": "canard_mti630_gyro",
+        "signature": {'msg_type': 'SENSOR_3D_ANALOG16', "msg_metadata": "DEM_3D_SENSOR_CANARD_MTI630_GYRO"},
+        "fields": ["data.value_x", "data.value_y", "data.value_z"]
+    },  # 0x00D SENSOR_3D_ANALOG16
+    {
+        "base_name": "canard_mti630_mag",
+        "signature": {'msg_type': 'SENSOR_3D_ANALOG16', "msg_metadata": "DEM_3D_SENSOR_CANARD_MTI630_MAG"},
+        "fields": ["data.value_x", "data.value_y", "data.value_z"]
+    },  # 0x00D SENSOR_3D_ANALOG16
     {
         "base_name": "gps_timestamp",
         "signature": {'board_type_id': 'GPS', 'msg_type': 'GPS_TIMESTAMP'},
         "fields": ["data.hrs", "data.mins", "data.secs", "data.dsecs"]
-    }, # 0x015
+    },  # 0x00E
     {
         "base_name": "gps_lat",
         "signature": {'board_type_id': 'GPS', 'msg_type': 'GPS_LATITUDE'},
-        "fields": ["data.degs", "data.mins", "data.dmins"]
-    }, # 0x016
+        "fields": ["data.degs", "data.mins", "data.dmins", "data.direction"]
+    },  # 0x00F
     {
         "base_name": "gps_lon",
         "signature": {'board_type_id': 'GPS', 'msg_type': 'GPS_LONGITUDE'},
-        "fields": ["data.degs", "data.mins", "data.dmins"]
-    }, # 0x017
+        "fields": ["data.degs", "data.mins", "data.dmins", "data.direction"]
+    },  # 0x010
     {
         "base_name": "gps_alt",
         "signature": {'board_type_id': 'GPS', 'msg_type': 'GPS_ALTITUDE'},
-        "fields": ["data.ailtitude"]
-    }, # 0x018
+        "fields": ["data.altitude", "data.daltitude"]
+    },  # 0x011
+    {
+        "base_name": "gps_info",
+        "signature": {'board_type_id': 'GPS', 'msg_type': 'GPS_INFO'},
+        "fields": ["data.num_sats", "data.quality"]
+    },  # 0x012
 ]
 
 # Add the auto fields to the CAN_FIELDS
@@ -190,11 +189,11 @@ if __name__ == "__main__":
         exit(1)
 
     # test matching
-    correct_matching_pattern = {"msg_type": "SENSOR_ANALOG", "data.sensor_id": "SENSOR_PRESSURE_OX"}
-    incorrect_matching_pattern = {"msg_type": "SENSOR_ANALOG",
-                                  "data.sensor_id": "SENSOR_PRESSURE_FUEL"}
-    inexistant_matching_pattern = {"msg_type": "SENSOR_ANALOG",
-                                   "mangoes.pears": "SENSOR_PRESSURE_OX"}
+    correct_matching_pattern = {"msg_type": "SENSOR_ANALOG16", "msg_metadata": "SENSOR_PT_CHANNEL_1"}
+    incorrect_matching_pattern = {"msg_type": "SENSOR_ANALOG16",
+                                  "msg_metadata": "SENSOR_PT_CHANNEL_2"}
+    inexistant_matching_pattern = {"msg_type": "SENSOR_ANALOG16",
+                                   "mangoes.pears": "SENSOR_PT_CHANNEL_1"}
 
     correct_reading_signature = "data.value"
     incorrect_reading_signature = "data.req_state"
@@ -220,13 +219,13 @@ if __name__ == "__main__":
         "ox tank", inexistant_matching_pattern, inexistant_reading_signature)
 
     # example candidates
-    correct_candidate = {"msg_type": "SENSOR_ANALOG", "data": {
-        "sensor_id": "SENSOR_PRESSURE_OX", "value": 100}}
-    missing_value_candidate = {"msg_type": "SENSOR_ANALOG",
-                               "data": {"sensor_id": "SENSOR_PRESSURE_OX"}}
-    false_candidate = {"msg_type": "SENSOR_ANALOG",
-                       "data": {"sensor_id": "NOT_THE_ONE", "value": 100}}
-    missing_data_candidate = {"msg_type": "SENSOR_ANALOG"}
+    correct_candidate = {"msg_type": "SENSOR_ANALOG16", "msg_metadata": "SENSOR_PT_CHANNEL_1",
+                         "data": {"value": 100}}
+    missing_value_candidate = {"msg_type": "SENSOR_ANALOG16", "msg_metadata": "SENSOR_PT_CHANNEL_1",
+                               "data": {}}
+    false_candidate = {"msg_type": "SENSOR_ANALOG16", "msg_metadata": "SENSOR_PT_CHANNEL_3",
+                       "data": {"value": 100}}
+    missing_data_candidate = {"msg_type": "SENSOR_ANALOG16"}
 
     print("Testing matching")
     print("Correct input matching")

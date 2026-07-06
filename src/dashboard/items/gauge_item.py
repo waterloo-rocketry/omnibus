@@ -8,6 +8,7 @@ from .dashboard_item import DashboardItem
 from .registry import Register
 
 from decimal import Decimal
+import numbers
 
 @Register
 class GaugeItem(DashboardItem):
@@ -80,7 +81,7 @@ class GaugeItem(DashboardItem):
     def on_data_update(self, stream, payload):
         time, point = payload
         # Plots can only render numeric values, streams have string data, skip those
-        if not isinstance(point, (int, float)):
+        if not isinstance(point, numbers.Real):
             return
         self.data = float(point)
         self.widget.update()
