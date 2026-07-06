@@ -11,7 +11,6 @@ LOGGER_EXPECTED_RECEIVE_DATA_FORMAT = {
     "board_inst_id": str,
     "msg_prio": str,
     "msg_type": str,
-    "msg_metadata": str,
     "data": dict[str, list[float]],
 }
 

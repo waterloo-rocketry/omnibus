@@ -87,6 +87,13 @@ offset_timestamp = {}  # per-board-and-message offset to account for time rollov
 def can_parser(payload):
     # Payload is a dictionary representing the parsed CAN message. We need to break
     # it into individual streams of data so we can plot / display / etc.
+    # In parsley 2026.3 msg_metadata carries the per-message identity (sensor/actuator/
+    # altimeter id), so we always embed it in the stream prefix to split streams.
+
+    # Example payload: {'board_type_id': 'INJECTOR', 'board_inst_id': 'ROCKET',
+    #   'msg_prio': 'LOW', 'msg_type': 'SENSOR_ANALOG32',
+    #   'msg_metadata': 'SENSOR_PT_CHANNEL_1', 'data': {'time': 37.595, 'value': 1310}}
+
     message_type = payload["msg_type"]
     board_type_id = payload["board_type_id"]
     board_inst_id = payload["board_inst_id"]
