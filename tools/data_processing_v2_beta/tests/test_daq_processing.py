@@ -1,12 +1,23 @@
 import pytest
 import msgpack
 from io import BytesIO, StringIO
-from data_processing_v2_beta.processors.daq_processing import (
+
+from tools.data_processing_v2_beta.processors.daq_processing import (
     DAQDataProcessor,
     DAQDataProcessor_V3,
-    MESSAGE_FORMAT_VERSION,
-    MESSAGE_FORMAT_VERSION_V3
+    DAQHostSyncProcessor_V3,
 )
+from tools.data_processing_v2_beta.processors.message_types import (
+    MESSAGE_FORMAT_VERSION,
+    MESSAGE_FORMAT_VERSION_V3,
+)
+
+def pack_messages(*messages: object) -> BytesIO:
+    stream = BytesIO()
+    for message in messages:
+        _ = stream.write(msgpack.packb(message))
+    _ = stream.seek(0)
+    return stream
 
 # V2 tests
 
@@ -603,3 +614,231 @@ def test_explicit_v3_daq_source_filters_other_sources():
         "Timestamp (s),s",
         "2e-07,2",
     ]
+
+
+def test_host_sync_recomputes_single_source_timestamps():
+    processor = DAQHostSyncProcessor_V3(
+        log_file_stream=pack_messages(
+            ["DAQ/ni", 500.0, {
+                "timestamp": 5.0,
+                "data": {"ni_pressure": [100.0, 101.0]},
+                "relative_timestamps": [0.00, 0.01],
+                "sample_rate": 100,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ni", 1000.0, {
+                "timestamp": 10.0,
+                "data": {"ni_pressure": [102.0, 103.0]},
+                "relative_timestamps": [0.02, 0.03],
+                "sample_rate": 100,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ni", 1400.0, {
+                "timestamp": 14.0,
+                "data": {"ni_pressure": [104.0, 105.0]},
+                "relative_timestamps": [0.04, 0.05],
+                "sample_rate": 100,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+        ),
+        daq_channel="DAQ/ni",
+    )
+
+    buf = StringIO()
+    processor.unpack_and_stream_to_csv(buf)
+
+    assert buf.getvalue().splitlines() == [
+        "Timestamp (s),Source,ni_pressure",
+        "5.0,DAQ/ni,102.0",
+        "7.25,DAQ/ni,103.0",
+        "9.5,DAQ/ni,104.0",
+        "11.75,DAQ/ni,105.0",
+    ]
+
+
+def test_host_sync_merges_all_sources_in_timestamp_order():
+    processor = DAQHostSyncProcessor_V3(
+        log_file_stream=pack_messages(
+            ["DAQ/ni", 100.0, {
+                "timestamp": 1.0,
+                "data": {"ni_pressure": [1.0]},
+                "relative_timestamps": [0.0],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ljm", 150.0, {
+                "timestamp": 1.5,
+                "data": {"ljm_temp": [20.0]},
+                "relative_timestamps": [0.0],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ni", 200.0, {
+                "timestamp": 2.0,
+                "data": {"ni_pressure": [2.0, 3.0]},
+                "relative_timestamps": [0.1, 0.2],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ljm", 250.0, {
+                "timestamp": 2.5,
+                "data": {"ljm_temp": [21.0]},
+                "relative_timestamps": [0.1],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ni", 400.0, {
+                "timestamp": 4.0,
+                "data": {"ni_pressure": [4.0, 5.0]},
+                "relative_timestamps": [0.3, 0.4],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ljm", 450.0, {
+                "timestamp": 4.5,
+                "data": {"ljm_temp": [22.0]},
+                "relative_timestamps": [0.2],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+        )
+    )
+
+    buf = StringIO()
+    processor.unpack_and_stream_to_csv(buf)
+
+    assert buf.getvalue().splitlines() == [
+        "Timestamp (s),Source,ljm_temp,ni_pressure",
+        "1.0,DAQ/ni,,2.0",
+        "1.5,DAQ/ljm,21.0,",
+        "1.75,DAQ/ni,,3.0",
+        "2.5,DAQ/ni,,4.0",
+        "3.0,DAQ/ljm,22.0,",
+        "3.25,DAQ/ni,,5.0",
+    ]
+
+
+def test_host_sync_filters_to_one_explicit_source():
+    processor = DAQHostSyncProcessor_V3(
+        log_file_stream=pack_messages(
+            ["DAQ/ni", 100.0, {
+                "timestamp": 1.0,
+                "data": {"ni_pressure": [1.0]},
+                "relative_timestamps": [0.0],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ljm", 200.0, {
+                "timestamp": 2.0,
+                "data": {"ljm_temp": [20.0]},
+                "relative_timestamps": [0.0],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ni", 300.0, {
+                "timestamp": 3.0,
+                "data": {"ni_pressure": [2.0]},
+                "relative_timestamps": [0.1],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ni", 500.0, {
+                "timestamp": 5.0,
+                "data": {"ni_pressure": [3.0]},
+                "relative_timestamps": [0.2],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+        ),
+        daq_channel="DAQ/ni",
+    )
+
+    buf = StringIO()
+    processor.unpack_and_stream_to_csv(buf)
+
+    assert buf.getvalue().splitlines() == [
+        "Timestamp (s),Source,ni_pressure",
+        "1.0,DAQ/ni,2.0",
+        "3.0,DAQ/ni,3.0",
+    ]
+
+
+def test_host_sync_raises_when_source_has_only_one_message():
+    processor = DAQHostSyncProcessor_V3(
+        log_file_stream=pack_messages(
+            ["DAQ/ni", 1.0, {
+                "timestamp": 1.0,
+                "data": {"ni_pressure": [1.0]},
+                "relative_timestamps": [0.0],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }]
+        )
+    )
+
+    with pytest.raises(ValueError, match="does not have enough message blocks"):
+        processor.unpack_and_stream_to_csv(StringIO())
+
+
+def test_host_sync_raises_on_non_positive_elapsed_time():
+    processor = DAQHostSyncProcessor_V3(
+        log_file_stream=pack_messages(
+            ["DAQ/ni", 1.0, {
+                "timestamp": 2.0,
+                "data": {"ni_pressure": [1.0]},
+                "relative_timestamps": [0.0],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ni", 2.0, {
+                "timestamp": 2.0,
+                "data": {"ni_pressure": [2.0]},
+                "relative_timestamps": [0.1],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ni", 2.0, {
+                "timestamp": 2.0,
+                "data": {"ni_pressure": [3.0]},
+                "relative_timestamps": [0.2],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+        ),
+        daq_channel="DAQ/ni",
+    )
+
+    with pytest.raises(ValueError, match="non-positive host time span"):
+        processor.unpack_and_stream_to_csv(StringIO())
+
+
+def test_host_sync_raises_on_mismatched_sensor_lengths():
+    processor = DAQHostSyncProcessor_V3(
+        log_file_stream=pack_messages(
+            ["DAQ/ni", 1.0, {
+                "timestamp": 1.0,
+                "data": {"ni_pressure": [1.0]},
+                "relative_timestamps": [0.0],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ni", 2.0, {
+                "timestamp": 2.0,
+                "data": {"ni_pressure": [2.0, 3.0], "ni_temp": [10.0]},
+                "relative_timestamps": [0.1, 0.2],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+            ["DAQ/ni", 3.0, {
+                "timestamp": 3.0,
+                "data": {"ni_pressure": [4.0, 5.0], "ni_temp": [11.0, 12.0]},
+                "relative_timestamps": [0.3, 0.4],
+                "sample_rate": 10,
+                "message_format_version": MESSAGE_FORMAT_VERSION_V3,
+            }],
+        ),
+        daq_channel="DAQ/ni",
+    )
+
+    with pytest.raises(ValueError, match="Mismatched sensor data lengths"):
+        processor.unpack_and_stream_to_csv(StringIO())
