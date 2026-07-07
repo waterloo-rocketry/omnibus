@@ -3,7 +3,7 @@ The main module for the LabJack DAQ source.
 """
 
 import argparse
-import sys
+import sys, signal
 import time
 from typing import TypedDict, cast
 
@@ -190,6 +190,7 @@ def main():
     )
     args = parser.parse_args()
 
+    handle: int | None = None # LJM Handle 
     try:
         # Open first found LabJack T7 device with any connection type and any indentifier.
         handle = ljm.openS("T7", "ANY", "ANY")
@@ -221,23 +222,26 @@ def main():
             print(
                 f"Warning: Configured scan rate ({config.SCAN_RATE} Hz) does not match actual scan rate ({scan_rate} Hz)."
             )
-
+        read_data(
+            handle, num_addresses, config.SCANS_PER_READ, scan_rate,
+            quiet=args.quiet, no_built_in_log=args.no_built_in_log,
+        )
+    except ljm.LJMError as e:
+        print(f"Error handling LabJack device: {e}", file=sys.stderr)
+        sys.exit(1)
+    finally:
         try:
-            read_data(
-                handle, num_addresses, config.SCANS_PER_READ, scan_rate,
-                quiet=args.quiet, no_built_in_log=args.no_built_in_log,
-            )
-        except KeyboardInterrupt:
+            ljm.eStreamStop(handle)
+        except Exception as e:
+            pass
+        try:
+            ljm.close(handle)
+        except Exception as e:
             pass
 
-        # Stop LJM stream.
-        print("Stopping stream...")
-        ljm.eStreamStop(handle)
-        ljm.close(handle)
-    except ljm.LJMError as e:
-        print(f"Error handling LabJack device: {e}")
-        sys.exit(1)
-
-
 if __name__ == "__main__":
+    def handle_exit(*_):
+        _ = sys.exit(0)
+    _ = signal.signal(signal.SIGTERM, handle_exit)
+    _ = signal.signal(signal.SIGINT, handle_exit)
     main()
