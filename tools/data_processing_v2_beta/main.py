@@ -4,8 +4,15 @@ import argparse
 import os
 import secrets
 from datetime import datetime
+from typing import cast
 
 from sources.parsley.main import FileCommunicator
+
+from processors.daq_processing import (
+        DAQDataProcessor,
+        DAQHostSyncProcessor_V3,
+        DAQDataProcessor_V3,
+)
 
 DAQ_CHANNEL_BY_SOURCE = {
     "ni": "DAQ/ni",
@@ -41,13 +48,17 @@ def run_daq_command(
     input_file: str,
     output_file: str | None,
     channel: str | None,
-    v3: bool = False,
+    v3: bool = True,
+    host_sync: bool = False,
 ) -> None:
-    if v3:
-        from processors.daq_processing import DAQDataProcessor_V3
+    if host_sync and not v3:
+        raise ValueError("The --host-sync mode requires V3 DAQ messages and is incompatible with --v2")
+
+    if host_sync:
+        processor_class = DAQHostSyncProcessor_V3
+    elif v3:
         processor_class = DAQDataProcessor_V3
     else:
-        from processors.daq_processing import DAQDataProcessor
         processor_class = DAQDataProcessor
 
     out_file = output_file or generate_filename("daq")
@@ -59,7 +70,7 @@ def run_daq_command(
         print(f"SUCESS: Processed {size} bytes of DAQ data to {out_path}")
 
 def run_logger_command(input_file: str, output_file: str | None) -> None:
-    from processors.logger_processing import LoggerDataProcessor
+    from .processors.logger_processing import LoggerDataProcessor
     out_file = output_file or generate_filename("logger")
     out_path = os.path.join(os.getcwd(), out_file)
 
@@ -74,31 +85,54 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", required=True)
     # Adding command for daq, and file realted flags
     daq_parser = subparsers.add_parser("daq", help="Process DAQ globallog msgpack")
-    daq_parser.add_argument("input_file", help="Path to the .msgpack log file")
-    daq_parser.add_argument("-o", "--output", help="Optional output file name")
-    daq_parser.add_argument("--fake", action="store_true", help="Use fake DAQ data")
-    daq_parser.add_argument(
+    _ = daq_parser.add_argument("input_file", help="Path to the .msgpack log file")
+    _ = daq_parser.add_argument("-o", "--output", help="Optional output file name")
+    _ = daq_parser.add_argument("--fake", action="store_true", help="Use fake DAQ data")
+    _ = daq_parser.add_argument(
         "--source",
         help="DAQ source to process, such as ni, ljm, fake, or a full DAQ channel name",
     )
-    daq_parser.add_argument("--v3", action="store_true", help="Use V3 message format")
+    _ = daq_parser.add_argument(
+        "--v2",
+        action="store_true",
+        help="Use legacy V2 message format instead of the default V3 parser",
+    )
+    _ = daq_parser.add_argument(
+        "--host-sync",
+        action="store_true",
+        help="Recompute DAQ timestamps from host timestamps for one or more V3 DAQ sources",
+    )
 
     # Adding command for logger, and file related flags
     logger_parser = subparsers.add_parser("logger", help="Process Logger Board msgpack")
-    logger_parser.add_argument("input_file", help="Path to the .msgpack log file")
-    logger_parser.add_argument("-o", "--output", help="Optional output file name")
+    _ = logger_parser.add_argument("input_file", help="Path to the .msgpack log file")
+    _ = logger_parser.add_argument("-o", "--output", help="Optional output file name")
 
     args = parser.parse_args()
-    if not os.path.isfile(args.input_file):
-        parser.error(f"Input file '{args.input_file}' does not exist")
+    input_file = cast(str, args.input_file)
+    command = cast(str, args.command)
+    output = cast(str | None, getattr(args, "output", None))
 
-    if args.command == "daq":
-        channel = resolve_daq_channel(args.source, use_fake=args.fake)
-        run_daq_command(args.input_file, args.output, channel, v3=args.v3)
-    elif args.command == "logger":
-        run_logger_command(args.input_file, args.output)
+    if not os.path.isfile(input_file):
+        parser.error(f"Input file '{input_file}' does not exist")
+
+    if command == "daq":
+        channel = resolve_daq_channel(
+            cast(str | None, getattr(args, "source", None)),
+            use_fake=cast(bool, getattr(args, "fake", False)),
+        )
+        use_v3 = not cast(bool, getattr(args, "v2", False))
+        run_daq_command(
+            input_file,
+            output,
+            channel,
+            v3=use_v3,
+            host_sync=cast(bool, getattr(args, "host_sync", False)),
+        )
+    elif command == "logger":
+        run_logger_command(input_file, output)
     else:
-        raise NotImplementedError(f"Command {args.command} not implemented")
+        raise NotImplementedError(f"Command {command} not implemented")
 
 if __name__ == "__main__":
     main()
