@@ -207,7 +207,7 @@ def main():
     argparser.add_argument(
             "--omnibus-server-host",
             type=str,
-            default=os.getenv("OMNIBUS_SERVER_HOST", "NOT_SPECIFIED"),
+            default=os.getenv("OMNIBUS_SERVER_HOST"),
             help="The host of the omnibus server",
     )
     args = argparser.parse_args()
@@ -240,10 +240,10 @@ def main():
         receiver = None
     elif args.fake:
         print_info("Parsley started in fake mode")
-        sender = Sender(None if args.omnibus_server_host == "NOT_SPECIFIED" else args.omnibus_server_host)
+        sender = Sender(args.omnibus_server_host)
         receiver = Receiver(RECEIVE_CHANNEL, HEARTBEAT_CHANNEL)
     else:
-        sender = Sender(None if args.omnibus_server_host == "NOT_SPECIFIED" else args.omnibus_server_host)
+        sender = Sender( args.omnibus_server_host)
         receiver = Receiver(RECEIVE_CHANNEL, HEARTBEAT_CHANNEL)
 
     last_valid_message_time = 0
