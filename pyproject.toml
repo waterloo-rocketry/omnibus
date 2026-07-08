@@ -75,7 +75,8 @@ members = [
     "src/sinks/interamap",
     "src/bridge",
     "src/websocket_server",
-    "tools/data_processing"
+    "tools/data_processing",
+    "tools/data_processing_v2_beta",
 ]
 
 [tool.pyright]

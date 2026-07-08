@@ -8,11 +8,18 @@ from typing import cast
 
 from sources.parsley.main import FileCommunicator
 
-from processors.daq_processing import (
+try:
+    from .processors.daq_processing import (
         DAQDataProcessor,
-        DAQHostSyncProcessor_V3,
         DAQDataProcessor_V3,
-)
+        DAQHostSyncProcessor_V3,
+    )
+except ImportError:
+    from processors.daq_processing import (
+        DAQDataProcessor,
+        DAQDataProcessor_V3,
+        DAQHostSyncProcessor_V3,
+    )
 
 DAQ_CHANNEL_BY_SOURCE = {
     "ni": "DAQ/ni",
@@ -70,7 +77,10 @@ def run_daq_command(
         print(f"SUCESS: Processed {size} bytes of DAQ data to {out_path}")
 
 def run_logger_command(input_file: str, output_file: str | None) -> None:
-    from .processors.logger_processing import LoggerDataProcessor
+    try:
+        from .processors.logger_processing import LoggerDataProcessor
+    except ImportError:
+        from processors.logger_processing import LoggerDataProcessor
     out_file = output_file or generate_filename("logger")
     out_path = os.path.join(os.getcwd(), out_file)
 

@@ -1,0 +1,19 @@
+[project]
+name = "data-processing-v2"
+version = "2.0.0"
+requires-python = ">=3.11"
+dependencies = [
+    "msgpack>=1.1.2",
+    "parsley-source",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+[tool.uv.sources]
+parsley-source = { workspace = true }
+
+[tool.pytest.ini_options]
+pythonpath = [".", "../.."]

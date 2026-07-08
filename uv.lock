@@ -4,6 +4,7 @@ requires-python = "==3.11.*"
 
 [manifest]
 members = [
+    "data-processing-v2",
     "fakeni-source",
     "globallog",
     "interamap",
@@ -234,6 +235,29 @@ sdist = { url = "https://files.pythonhosted.org/packages/a9/95/a3dbbb5028f35eafb
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e7/05/c19819d5e3d95294a6f5947fb9b9629efb316b96de511b418c53d245aae6/cycler-0.12.1-py3-none-any.whl", hash = "sha256:85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30", size = 8321, upload-time = "2023-10-07T05:32:16.783Z" },
 ]
+
+[[package]]
+name = "data-processing-v2"
+version = "2.0.0"
+source = { virtual = "tools/data_processing_v2_beta" }
+dependencies = [
+    { name = "msgpack" },
+    { name = "parsley-source" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "msgpack", specifier = ">=1.1.2" },
+    { name = "parsley-source", editable = "src/sources/parsley" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.0.2" }]
 
 [[package]]
 name = "decorator"
@@ -1020,7 +1044,7 @@ dependencies = [
 [[package]]
 name = "parsley-source"
 version = "0.1.0"
-source = { virtual = "src/sources/parsley" }
+source = { editable = "src/sources/parsley" }
 dependencies = [
     { name = "crc8" },
     { name = "omnibus" },
