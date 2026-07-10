@@ -336,7 +336,7 @@ def main():
                 if sender:
                     message_with_id = dict(parsed_data)
                     message_with_id["parsley"] = sender_id  # Add the instance ID
-                    message_with_id["message_version"] = 2
+                    message_with_id["message_format_version"] = 2
                     sender.send(channel=SEND_CHANNEL, payload=message_with_id)
 
             except ValueError as e:
