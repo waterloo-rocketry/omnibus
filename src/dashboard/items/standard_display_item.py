@@ -5,6 +5,7 @@ from pyqtgraph.Qt.QtGui import QFont
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 import pyqtgraph as pg
 import numpy as np
+import numbers
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
@@ -185,7 +186,7 @@ class StandardDisplayItem(DashboardItem):
 
     def on_data_update(self, stream, payload):
         time, point = payload
-        if not isinstance(point, (int, float)):
+        if not isinstance(point, numbers.Real):
             return
         point += self.offset
 

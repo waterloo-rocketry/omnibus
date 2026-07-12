@@ -9,6 +9,8 @@ from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 from .dashboard_item import DashboardItem
 from .registry import Register
 
+import numbers
+
 @Register
 class ProgressBarItem(DashboardItem):
     def __init__(self, *args):
@@ -151,6 +153,9 @@ class ProgressBarItem(DashboardItem):
 
     def on_data_update(self, stream, payload):
         time, point = payload
+        # Plots can only render numeric values, streams have string data, skip those
+        if not isinstance(point, numbers.Real):
+            return
         self.data = float(point)
         self.update_data()
 
