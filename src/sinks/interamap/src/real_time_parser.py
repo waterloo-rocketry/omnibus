@@ -16,7 +16,7 @@ except ImportError:
     from config import BoardID, BOARD_FIELDS # type: ignore
 
 
-def parse_gps_data(gps_data, data):
+def parse_gps_data(gps_data, board_id):
     gps_timestamp = gps_data.get("GPS_TIMESTAMP", {"hrs": 0, "mins": 0, "secs": 0, "dsecs": 0})
     timestamp = "{hrs:02}:{mins:02}:{secs:02}.{dsecs:02}".format(**gps_timestamp)
 
@@ -24,7 +24,6 @@ def parse_gps_data(gps_data, data):
     longitude = gps_data.get("GPS_LONGITUDE", {"degs": 0, "mins": 0, "dmins": 0})
     altitude = gps_data.get("GPS_ALTITUDE", {"altitude": 0, "daltitude": 0})
     num_sats = gps_data.get("GPS_INFO", {"num_sats": -1}).get("num_sats", -1) # Default to -1 if num_sats is not available
-    board_id = data.get("board_type_id")
 
     # Convert coordinates to decimal degrees
     lat = convert_to_decimal_degrees(latitude)
@@ -97,7 +96,7 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
             for board, keys in BOARD_FIELDS.items():
                 if all(key in gps[board] for key in keys if key != "GPS_INFO"):
                     if "GPS_INFO" in gps[board] and gps[board]["GPS_INFO"].get("num_sats", 0) >= MIN_SATELLITE:
-                        process_func(parse_gps_data(gps[board], data))
+                        process_func(parse_gps_data(gps[board], board))
                     else:
                         num_sats = gps[board].get("GPS_INFO", {}).get("num_sats", None)
                         print(f"Insufficient satellites ({num_sats} < {MIN_SATELLITE}), discarding GPS data.")
