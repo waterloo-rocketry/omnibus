@@ -19,3 +19,20 @@ def setup():
     Setup the sensors.
     """
     Sensor("Test", "AIN0", 10, Connection.DIFFERENTIAL, LinearCalibration(3, 0, "V"))
+
+    ### SENSOR TYPES ###
+    ## PTs ##
+
+    # IFM PT5402: 4-20mA 0-1540 psi
+
+    # Sensor("Example IFM", "AINxx", 10, Connection.SINGLE,
+    #       LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
+
+    # TDL
+    #    Sensor("Example TDM", "AINxx", 10, Connection.SINGLE,
+    #       LinearCalibration(1/100*3000/0.016, -0.004*3000/0.016, "psi"))
+
+    # Kulite ETM-375-70BARSG Pressure Transucer
+    # 0-70bar (~1000 psi), converted to PSI, 0-5V output
+    #    Sensor("Example Kulite", "AINxx", 10, Connection.DIFFERENTIAL,
+    #       LinearCalibration(70/5 * 14.5038, 0, "psi"))
