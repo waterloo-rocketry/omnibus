@@ -13,6 +13,18 @@ import parsley
 
 from omnibus.omnibus import Message
 
+if sys.platform == "win32":
+    import win_precise_time  # pyright: ignore[reportMissingImports]
+
+    def get_host_time() -> float:
+        return win_precise_time.time()
+
+else:
+
+    def get_host_time() -> float:
+        return time.time()
+
+
 quiet_flag = False
 
 SEND_CHANNEL = "CAN/Parsley"
@@ -90,10 +102,10 @@ class FakeSerialCommunicator:
         ]
         self.fake_msg_index = 0
         self.last_fake_zero_time = 0
-        self.zero_time = time.time()
+        self.zero_time = get_host_time()
 
     def read(self):
-        now = time.time()
+        now = get_host_time()
         if now - self.last_fake_zero_time > FAKE_MESSAGE_SPACING:
             # Time is in seconds, mod 65536ms to get the 16 bit time
             self.fake_msgs[self.fake_msg_index]["time"] = (
@@ -247,22 +259,22 @@ def main():
         receiver = Receiver(RECEIVE_CHANNEL, HEARTBEAT_CHANNEL)
 
     last_valid_message_time = 0
-    last_heartbeat_time = time.time()
+    last_heartbeat_time = get_host_time()
     last_keepalive_time = 0
 
     # Invariant - buffer starts with the start of a message
     buffer = b""
     while True:
-        now = time.time()
+        now = get_host_time()
 
         if sender and now - last_heartbeat_time > HEARTBEAT_TIME:
             last_heartbeat_time = now
-            healthy = "Healthy" if time.time() - last_valid_message_time < 1 else "Dead"
+            healthy = "Healthy" if now - last_valid_message_time < 1 else "Dead"
             sender.send(HEARTBEAT_CHANNEL, {"id": sender_id, "healthy": healthy})
 
         if (
             args.format == "telemetry"
-            and time.time() - last_keepalive_time > KEEPALIVE_TIME
+            and now - last_keepalive_time > KEEPALIVE_TIME
         ):
             communicator.write(b".")
             last_keepalive_time = now
@@ -329,7 +341,7 @@ def main():
                     continue
 
                 parsed_data = parsed_object.model_dump(mode='json')
-                last_valid_message_time = time.time()
+                last_valid_message_time = get_host_time()
                 print_info(parsley.format_line(parsed_data))
 
                 # Send the CAN message over the channel
