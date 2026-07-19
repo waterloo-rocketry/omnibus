@@ -133,6 +133,10 @@ def rlcs_parser(payload):
     timestamp = time.time()
     return [(f"RLCS/{k}", timestamp, v) for k, v in payload.items()]
 
+@Register("FYDP27MOTOR")
+def fydp27motor_parser(payload):
+    timestamp = time.time()
+    return [(f"FYDP27MOTOR/{k}", timestamp, v) for k, v in payload.items()]
 
 @Register("Parsley/Health")
 def parsley_health(payload):
