@@ -14,7 +14,7 @@ def reader(port: str):
             if c != b'F':
                 continue
 
-            output = b'F' + s.read(6 + 1) # Data + 'R'
+            output = b'F' + s.read(7 + 1) # Data + 'R'
 
             if output[-1] != ord('S'):
                 print(f"Incorrectly terminated FYDP27SENSOR message: {[c for c in output]}")
@@ -30,6 +30,7 @@ def parse_fydp27sensor(line: str | bytes) -> dict[str, str] | None:
     res['rpm'] = (line[2] << 8 | line[1]) * 10
     res['battery_voltage'] = (line[4] << 8 | line[3]) / 10
     res['current'] = (line[6] << 8 | line[5]) / 10
+    res['esc_temp'] = line[7] - 20
         
     return res
 
