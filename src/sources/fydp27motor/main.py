@@ -36,9 +36,11 @@ def parse_fydp27motor(line: str | bytes) -> dict[str, str] | None:
         res['throttle'] = line[1]
 
     if(line[2] == '1'):
-        res['pwrswitch'] = 'ON'
+        res['onoffswitch'] = 'ON'
+    elif(line[2] == '2'):
+        res['onoffswitch'] = 'ABORT'
     else:
-        res['pwrswitch'] = 'OFF'
+        res['onoffswitch'] = 'OFF'
         
     return res
 
