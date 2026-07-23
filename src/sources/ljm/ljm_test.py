@@ -128,6 +128,10 @@ def omnibus_server(main_module):
     server_process.start()
     OmnibusCommunicator.server_ip = "127.0.0.1"  # skip discovery
 
+    # `sender` is now created inside `main()` rather than at module import, so
+    # construct one here for the tests to share.
+    main_module.sender = main_module.Sender()
+
     try:
         start = time.time()
 
@@ -216,6 +220,7 @@ def test_read_data_processes_interleaved_sensor_values(test_setup):
             num_addresses=2,
             scans_per_read=3,
             scan_rate=1000,
+            sender=main_module.sender,
             quiet=True,
             no_built_in_log=True,
         )

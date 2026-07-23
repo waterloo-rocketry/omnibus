@@ -46,7 +46,6 @@ except KeyError as e:
 calibration.Sensor.print()  # Print out all sensors and their AIN channels.
 
 # Omnibus Channel Configuration
-sender = Sender()
 CHANNEL = "DAQ/ljm"
 # Increment whenever data format change, so that new incompatible tools don't
 # attempt to read old logs / messages.
@@ -86,7 +85,7 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 
 # Function to pass to the callback function. This needs have one
 # parameter/argument, which will be the handle.
-def read_data(handle, num_addresses, scans_per_read, scan_rate, *, quiet=False, no_built_in_log=False):
+def read_data(handle, num_addresses, scans_per_read, scan_rate, sender, *, quiet=False, no_built_in_log=False):
     configured_sample_rate = int(config.SCAN_RATE)
     if configured_sample_rate <= 0:
         raise ValueError("config.SCAN_RATE must cast to a positive integer")
@@ -188,9 +187,18 @@ def main():
         action="store_true",
         help="Disable writing to the built-in log file",
     )
+    parser.add_argument(
+        "--omnibus-server-host",
+        default=None,
+        help="Omnibus server host/IP to connect to. If omitted, auto-discovery is used.",
+    )
     args = parser.parse_args()
 
-    handle: int | None = None # LJM Handle 
+    # Omnibus sender, connecting to the server address passed via CLI (or
+    # auto-discovered when not provided).
+    sender = Sender(server_ip=args.omnibus_server_host)
+
+    handle: int | None = None # LJM Handle
     try:
         # Open first found LabJack T7 device with any connection type and any indentifier.
         handle = ljm.openS("T7", "ANY", "ANY")
@@ -223,7 +231,7 @@ def main():
                 f"Warning: Configured scan rate ({config.SCAN_RATE} Hz) does not match actual scan rate ({scan_rate} Hz)."
             )
         read_data(
-            handle, num_addresses, config.SCANS_PER_READ, scan_rate,
+            handle, num_addresses, config.SCANS_PER_READ, scan_rate, sender,
             quiet=args.quiet, no_built_in_log=args.no_built_in_log,
         )
     except ljm.LJMError as e:
