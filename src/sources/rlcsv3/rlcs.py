@@ -16,6 +16,7 @@ MESSAGE_FORMAT = [
     Enum("CDV401 Command", 8, VALVE_COMMAND),
     Enum("QD301 Command", 8, VALVE_COMMAND),
     Enum("OV302 Command", 8, VALVE_COMMAND),
+    Enum("Pyro Valve", 8, VALVE_COMMAND),
 
     Enum("Tank Heating 1 Command", 8, VALVE_COMMAND),
     Enum("Tank Heating 2 Command", 8, VALVE_COMMAND),
