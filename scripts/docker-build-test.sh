@@ -11,7 +11,9 @@
 #
 # This script drives the real deploy/docker-compose.yml topology, layered with
 # deploy/docker-compose.local.yml so the images are built locally from source
-# instead of pulled from ghcr.io. It then:
+# instead of pulled from ghcr.io, and so the globallog/ljm bind mounts point at
+# dedicated test directories rather than the real deploy/data and deploy/config.
+# It then:
 #   1. builds every image (acceptance: "containers build"),
 #   2. brings up the server + sinks/relays,
 #   3. publishes a probe message and confirms the globallog sink recorded it
@@ -36,8 +38,8 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BASE="deploy/docker-compose.yml"
 OVERRIDE="deploy/docker-compose.local.yml"
-DATA_DIR="${REPO_ROOT}/deploy/data"
-CONFIG_DIR="${REPO_ROOT}/deploy/config"
+DATA_DIR="${REPO_ROOT}/deploy/.test-data"
+CONFIG_DIR="${REPO_ROOT}/deploy/.test-config"
 PROBE_CHANNEL="DAQ/probe"
 
 DO_BUILD=1
@@ -77,10 +79,13 @@ dc() { docker compose -f "${BASE}" -f "${OVERRIDE}" "$@"; }
 # --- cleanup --------------------------------------------------------------- #
 cleanup() {
   if [ "$KEEP" -eq 1 ]; then
+    # globallog is stopped mid-run to flush its log buffer; restart it so keep
+    # mode really does leave the whole stack running for inspection.
+    dc start omnibus-globallog >/dev/null 2>&1 || true
     warn "--keep set: leaving the stack running."
     info "Tear down later with:"
     info "  docker compose -f ${BASE} -f ${OVERRIDE} down"
-    info "  rm -rf deploy/data deploy/config"
+    info "  rm -rf ${DATA_DIR#"${REPO_ROOT}/"} ${CONFIG_DIR#"${REPO_ROOT}/"}"
     return
   fi
   step "Cleaning up"
