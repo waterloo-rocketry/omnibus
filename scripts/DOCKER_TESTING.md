@@ -7,7 +7,15 @@ This guide shows how to build every Omnibus container image and verify that the
 It uses the real [`deploy/docker-compose.yml`](../deploy/docker-compose.yml)
 topology, layered with
 [`deploy/docker-compose.local.yml`](../deploy/docker-compose.local.yml) so the
-images are **built locally from source** instead of pulled from `ghcr.io`.
+images are **built locally from source** instead of pulled from `ghcr.io`, and
+the globallog/ljm bind mounts point at throwaway `deploy/.test-data` and
+`deploy/.test-config` directories.
+
+> **Why the remapped mounts matter:** the base compose file mounts the *real*
+> deployment paths — `./data` (globallog output) and `./config` (the ljm
+> `config.py`). Without the remap a test run would write into, and its cleanup
+> would delete, an operator's real logged data and config. The override keeps
+> the harness confined to directories it owns.
 
 A helper script, [`scripts/docker-build-test.sh`](./docker-build-test.sh),
 automates all of it. This document explains the same steps so you can run them
@@ -99,11 +107,11 @@ print("sent")'
 ### 4. Verify the sink received it
 
 `globallog` block-buffers its file, so stop it to flush, then inspect the log
-that landed in the `./data` volume (mapped to `deploy/data`):
+that landed in the test volume (`deploy/.test-data`):
 
 ```bash
 dc stop omnibus-globallog
-grep -al "DAQ/probe" deploy/data/*.log && echo "END-TO-END OK"
+grep -al "DAQ/probe" deploy/.test-data/*.log && echo "END-TO-END OK"
 ```
 
 Also confirm the sink never fell back to discovery/stdin:
@@ -124,25 +132,28 @@ address from the flag: it constructs its `Sender` *before* opening the device,
 so it logs the server address and then fails on the hardware step.
 
 ```bash
-mkdir -p deploy/config
-cp src/sources/ljm/config.py.example deploy/config/config.py
+mkdir -p deploy/.test-config
+cp src/sources/ljm/config.py.example deploy/.test-config/config.py
 dc up -d omnibus-source-ljm
 dc logs omnibus-source-ljm | tail
 # -> "Omnibus Server: localhost"
 # -> "Error handling LabJack device: ... LJME_DEVICE_NOT_FOUND"   (expected, no T7)
 ```
 
-To run it for real with hardware attached, provide a real `deploy/config/config.py`
-and pass the device through — the compose service already mounts `./config` and
-uses host networking; add your device with a compose override or `docker run
---device /dev/ttyACM0 ...`.
+To run it for real with hardware attached, drop the local override so the
+service uses the real `./config` mount again, provide a real
+`deploy/config/config.py`, and pass the device through (via a compose override
+or `docker run --device /dev/ttyACM0 ...`).
 
 ### 6. Clean up
 
 ```bash
 dc down
-rm -rf deploy/data deploy/config
+rm -rf deploy/.test-data deploy/.test-config
 ```
+
+Only the test-owned directories are removed; a real `deploy/data` /
+`deploy/config` is never touched.
 
 ## Troubleshooting
 

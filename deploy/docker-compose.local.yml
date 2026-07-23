@@ -19,6 +19,8 @@ services:
     build:
       context: ..
       dockerfile: src/globallog/Dockerfile
+    volumes:
+      - ./.test-data:/data
 
   omnibus-ws-server:
     image: omnibus-ws-server:local
@@ -37,3 +39,5 @@ services:
     build:
       context: ..
       dockerfile: src/sources/ljm/Dockerfile
+    volumes:
+      - ./.test-config:/config
