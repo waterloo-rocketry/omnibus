@@ -1,0 +1,39 @@
+# Local-build override for docker-compose.yml.
+#
+# The base docker-compose.yml pulls prebuilt images from ghcr.io. This override
+# builds each image locally from its Dockerfile (build context = repo root) and
+# retags it, so you can test local changes with the exact same compose topology.
+#
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.local.yml build
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.local.yml up
+
+services:
+  omnibus-server:
+    image: omnibus-server:local
+    build:
+      context: ..
+      dockerfile: src/omnibus/Dockerfile
+
+  omnibus-globallog:
+    image: omnibus-globallog:local
+    build:
+      context: ..
+      dockerfile: src/globallog/Dockerfile
+
+  omnibus-ws-server:
+    image: omnibus-ws-server:local
+    build:
+      context: ..
+      dockerfile: src/websocket_server/Dockerfile
+
+  omnibus-ws-bridge:
+    image: omnibus-ws-bridge:local
+    build:
+      context: ..
+      dockerfile: src/bridge/Dockerfile
+
+  omnibus-source-ljm:
+    image: omnibus-source-ljm:local
+    build:
+      context: ..
+      dockerfile: src/sources/ljm/Dockerfile
