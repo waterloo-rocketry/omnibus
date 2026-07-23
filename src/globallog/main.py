@@ -28,6 +28,11 @@ parser.add_argument(
     action="store_true",
     help="Use receiver (local) timestamps instead of producer timestamps",
 )
+parser.add_argument(
+    "--omnibus-server-host",
+    default=None,
+    help="Omnibus server host/IP to connect to. If omitted, auto-discovery is used.",
+)
 args = parser.parse_args()
 
 # Will log all messages passing through bus
@@ -44,7 +49,7 @@ fname = os.path.join(args.outfolder, CURTIME + ".log")
 # We use a shorter reconnect attempt here because globallog should be
 # receiving a lot of messages anyways and data integrity is a lot more important
 # Even if the reset does affect a few messages, some data is better than no data.
-receiver = Receiver(CHANNEL, seconds_until_reconnect_attempt=2)
+receiver = Receiver(CHANNEL, server_ip=args.omnibus_server_host, seconds_until_reconnect_attempt=2)
 
 dots = 0
 counter = 0
