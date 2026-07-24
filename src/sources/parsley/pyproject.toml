@@ -8,6 +8,7 @@ dependencies = [
     "omnibus",
     "parsley",
     "pyserial",
+    "win-precise-time>=1.4.2 ; sys_platform == 'win32'",
 ]
 
 [tool.uv.sources]

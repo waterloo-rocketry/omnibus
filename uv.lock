@@ -1026,6 +1026,7 @@ dependencies = [
     { name = "omnibus" },
     { name = "parsley" },
     { name = "pyserial" },
+    { name = "win-precise-time", marker = "sys_platform == 'win32'" },
 ]
 
 [package.metadata]
@@ -1034,6 +1035,7 @@ requires-dist = [
     { name = "omnibus", editable = "." },
     { name = "parsley", git = "https://github.com/waterloo-rocketry/parsley.git" },
     { name = "pyserial" },
+    { name = "win-precise-time", marker = "sys_platform == 'win32'", specifier = ">=1.4.2" },
 ]
 
 [[package]]
