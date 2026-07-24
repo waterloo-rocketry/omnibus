@@ -23,7 +23,7 @@ def setup():
     ### SENSOR TYPES ###
     ## PTs ##
 
-    # IFM PT5402: 4-20mA 0-1540 psi
+    # IFM PT5402: 4-20mA 0-1450 psi
     # Sensor("Example IFM", "AINxx", 10, Connection.SINGLE,
     #       LinearCalibration(1/100*1450/0.016, -0.004*1450/0.016, "psi"))
 
