@@ -11,7 +11,7 @@ LIMIT_SWITCHES = {"UNKNOWN": 0, "OPEN": 1, "CLOSED": 2, "ERROR": 3}
 MESSAGE_FORMAT = [
     Enum("OV101 Command", 8, VALVE_COMMAND),
     Enum("OV102 Command", 8, VALVE_COMMAND),
-    Enum("OV301 Command", 8, VALVE_COMMAND),
+    Enum("OV103 Command", 8, VALVE_COMMAND),
     Enum("NV201 Command", 8, VALVE_COMMAND),
     Enum("CDV401 Command", 8, VALVE_COMMAND),
     Enum("QD301 Command", 8, VALVE_COMMAND),

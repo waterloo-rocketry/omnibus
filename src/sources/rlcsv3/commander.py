@@ -5,7 +5,7 @@ sender = Sender()
 
 def send_actuator(actuator: str, state: bool):
     message = {
-        "parsley": "DESKTOP-6LBH021/usb/COM8",
+        "parsley": "EGSE-UPPER/usb//dev/ttyACM0",
         "data": {
             "time": time.time(),
             "can_msg": {
@@ -28,3 +28,8 @@ def command(state: dict[str, str | int | float]):
             send_actuator("ACTUATOR_OX_INJECTOR_VALVE", True)
         if state["QD301 Command"] == "CLOSED":
             send_actuator("ACTUATOR_OX_INJECTOR_VALVE", False)
+    if "Ignition Primary Command" in state:
+        if state["Ignition Primary Command"] == "OPEN":
+            send_actuator("ACTUATOR_IGNITION", True)
+        if state["Ignition Primary Command"] == "CLOSED":
+            send_actuator("ACTUATOR_IGNITION", False)
