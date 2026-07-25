@@ -1,7 +1,11 @@
+import os
+
 from omnibus import Sender
 from server import app, start_relay_sender
 
-_ = Sender()  # Trigger auto discovery and cache the server IP for the relay sender thread.
+_omnibus_server_host = os.environ.get("OMNIBUS_SERVER_HOST") or None
+
+_ = Sender(server_ip=_omnibus_server_host)
 start_relay_sender()
 
 application = app

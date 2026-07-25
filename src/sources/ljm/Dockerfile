@@ -49,5 +49,7 @@ COPY . /app
 WORKDIR /app
 RUN uv sync --locked --no-editable --no-dev --package ljm-source
 
+ENV OMNIBUS_SERVER_HOST="localhost"
+
 # Run the source.
 ENTRYPOINT ["src/sources/ljm/docker_entrypoint.sh"]

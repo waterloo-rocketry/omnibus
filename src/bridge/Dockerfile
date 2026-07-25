@@ -15,5 +15,7 @@ COPY . /app
 WORKDIR /app
 RUN uv sync --locked --no-editable --no-dev --package omnibus-bridge
 
+ENV OMNIBUS_SERVER_HOST="localhost"
+
 # Run the bridge relay.
 ENTRYPOINT ["src/bridge/docker_entrypoint.sh"]
