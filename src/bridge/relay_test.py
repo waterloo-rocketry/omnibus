@@ -40,7 +40,7 @@ class TestAutoDiscovery:
         with pytest.raises(SystemExit):
             relay.main()
 
-        mock_receiver_class.assert_called_once_with("")
+        mock_receiver_class.assert_called_once_with("", server_ip=None)
 
     @patch("relay.time")
     @patch("relay.Receiver")

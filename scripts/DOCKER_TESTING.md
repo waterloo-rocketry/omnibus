@@ -27,8 +27,8 @@ by hand.
 | -------------------- | ---------------------------------- | -------------------- |
 | `omnibus-globallog`  | `--omnibus-server-host` CLI flag   | ✅ yes (sink)         |
 | `omnibus-source-ljm` | `--omnibus-server-host` CLI flag   | ✅ yes (source)       |
-| `omnibus-ws-server`  | original stdin / auto-discovery    | left untouched       |
-| `omnibus-ws-bridge`  | original stdin / auto-discovery    | left untouched       |
+| `omnibus-ws-bridge`  | `--omnibus-server-host` CLI flag   | ✅ yes (relay)        |
+| `omnibus-ws-server`  | `OMNIBUS_SERVER_HOST` env var       | ✅ yes (gunicorn)     |
 | `omnibus-server`     | n/a (it *is* the server)           | n/a                  |
 
 ## TL;DR

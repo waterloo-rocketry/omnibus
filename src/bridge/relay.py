@@ -26,7 +26,7 @@ def reconnect(sio: socketio.Client, ws_url: str) -> None:
         print(f"Error disconnecting from WS server: {e}")
     connect_with_retry(sio, ws_url)
 
-def main(ws_url: str = "http://127.0.0.1:6767") -> None:
+def main(ws_url: str = "http://127.0.0.1:6767", omnibus_server_host: str | None = None) -> None:
 
     print("Starting bridge relay loop...")
 
@@ -40,7 +40,7 @@ def main(ws_url: str = "http://127.0.0.1:6767") -> None:
     connect_with_retry(sio, ws_url)
 
     # Subscribe to all Omnibus channels
-    receiver = Receiver("")
+    receiver = Receiver("", server_ip=omnibus_server_host)
 
     while True:
         msg = receiver.recv_message(None)

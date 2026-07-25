@@ -5,9 +5,10 @@
 # What this proves
 # ----------------
 # The source/sink Docker entrypoints now pass the Omnibus server address as a
-# CLI flag (`--omnibus-server-host`) instead of piping it through stdin.
-# (The websocket server and bridge are intentionally left on their original
-# stdin/auto-discovery flow.)
+# CLI flag (`--omnibus-server-host`) instead of piping it through stdin. The
+# websocket server runs under gunicorn (which cannot forward CLI flags to the
+# WSGI app), so its entrypoint passes the address via the OMNIBUS_SERVER_HOST
+# environment variable instead -- also no longer stdin.
 #
 # This script drives the real deploy/docker-compose.yml topology, layered with
 # deploy/docker-compose.local.yml so the images are built locally from source
@@ -143,6 +144,24 @@ docker run --rm --network host -v "${PROBE_PY}:/probe.py:ro" \
   --entrypoint uv omnibus-server:local run --no-sync python /probe.py
 rm -f "${PROBE_PY}"
 
+# Snapshot logs while the containers are still running. The startup
+# "Omnibus Server:" echo and any discovery message are emitted at boot, so they
+# are already present by now. Capturing here (rather than after `dc stop`) avoids
+# a race where `docker compose logs` on a just-stopped container under load
+# occasionally returns truncated output missing the first line. Retry a couple
+# times in case the log stream is momentarily empty.
+capture_logs() {
+  local svc="$1" out="" i
+  for i in 1 2 3; do
+    out="$(dc logs "$svc" 2>/dev/null)"
+    [ -n "$out" ] && break
+    sleep 1
+  done
+  printf '%s' "$out"
+}
+GLOBALLOG_LOGS="$(capture_logs omnibus-globallog)"
+WSBRIDGE_LOGS="$(capture_logs omnibus-ws-bridge)"
+
 info "Stopping globallog to flush its log buffer..."
 dc stop omnibus-globallog >/dev/null
 
@@ -150,15 +169,18 @@ dc stop omnibus-globallog >/dev/null
 step "Verifying"
 PASS=1
 
-for svc in omnibus-globallog omnibus-ws-bridge; do
-  if dc logs "$svc" 2>&1 | grep -q "Omnibus Server:"; then
-    ok "$svc received address via entrypoint: $(dc logs "$svc" 2>&1 | grep 'Omnibus Server:' | tail -1 | sed 's/.*| //')"
+check_echo() {
+  local svc="$1" logs="$2"
+  if printf '%s\n' "$logs" | grep -q "Omnibus Server:"; then
+    ok "$svc received address via entrypoint: $(printf '%s\n' "$logs" | grep 'Omnibus Server:' | tail -1 | sed 's/.*| //')"
   else
     warn "$svc did not echo 'Omnibus Server:'."
   fi
-done
+}
+check_echo omnibus-globallog "$GLOBALLOG_LOGS"
+check_echo omnibus-ws-bridge "$WSBRIDGE_LOGS"
 
-if dc logs omnibus-globallog 2>&1 | grep -q "Listening for server IP"; then
+if printf '%s\n' "$GLOBALLOG_LOGS" | grep -q "Listening for server IP"; then
   fail "globallog fell back to discovery/stdin ('Listening for server IP')."
   PASS=0
 else
