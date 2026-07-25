@@ -18,5 +18,7 @@ COPY . /app
 WORKDIR /app
 RUN uv sync --locked --no-editable --no-dev --package omnibus-ws-server
 
+ENV OMNIBUS_SERVER_HOST="localhost"
+
 # Run the WebSocket server.
 ENTRYPOINT ["src/websocket_server/docker_entrypoint.sh"]
