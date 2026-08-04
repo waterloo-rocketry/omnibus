@@ -1,5 +1,6 @@
 import argparse
 import serial
+import time
 
 from omnibus import Sender
 
@@ -34,26 +35,42 @@ def parse_fydp27sensor(line: str | bytes) -> dict[str, str] | None:
         
     return res
 
+def fake_parse_fydp27sensor() -> dict[str, str] | None:
+    res = {}
+
+    res['rpm'] = 12345
+    res['battery_voltage'] = 12.34
+    res['current'] = 234
+    res['esc_temp'] = 25
+    res['max_accel'] = 67
+
+    return res
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('port', help='the serial port to read from, or - for stdin')
     parser.add_argument('--solo', action='store_true',
                         help="Don't connect to omnibus - just print to stdout.")
+    parser.add_argument('--fake', action="store_true",
+                        help="Don't read from hardware - uses fake data. Give any value for a port")
     args = parser.parse_args()
 
-    readline = reader(args.port)
+    if not args.fake:
+        readline = reader(args.port)
 
     if not args.solo:
         sender = Sender()
         CHANNEL = "FYDP27SENSOR"
 
     while True:
-        line = readline()
-
-        if not len(line):
-            continue
-
-        parsed_data = parse_fydp27sensor(line)
+        if not args.fake:
+            line = readline()
+            if not len(line):
+                continue
+            parsed_data = parse_fydp27sensor(line)
+        else:
+            time.sleep(0.1)
+            parsed_data = fake_parse_fydp27sensor()
 
         if not parsed_data:
             continue
