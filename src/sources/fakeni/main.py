@@ -8,7 +8,7 @@ import msgpack
 
 from omnibus import Sender
 
-from typing import cast
+from typing import TypedDict
 
 READ_BULK = 25  # mimic how the real NI box samples in bulk for better performance
 SAMPLE_RATE = 1000  # total samples/second
@@ -16,13 +16,23 @@ CHANNELS = 8  # number of analog channels to read from
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--log", action="store_true", help="log the data from FakeNI")
-parser.add_argument("--v3", action="store_true", help="Use message format v3")
 args = parser.parse_args()
 logging = args.log
 
 sender = Sender()
 CHANNEL = "DAQ/Fake"
-MESSAGE_FORMAT_VERSION = 3 if args.v3 else 2
+# Increment whenever data format changes, so incompatible tools do not attempt
+# to read old logs or messages.
+MESSAGE_FORMAT_VERSION = 3
+
+
+class DAQ_SEND_MESSAGE_TYPE(TypedDict):
+    timestamp: float
+    data: dict[str, list[float]]
+    relative_timestamps: list[float]
+    sample_rate: int
+    message_format_version: int
+
 
 now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
 log = None
@@ -35,42 +45,28 @@ dots = 0
 counter = 0
 
 try:
-    READ_PERIOD_v2 = int(1 / SAMPLE_RATE * 1000000000) # Up to nanosecond accuracy
-    READ_PERIOD_v3 = 1 / SAMPLE_RATE
-    relative_last_read_time_v2 = time.time_ns()
-    relative_last_read_time_v3 = time.time()
+    read_period_seconds = 1 / SAMPLE_RATE
+    initial_host_start_time = time.time()
+    total_samples_read = 0
     while True:
         start = time.time()
-        # send a tuple of when the data was recorded and an array of the data for each channel
-        if args.v3:
-            relative_timestamps = [
-                    relative_last_read_time_v3 + READ_PERIOD_v3 * i
-                    for i in range(READ_BULK)
-            ]
-            timestamps_key = "relative_timestamps"
-        else:
-            relative_timestamps = list(range(
-                    relative_last_read_time_v2,
-                    relative_last_read_time_v2 + READ_PERIOD_v2 * READ_BULK,
-                    READ_PERIOD_v2,
-                ))
-            timestamps_key = "relative_timestamps_nanoseconds"
-            
-        data = {
+        relative_timestamps = [
+            initial_host_start_time
+            + (total_samples_read + sample_index) * read_period_seconds
+            for sample_index in range(READ_BULK)
+        ]
+        data: DAQ_SEND_MESSAGE_TYPE = {
             "timestamp": start,
             "data": {f"Fake{i}": [random.random() for _ in range(READ_BULK)] for i in range(CHANNELS)},
-            timestamps_key: relative_timestamps,
+            "relative_timestamps": relative_timestamps,
             "sample_rate": SAMPLE_RATE,
             "message_format_version": MESSAGE_FORMAT_VERSION,
         }
 
-        if args.v3:
-            relative_last_read_time_v3 = relative_timestamps[-1] + READ_PERIOD_v3
-        else:
-            relative_last_read_time_v2 = relative_timestamps[-1] + READ_PERIOD_v2
+        total_samples_read += READ_BULK
 
         if log:
-            log.write(msgpack.packb([CHANNEL, start, data]))
+            log.write(msgpack.packb(data))
 
         # Cool continuously updating print statment
         print("\rSending", end="")
