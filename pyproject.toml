@@ -50,6 +50,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "autopep8",
+    "basedpyright>=1.39.10",
     "flake8",
     "pytest",
     "pytest-cov>=7.0.0",
