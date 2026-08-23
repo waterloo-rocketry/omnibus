@@ -99,3 +99,6 @@ executionEnvironments = [
     {root = "src/websocket_server"},
     {root = "tools/data_processing"}
 ]
+
+[tool.basedpyright]
+failOnWarnings = false
