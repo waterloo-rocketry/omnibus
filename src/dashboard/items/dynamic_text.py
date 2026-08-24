@@ -1,5 +1,5 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter, QSizePolicy
-from pyqtgraph.Qt.QtCore import QTimer, Qt
+from pyqtgraph.Qt.QtCore import QTimer, Qt, QStringListModel
 from pyqtgraph.parametertree.parameterTypes import (
     SimpleParameter,
     StrParameterItem,
@@ -19,7 +19,8 @@ import operator
 EXPIRED_TIME = 2.5  # time in seconds after which data "expires"
 
 class AutocompleteParameterItem(StrParameterItem):
-    completer = QCompleter(publisher.get_all_streams())
+    completion_model = QStringListModel(publisher.get_all_streams())
+    completer = QCompleter(completion_model)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,14 +29,14 @@ class AutocompleteParameterItem(StrParameterItem):
     def makeWidget(self):
         w = super().makeWidget()
         self.completer = QCompleter(publisher.get_all_streams())
-        self.completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
-        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.completer.setCompletionMode(QCompleter.CompletionMode.UnfilteredPopupCompletion)
+        self.completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         w.setCompleter(AutocompleteParameterItem.completer)
         return w
 
     @staticmethod
     def update_completions(streams):
-        AutocompleteParameterItem.completer.model().setStringList(streams)
+        AutocompleteParameterItem.completion_model.setStringList(streams)
 
 
 publisher.register_stream_callback(AutocompleteParameterItem.update_completions)
@@ -51,8 +52,8 @@ class DynamicTextItem(DashboardItem):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         # Specify the layout
-        self.layout = QHBoxLayout()
-        self.setLayout(self.layout)
+        self.main_layout = QHBoxLayout()
+        self.setLayout(self.main_layout)
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('font size').sigValueChanged.connect(self.on_font_change)
@@ -72,8 +73,8 @@ class DynamicTextItem(DashboardItem):
 
         self.widget = QLabel()
         self.update_size_policy(None)  # Set initial size policy
-        self.widget.setAlignment(Qt.AlignCenter)
-        self.layout.addWidget(self.widget)
+        self.widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(self.widget)
 
         # Apply initial stylesheet
         self.on_font_change(None, self.parameters.param("font size").value())
@@ -83,9 +84,9 @@ class DynamicTextItem(DashboardItem):
 
     def update_size_policy(self, _):
         if self.parameters.param('dynamic_size_policy').value():
-            self.widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+            self.widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         else:
-            self.widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+            self.widget.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
 
     def add_parameters(self):
         font_param = {'name': 'font size', 'type': 'int', 'value': 12}
