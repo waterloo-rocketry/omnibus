@@ -1,10 +1,11 @@
-from pyqtgraph.Qt.QtGui import QPainter, QColor
+from pyqtgraph.Qt.QtGui import QPainter, QColor, QResizeEvent
 from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
 from pyqtgraph.parametertree import Parameter, ParameterTree
 from pyqtgraph.parametertree.parameterTypes import ActionParameter, ActionParameterItem
-from pyqtgraph.Qt.QtCore import QRect, Qt
+from pyqtgraph.Qt.QtCore import QRect, QPointF, Qt
 
 from collections import OrderedDict
+from typing import Any
 import json
 
 from .no_text_action_parameter import NoTextActionParameter
@@ -28,6 +29,8 @@ class DashboardItem(QWidget):
         self.corner_size = self.dynamic_corner_size()
         self.corner_index = 3 # 0: left up, 1: right up, 2: left down, 3: right down
         self.temp_pos = None # Used to store the temp position of the widget when resizing
+        self.grab_start_pos = QPointF()
+        self.start_rect = QRect()
         self.resize_callback = dashboard.on_item_resize
         """
         We use pyqtgraph's ParameterTree functionality to make an easy interface for setting
@@ -63,7 +66,7 @@ class DashboardItem(QWidget):
 
         self.parameter_tree = CustomParameterTree()
         self.parameter_tree.setParameters(self.parameters, showTop=False)
-        self.parameter_tree.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.parameter_tree.header().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
         # add listeners before restoring state so that the
         # dimensions are set correctly from the saved state
@@ -81,13 +84,13 @@ class DashboardItem(QWidget):
             state = json.loads(params, object_pairs_hook=OrderedDict)
             self.parameters.restoreState(state, addChildren=False, removeChildren=False)
 
-    def resizeEvent(self, _):
+    def resizeEvent(self, event: QResizeEvent | None):
         # These will trigger our lambdas above, but that's not an issue.
         self.parameters.child("width").setValue(self.size().width())
         self.parameters.child("height").setValue(self.size().height())
         self.resize_callback(self)
 
-    def add_parameters(self) -> list[Parameter]:
+    def add_parameters(self) -> list[Any]:
         """
         This function is called when a dashitem is added to the screen. It should return a list
         of Parameter that are required to recreate the dashitem except for the dimensions.
@@ -152,10 +155,10 @@ class DashboardItem(QWidget):
         When the mouse is move in the corner, the cursor shape is changed to indicate that the widget can be resized
         """
         if self.dashboard.mouse_resize and not self.dashboard.locked and self.corner_hit(event.pos()):
-            self.setCursor(Qt.SizeAllCursor)
+            self.setCursor(Qt.CursorShape.SizeAllCursor)
             self.corner_in = True
         else:
-            self.setCursor(Qt.ArrowCursor)
+            self.setCursor(Qt.CursorShape.ArrowCursor)
             self.corner_in = False
 
         if self.corner_grabbed:
@@ -221,14 +224,14 @@ class DashboardItem(QWidget):
         Draws a corner grabber in the bottom right corner of the widget.
         """
 
-        left_up_rect = QRect(0, 0, self.corner_size, self.corner_size)
-        right_up_rect = QRect(self.width() - self.corner_size, 0, self.corner_size, self.corner_size)
-        left_down_rect = QRect(0, self.height() - self.corner_size, self.corner_size, self.corner_size)
-        right_down_rect = QRect(self.width() - self.corner_size, self.height() - self.corner_size, self.corner_size, self.corner_size)
+        left_up_rect = QRect(0, 0, int(self.corner_size), int(self.corner_size))
+        right_up_rect = QRect(int(self.width() - self.corner_size), 0, int(self.corner_size), int(self.corner_size))
+        left_down_rect = QRect(0, int(self.height() - self.corner_size), int(self.corner_size), int(self.corner_size))
+        right_down_rect = QRect(int(self.width() - self.corner_size), int(self.height() - self.corner_size), int(self.corner_size), int(self.corner_size))
         rect_lst = [left_up_rect, right_up_rect, left_down_rect, right_down_rect]
 
-        painter.setPen(Qt.NoPen)  # Hide the outline of the rectangle
-        painter.setBrush(Qt.NoBrush)  # Hide the fill color of the rectangle
+        painter.setPen(Qt.PenStyle.NoPen)  # Hide the outline of the rectangle
+        painter.setBrush(Qt.BrushStyle.NoBrush)  # Hide the fill color of the rectangle
 
         painter.drawRect(left_up_rect)
         painter.drawRect(right_up_rect)

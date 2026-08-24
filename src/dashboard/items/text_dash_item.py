@@ -1,5 +1,6 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QScrollArea
 from pyqtgraph.Qt.QtCore import QSize, Qt
+from typing import Any
 
 from .dashboard_item import DashboardItem
 from .registry import Register
@@ -15,8 +16,8 @@ class TextDashItem(DashboardItem):
         self.fsize = self.parameters.param('fsize').value()
 
         # Specify the layout
-        self.layout = QHBoxLayout()
-        self.setLayout(self.layout)
+        self.main_layout = QHBoxLayout()
+        self.setLayout(self.main_layout)
 
         # need to wrap the label in a scroll area to
         # avoid problems by qt widget resizing on text change
@@ -29,13 +30,13 @@ class TextDashItem(DashboardItem):
         self.parameters.param('text').sigValueChanged.connect(self.on_text_change)
         self.parameters.param('fsize').sigValueChanged.connect(self.on_fsize_change)
 
-        self.layout.addWidget(self.widget)
+        self.main_layout.addWidget(self.widget)
 
     def setFontSize(self, fsize):
         self.fsize = fsize
         self.widget.setStyleSheet(f"font-size: {self.fsize}px")
 
-    def add_parameters(self):
+    def add_parameters(self) -> list[Any]:
         text_param = {'name': 'text', 'type': 'str', 'value': ''}
         fsize_param = {'name': 'fsize', 'type': 'int', 'value': 12}
         return [text_param, fsize_param]

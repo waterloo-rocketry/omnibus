@@ -6,6 +6,7 @@ from pyqtgraph.Qt.QtCore import Qt, QTimer
 import pyqtgraph as pg
 import numpy as np
 import numbers
+from typing import Any
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
@@ -26,9 +27,13 @@ class StandardDisplayItem(DashboardItem):
         self.times = {}
         self.points = {}
 
+        self.curves = {}
+        self.warning_line = pg.PlotDataItem()
+        self.data = 0.0
+
         # Specify the layout
-        self.layout = QGridLayout()
-        self.setLayout(self.layout)
+        self.main_layout = QGridLayout()
+        self.setLayout(self.main_layout)
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
@@ -77,10 +82,10 @@ class StandardDisplayItem(DashboardItem):
         self.numRead.setFont(num_read_font)
 
         
-        self.layout.addWidget(self.label, 0, 0)
-        self.layout.addWidget(self.numRead, 0, 1)
-        self.layout.addWidget(self.widget, 1, 0, 1, 2)
-        self.numRead.setAlignment(Qt.AlignCenter)
+        self.main_layout.addWidget(self.label, 0, 0)
+        self.main_layout.addWidget(self.numRead, 0, 1)
+        self.main_layout.addWidget(self.widget, 1, 0, 1, 2)
+        self.numRead.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         self.resize(300,100)
         self.show_size = self.size()
@@ -88,7 +93,7 @@ class StandardDisplayItem(DashboardItem):
         
         self.on_label_change(self.parameters.param('label'), self.parameters.param('label').value())
 
-    def add_parameters(self):
+    def add_parameters(self) -> list[Any]:
         text_param = {'name': 'label', 'type': 'str', 'value': ''}
         series_param = SeriesListParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0.0}
@@ -117,12 +122,12 @@ class StandardDisplayItem(DashboardItem):
         for series in self.series:
             publisher.subscribe(series, self.on_data_update)
         # recreate the plot with new series and add it to the layout
-        self.layout.removeWidget(self.widget)
+        self.main_layout.removeWidget(self.widget)
         self.plot.close()
         self.widget.close()
         self.plot = self.create_plot()
         self.widget = pg.PlotWidget(plotItem=self.plot)
-        self.layout.addWidget(self.widget, 1, 0, 1, 2)
+        self.main_layout.addWidget(self.widget, 1, 0, 1, 2)
         self.resize(self.parameters.param('width').value(),
                     self.parameters.param('height').value())
 
@@ -161,7 +166,7 @@ class StandardDisplayItem(DashboardItem):
     def create_plot(self):
         plot = pg.PlotItem(left="Data", bottom="Seconds")
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
-        plot.setMouseEnabled(x=False, y=False)
+        plot.getViewBox().setMouseEnabled(x=False, y=False)
         plot.hideButtons()
         if (len(self.series) > 1):
             plot.addLegend()
@@ -216,7 +221,7 @@ class StandardDisplayItem(DashboardItem):
             max_point = max(max(v) for v in values if v)
 
         # set the displayed range of Y axis
-        self.plot.setYRange(min_point, max_point, padding=0.1)
+        self.plot.getViewBox().setYRange(min_point, max_point, padding=0.1)
         limit = self.parameters.param('limit').value()
         if limit != 0.0:
             # plot the warning line, using two points (start and end)
@@ -232,8 +237,8 @@ class StandardDisplayItem(DashboardItem):
         self.curves[stream].setData(self.times[stream], self.points[stream])
         # round the time to the nearest GRAPH_STEP
         t = round(self.times[stream][-1] / config.GRAPH_STEP) * config.GRAPH_STEP
-        self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
-                            t + config.GRAPH_STEP, padding=0)
+        self.plot.getViewBox().setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
+                                         t + config.GRAPH_STEP, padding=0)
         # For the numerical readout label
         self.data = float(point)
         if self.parameters.param('Show Slope of Linear Approx.').value():
