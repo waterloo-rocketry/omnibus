@@ -346,7 +346,8 @@ class CanSender(DashboardItem):
             # last focusable widget is the one before it
             next_index = min(self.widget_index - 1, index + 1)
             next_widget = self.widgets[next_index]
-            next_widget.setFocus()
+            if next_widget is not None:
+                next_widget.setFocus()
 
     # moves the cursor to the previous input widget if the current textfield is empty
     def try_move_cursor_backwards(self, widget):
@@ -356,13 +357,14 @@ class CanSender(DashboardItem):
         if text_length == 0:
             previous_index = max(0, index - 1)
             previous_widget = self.widgets[previous_index]
-            previous_widget.setFocus()
-            if isinstance(previous_widget, QLineEdit):
-                # backspace was pressed and the current textfield is empty, so
-                # remove a character from the previous textfield
-                previous_widget.setText(previous_widget.text()[:-1])
+            if previous_widget is not None:
+                previous_widget.setFocus()
+                if isinstance(previous_widget, QLineEdit):
+                    # backspace was pressed and the current textfield is empty, so
+                    # remove a character from the previous textfield
+                    previous_widget.setText(previous_widget.text()[:-1])
 
-    def _restore_can_fields(self, values: list):
+    def _restore_can_fields(self, values: list[Any]):
         # setCurrentText on a Switch dropdown intentionally fires update_can_msg,
         # which rebuilds self.widgets[i+1:] to match the new message type. Re-read
         # self.widgets each iteration so we pick up the rebuilt widgets.
@@ -380,11 +382,11 @@ class CanSender(DashboardItem):
                 widget.setCurrentText(value)
 
     def get_serialized_parameters(self):
-        params = self.parameters.saveState(filter='user')
+        params = cast(dict[str, Any], self.parameters.saveState(filter='user'))
         values = []
         for i in range(self.widget_index):
             widget = self.widgets[i]
-            values.append(widget.text() if isinstance(widget, QLineEdit) else widget.currentText())
+            values.append(widget.text() if isinstance(widget, QLineEdit) else cast(QComboBox, widget).currentText())
         params['can_fields'] = values
         return json.dumps(params)
 

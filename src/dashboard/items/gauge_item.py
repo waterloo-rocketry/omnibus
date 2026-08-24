@@ -1,6 +1,6 @@
 from publisher import publisher
 from pyqtgraph.Qt.QtCore import Qt, QLineF, QRectF
-from pyqtgraph.Qt.QtGui import QBrush, QFont, QPainter, QPainterPath
+from pyqtgraph.Qt.QtGui import QBrush, QFont, QPainter, QPainterPath, QPaintEvent
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
 from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
 
@@ -10,16 +10,15 @@ from .registry import Register
 from decimal import Decimal
 import numbers
 
-@Register
 class GaugeItem(DashboardItem):
     def __init__(self, *args):
         super().__init__(*args)
         
-        self.layout = QHBoxLayout()
-        self.setLayout(self.layout)
-        
+        layout = QHBoxLayout()
+        self.setLayout(layout)
+
         self.widget = GaugeWidget(self)
-        self.layout.addWidget(self.widget)
+        layout.addWidget(self.widget)
 
         self.resize(200, 250)
 
@@ -89,13 +88,17 @@ class GaugeItem(DashboardItem):
     def on_delete(self):
         publisher.unsubscribe_from_all(self.on_data_update)
         super().on_delete()
-    
+
+
+Register(GaugeItem)
+
+
 class GaugeWidget(QWidget):
     def __init__(self, item: GaugeItem):
         super().__init__()
         self.item = item
 
-    def paintEvent(self, paintEvent):
+    def paintEvent(self, event: QPaintEvent | None):
         width = self.width()
         height = self.height()
         if width < 100 or height < 100:
@@ -149,7 +152,7 @@ class GaugeWidget(QWidget):
             painter.setPen(Qt.GlobalColor.black)
             
             font = QFont()
-            font.setPointSize(side / 14)
+            font.setPointSizeF(side / 14)
             painter.setFont(font)
 
             step = min_value_decimal
@@ -160,7 +163,7 @@ class GaugeWidget(QWidget):
                 painter.drawLine(QLineF(0, -(radius - step_length), 0, -radius))
                 step_display_number = int(step) if step == int(step) else step
                 step_str = str(step_display_number)
-                painter.drawText(-side * 0.15, -(radius - step_length), side * 0.3, side * 0.2, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, step_str)
+                painter.drawText(int(-side * 0.15), int(-(radius - step_length)), int(side * 0.3), int(side * 0.2), Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, step_str)
                 for tick in range(1, tick_count + 1):
                     if (step + step_value * tick / tick_count) > max_value_decimal:
                         break
@@ -191,16 +194,16 @@ class GaugeWidget(QWidget):
             painter.setPen(Qt.GlobalColor.black)
 
             font = QFont()
-            font.setPointSize(side / 10)
+            font.setPointSizeF(side / 10)
             painter.setFont(font)
             value_text = "{0:.6g}".format(value)
-            painter.drawText(cx - side * 0.3, top + side * 0.8 - side / 10, side * 0.6, side / 5, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, value_text)
+            painter.drawText(int(cx - side * 0.3), int(top + side * 0.8 - side / 10), int(side * 0.6), int(side / 5), Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, value_text)
 
             painter.restore()
 
             label = self.item.label if self.item.label != "" else self.item.value
 
             font = QFont()
-            font.setPointSize(side / 14)
+            font.setPointSizeF(side / 14)
             painter.setFont(font)
-            painter.drawText(0, height - side / 8, width, side / 8, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, label)
+            painter.drawText(0, int(height - side / 8), width, int(side / 8), Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, label)
