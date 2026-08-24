@@ -1,7 +1,7 @@
 import json
 import time
 from math import ceil, log10
-from typing import List
+from typing import Any, List, cast
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QRegularExpressionValidator, QFontMetrics, QFont
 from pyqtgraph.Qt.QtWidgets import (
@@ -11,7 +11,8 @@ from pyqtgraph.Qt.QtWidgets import (
     QLineEdit,
     QPushButton,
     QMessageBox,
-    QSizePolicy
+    QSizePolicy,
+    QWidget
 )
 
 import parsley.fields as pf
@@ -74,12 +75,12 @@ class CanSender(DashboardItem):
         self.ascii_mask = r'[\x00-\x7F]'  # allows all ASCII characters
 
         # preallocate the arrays since the length of a CAN message is dynamic
-        self.fields = [None] * 16  # stores the parsley fields
-        self.widgets = [None] * 16  # stores the PyQT input widgets
-        self.widget_widths = [None] * 16  # tracks the width of each column
+        self.fields: list[Any] = [None] * 16  # stores the parsley fields
+        self.widgets: list[QWidget | None] = [None] * 16  # stores the PyQT input widgets
+        self.widget_widths = [0] * 16  # tracks the width of each column
         # stores the PyQT labels describing the parsley field names
-        self.widget_labels = [None] * 16
-        self.widget_error_labels = [None] * 16  # displays parsley field encoding errors
+        self.widget_labels: list[QLabel | None] = [None] * 16
+        self.widget_error_labels: list[QLabel | None] = [None] * 16  # displays parsley field encoding errors
         self.widget_index = -1  # index of the right-most PyQT widget
         self.widget_to_index = {}  # associates widgets to their parsley can message index
 
@@ -91,6 +92,7 @@ class CanSender(DashboardItem):
         self.timer = QTimer()
         self.timer.timeout.connect(self.pulse_widgets)
         self.pulse_indices = []
+        self.pulse_count = 0
 
         # restore previously saved field values if provided
         if params:
@@ -108,6 +110,7 @@ class CanSender(DashboardItem):
         self.clear_error_messages()  # remove any preexisiting error lables
         for field in fields:
             self.widget_index += 1
+            dropdown_items: List[str] = []
             if isinstance(field, pf.Switch) or isinstance(field, pf.Enum):
                 all_keys = list(field.get_keys())
                 # for Switch fields, exclude keys with no message definition
@@ -127,7 +130,7 @@ class CanSender(DashboardItem):
                 # you can't hover and scroll over the contents (it'll be one huge list when expanded)
                 # see: https://doc.qt.io/qt-5/qcombobox.html#maxVisibleItems-prop
                 dropdown.setMaxVisibleItems(15)
-                dropdown.setFocusPolicy(Qt.StrongFocus)  # allows tabbing between widgets
+                dropdown.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # allows tabbing between widgets
                 # calculate the width of the widget
                 max_text_width = self.get_widget_text_width(dropdown, dropdown_max_length)
                 self.widget_widths[self.widget_index] = max_text_width + self.WIDGET_TEXT_PADDING
@@ -138,13 +141,13 @@ class CanSender(DashboardItem):
                 data_length = self.get_field_length(field)
 
                 text_field = QLineEdit()
-                text_field.setAlignment(Qt.AlignCenter)
+                text_field.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 text_field.setValidator(QRegularExpressionValidator(data_length * mask))
                 text_field.setPlaceholderText(data_length * '0')
                 text_field.installEventFilter(self.text_signals)
                 # when a textfield is full, move the cursor forwards to the next widget
                 text_field.textChanged.connect(self.try_move_cursor_forwards)
-                text_field.setFocusPolicy(Qt.StrongFocus)  # allows tabbing between widgets
+                text_field.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # allows tabbing between widgets
                 # calculate the width of the widget
                 max_text_width = self.get_widget_text_width(text_field, data_length)
                 self.widget_widths[self.widget_index] = max_text_width + self.WIDGET_TEXT_PADDING
@@ -162,14 +165,16 @@ class CanSender(DashboardItem):
             # create a mapping between widget and its index in the can message
             self.widget_to_index[self.widgets[self.widget_index]] = self.widget_index
             self.layout_manager.addWidget(
-                self.widget_labels[self.widget_index], 0, self.widget_index)  # add widget to first row
-            self.layout_manager.addWidget(
-                self.widgets[self.widget_index], 1, self.widget_index)  # add widget to second row
+                label, 0, self.widget_index)  # add widget to first row
+            if (widget := self.widgets[self.widget_index]) is not None:
+                self.layout_manager.addWidget(
+                    widget, 1, self.widget_index)  # add widget to second row
 
             # if the current parsley field is a Switch (aka it contains nested CAN messages),
             # then display the first row's parsley fields
             if isinstance(field, pf.Switch):
-                self.widgets[self.widget_index].currentTextChanged.connect(self.update_can_msg)
+                if isinstance(widget := self.widgets[self.widget_index], QComboBox):
+                    widget.currentTextChanged.connect(self.update_can_msg)
                 if dropdown_items:
                     first_item = dropdown_items[0]
                     nested_fields = field.get_fields(first_item)
@@ -184,11 +189,13 @@ class CanSender(DashboardItem):
         for index in range(dropdown_index + 1, self.widget_index):
             widget = self.widgets[index]
             label = self.widget_labels[index]
-            label.setText('')
-            # remove widget from layout manager
-            self.layout_manager.removeWidget(widget)
-            # remove widget from memory
-            widget.deleteLater()
+            if label is not None:
+                label.setText('')
+            if widget is not None:
+                # remove widget from layout manager
+                self.layout_manager.removeWidget(widget)
+                # remove widget from memory
+                widget.deleteLater()
         # remove send button
         self.layout_manager.removeWidget(self.send_button)
         self.send_button.deleteLater()
@@ -227,7 +234,7 @@ class CanSender(DashboardItem):
             self.pulse(pulse_invalid=True)
 
     # attempts to encode the PyQT input widgets and, if the encoding is unsuccessful, raises a ValueError
-    def parse_can_msg(self) -> dict:
+    def parse_can_msg(self) -> dict[str, str | float]:
         # reset any existing information
         self.pulse_indices = []
         self.clear_error_messages()
@@ -236,11 +243,11 @@ class CanSender(DashboardItem):
         for index in range(self.widget_index):
             widget = self.widgets[index]
             field = self.fields[index]
-            text = widget.text() if isinstance(widget, QLineEdit) else widget.currentText()
+            text = widget.text() if isinstance(widget, QLineEdit) else cast(QComboBox, widget).currentText()
             try:
                 if isinstance(field, pf.Numeric):
                     text = float(text)
-                field.encode(text)  # if there is an encoding error, the error will be caught
+                field.encode(cast(pf.Number, text))  # if there is an encoding error, the error will be caught
                 parsed_data[field.name] = text
             except (ValueError, IndexError) as error:
                 self.pulse_indices.append(index)
@@ -266,7 +273,8 @@ class CanSender(DashboardItem):
         if self.pulse_count > 0:
             for index in self.pulse_indices:
                 widget = self.widgets[index]
-                widget.setDisabled(self.pulse_count % 2 == 0)
+                if widget is not None:
+                    widget.setDisabled(self.pulse_count % 2 == 0)
             self.pulse_count -= 1
         else:
             self.timer.stop()
@@ -284,10 +292,10 @@ class CanSender(DashboardItem):
         label.setFont(QFont(label.font().family(), 10))
         label.setFixedWidth(self.widget_widths[index])
         # allow label to expand vertically as much as needed
-        label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding)
+        label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.MinimumExpanding)
         self.widget_error_labels[index] = label
         # add the widget to the 3rd row
-        self.layout_manager.addWidget(self.widget_error_labels[index], 2, index)
+        self.layout_manager.addWidget(label, 2, index)
 
     # returns an estimated upperbound on the input-able length of a field as a safety net
     def get_field_length(self, field: pf.Field) -> int:
