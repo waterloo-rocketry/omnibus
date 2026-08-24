@@ -306,10 +306,10 @@ class CanSender(DashboardItem):
                 # we want to define an upper bound for the length but decimals can be
                 # infintely long so assume 3 decimal digits + period = 4 characters only if
                 # there is a defined scale multipler, which probably indicates a floating point
-                minus_sign = 1 if field.signed else 0
+                minus_sign = 1 if cast(pf.Numeric, field).signed else 0
                 # number of digits to contain a binary lengthed number
                 integer = ceil(log10(2**field.length))
-                decimals = 4 if field.scale != 1 else 0
+                decimals = 4 if cast(pf.Numeric, field).scale != 1 else 0
                 return minus_sign + integer + decimals
             case _:
                 return -1
@@ -326,7 +326,7 @@ class CanSender(DashboardItem):
         self.send_button = QPushButton('SEND')
         max_text_width = self.get_widget_text_width(self.send_button, max_chars=4)
         self.send_button.setFixedWidth(max_text_width + self.WIDGET_TEXT_PADDING)
-        self.send_button.setFocusPolicy(Qt.TabFocus)
+        self.send_button.setFocusPolicy(Qt.FocusPolicy.TabFocus)
         self.send_button.clicked.connect(self.send_can_message)
         # add the button to the 2nd row
         self.layout_manager.addWidget(self.send_button, 1, self.widget_index)
@@ -334,6 +334,8 @@ class CanSender(DashboardItem):
     # moves the cursor to the next input widget if the current textfield is full
     def try_move_cursor_forwards(self):
         widget = self.sender()
+        if not isinstance(widget, QLineEdit):
+            return
         index = self.widget_to_index[widget]
         field = self.fields[index]
         data_length = self.get_field_length(field)

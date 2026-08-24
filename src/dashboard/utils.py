@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.Qt.QtCore import Qt, Signal, QEvent, QObject
+from pyqtgraph.Qt.QtGui import QKeyEvent
 
 
 class EventTracker(QObject):
@@ -36,63 +37,66 @@ class EventTracker(QObject):
     mouse_resize = Signal()
     escape_pressed = Signal(QtWidgets.QWidget)
 
-    def eventFilter(self, widget, event):
+    def eventFilter(self, watched, event):
         """
         After we intercept the event, propagate it down the event
         chain so that we don't disturb any default behaviours or return True
         if we don't want any widgets to further handle the event.
         """
 
-        if event.type() == QEvent.KeyPress or (event.type() == QEvent.ShortcutOverride and event.key() == Qt.Key_Backspace):
+        if isinstance(event, QKeyEvent) and (
+            event.type() == QEvent.Type.KeyPress
+            or (event.type() == QEvent.Type.ShortcutOverride and event.key() == Qt.Key.Key_Backspace)
+        ):
             key_press = KeyEvent(event.key(), event.modifiers())
             match key_press:
-                case KeyEvent(Qt.Key_Backspace, _) | KeyEvent(Qt.Key_Delete, _):
-                    self.backspace_pressed.emit(widget)
-                case KeyEvent(Qt.Key_Backtab, _):
-                    self.reverse_tab_pressed.emit(widget)
-                case KeyEvent(Qt.Key_Tab, _):
-                    self.tab_pressed.emit(widget)
-                case KeyEvent(Qt.Key_Enter, _) | KeyEvent(Qt.Key_Return, _):
+                case KeyEvent(Qt.Key.Key_Backspace, _) | KeyEvent(Qt.Key.Key_Delete, _):
+                    self.backspace_pressed.emit(watched)
+                case KeyEvent(Qt.Key.Key_Backtab, _):
+                    self.reverse_tab_pressed.emit(watched)
+                case KeyEvent(Qt.Key.Key_Tab, _):
+                    self.tab_pressed.emit(watched)
+                case KeyEvent(Qt.Key.Key_Enter, _) | KeyEvent(Qt.Key.Key_Return, _):
                     self.enter_pressed.emit()
-                case KeyEvent(Qt.Key_Equal, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_Equal, Qt.KeyboardModifier.ControlModifier):
                     self.zoom_in.emit()
-                case KeyEvent(Qt.Key_Minus, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_Minus, Qt.KeyboardModifier.ControlModifier):
                     self.zoom_out.emit()
-                case KeyEvent(Qt.Key_0, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_0, Qt.KeyboardModifier.ControlModifier):
                     self.zoom_reset.emit()
-                case KeyEvent(Qt.Key_S, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_S, Qt.KeyboardModifier.ControlModifier):
                     self.save_file_keys_pressed.emit()
-                case KeyEvent(Qt.Key_S, modifiers) if (modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) == (Qt.ControlModifier | Qt.ShiftModifier):
+                case KeyEvent(Qt.Key.Key_S, modifiers) if (modifiers & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)) == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier):
                     self.save_as_file_keys_pressed.emit()
-                case KeyEvent(Qt.Key_O, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_O, Qt.KeyboardModifier.ControlModifier):
                     self.open_file_keys_pressed.emit()
-                case KeyEvent(Qt.Key_D, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_D, Qt.KeyboardModifier.ControlModifier):
                     self.duplicate.emit()
-                case KeyEvent(Qt.Key_L, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_L, Qt.KeyboardModifier.ControlModifier):
                     self.lock_dashboard.emit()
-                case KeyEvent(Qt.Key_L):
+                case KeyEvent(Qt.Key.Key_L):
                     self.lock_selected.emit()
-                case KeyEvent(Qt.Key_BracketRight, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_BracketRight, Qt.KeyboardModifier.ControlModifier):
                     self.send_to_front.emit()
-                case KeyEvent(Qt.Key_BracketRight):
+                case KeyEvent(Qt.Key.Key_BracketRight):
                     self.send_forward.emit()
-                case KeyEvent(Qt.Key_BracketLeft, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_BracketLeft, Qt.KeyboardModifier.ControlModifier):
                     self.send_to_back.emit()
-                case KeyEvent(Qt.Key_BracketLeft):
+                case KeyEvent(Qt.Key.Key_BracketLeft):
                     self.send_backward.emit()
-                case KeyEvent(Qt.Key_R, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_R, Qt.KeyboardModifier.ControlModifier):
                     self.remove_all.emit()
-                case KeyEvent(Qt.Key_M, Qt.ControlModifier):
+                case KeyEvent(Qt.Key.Key_M, Qt.KeyboardModifier.ControlModifier):
                     self.mouse_resize.emit()
-                case KeyEvent(Qt.Key_Escape, _):
-                    self.escape_pressed.emit(widget)
-        return super().eventFilter(widget, event)
+                case KeyEvent(Qt.Key.Key_Escape, _):
+                    self.escape_pressed.emit(watched)
+        return super().eventFilter(watched, event)
 
 
 @dataclass
 class KeyEvent:
     key_code: int
-    modifiers: int
+    modifiers: Qt.KeyboardModifier
 
 
 class ConfirmDialog(QtWidgets.QDialog):
@@ -101,12 +105,13 @@ class ConfirmDialog(QtWidgets.QDialog):
 
         self.setWindowTitle(property_name)
 
-        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox: QtWidgets.QDialogButtonBox = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.accepted.connect(self.accept)
 
-        self.layout = QtWidgets.QVBoxLayout()
+        self.main_layout: QtWidgets.QVBoxLayout = QtWidgets.QVBoxLayout()
         message = QtWidgets.QLabel(description)
-        self.layout.addWidget(message)
+        self.main_layout.addWidget(message)
 
-        self.layout.addWidget(self.buttonBox)
-        self.setLayout(self.layout)
+        self.main_layout.addWidget(self.buttonBox)
+        self.setLayout(self.main_layout)
