@@ -9,7 +9,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QSizePolicy
 
-from config import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN, ZOOM_DEFAULT, GRADIENT_COLORS
+from settings import ONLINE_MODE, ZOOM_MAX, ZOOM_MIN, ZOOM_DEFAULT, GRADIENT_COLORS
 from src.gps_cache import GPS_Cache, Info_GPS
 from src.real_time_parser import RTParser
 

@@ -38,7 +38,7 @@ See 'config.py.example' for more info.\n"""
 
 
 try:
-    config.setup()  # Initialize the sensors.
+    config.setup()  # pyright: ignore[reportAttributeAccessIssue]  # Initialize the sensors.
 except KeyError as e:
     print(f"Error: {''.join(e.args)}.", file=sys.stderr)
     sys.exit(1)
@@ -86,7 +86,7 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 # Function to pass to the callback function. This needs have one
 # parameter/argument, which will be the handle.
 def read_data(handle, num_addresses, scans_per_read, scan_rate, sender, *, quiet=False, no_built_in_log=False):
-    configured_sample_rate = int(config.SCAN_RATE)
+    configured_sample_rate = int(config.SCAN_RATE)  # pyright: ignore[reportAttributeAccessIssue]
     if configured_sample_rate <= 0:
         raise ValueError("config.SCAN_RATE must cast to a positive integer")
 
@@ -216,22 +216,22 @@ def main():
         ljm.eWriteName(handle, "STREAM_CLOCK_SOURCE", 0)
 
         # Setup sensors.
-        num_addresses, a_scan_list_names = calibration.Sensor.setup(handle)
+        num_addresses, a_scan_list_names = calibration.Sensor.setup(handle)  # pyright: ignore[reportGeneralTypeIssues, reportArgumentType]
         a_scan_list = ljm.namesToAddresses(num_addresses, a_scan_list_names)[0]
 
         # Start LJM stream.
         scan_rate = ljm.eStreamStart(
-            handle, config.SCANS_PER_READ, num_addresses, a_scan_list, config.SCAN_RATE
+            handle, config.SCANS_PER_READ, num_addresses, a_scan_list, config.SCAN_RATE  # pyright: ignore[reportAttributeAccessIssue]
         )
         print(f"Number of addresses set up: {num_addresses}")
         print(f"Scan list names: {a_scan_list_names}")
         print(f"Stream started with a scan rate of {scan_rate} Hz")
-        if scan_rate != config.SCAN_RATE:
+        if scan_rate != config.SCAN_RATE:  # pyright: ignore[reportAttributeAccessIssue]
             print(
-                f"Warning: Configured scan rate ({config.SCAN_RATE} Hz) does not match actual scan rate ({scan_rate} Hz)."
+                f"Warning: Configured scan rate ({config.SCAN_RATE} Hz) does not match actual scan rate ({scan_rate} Hz)."  # pyright: ignore[reportAttributeAccessIssue]
             )
         read_data(
-            handle, num_addresses, config.SCANS_PER_READ, scan_rate, sender,
+            handle, num_addresses, config.SCANS_PER_READ, scan_rate, sender,  # pyright: ignore[reportAttributeAccessIssue]
             quiet=args.quiet, no_built_in_log=args.no_built_in_log,
         )
     except ljm.LJMError as e:
