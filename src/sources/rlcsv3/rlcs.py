@@ -1,5 +1,5 @@
 import parsley
-from parsley.fields import Enum, Numeric
+from parsley.fields import Enum, Field, Numeric
 import math
 
 Number = int | float
@@ -8,7 +8,7 @@ VALVE_COMMAND = {"CLOSED": 0, "OPEN": 1}
 BOOLEAN = {"FALSE": 0, "TRUE": 1}
 LIMIT_SWITCHES = {"UNKNOWN": 0, "OPEN": 1, "CLOSED": 2, "ERROR": 3}
 
-MESSAGE_FORMAT = [
+MESSAGE_FORMAT: list[Field] = [
     Enum("OV101 Command", 8, VALVE_COMMAND),
     Enum("OV102 Command", 8, VALVE_COMMAND),
     Enum("OV103 Command", 8, VALVE_COMMAND),
@@ -57,7 +57,8 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
     '''parses data as well as checks for data validity
         returns none if data is invalid
     '''
-    bit_str = parsley.BitString(data=line[1:-1])
+    data = line.encode() if isinstance(line, str) else line
+    bit_str = parsley.BitString(data=data[1:-1])
     key_list_kelvin=["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage", "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage"]
     try:
         res=parsley.parse_fields(bit_str, MESSAGE_FORMAT)

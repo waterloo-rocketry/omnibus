@@ -12,7 +12,7 @@ class TestGPSCache():
         lat=2.0,
         alt=3.0,
         num_sats=4,
-        time_stamp=time.time(),
+        time_stamp=str(time.time()),
         board_id="GPS"
     )
 
@@ -21,7 +21,7 @@ class TestGPSCache():
         lat=3.0,
         alt=4.0,
         num_sats=5,
-        time_stamp=time.time(),
+        time_stamp=str(time.time()),
         board_id="GPS"
     )
     
