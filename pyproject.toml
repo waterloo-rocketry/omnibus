@@ -88,11 +88,11 @@ exclude = ["**/__pycache__", "**/node_modules", "**/__init__.py"]
 extraPaths = [
     "src/bridge",
     "src/dashboard",
-    "src/omnibus",
     "src/sources/ni",
     "src/sources/ljm",
     "src/sources/replay_log",
     "src/sources/rlcsv3",
     "src/sinks/interamap",
     "src/websocket_server",
+    "src/omnibus",
 ]

@@ -8,7 +8,7 @@ from PIL.ImageQt import QPixmap
 from qrcode.image.pil import PilImage
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QLabel, QApplication, QVBoxLayout, QWidget
-from config import TERMINAL_QR_CODE
+from settings import TERMINAL_QR_CODE
 
 
 def generate_qr_code(qr_code_url):

@@ -10,10 +10,10 @@ from PySide6.QtCore import QThread, Signal
 
 try:
     from src.data_struct import Point_GPS, Info_GPS
-    from config import BoardID, BOARD_FIELDS
+    from settings import BoardID, BOARD_FIELDS
 except ImportError:
     from .data_struct import Point_GPS, Info_GPS
-    from config import BoardID, BOARD_FIELDS # type: ignore
+    from settings import BoardID, BOARD_FIELDS # type: ignore
 
 
 def parse_gps_data(gps_data, board_id):
