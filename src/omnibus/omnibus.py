@@ -13,13 +13,13 @@ try:
 except ImportError:
     # Python complains if we run `python -m omnibus` from the omnibus folder.
     # This works around that complaint.
-    import server  # pyright: ignore[reportImplicitRelativeImport]
+    import server
 
 # Python also doesn't execute __main__ if we're in the omnibus folder.
 # If that is the case (we were directly executed), start the server ourselves.
 if __name__ == "__main__":
     try:
-        server.server()
+        server.server() # pyright: ignore [reportAttributeAccessIssue]
     except KeyboardInterrupt:
         pass
 
@@ -74,7 +74,7 @@ class OmnibusCommunicator:
             # components on the same machine
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.settimeout(0.6)  # 0.6 second timeout
-            sock.bind(("", server.BROADCAST_PORT))  # listen for broadcasts
+            sock.bind(("", server.BROADCAST_PORT))  # listen for broadcasts  # pyright: ignore [reportAttributeAccessIssue]
             print("Listening for server IP...")
             while True:
                 try:
@@ -108,7 +108,7 @@ class Sender(OmnibusCommunicator):
         )
         self._publisher = OmnibusCommunicator.context.socket(zmq.PUB)
         self._publisher.connect(
-            f"tcp://{OmnibusCommunicator.server_ip}:{server.SOURCE_PORT}"
+            f"tcp://{OmnibusCommunicator.server_ip}:{server.SOURCE_PORT}" # pyright: ignore [reportAttributeAccessIssue]
         )
 
     def send_message(self, message: Message) -> None:
@@ -191,7 +191,7 @@ class Receiver(OmnibusCommunicator):
         )
         self._subscriber = OmnibusCommunicator.context.socket(zmq.SUB)
         self._subscriber.connect(
-            f"tcp://{OmnibusCommunicator.server_ip}:{server.SINK_PORT}"
+            f"tcp://{OmnibusCommunicator.server_ip}:{server.SINK_PORT}" # pyright: ignore [reportAttributeAccessIssue]
         )
         for channel in self._channels:
             self._subscriber.setsockopt(zmq.SUBSCRIBE, channel.encode("utf-8"))
