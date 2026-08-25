@@ -41,13 +41,14 @@ class MapWindow(QMainWindow):
         self.data_source = 0
         self.start_index_to_feature_ui = 3  # index to insert the feature of the data source ui, should use get_current_index_to_feature_ui() to get the index
         self.kmz_file_label = ""
+        self.gps_status_label: QLabel | None = None
 
         # Set up the central widget and layout
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
 
         # Main layout for the window (using QSplitter for 80% - 20% split)
-        self.main_splitter = QSplitter(Qt.Horizontal, self.main_widget)
+        self.main_splitter = QSplitter(Qt.Orientation.Horizontal, self.main_widget)
         main_layout = QHBoxLayout(self.main_widget)
         main_layout.addWidget(self.main_splitter)
 
@@ -56,7 +57,7 @@ class MapWindow(QMainWindow):
 
         # Initialize the map view and set it to expand
         self.map_view = MapView(self)
-        self.map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.map_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.map_view.update_gps_label.connect(self.update_gps_status)
         self.map_view.point_storage.storage_update.connect(self.update_marker_button_states)
 
@@ -107,14 +108,14 @@ class MapWindow(QMainWindow):
         self.initial_toggle_mode_button()
         self.toggle_button.setFixedSize(80, 30)  # Set fixed size for the toggle button
         self.toggle_button.setSizePolicy(
-            QSizePolicy.Fixed, QSizePolicy.Fixed
+            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
         )  # Prevent the button from expanding
         self.toggle_button.clicked.connect(self.toggle_dark_mode)
 
         # Create a container layout to align the toggle button to the left
         self.top_bar = QVBoxLayout()
         self.top_bar.addWidget(
-            self.toggle_button, alignment=Qt.AlignLeft
+            self.toggle_button, alignment=Qt.AlignmentFlag.AlignLeft
         )  # Align the button to the left
         self.toolbar_layout.addLayout(
             self.top_bar
@@ -129,7 +130,9 @@ class MapWindow(QMainWindow):
         self.data_source_ui.addItem("None")
         self.data_source_ui.addItem("Real-time Data Source")
         self.data_source_ui.addItem("Load KMZ File")
-        self.data_source_ui.setCurrentIndex(self.data_source)
+        data_source_index = self.data_source
+        if data_source_index is not None:
+            self.data_source_ui.setCurrentIndex(data_source_index)
         self.data_source_ui.currentIndexChanged.connect(self.toggle_data_source)
         self.toolbar_layout.addWidget(self.data_source_ui)
 
@@ -196,7 +199,8 @@ class MapWindow(QMainWindow):
     
     def update_gps_status(self, gps_status):
         # Slot to handle the update for MainWindow's label
-        self.gps_status_label.setText(gps_status)
+        if self.gps_status_label is not None:
+            self.gps_status_label.setText(gps_status)
 
     def get_current_index_to_feature_ui(self):
         self.start_index_to_feature_ui += 1
@@ -236,7 +240,7 @@ class MapWindow(QMainWindow):
             self.gps_status_label = QLabel("GPS Status: Not Connected")
             self.gps_status_label.setFixedWidth(200)  # Set fixed width for the label
             self.gps_status_label.setSizePolicy(
-                QSizePolicy.Fixed, QSizePolicy.Fixed
+                QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
             )
             self.gps_status_label.setWordWrap(True)
             self.gps_status_label.setStyleSheet(
@@ -365,17 +369,6 @@ class MapWindow(QMainWindow):
         with open(stylesheet_path, "r") as file:
             self.setStyleSheet(file.read())
 
-    def add_marker(self):
-        """Function to add a marker on the map at specified coordinates."""
-        try:
-            lat = float(self.lat_input.text())
-            lon = float(self.lon_input.text())
-            self.map_view.add_marker_to_map([lat, lon], "New Marker", "red")
-        except ValueError:
-            print(
-                "Invalid input for latitude or longitude. Please enter valid numbers."
-            )
-
     def update_marker_button_states(self):
         """Update marker button states based on available markers."""
         has_markers = (self.map_view.point_storage.get_gps_points() or 
@@ -401,10 +394,10 @@ class MapWindow(QMainWindow):
             self,
             "Confirm Clear",
             "Are you sure you want to clear all markers?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
-        if reply != QMessageBox.Yes:
+        if reply != QMessageBox.StandardButton.Yes:
             return
         self.map_view.clear_all_markers()
 
@@ -419,10 +412,10 @@ class MapWindow(QMainWindow):
             self,
             "Confirm Exit",
             "Are you sure you want to quit?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
-        return reply == QMessageBox.Yes
+        return reply == QMessageBox.StandardButton.Yes
 
     def quit(self):
         self.map_view.quit()

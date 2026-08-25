@@ -9,6 +9,8 @@ def print_console(channels_filter):
     print(channels_filter)
     while True:
         msg = receiver.recv_message()
+        if msg is None:
+            continue
         if msg.channel in channels_filter:
             print(msg.payload)
 

@@ -2,7 +2,7 @@ import logging
 import random
 import threading
 import time
-from typing import List
+from typing import List, Sequence
 
 import flask
 from PySide6.QtCore import Signal
@@ -44,11 +44,12 @@ class MapView(QWebEngineView):
         self.kmz_parser = None
 
         self.coordinate = None
+        self.map_html: str = ""
 
         print("Online Mode:", self.online)
 
         # Set the size policy to make the widget expand to fill space
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumSize(0, 0)  # Allow it to shrink completely
 
         # Initialize the map with a default tile style
@@ -270,7 +271,11 @@ class MapView(QWebEngineView):
             self.last_map_point_update = time.time()
             self.point_storage.store_info(info)
 
-    def draw_gps_data(self, points: List[Point_GPS | LineString_GPS] = None):
+    def draw_gps_data(
+        self, points: Sequence[Point_GPS | LineString_GPS] | None = None
+    ):
+        if points is None:
+            points = []
 
         total_points = len(points)
         step = 1
@@ -299,9 +304,9 @@ class MapView(QWebEngineView):
                     popup=f"Height: {data.alt}m, Timestamp: {data.time_stamp}",
                 ).add_to(self.m)
             elif isinstance(data, LineString_GPS):
-                points, color_idx = [], []
+                line_points, color_idx = [], []
                 for i, point in enumerate(data.points):
-                    points.append([point.lat, point.lon])
+                    line_points.append([point.lat, point.lon])
                     color_idx.append(self.gradient_count)
                     # When passing a step, change the color
                     # if (i + 1) % step == 0:
@@ -310,7 +315,7 @@ class MapView(QWebEngineView):
                     )
 
                 line = folium.ColorLine(
-                    positions=points,
+                    positions=line_points,
                     colors=color_idx,
                     colormap=cm.LinearColormap(
                         GRADIENT_COLORS, vmin=0, vmax=len(GRADIENT_COLORS)
@@ -321,7 +326,7 @@ class MapView(QWebEngineView):
             else:
                 print("Unhandled data type:", type(data))
 
-    def filter_point(self, data: List[Point_GPS], board_id: str):
+    def filter_point(self, data: List[Point_GPS], board_id: str | None):
         return (
             [point for point in data if point.board_id == board_id]
             if board_id

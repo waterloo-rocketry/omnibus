@@ -50,7 +50,8 @@ class ThreadedHTTPServer:
             print("Stopping HTTP server...")
             self.server.shutdown()
             self.server.server_close()
-            self.thread.join()
+            if self.thread:
+                self.thread.join()
             print("HTTP server stopped.")
             self.server = None
             self.thread = None

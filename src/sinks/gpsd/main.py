@@ -10,6 +10,8 @@ gps = {}
 
 while True:
     data = receiver.recv()
+    if data is None:
+        continue
     msgtype = data.get("msg_type")
     if msgtype in ["GPS_INFO", "GPS_TIMESTAMP", "GPS_ALTITUDE", "GPS_LATITUDE", "GPS_LONGITUDE"]:
         gps[msgtype] = data["data"]

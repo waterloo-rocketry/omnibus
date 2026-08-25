@@ -8,6 +8,9 @@ import random
 import sys, signal
 import traceback
 
+from collections.abc import Iterator
+from typing import Any, cast
+
 from omnibus import Sender, Receiver
 import parsley
 
@@ -51,6 +54,7 @@ class SerialCommunicator:
     def __init__(self, port: str, baud: int, timeout: int):
         self.port = port
         self.serial = serial.Serial(port, baud, timeout=timeout)
+        self.page_number = 0
 
     def read(self):
         return self.serial.read(4096)
@@ -89,7 +93,7 @@ class FileCommunicator:
 class FakeSerialCommunicator:
     def __init__(self):
         # Fake messages to cycle through
-        self.fake_msgs = [
+        self.fake_msgs: list[dict[str, str | int | float]] = [
             {
                 "board_type_id": "INJECTOR",
                 "board_inst_id": "ROCKET",
@@ -101,6 +105,7 @@ class FakeSerialCommunicator:
             },
         ]
         self.fake_msg_index = 0
+        self.page_number = 0
         self.last_fake_zero_time = 0
         self.zero_time = get_host_time()
 
@@ -261,6 +266,8 @@ def main():
     last_valid_message_time = 0
     last_heartbeat_time = get_host_time()
     last_keepalive_time = 0
+    initial_page_number: int | None = None
+    logger_generator: Iterator[parsley.ParsleyObject[Any] | parsley.ParsleyError] | None = None
 
     # Invariant - buffer starts with the start of a message
     buffer = b""
@@ -293,13 +300,20 @@ def main():
         buffer += line
 
         if args.format == "logger":
-            if 'initial_page_number' not in locals():
+            if initial_page_number is None:
                 if len(buffer) > 3:
                     initial_page_number = int(buffer[3])
                 else:
                     raise ValueError("Initial page number not found in buffer")
-            logger_generator = logger_parser.parse(buffer, initial_page_number + communicator.page_number - 1) # Magic number 1 used to check the page number
+            logger_generator = cast(
+                "Iterator[parsley.ParsleyObject[Any] | parsley.ParsleyError]",
+                cast(
+                    "object",
+                    logger_parser.parse(buffer, initial_page_number + communicator.page_number - 1),
+                ),
+            )  # Magic number 1 used to check the page number
 
+        msg: bytes | str | None = None
         while True:
             try:
                 msg = None
@@ -318,6 +332,8 @@ def main():
                         buffer = buffer[i + 1 :]
                         raise e
                 elif args.format == "logger":
+                    if logger_generator is None:
+                        break
                     parsed_object = next(logger_generator, None)
                     if parsed_object is None:
                         buffer = b"" # Clear the buffer if no more messages
@@ -353,8 +369,10 @@ def main():
 
             except ValueError as e:
                 print_error(e)
-                if msg is not None:
-                    print_error(msg.hex() if args.format == "telemetry" else msg)
+                if isinstance(msg, bytes):
+                    print_error(msg.hex())
+                elif msg is not None:
+                    print_error(msg)
             except Exception:
                 print_error(traceback.format_exc())
 
