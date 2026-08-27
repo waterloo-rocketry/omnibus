@@ -10,6 +10,7 @@ from .registry import Register
 from decimal import Decimal
 import numbers
 
+@Register
 class GaugeItem(DashboardItem):
     def __init__(self, *args):
         super().__init__(*args)
@@ -89,12 +90,8 @@ class GaugeItem(DashboardItem):
         publisher.unsubscribe_from_all(self.on_data_update)
         super().on_delete()
 
-
-Register(GaugeItem)
-
-
 class GaugeWidget(QWidget):
-    def __init__(self, item: GaugeItem):
+    def __init__(self, item):
         super().__init__()
         self.item = item
 
