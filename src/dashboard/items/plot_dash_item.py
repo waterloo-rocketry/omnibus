@@ -7,6 +7,7 @@ import config
 from .registry import Register
 from .series_parameter import SeriesChecklistParameter
 import numbers
+from typing import Any
 
 
 @Register
@@ -22,9 +23,12 @@ class PlotDashItem(DashboardItem):
         self.times = {}
         self.points = {}
 
+        self.curves = {}
+        self.warning_line = pg.PlotDataItem()
+
         # Specify the layout
-        self.layout = QGridLayout()
-        self.setLayout(self.layout)
+        self.main_layout = QGridLayout()
+        self.setLayout(self.main_layout)
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
@@ -48,9 +52,9 @@ class PlotDashItem(DashboardItem):
         self.widget = pg.PlotWidget(plotItem=self.plot)
 
         # add it to the layout
-        self.layout.addWidget(self.widget, 0, 0)
+        self.main_layout.addWidget(self.widget, 0, 0)
 
-    def add_parameters(self):
+    def add_parameters(self) -> list[Any]:
         series_param = SeriesChecklistParameter()
         limit_param = {'name': 'limit', 'type': 'float', 'value': 0}
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
@@ -83,7 +87,7 @@ class PlotDashItem(DashboardItem):
         # recreate the plot with new series and add it to the layout
         self.plot = self.create_plot()
         self.widget = pg.PlotWidget(plotItem=self.plot)
-        self.layout.addWidget(self.widget, 0, 0)
+        self.main_layout.addWidget(self.widget, 0, 0)
         self.resize(self.parameters.param('width').value(),
                     self.parameters.param('height').value())
 
@@ -94,7 +98,7 @@ class PlotDashItem(DashboardItem):
     def create_plot(self):
         plot = pg.PlotItem(title=f"<div style='font-size: 16pt;'><br/><b>{' / '.join(self.series)}</b><br/></div>", left="Data", bottom="Seconds")
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
-        plot.setMouseEnabled(x=False, y=False)
+        plot.getViewBox().setMouseEnabled(x=False, y=False)
         plot.hideButtons()
         plot.setMinimumSize(300, 200)
         if (len(self.series) > 1):
@@ -144,7 +148,7 @@ class PlotDashItem(DashboardItem):
             max_point = max(max(v) for v in values if v)
 
         # set the displayed range of Y axis
-        self.plot.setYRange(min_point, max_point, padding=0.1)
+        self.plot.getViewBox().setYRange(min_point, max_point, padding=0.1)
 
         limit = self.parameters.param('limit').value()
         if limit != 0:
@@ -162,8 +166,8 @@ class PlotDashItem(DashboardItem):
 
         # round the time to the nearest GRAPH_STEP
         t = round(self.times[stream][-1] / config.GRAPH_STEP) * config.GRAPH_STEP
-        self.plot.setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
-                            t + config.GRAPH_STEP, padding=0)
+        self.plot.getViewBox().setXRange(t - config.GRAPH_DURATION + config.GRAPH_STEP,
+                                         t + config.GRAPH_STEP, padding=0)
 
         series_name: str  = ""
         # data series name

@@ -42,7 +42,7 @@ class KMZParser:
         timestamp = ( # point will never have a timestamp, only Placemark will
             getattr(feature, "name", "")
             if (type(feature).__name__ == "Placemark")
-            else None
+            else ""
         )
         if geom_type == "Point":
             lon, lat, alt = geom.coords[0]

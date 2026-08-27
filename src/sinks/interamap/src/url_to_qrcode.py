@@ -1,12 +1,14 @@
 import qrcode
+import qrcode.constants
 import sys
 import webbrowser
 import os
 
 from PIL.ImageQt import QPixmap
+from qrcode.image.pil import PilImage
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QLabel, QApplication, QVBoxLayout, QWidget
-from config import TERMINAL_QR_CODE
+from settings import TERMINAL_QR_CODE
 
 
 def generate_qr_code(qr_code_url):
@@ -16,7 +18,7 @@ def generate_qr_code(qr_code_url):
     qr.make(fit=True)
     # save img
     filename = "qr_code.png"
-    img = qr.make_image(fill_color='black', back_color='white')
+    img = qr.make_image(image_factory=PilImage, fill_color='black', back_color='white')
     img.save(filename)
     # Serve img in web-browser (backup)
     try:

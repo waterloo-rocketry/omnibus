@@ -38,14 +38,14 @@ class SeriesChecklistParameter(ChecklistParameter):
     def refresh_limits(self):
         self.setLimits(publisher.get_all_streams())
 
-    def setValue(self, values, blockSignal=None):
-        if not isinstance(values, list):
-            values = [values]
-        for value in values:
-            if value not in self.limits:
-                publisher.ensure_exists(value)
+    def setValue(self, value, blockSignal=None):
+        if not isinstance(value, list):
+            value = [value]
+        for v in value:
+            if v not in self.limits:
+                publisher.ensure_exists(v)
                 self.refresh_limits()
-        return super().setValue(values, blockSignal)
+        return super().setValue(value, blockSignal)
     
     def setLimits(self, limits):
         self.limits = limits

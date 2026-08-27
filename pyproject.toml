@@ -50,6 +50,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "autopep8",
+    "basedpyright>=1.39.10",
     "flake8",
     "pytest",
     "pytest-cov>=7.0.0",
@@ -79,22 +80,19 @@ members = [
     "tools/data_processing_v2_beta",
 ]
 
-[tool.pyright]
-include = ["src/omnibus/**"] # Eventually this should include the entire project
+[tool.basedpyright]
+failOnWarnings = false
+include = ["src/**"]
 exclude = ["**/__pycache__", "**/node_modules", "**/__init__.py"]
-# strict = ["omnibus/**"] # Eventually omnibus library should do strict type checking
-extraPaths = ["src/**"]
-
-executionEnvironments = [
-    {root = "src/dashboard"},
-    {root = "src/sources/ni"},
-    {root = "src/sources/ljm"},
-    {root = "src/sources/parsley"},
-    {root = "src/sources/rlcsv3"},
-    {root = "src/globallog"},
-    {root = "src/sources/fakeni"},
-    {root = "src/sinks/interamap"},
-    {root = "src/bridge"},
-    {root = "src/websocket_server"},
-    {root = "tools/data_processing"}
+# strict = ["src/**"] # Eventually omnibus library should do strict type checking
+extraPaths = [
+    "src/bridge",
+    "src/dashboard",
+    "src/sources/ni",
+    "src/sources/ljm",
+    "src/sources/replay_log",
+    "src/sources/rlcsv3",
+    "src/sinks/interamap",
+    "src/websocket_server",
+    "src/omnibus",
 ]

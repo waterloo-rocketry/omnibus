@@ -38,9 +38,11 @@ def main():
 
     readline = reader(args.port)
 
+    sender: Sender | None = None
+    CHANNEL = "RLCS"
+
     if not args.solo:
         sender = Sender()
-        CHANNEL = "RLCS"
 
     while True:
         line = readline()
@@ -55,7 +57,7 @@ def main():
 
         commander.command(parsed_data)
 
-        if not args.solo:  # if connect to omnibus
+        if not args.solo and sender is not None:  # if connect to omnibus
             sender.send(CHANNEL, parsed_data)
 
         rlcs.print_data(parsed_data)

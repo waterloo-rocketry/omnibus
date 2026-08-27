@@ -33,7 +33,7 @@ from pyqtgraph.parametertree import ParameterTree
 from items import registry
 from utils import ConfirmDialog, EventTracker
 from publisher import publisher
-from typing import Callable
+from typing import Any, Callable, cast
 from omnibus import Sender
 from omnibus.util import BuildInfoManager
 from items.dashboard_item import DashboardItem
@@ -74,10 +74,10 @@ class QGraphicsViewWrapper(QGraphicsView):
         Scroll vertically otherwise
         """
         angle = event.angleDelta()
-        if event.modifiers() == Qt.ControlModifier:
+        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
             self.zoom(angle.y())
-        elif event.source() == Qt.MouseEventNotSynthesized:  # event comes from a mouse
-            if event.modifiers() == Qt.ShiftModifier:
+        elif event.source() == Qt.MouseEventSource.MouseEventNotSynthesized:  # event comes from a mouse
+            if event.modifiers() == Qt.KeyboardModifier.ShiftModifier:
                 # determining the scrolling orientation based on the larger x/y component value
                 absolute_angle = angle.x() if abs(angle.x()) > abs(angle.y()) else angle.y()
                 numDegrees = absolute_angle * self.SCROLL_SENSITIVITY
@@ -151,21 +151,21 @@ class Dashboard(QWidget):
         self.should_show_save_popup = True
 
         # Create a GUI
-        self.width = 1100
-        self.height = 700
+        width = 1100
+        height = 700
         self.setWindowTitle(f"{Dashboard.build_info.app_name} - {Dashboard.build_info.build_number}")
-        self.resize(self.width, self.height)
+        self.resize(width, height)
 
         # Create a large scene underneath the view
-        self.scene = QGraphicsScene(0, 0, self.width*100, self.height*100)
+        self.scene = QGraphicsScene(0, 0, width*100, height*100)
         self.scene.selectionChanged.connect(self.on_selection_changed)
 
         # Create a layout manager
-        self.layout = QVBoxLayout()
+        self.main_layout = QVBoxLayout()
         # We wrap everything in a splitter view so that
         # we can resize the peremeter tree
-        self.splitter = QSplitter(Qt.Horizontal)
-        self.layout.addWidget(self.splitter)
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.main_layout.addWidget(self.splitter)
 
         # Create a menubar for actions
         menubar = QMenuBar(self)
@@ -270,14 +270,14 @@ class Dashboard(QWidget):
         help_action = add_help_menu.addAction("Omnibus Help")
         help_action.triggered.connect(self.help)
 
-        self.layout.setMenuBar(menubar)
+        self.main_layout.setMenuBar(menubar)
 
         # Create the view and add it to the widget
         self.view = QGraphicsViewWrapper(self.scene, self)
-        self.view.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.view.setRenderHints(QPainter.Antialiasing)
+        self.view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        self.view.setRenderHints(QPainter.RenderHint.Antialiasing)
         # zooms to the position of mouse
-        self.view.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.view.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
         self.splitter.addWidget(self.view)
         self.parameter_tree_placeholder = ParameterTree()
@@ -289,7 +289,7 @@ class Dashboard(QWidget):
         # the widgets can go to width 0 and it hard to get them back
         self.splitter.setCollapsible(0, False)
         self.splitter.setCollapsible(1, False)
-        self.setLayout(self.layout)
+        self.setLayout(self.main_layout)
 
         # enable certain keyboard shortcuts
         self.key_press_signals = EventTracker()
@@ -422,7 +422,7 @@ class Dashboard(QWidget):
             return
 
         # Show the tree
-        item = self.widgets[items[0]][1]
+        item = self.widgets[cast(QGraphicsRectItem, items[0])][1]
         if self.splitter.widget(1) is not item.parameter_tree:
             self.splitter.replaceWidget(1, item.parameter_tree)
         item.parameter_tree.show()
@@ -472,7 +472,7 @@ class Dashboard(QWidget):
         for proxy, candidate in self.widgets.values():
             if candidate is item:
                 pos = proxy.pos()
-                proxy.parentItem().setRect(pos.x(), pos.y(), width, height)
+                cast(QGraphicsRectItem, proxy.parentItem()).setRect(pos.x(), pos.y(), width, height)
                 return
 
     # Method to add widgets
@@ -516,7 +516,7 @@ class Dashboard(QWidget):
         self.scene.addItem(rect)
 
         # Map the proxy widget and dashitem to the rectitem
-        self.widgets[rect] = [proxy, dashitem]
+        self.widgets[rect] = (proxy, dashitem)
 
         return rect
 
@@ -630,6 +630,7 @@ class Dashboard(QWidget):
             return text + ".json"
         elif ok:
             QMessageBox.warning(self, 'Warning', 'No input provided, try again')
+        return ""
 
     # Method to switch to a layout in a different file
     def open(self):
@@ -690,7 +691,7 @@ class Dashboard(QWidget):
     def lock_selected(self):
         """Mark all selected widgets as locked, in an arbitrary order"""
         for widget in self.scene.selectedItems():
-            self.lock_widget(widget)
+            self.lock_widget(cast(QGraphicsRectItem, widget))
 
     # Method to handle exit
     def closeEvent(self, event):
@@ -715,7 +716,7 @@ class Dashboard(QWidget):
     # Method to retrieve current data on dashboard.
     def get_data(self):
         # General structure for obtaining the dashboard info
-        data = {"zoom": self.view.zoomed, "center": [], "widgets": [], "should_show_save_popup": True}
+        data: dict[str, Any] = {"zoom": self.view.zoomed, "center": [], "widgets": [], "should_show_save_popup": True}
 
         # Obtain current save on exit value.
         data["should_show_save_popup"] = self.should_show_save_popup
@@ -834,7 +835,7 @@ class Dashboard(QWidget):
         help_box.exec()
 
     # Method to get new data for widgets
-    def update(self):
+    def update(self, arg__1=None, *args, **kwargs):
         # Note, based on performance testing,
         # we don't need to be worried about
         # the delay caused by the callback,
@@ -859,7 +860,7 @@ class Dashboard(QWidget):
             return
         for item in self.scene.selectedItems():
             self.remove(item)
-            self.widgets.pop(item)
+            self.widgets.pop(cast(QGraphicsRectItem, item))
 
     def send_to_front(self):
         """Send the selected items to the front of the stacking order.

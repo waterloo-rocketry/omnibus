@@ -1,5 +1,6 @@
 from publisher import publisher
 from math import sqrt
+from typing import Any
 from PySide6.QtGui import QLinearGradient, QColor, QBrush
 from pyqtgraph.Qt.QtCore import Qt
 from pyqtgraph.Qt.QtGui import QBrush, QFont, QPainter
@@ -16,30 +17,30 @@ class ProgressBarItem(DashboardItem):
     def __init__(self, *args):
         super().__init__(*args)
 
-        self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(10, 10, 10, 10)  # Set the margins of the layout
-        self.layout.setSpacing(10)  # Remove the spacing between elements in the layout
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setContentsMargins(10, 10, 10, 10)  # Set the margins of the layout
+        self.main_layout.setSpacing(10)  # Remove the spacing between elements in the layout
         self.resize(200, 100) 
-        self.setLayout(self.layout)
+        self.setLayout(self.main_layout)
         self.vertical_mode = False
         
         self.widget = ProgressBarWidget(self)
         self.label_widget = LabelWidget(self, vertical_mode=False)
         
         # Set size policies
-        widget_size_policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        widget_size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         widget_size_policy.setHorizontalStretch(4)  # 4 times larger horizontally
         widget_size_policy.setVerticalStretch(4)    # 4 times larger vertically
 
-        label_size_policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        label_size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         label_size_policy.setHorizontalStretch(1)   # 1 time (default) horizontally
         label_size_policy.setVerticalStretch(1)   
         
         self.widget.setSizePolicy(widget_size_policy)
         self.label_widget.setSizePolicy(label_size_policy)
         
-        self.layout.addWidget(self.widget)
-        self.layout.addWidget(self.label_widget)
+        self.main_layout.addWidget(self.widget)
+        self.main_layout.addWidget(self.label_widget)
         
         # Value detection code is based on plot_dash_item.py
         self.parameters.param("value").sigValueChanged.connect(self.on_value_change)
@@ -64,7 +65,7 @@ class ProgressBarItem(DashboardItem):
         
         self.update_data()
 
-    def add_parameters(self):
+    def add_parameters(self) -> list[Any]:
         value_param = ChecklistParameter(
             name="value",
             type="list",
@@ -98,18 +99,18 @@ class ProgressBarItem(DashboardItem):
         
     def on_vertical_change(self, param, value):
         # Set size policies
-        widget_size_policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        widget_size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         widget_size_policy.setHorizontalStretch(4)  # 4 times larger horizontally
         widget_size_policy.setVerticalStretch(4)    # 4 times larger vertically
 
-        label_size_policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        label_size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         label_size_policy.setHorizontalStretch(1)   # 1 time (default) horizontally
         label_size_policy.setVerticalStretch(1)   
         
         self.vertical_mode = self.parameters.param("vertical").value()
         self.resize(self.height(), self.width())
-        for i in reversed(range(self.layout.count())):
-            self.layout.itemAt(i).widget().setParent(None)
+        for i in reversed(range(self.main_layout.count())):
+            self.main_layout.itemAt(i).widget().setParent(None)
         if self.vertical_mode:
             self.widget = VerticalProgressBarWidget(self)
             self.label_widget = LabelWidget(self, vertical_mode=True)
@@ -118,8 +119,8 @@ class ProgressBarItem(DashboardItem):
             self.label_widget = LabelWidget(self, vertical_mode=False)
         self.widget.setSizePolicy(widget_size_policy)
         self.label_widget.setSizePolicy(label_size_policy)
-        self.layout.addWidget(self.widget)
-        self.layout.addWidget(self.label_widget)
+        self.main_layout.addWidget(self.widget)
+        self.main_layout.addWidget(self.label_widget)
         self.update_data()
 
     def on_color_change(self, param, value):
@@ -192,12 +193,12 @@ class LabelWidget(QWidget):
         font_size = 6 + 17 * font_percent * scale_factor
         
         font = QFont()
-        font.setPointSize(font_size)
+        font.setPointSize(int(font_size))
         painter.setFont(font)
         if self.vertical_mode:
-            painter.drawText(rect, Qt.TextWordWrap | Qt.AlignCenter, self.label)
+            painter.drawText(rect, Qt.TextFlag.TextWordWrap | Qt.AlignmentFlag.AlignCenter, self.label)
         else:        
-            painter.drawText(rect, Qt.TextWordWrap | Qt.AlignCenter, self.label)
+            painter.drawText(rect, Qt.TextFlag.TextWordWrap | Qt.AlignmentFlag.AlignCenter, self.label)
 
     def update_label(self, label):
         self.set_label(label)
@@ -221,7 +222,7 @@ class ProgressBarWidget(QWidget):
             "purple":   (QColor(128, 0, 128), QColor(128, 200, 128)),
             "orange":   (QColor(255, 165, 0), QColor(255, 200, 0))
         }
-        return mapping[color]
+        return list(mapping[color])
     
     def set_color(self, color):
         self.color = color
@@ -241,7 +242,7 @@ class ProgressBarWidget(QWidget):
         size: float | int = min(width/2.5, height) # size of the progress bar
 
         # Draw the border
-        painter.setBrush(Qt.NoBrush)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawRect(rect)
 
         # Calculate the progress width
@@ -257,7 +258,7 @@ class ProgressBarWidget(QWidget):
         gradient.setColorAt(0, color1)
         gradient.setColorAt(1, color2)
         painter.setBrush(QBrush(gradient))
-        painter.drawRect(0, 0, progress_width, rect.height())
+        painter.drawRect(0, 0, int(progress_width), rect.height())
 
         # Draw the label text with percentage
         percentage = (
@@ -268,8 +269,8 @@ class ProgressBarWidget(QWidget):
         font = QFont()
         font.setPointSize(int(size / 1.5))
         painter.setFont(font)
-        painter.drawText(rect, Qt.AlignCenter, f"{percentage:.1f}%")
-        
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, f"{percentage:.1f}%")
+
     def update_progress(self, data, min_value, max_value,color):
         self.set_parameters(min_value, max_value, data, color)
         self.update()
@@ -287,7 +288,7 @@ class VerticalProgressBarWidget(ProgressBarWidget):
         size: float | int = min(width/2.5, height) # size of the progress bar
         
         # Draw the border
-        painter.setBrush(Qt.NoBrush)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawRect(rect)
         
         # Calculate the progress height
@@ -302,7 +303,7 @@ class VerticalProgressBarWidget(ProgressBarWidget):
         gradient.setColorAt(0, color1)
         gradient.setColorAt(1, color2)
         painter.setBrush(QBrush(gradient))
-        painter.drawRect(0, rect.height() - progress_height, rect.width(), progress_height)
+        painter.drawRect(0, int(rect.height() - progress_height), rect.width(), int(progress_height))
         
         # Draw the label text with percentage
         percentage = (
@@ -313,4 +314,4 @@ class VerticalProgressBarWidget(ProgressBarWidget):
         font = QFont()
         font.setPointSize(int(size / 1.5))
         painter.setFont(font)
-        painter.drawText(rect, Qt.AlignCenter, f"{percentage:.1f}%")
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, f"{percentage:.1f}%")

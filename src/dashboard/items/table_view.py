@@ -1,10 +1,12 @@
 import math
 import json
 
+from typing import Any, cast
+
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QTableWidget, QTableWidgetItem, \
     QComboBox, QApplication, QHeaderView, QItemDelegate, QAbstractItemView, QSizePolicy
 from pyqtgraph.Qt.QtCore import Qt, QTimer, QEvent, QByteArray
-from pyqtgraph.Qt.QtGui import QColorConstants
+from pyqtgraph.Qt.QtGui import QColorConstants, QFocusEvent, QKeyEvent
 from pyqtgraph.parametertree.parameterTypes import ListParameter
 
 from publisher import publisher
@@ -66,34 +68,34 @@ class TVTableWidgetItem(QTableWidgetItem):
         if index and index.column() > 0:
             model = index.model()
             self.first_col = False
-            self.board = model.data(model.index(index.row(), 0), Qt.EditRole)
+            self.board = model.data(model.index(index.row(), 0), Qt.ItemDataRole.EditRole)
             # rerun setData logic with updated values
-            self.setData(Qt.EditRole, self.value)
+            self.setData(Qt.ItemDataRole.EditRole, self.value)
         else:
             self.first_col = True
 
-    def setData(self, role, data):
-        super().setData(role, data)
-        if role == Qt.EditRole:
-            if not data:
+    def setData(self, role, value):
+        super().setData(role, value)
+        if role == Qt.ItemDataRole.EditRole:
+            if not value:
                 self.path = None
                 self.value = ''
-            elif data[0] == '=' or self.first_col:
+            elif value[0] == '=' or self.first_col:
                 # display text as is
                 self.path = None
-                self.value = data
+                self.value = value
                 self.setForeground(QColorConstants.Black)
                 self.expired_timeout.stop()
             else:
                 # treat data as series path under board
-                self.path = data
+                self.path = value
                 self.value = 'None'
                 self.resubscribe()
                 self.expired_timeout.start(EXPIRED_TIME * 1000)
             self.resubscribe()
 
     def data(self, role):
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self.value.removeprefix('=')
         return super().data(role)
 
@@ -153,37 +155,39 @@ class TVItemDelegate(QItemDelegate):
         editor = QComboBox(parent)
         editor.setEditable(True)
         editor.setMaxVisibleItems(100)
-        editor.view().setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
+        editor.view().setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
 
         if index.column() == 0:  # first column, select board
             boards = get_boards()
             editor.addItems(boards)
         else:
             model = index.model()
-            board = model.index(index.row(), 0).data(Qt.EditRole)
+            board = model.index(index.row(), 0).data(Qt.ItemDataRole.EditRole)
             paths = get_paths(board)
             editor.addItems(paths)
 
         if self.onchange:
+            onchange = self.onchange
             row = index.row()
             col = index.column()
-            editor.currentTextChanged.connect(lambda text: self.onchange(row, col, text))
+            editor.currentTextChanged.connect(lambda text: onchange(row, col, text))
 
         return editor
 
-    def eventFilter(self, editor, event):
+    def eventFilter(self, object, event):
         if (
-            event.type() == QEvent.FocusOut and
-            event.reason() in (Qt.PopupFocusReason, Qt.ActiveWindowFocusReason)
+            isinstance(event, QFocusEvent) and
+            event.type() == QEvent.Type.FocusOut and
+            event.reason() in (Qt.FocusReason.PopupFocusReason, Qt.FocusReason.ActiveWindowFocusReason)
         ):
             return False
-        return super().eventFilter(editor, event)
+        return super().eventFilter(object, event)
 
     def setEditorData(self, editor, index):
-        editor.setCurrentText(index.data(Qt.EditRole))
+        cast(QComboBox, editor).setCurrentText(index.data(Qt.ItemDataRole.EditRole))
 
     def setModelData(self, editor, model, index):
-        model.setData(index, editor.currentText(), Qt.EditRole)
+        model.setData(index, cast(QComboBox, editor).currentText(), Qt.ItemDataRole.EditRole)
 
 
 @Register
@@ -193,25 +197,25 @@ class TableViewItem(DashboardItem):
         super().__init__(dashboard, params)
 
         # Specify the layout
-        self.layout = QHBoxLayout()
-        self.setLayout(self.layout)
+        self.main_layout = QHBoxLayout()
+        self.setLayout(self.main_layout)
 
         self.parameters.param('rows').sigValueChanged.connect(self.on_rows_change)
         self.parameters.param('cols').sigValueChanged.connect(self.on_cols_change)
 
         self.widget = QTableWidget()
 
-        self.widget.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self.widget.setSelectionMode(QAbstractItemView.SelectionMode.ContiguousSelection)
         self.widget.setItemPrototype(TVTableWidgetItem())
         self.widget.setItemDelegate(TVItemDelegate(False))
         self.widget.setItemDelegateForColumn(0, TVItemDelegate(self.change_row_board))
         self.widget.verticalHeader().setSectionsMovable(True)
 
         hheader = self.widget.horizontalHeader()
-        hheader.setSectionResizeMode(QHeaderView.Interactive)
+        hheader.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         hheader.sectionResized.connect(self.update_size)
 
-        self.layout.addWidget(self.widget)
+        self.main_layout.addWidget(self.widget)
 
         self.installEventFilter(self)
 
@@ -226,8 +230,8 @@ class TableViewItem(DashboardItem):
                                    0, self.widget.columnCount())
             self.update_size()
 
-    def eventFilter(self, widget, event):
-        if event.type() != QEvent.KeyPress:
+    def eventFilter(self, watched, event):
+        if not isinstance(event, QKeyEvent) or event.type() != QEvent.Type.KeyPress:
             return False
 
         indexes = self.widget.selectedIndexes()
@@ -265,7 +269,7 @@ class TableViewItem(DashboardItem):
                 for j in range(mincol, maxcol+1):
                     item = self.widget.item(i, j)
                     if item:
-                        item.setData(Qt.EditRole, None)
+                        item.setData(Qt.ItemDataRole.EditRole, None)
 
             return True
 
@@ -282,7 +286,7 @@ class TableViewItem(DashboardItem):
                 for j in range(mincol, maxcol+1):
                     item = self.widget.item(i, j)
                     if item:
-                        item.setData(Qt.EditRole, None)
+                        item.setData(Qt.ItemDataRole.EditRole, None)
 
             return True
 
@@ -292,7 +296,7 @@ class TableViewItem(DashboardItem):
 
         def get_item_data(row, col):
             item = self.widget.item(row, col)
-            return item and item.data(Qt.EditRole) or ''
+            return item and item.data(Qt.ItemDataRole.EditRole) or ''
 
         return '\n'.join(
             '\t'.join(
@@ -324,7 +328,7 @@ class TableViewItem(DashboardItem):
                         if not item:
                             item = TVTableWidgetItem()
                             self.widget.setItem(row, col, item)
-                        item.setData(Qt.EditRole, cell)
+                        item.setData(Qt.ItemDataRole.EditRole, cell)
 
     def update_size(self):
         row = self.widget.rowCount()
@@ -338,7 +342,7 @@ class TableViewItem(DashboardItem):
 
         self.resize(width, height)
 
-    def add_parameters(self):
+    def add_parameters(self) -> list[Any]:
         return [
             {'name': 'rows', 'type': 'int', 'value': 3},
             {'name': 'cols', 'type': 'int', 'value': 5},
@@ -347,7 +351,7 @@ class TableViewItem(DashboardItem):
     def change_row_board(self, row, col, text):
         for i in range(1, self.widget.columnCount()):
             item = self.widget.item(row, i)
-            if item:
+            if isinstance(item, TVTableWidgetItem):
                 item.set_board(text)
 
     def on_rows_change(self, _, rows):
@@ -363,16 +367,16 @@ class TableViewItem(DashboardItem):
         for i in range(self.widget.rowCount()):
             for j in range(1, self.widget.columnCount()):
                 widget = self.widget.item(i, j)
-                if widget:
+                if isinstance(widget, TVTableWidgetItem):
                     widget.on_delete()
 
     def get_serialized_parameters(self):
-        params = self.parameters.saveState(filter='user')
+        params: dict[str, Any] = self.parameters.saveState(filter='user')
         params['table_view'] = {
             'cells': self.serialize_range(
                 0, self.widget.rowCount(),
                 0, self.widget.columnCount()),
-            'header_state': self.widget.horizontalHeader().saveState().toBase64().data().decode(),
+            'header_state': bytes(self.widget.horizontalHeader().saveState().toBase64().data()).decode(),
         }
         return json.dumps(params)
 

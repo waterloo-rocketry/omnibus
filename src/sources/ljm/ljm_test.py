@@ -30,7 +30,8 @@ def process_wide_mocks():
     sys.modules["labjack.ljm"] = fake_ljm
 
     # Fake config module used by main
-    fake_config = types.SimpleNamespace(
+    fake_config = types.ModuleType("config")
+    fake_config.__dict__.update(
         RATE=1,
         SCAN_RATE=1,
         SCANS_PER_READ=1,
