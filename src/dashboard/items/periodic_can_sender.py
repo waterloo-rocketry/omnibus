@@ -1,6 +1,7 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox, QLabel, QRadioButton, QButtonGroup, QVBoxLayout, QMessageBox
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.parametertree.parameterTypes import ListParameter
+from typing import Any
 from .dashboard_item import DashboardItem
 from .registry import Register
 import time
@@ -20,20 +21,20 @@ class PeriodicCanSender(DashboardItem):
         self.actuator = self.parameters.param('actuator').value()
 
         # Specify the layout
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
+        self.main_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
 
         self.label = QLabel(self.actuator)
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.label.setStyleSheet("font-size: 17px;")
-        self.layout.addWidget(self.label)
+        self.main_layout.addWidget(self.label)
 
         self.title = QLabel("Periodic CAN Sender")
-        self.title.setAlignment(Qt.AlignCenter)
-        self.layout.addWidget(self.title)
+        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(self.title)
         self.status_label = QLabel("INACTIVE")
-        self.status_label.setAlignment(Qt.AlignCenter)
-        self.layout.addWidget(self.status_label)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addWidget(self.status_label)
 
         self.radio_on = QRadioButton("ON")
         self.radio_off = QRadioButton("OFF")
@@ -52,10 +53,10 @@ class PeriodicCanSender(DashboardItem):
         self.h_layout.addWidget(self.radio_on)
         self.h_layout.addSpacing(20)
         self.h_layout.addWidget(self.radio_off)
-        self.h_layout.setAlignment(Qt.AlignCenter)
+        self.h_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Add the horizontal layout to the main vertical layout
-        self.layout.addLayout(self.h_layout)
+        self.main_layout.addLayout(self.h_layout)
 
         self.pulse_timer = QTimer()
         self.pulse_timer.timeout.connect(self.pulse_widgets)
@@ -93,7 +94,7 @@ class PeriodicCanSender(DashboardItem):
         self.pulse_count = 2
         self.pulse_timer.start(self.pulse_period)
 
-    def add_parameters(self):
+    def add_parameters(self) -> list[Any]:
         actuator_ids = list(mt.actuator_id.keys())
         series_param = ListParameter(name='actuator', type='list',
                                      default=actuator_ids[0], limits=actuator_ids)

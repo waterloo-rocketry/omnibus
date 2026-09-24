@@ -8,7 +8,11 @@ import msgpack
 import pytest
 
 from omnibus import Message
-import replay_log
+
+try:
+    from . import replay_log
+except ImportError:
+    import replay_log  # pyright: ignore[reportImplicitRelativeImport]
 
 
 def get_rand_str(l: int = 10) -> str:
@@ -38,11 +42,12 @@ class MockSender:
     Mocks provides mock for omnibus.Sender.
     """
     # mock_file records sent messages and has class scope to simplify monkeypatching
-    mock_file = None
+    mock_file: io.BytesIO | None = None
 
     def send_message(self, msg: Message | None):
         if msg is None:
             return
+        assert self.mock_file is not None
         packed_bytes = msgpack.packb([msg.channel, msg.timestamp, msg.payload])
         self.mock_file.write(packed_bytes)
 

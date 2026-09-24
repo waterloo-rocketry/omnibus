@@ -1,0 +1,41 @@
+name: Run Lint
+
+# Runs on pushes to pull request
+on: pull_request
+
+jobs:
+  run_autopep8:
+    name: Run autopep8
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Sync dependencies
+        run: uv sync --locked --all-packages --dev
+      - name: Run autopep8
+        run: uv run autopep8 -d -r src *.py --exit-code
+
+  run_flake8:
+    name: Run flake8
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Sync dependencies
+        run: uv sync --locked --all-packages --dev
+      - name: Run flake8
+        run: uv run flake8
+
+  run_basedpyright:
+    name: Run Basedpyright
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Sync dependencies
+        run: uv sync --locked --all-packages --dev
+      - name: Run basedpyright
+        run: uv run basedpyright src

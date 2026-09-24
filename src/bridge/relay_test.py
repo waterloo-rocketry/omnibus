@@ -1,5 +1,7 @@
 #Tests for the bridge relay server
 
+from typing import Any, Callable
+
 import pytest
 from unittest.mock import Mock, patch
 from socketio import exceptions
@@ -10,7 +12,7 @@ def _make_capturing_sio():
     # intercepts sio.on() so we can grab the callbacks main() registers
     # after main() runs, call callbacks["*"]("ch", [ts, data]) to simulate a WS broadcast
     mock_sio = Mock()
-    callbacks: dict = {}
+    callbacks: dict[str, Callable[..., Any]] = {}
 
     def on_factory(event):
         def store(f):

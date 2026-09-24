@@ -1,9 +1,9 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout
 from pyqtgraph.Qt.QtCore import QRect, QRectF
-from pyqtgraph.Qt.QtGui import QImage, QPainter
+from pyqtgraph.Qt.QtGui import QImage, QPainter, QPaintEvent
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
 from pyqtgraph.parametertree.parameterTypes import FileParameter
 from PySide6.QtSvg import QSvgRenderer
+from typing import Any
 
 from .dashboard_item import DashboardItem
 from .no_text_action_parameter import NoTextActionParameter
@@ -17,9 +17,9 @@ class ImageDashItem(DashboardItem):
         super().__init__(*args)
 
         # Specify the layout
-        self.layout = QHBoxLayout()
-        self.setLayout(self.layout)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout = QHBoxLayout()
+        self.setLayout(self.main_layout)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
 
         # need to wrap the label in a scroll area to
         # avoid problems by qt widget resizing on text change
@@ -37,9 +37,9 @@ class ImageDashItem(DashboardItem):
         self.parameters.param("file").sigTreeStateChanged.connect(self.on_file_change)
         self.parameters.param("original_size").sigActivated.connect(self.set_original_size)
 
-        self.layout.addWidget(self.widget)
+        self.main_layout.addWidget(self.widget)
 
-    def add_parameters(self):
+    def add_parameters(self) -> list[Any]:
         # list of supported file formats: https://doc.qt.io/qtforpython-5/PySide2/QtGui/QImageReader.html#PySide2.QtGui.PySide2.QtGui.QImageReader.supportedImageFormats
         file_param = FileParameter(name="file", value="", nameFilter="*.jpg;*.png;*.svg")
         original_size = NoTextActionParameter(name="original_size")
@@ -74,11 +74,11 @@ class ImageDashItem(DashboardItem):
 
 
 class ImageWidget(QWidget):
-    def __init__(self, item: ImageDashItem):
+    def __init__(self, item):
         super().__init__()
-        self.item: ImageDashItem = item
+        self.item = item
 
-    def paintEvent(self, paintEvent):
+    def paintEvent(self, event: QPaintEvent | None):
         if self.item.is_svg and self.item.svg_renderer is not None:
             painter = QPainter(self)
             self.item.svg_renderer.render(painter)

@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from tileserver import start_tileserver, stop_tileserver
 from src.main_window import MapWindow
 
-from config import ONLINE_MODE, MBTILES_PATH
+from settings import ONLINE_MODE, MBTILES_PATH
 
 should_force_close = False
 

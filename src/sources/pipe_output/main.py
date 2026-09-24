@@ -9,6 +9,10 @@ inp = Popen(sys.argv[1:], stdout=PIPE)
 sender = Sender()
 CHANNEL = "SE/Fake"
 
-for line in inp.stdout:
+stream = inp.stdout
+if stream is None:
+    raise RuntimeError("subprocess was created without a stdout pipe")
+
+for line in stream:
     data = json.loads(line.strip())
     sender.send(CHANNEL, data)

@@ -4,7 +4,10 @@ import argparse
 import os
 import sys
 
-import replay_log
+try:
+    from .replay_log import replay
+except ImportError:
+    from replay_log import replay  # pyright: ignore[reportImplicitRelativeImport]
 
 GLOBAL_LOGS = Path("../..")
 
@@ -54,21 +57,25 @@ def get_replay_log(max_logs: int) -> Path | None:
         else:
             print("Invalid selection.")
 
-    return log_files[selection]
+    return log_files[int(selection)]
 
 
 if __name__ == "__main__":
     args = parse_arguments()
     max_logs = args.max_logs
     replay_speed = args.replay_speed
-    log_file = os.path.expanduser(args.log_file if args.log_file != None else get_replay_log(max_logs))
+    log_file: str | Path | None = (
+        args.log_file if args.log_file is not None else get_replay_log(max_logs)
+    )
 
-    if log_file == None:
+    if log_file is None:
         print("Error: unable to retrieve log file.")
         sys.exit(1)
+
+    log_file = Path(log_file).expanduser()
 
     print(f"replaying log: {log_file}")
     print(f"replay speed: {replay_speed}x")
 
     with open(log_file, 'rb') as f:
-        replay_log.replay(f, replay_speed)
+        replay(f, replay_speed)

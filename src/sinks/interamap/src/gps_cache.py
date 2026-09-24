@@ -81,7 +81,7 @@ class GPS_Cache(QThread):
 
             self.storage_update.emit((self.StorageUpdateType.REMOVE, info))
         except KeyError:
-            raise "Error: Unstored info to be removed" + str(info)
+            raise KeyError(f"Error: Unstored info to be removed {info}")
 
     def export_points(self):
         """Export the map to KML file."""
@@ -95,9 +95,11 @@ class GPS_Cache(QThread):
             if p.time_stamp and '.' not in p.time_stamp:
                 p.time_stamp += '.0'
 
-            time = datetime.combine(
-                datetime.today(),
-                datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time()) if p.time_stamp else None
+            time = None
+            if p.time_stamp:
+                time = datetime.combine(
+                    datetime.today(),
+                    datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time())
 
             if p.board_id not in gps_points_placemarks.keys():
                 gps_points_placemarks[p.board_id] = kml.Folder(name=p.board_id)
@@ -106,7 +108,7 @@ class GPS_Cache(QThread):
                 kml.Placemark(
                     name="GPS Point",
                     description=f"Time: {time} Board ID: {p.board_id}",
-                    times=times.TimeStamp(timestamp=times.KmlDateTime(time)) if p.time_stamp else None,
+                    times=times.TimeStamp(timestamp=times.KmlDateTime(time)) if time else None,
                     kml_geometry=geometry.Point(
                         kml_coordinates=geometry.Coordinates(
                             coords=[(p.lon, p.lat, p.alt)]
@@ -121,15 +123,17 @@ class GPS_Cache(QThread):
             if sample_point.time_stamp and '.' not in sample_point.time_stamp:
                 sample_point.time_stamp += '.0'
 
-            time = datetime.combine(
-                datetime.today(),
-                datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time()) if sample_point.time_stamp else None
+            time = None
+            if sample_point.time_stamp:
+                time = datetime.combine(
+                    datetime.today(),
+                    datetime.strptime(sample_point.time_stamp, '%H:%M:%S.%f').time())
 
             gps_linestring_placemarks.append(
                 kml.Placemark(
                     name="GPS Linestring",
                     description=f"Time: {sample_point.time_stamp} Board ID: {sample_point.board_id}",
-                    times=times.TimeStamp(timestamp=times.KmlDateTime(time)) if sample_point.time_stamp else None,
+                    times=times.TimeStamp(timestamp=times.KmlDateTime(time)) if time else None,
                     kml_geometry=geometry.LineString(
                         kml_coordinates=geometry.Coordinates(
                             coords=[(p.lon, p.lat, p.alt) for p in l.points]
@@ -158,13 +162,13 @@ class GPS_Cache(QThread):
             app = QApplication([])
 
         msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
+        msg.setIcon(QMessageBox.Icon.Information)
         msg.setWindowTitle("Export Complete")
         msg.setText("Exported points to KML file successfully.")
         msg.setInformativeText(f"<a href='file://{os.path.abspath(os.path.join(self.relative_path, 'shared'))}'>Open Folder</a>")
-        msg.setStandardButtons(QMessageBox.Ok)
-        msg.setTextFormat(Qt.RichText)
-        msg.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.setTextFormat(Qt.TextFormat.RichText)
+        msg.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
         msg.buttonClicked.connect(lambda btn: webbrowser.open(f"file://{os.path.abspath(os.path.join(self.relative_path, 'shared'))}"))
         msg.exec()
         

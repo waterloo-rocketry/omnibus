@@ -51,7 +51,8 @@ def start_tileserver(mbtiles_path: str) -> None:
             ports={CONTAINER_PORT: HOST_PORT},
             command=["--file", container_mbtiles],
         )
-        print(f"TileServer is running in container: {container.id[:12]}")
+        container_id = container.id or ""
+        print(f"TileServer is running in container: {container_id[:12]}")
         print(f"Visit http://localhost:{HOST_PORT}/")
     except APIError as err:
         print("Failed to start TileServer:")

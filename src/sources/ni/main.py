@@ -32,7 +32,7 @@ See 'config.py.example' for more info.\n"""
 
 
 try:
-    config.setup()  # initialize the sensors
+    config.setup()  # pyright: ignore[reportAttributeAccessIssue]  # initialize the sensors
 except KeyError as e:
     print(f"Error: {''.join(e.args)}.", file=sys.stderr)
     sys.exit(1)
@@ -86,7 +86,7 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 
 
 def read_data(ai: nidaqmx.Task) -> NoReturn:
-    configured_sample_rate = int(config.RATE)
+    configured_sample_rate = int(config.RATE)  # pyright: ignore[reportAttributeAccessIssue]
     if configured_sample_rate <= 0:
         raise ValueError("config.RATE must cast to a positive integer")
 
@@ -114,7 +114,7 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
             # ai.read returns a single array if there is only one sensor and a nested array otherwise
             data: list[float | int] | list[list[float | int]] = cast(
                 list[float | int] | list[list[float | int]],
-                ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5),
+                ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5),  # pyright: ignore[reportAttributeAccessIssue]
             )
             assert type(data) is list  # Ensure the above behaviour is enforced
 
@@ -143,7 +143,7 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
             }
 
             # Reset the timestamp baseline if there were problems reading.
-            if not data or num_of_messages_read < config.READ_BULK:
+            if not data or num_of_messages_read < config.READ_BULK:  # pyright: ignore[reportAttributeAccessIssue]
                 initial_host_start_time = get_host_time()
                 total_samples_read = 0
             else:
@@ -155,7 +155,7 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
             sender.send(CHANNEL, data_parsed)  # send data to omnibus
 
             print(
-                f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ",
+                f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ",  # pyright: ignore[reportAttributeAccessIssue]
                 end="",
             )
 
@@ -165,7 +165,7 @@ with nidaqmx.Task() as ai:
 
     # continuously sample at config.RATE samps/sec
     ai.timing.cfg_samp_clk_timing(
-        rate=config.RATE,
+        rate=config.RATE,  # pyright: ignore[reportAttributeAccessIssue]
         sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,  # pyright: ignore[reportAttributeAccessIssue]
     )
     ai.start()

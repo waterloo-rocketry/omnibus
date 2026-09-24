@@ -5,7 +5,7 @@ def get_current_location(): # TODO: Only test function, not used in the final co
     try:
         # Get the current location using geocoder (based on IP)
         g = geocoder.ip("me")
-        if g.ok:
+        if g.ok and g.latlng:
             lat, lon = g.latlng
             return [lat, lon]
         else:
