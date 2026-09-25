@@ -1,0 +1,100 @@
+import argparse
+import serial
+import time
+
+from omnibus import Sender
+
+# Data packet format:
+# 0 - ASCII Character 'F'
+# 1 - Throttle: ASCII character, '0' to '9' represent 0% to 90%, or 'f' represent 100%
+# 2 - State: ASCII character, '1' represent ON, 'A' represent ABORT, '0' represent OFF
+# 3 - ASCII Character 'M'
+
+def reader(port: str):
+    if port == "-":
+        return input
+    s = serial.Serial(port, 2000000)  # listen on the RLCS port
+
+    def _reader():
+        while True:
+            c = s.read()
+            if c != b'F':
+                continue
+
+            output = b'F' + s.read(2 + 1) # Data + 'M'
+
+            if output[-1] != ord('M'):
+                print(f"Incorrectly terminated FYDP27MOTOR message: {[c for c in output]}")
+                continue
+
+            return output
+
+    return _reader
+
+def parse_fydp27motor(line: str | bytes) -> dict[str, str] | None:
+    res = {}
+
+    if isinstance(line, bytes):
+        line = line.decode('utf-8', errors='ignore')
+    
+    if(line[1] == 'f'):
+        res['throttle'] = '100'
+    else:
+        res['throttle'] = str(line[1]) + '0'
+
+    if(line[2] == '1'):
+        res['state'] = 'ON'
+    elif(line[2] == 'A'):
+        res['state'] = 'ABORT'
+    elif(line[2] == '0'):
+        res['state'] = 'OFF'
+    else:
+        res['state'] = 'INVALID'
+        
+    return res
+
+def fake_parse_fydp27motor() -> dict[str, str] | None:
+    res = {}
+
+    res['throttle'] = 100
+    res['state'] = 'ON'
+
+    return res
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('port', help='the serial port to read from, or - for stdin')
+    parser.add_argument('--solo', action='store_true',
+                        help="Don't connect to omnibus - just print to stdout.")
+    parser.add_argument('--fake', action="store_true",
+                        help="Don't read from hardware - uses fake data. Give any value for a port")
+    args = parser.parse_args()
+
+    if not args.fake:
+        readline = reader(args.port)
+
+    if not args.solo:
+        sender = Sender()
+        CHANNEL = "FYDP27MOTOR"
+
+    while True:
+        if not args.fake:
+            line = readline()
+            if not len(line):
+                continue
+            parsed_data = parse_fydp27motor(line)
+        else:
+            time.sleep(0.1)
+            parsed_data = fake_parse_fydp27motor()
+
+        if not parsed_data:
+            continue
+
+        if not args.solo:  # if connect to omnibus
+            sender.send(CHANNEL, parsed_data)
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
