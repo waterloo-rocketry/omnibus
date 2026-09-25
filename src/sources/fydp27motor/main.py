@@ -4,6 +4,12 @@ import time
 
 from omnibus import Sender
 
+# Data packet format:
+# 0 - ASCII Character 'F'
+# 1 - Throttle: ASCII character, '0' to '9' represent 0% to 90%, or 'f' represent 100%
+# 2 - State: ASCII character, '1' represent ON, 'A' represent ABORT, '0' represent OFF
+# 3 - ASCII Character 'M'
+
 def reader(port: str):
     if port == "-":
         return input
@@ -15,7 +21,7 @@ def reader(port: str):
             if c != b'F':
                 continue
 
-            output = b'F' + s.read(2 + 1) # Data + 'R'
+            output = b'F' + s.read(2 + 1) # Data + 'M'
 
             if output[-1] != ord('M'):
                 print(f"Incorrectly terminated FYDP27MOTOR message: {[c for c in output]}")
@@ -32,24 +38,26 @@ def parse_fydp27motor(line: str | bytes) -> dict[str, str] | None:
         line = line.decode('utf-8', errors='ignore')
     
     if(line[1] == 'f'):
-        res['throttle'] = '10'
+        res['throttle'] = '100'
     else:
-        res['throttle'] = line[1]
+        res['throttle'] = str(line[1]) + '0'
 
     if(line[2] == '1'):
-        res['onoffswitch'] = 'ON'
-    elif(line[2] == '2'):
-        res['onoffswitch'] = 'ABORT'
+        res['state'] = 'ON'
+    elif(line[2] == 'A'):
+        res['state'] = 'ABORT'
+    elif(line[2] == '0'):
+        res['state'] = 'OFF'
     else:
-        res['onoffswitch'] = 'OFF'
+        res['state'] = 'INVALID'
         
     return res
 
 def fake_parse_fydp27motor() -> dict[str, str] | None:
     res = {}
 
-    res['throttle'] = '10'
-    res['onoffswitch'] = 'ON'
+    res['throttle'] = 100
+    res['state'] = 'ON'
 
     return res
 

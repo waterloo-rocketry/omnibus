@@ -4,6 +4,26 @@ import time
 
 from omnibus import Sender
 
+# Data packet format:
+# Unless otherwise specified, each byte shall be treated as unsigned integer(uint8_t in C)
+#  0 - ASCII Character 'F'
+#  1 - State: ASCII character, INIT(I), READY(R), VIBRATION_ABORT(V), MOTOR_THERM_ABORT(M), BATTERY_THERM_ABORT(B), ESC_ABORT(E, not used)
+#  2 - RPM LSB - divided by 10
+#  3 - RPM MSB - divided by 10
+#  4 - Voltage LSB - Volts, multiplied by 10
+#  5 - Voltage MSB - Volts, multiplied by 10
+#  6 - Current LSB - Amps, multiplied by 10
+#  7 - Current MSB - Amps, multiplied by 10
+#  8 - ESC Temperature - Celsius, added 20 (range -20 - 235)
+#  9 - Acceleration LSB - Unit TBD
+# 10 - Acceleration MSB - Unit TBD
+# 11 - LiPo 1 Temperature - Celsius, added 20 (range -20 - 235)
+# 12 - LiPo 2 Temperature - Celsius, added 20 (range -20 - 235)
+# 13 - FTS-401 Coolant Inlet Temperature - Celsius, added 20 (range -20 - 235)
+# 14 - MTS-402 Motor Temperature - Celsius, added 20 (range -20 - 235)
+# 15 - FTS-403 Coolant Outlet Temperature - Celsius, added 20 (range -20 - 235)
+# 16 - ASCII Character 'M'
+
 def reader(port: str):
     if port == "-":
         return input
@@ -15,7 +35,7 @@ def reader(port: str):
             if c != b'F':
                 continue
 
-            output = b'F' + s.read(7 + 1) # Data + 'R'
+            output = b'F' + s.read(15 + 1) # Data + 'S'
 
             if output[-1] != ord('S'):
                 print(f"Incorrectly terminated FYDP27SENSOR message: {[c for c in output]}")
@@ -28,21 +48,47 @@ def reader(port: str):
 def parse_fydp27sensor(line: str | bytes) -> dict[str, str] | None:
     res = {}
 
-    res['rpm'] = (line[2] << 8 | line[1]) * 10
-    res['battery_voltage'] = (line[4] << 8 | line[3]) / 10
-    res['current'] = (line[6] << 8 | line[5]) / 10
-    res['esc_temp'] = line[7] - 20
-        
+    if(line[1] == 'I'):
+        res['state'] = 'INIT'
+    elif(line[1] == 'R'):
+        res['state'] = 'READY'
+    elif(line[1] == 'V'):
+        res['state'] = 'VIBRATION_ABORT'
+    elif(line[1] == 'M'):
+        res['state'] = 'MOTOR_THERM_ABORT'
+    elif(line[1] == 'B'):
+        res['state'] = 'BATTERY_THERM_ABORT_ABORT'
+    elif(line[1] == 'E'):
+        res['state'] = 'ESC_ABORT'
+    else:
+        res['state'] = 'INVALID'
+    res['rpm'] = (line[3] << 8 | line[2]) * 10
+    res['battery_voltage'] = (line[5] << 8 | line[4]) / 10
+    res['current'] = (line[7] << 8 | line[6]) / 10
+    res['esc_temp'] = line[8] - 20
+    res['max_accel'] = (line[10] << 8 | line[9])
+    res['lipo_temp_1'] = line[11] - 20
+    res['lipo_temp_2'] = line[12] - 20
+    res['fts401_coolant_inlet_temp'] = line[13] - 20
+    res['mts402_motor_temp'] = line[14] - 20
+    res['fts403_coolant_outlet_temp'] = line[15] - 20
+
     return res
 
 def fake_parse_fydp27sensor() -> dict[str, str] | None:
     res = {}
 
+    res['state'] = 'READY'
     res['rpm'] = 12345
     res['battery_voltage'] = 12.34
     res['current'] = 234
     res['esc_temp'] = 25
     res['max_accel'] = 67
+    res['lipo_temp_1'] = 12
+    res['lipo_temp_2'] = 23
+    res['fts401_coolant_inlet_temp'] = 34
+    res['mts402_motor_temp'] = 45
+    res['fts403_coolant_outlet_temp'] = 56
 
     return res
 
