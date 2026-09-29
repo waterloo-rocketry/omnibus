@@ -38,9 +38,9 @@ def parse_fydp27motor(line: str | bytes) -> dict[str, str] | None:
         line = line.decode('utf-8', errors='ignore')
     
     if(line[1] == 'f'):
-        res['throttle'] = '100'
+        res['throttle'] = 100
     else:
-        res['throttle'] = str(line[1]) + '0'
+        res['throttle'] = int(line[1]) * 10
 
     if(line[2] == '1'):
         res['state'] = 'ON'
