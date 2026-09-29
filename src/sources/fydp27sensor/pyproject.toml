@@ -1,0 +1,9 @@
+[project]
+name = "fydp27sensor-source"
+version = "0.1.0"
+description = "FYDP27 Sensor Board Data Source"
+requires-python = ">=3.11"
+dependencies = ["omnibus"]
+
+[tool.uv.sources]
+omnibus = {workspace = true}
