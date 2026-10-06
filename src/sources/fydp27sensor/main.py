@@ -4,25 +4,30 @@ import time
 
 from omnibus import Sender
 
-# Data packet format:
+# Motor Data packet format:
 # Unless otherwise specified, each byte shall be treated as unsigned integer(uint8_t in C)
-#  0 - ASCII Character 'F'
-#  1 - State: ASCII character, INIT(I), READY(R), VIBRATION_ABORT(V), MOTOR_THERM_ABORT(M), BATTERY_THERM_ABORT(B), ESC_ABORT(E, not used)
-#  2 - RPM LSB - divided by 10
-#  3 - RPM MSB - divided by 10
-#  4 - Voltage LSB - Volts, multiplied by 10
-#  5 - Voltage MSB - Volts, multiplied by 10
-#  6 - Current LSB - Amps, multiplied by 10
-#  7 - Current MSB - Amps, multiplied by 10
-#  8 - ESC Temperature - Celsius, added 20 (range -20 - 235)
-#  9 - Acceleration LSB - Unit TBD
-# 10 - Acceleration MSB - Unit TBD
-# 11 - LiPo 1 Temperature - Celsius, added 20 (range -20 - 235)
-# 12 - LiPo 2 Temperature - Celsius, added 20 (range -20 - 235)
-# 13 - FTS-401 Coolant Inlet Temperature - Celsius, added 20 (range -20 - 235)
-# 14 - MTS-402 Motor Temperature - Celsius, added 20 (range -20 - 235)
-# 15 - FTS-403 Coolant Outlet Temperature - Celsius, added 20 (range -20 - 235)
-# 16 - ASCII Character 'M'
+# 0 - ASCII Character 'M'
+# 1 - RPM LSB - divided by 10
+# 2 - RPM MSB - divided by 10
+# 3 - Voltage LSB - Volts, multiplied by 10
+# 4 - Voltage MSB - Volts, multiplied by 10
+# 5 - Current LSB - Amps, multiplied by 10
+# 6 - Current MSB - Amps, multiplied by 10
+# 7 - ESC Temperature - Celsius, added 20 (range -20 - 235)
+# 8 - ASCII Character 'T'
+
+# Sensor Data packet format:
+# Unless otherwise specified, each byte shall be treated as unsigned integer(uint8_t in C)
+# 0 - ASCII Character 'S'
+# 1 - State: ASCII character, INIT(I), READY(R), VIBRATION_ABORT(V), MOTOR_THERM_ABORT(M), BATTERY_THERM_ABORT(B), ESC_ABORT(E, not used)
+# 2 - Acceleration LSB - Unit TBD
+# 3 - Acceleration MSB - Unit TBD
+# 4 - LiPo 1 Temperature - Celsius, added 20 (range -20 - 235)
+# 5 - LiPo 2 Temperature - Celsius, added 20 (range -20 - 235)
+# 6 - FTS-401 Coolant Inlet Temperature - Celsius, added 20 (range -20 - 235)
+# 7 - MTS-402 Motor Temperature - Celsius, added 20 (range -20 - 235)
+# 8 - FTS-403 Coolant Outlet Temperature - Celsius, added 20 (range -20 - 235)
+# 9 - ASCII Character 'T'
 
 def reader(port: str):
     if port == "-":
@@ -32,12 +37,12 @@ def reader(port: str):
     def _reader():
         while True:
             c = s.read()
-            if c != b'F':
+            if c != b'M':
                 continue
 
-            output = b'F' + s.read(15 + 1) # Data + 'S'
+            output = b'M' + s.read(7 + 1) # Data + 'S'
 
-            if output[-1] != ord('S'):
+            if output[-1] != ord('T'):
                 print(f"Incorrectly terminated FYDP27SENSOR message: {[c for c in output]}")
                 continue
 
@@ -46,8 +51,7 @@ def reader(port: str):
     return _reader
 
 def parse_fydp27sensor(line: str | bytes) -> dict[str, str] | None:
-    res = {}
-
+    """
     if(line[1] == 'I'):
         res['state'] = 'INIT'
     elif(line[1] == 'R'):
@@ -72,7 +76,16 @@ def parse_fydp27sensor(line: str | bytes) -> dict[str, str] | None:
     res['fts401_coolant_inlet_temp'] = line[13] - 20
     res['mts402_motor_temp'] = line[14] - 20
     res['fts403_coolant_outlet_temp'] = line[15] - 20
+    """
 
+    res = {}
+
+    res['rpm'] = (line[2] << 8 | line[1]) * 10
+    res['battery_voltage'] = (line[4] << 8 | line[3]) / 10
+    res['current'] = (line[6] << 8 | line[5]) / 10
+    res['esc_temp'] = line[7] - 20
+
+    print(res)
     return res
 
 def fake_parse_fydp27sensor() -> dict[str, str] | None:
@@ -90,6 +103,7 @@ def fake_parse_fydp27sensor() -> dict[str, str] | None:
     res['mts402_motor_temp'] = 45
     res['fts403_coolant_outlet_temp'] = 56
 
+    print(res)
     return res
 
 def main():
