@@ -37,10 +37,13 @@ def reader(port: str):
     def _reader():
         while True:
             c = s.read()
-            if c != b'M':
-                continue
 
-            output = b'M' + s.read(7 + 1) # Data + 'S'
+            if c == b'M':
+                output = b'M' + s.read(7 + 1) # Data + 'T'
+            elif c == b'S':
+                output = b'S' + s.read(8 + 1) # Data + 'T'
+            else:
+                continue
 
             if output[-1] != ord('T'):
                 print(f"Incorrectly terminated FYDP27SENSOR message: {[c for c in output]}")
@@ -51,39 +54,34 @@ def reader(port: str):
     return _reader
 
 def parse_fydp27sensor(line: str | bytes) -> dict[str, str] | None:
-    """
-    if(line[1] == 'I'):
-        res['state'] = 'INIT'
-    elif(line[1] == 'R'):
-        res['state'] = 'READY'
-    elif(line[1] == 'V'):
-        res['state'] = 'VIBRATION_ABORT'
-    elif(line[1] == 'M'):
-        res['state'] = 'MOTOR_THERM_ABORT'
-    elif(line[1] == 'B'):
-        res['state'] = 'BATTERY_THERM_ABORT_ABORT'
-    elif(line[1] == 'E'):
-        res['state'] = 'ESC_ABORT'
-    else:
-        res['state'] = 'INVALID'
-    res['rpm'] = (line[3] << 8 | line[2]) * 10
-    res['battery_voltage'] = (line[5] << 8 | line[4]) / 10
-    res['current'] = (line[7] << 8 | line[6]) / 10
-    res['esc_temp'] = line[8] - 20
-    res['max_accel'] = (line[10] << 8 | line[9])
-    res['lipo_temp_1'] = line[11] - 20
-    res['lipo_temp_2'] = line[12] - 20
-    res['fts401_coolant_inlet_temp'] = line[13] - 20
-    res['mts402_motor_temp'] = line[14] - 20
-    res['fts403_coolant_outlet_temp'] = line[15] - 20
-    """
-
     res = {}
 
-    res['rpm'] = (line[2] << 8 | line[1]) * 10
-    res['battery_voltage'] = (line[4] << 8 | line[3]) / 10
-    res['current'] = (line[6] << 8 | line[5]) / 10
-    res['esc_temp'] = line[7] - 20
+    if(line[0] == b'M'):
+        res['rpm'] = (line[2] << 8 | line[1]) * 10
+        res['battery_voltage'] = (line[4] << 8 | line[3]) / 10
+        res['current'] = (line[6] << 8 | line[5]) / 10
+        res['esc_temp'] = line[7] - 20
+    elif(line[0] == b'S'):
+        if(line[1] == 'I'):
+            res['state'] = 'INIT'
+        elif(line[1] == 'R'):
+            res['state'] = 'READY'
+        elif(line[1] == 'V'):
+            res['state'] = 'VIBRATION_ABORT'
+        elif(line[1] == 'M'):
+            res['state'] = 'MOTOR_THERM_ABORT'
+        elif(line[1] == 'B'):
+            res['state'] = 'BATTERY_THERM_ABORT_ABORT'
+        elif(line[1] == 'E'):
+            res['state'] = 'ESC_ABORT'
+        else:
+            res['state'] = 'INVALID'
+        res['max_accel'] = (line[3] << 8 | line[2])
+        res['lipo_temp_1'] = line[4] - 20
+        res['lipo_temp_2'] = line[5] - 20
+        res['fts401_coolant_inlet_temp'] = line[6] - 20
+        res['mts402_motor_temp'] = line[7] - 20
+        res['fts403_coolant_outlet_temp'] = line[8] - 20
 
     print(res)
     return res
