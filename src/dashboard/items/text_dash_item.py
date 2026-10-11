@@ -1,5 +1,4 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QScrollArea
-from pyqtgraph.Qt.QtCore import QSize, Qt
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel
 from typing import Any
 
 from .dashboard_item import DashboardItem
@@ -8,7 +7,12 @@ from .registry import Register
 
 @Register
 class TextDashItem(DashboardItem):
-    def __init__(self, *args):
+    text: Any
+    fsize: Any
+    main_layout: QHBoxLayout
+    widget: QLabel
+
+    def __init__(self, *args: Any) -> None:
         # Call this in **every** dash item constructor
         super().__init__(*args)
 
@@ -32,7 +36,7 @@ class TextDashItem(DashboardItem):
 
         self.main_layout.addWidget(self.widget)
 
-    def setFontSize(self, fsize):
+    def setFontSize(self, fsize: Any) -> None:
         self.fsize = fsize
         self.widget.setStyleSheet(f"font-size: {self.fsize}px")
 
@@ -41,14 +45,14 @@ class TextDashItem(DashboardItem):
         fsize_param = {'name': 'fsize', 'type': 'int', 'value': 12}
         return [text_param, fsize_param]
 
-    def on_text_change(self, param, value):
+    def on_text_change(self, param: Any, value: Any) -> None:
         self.text = value
         self.widget.setText(self.text)
         self.resize(10, 10)  # update size
 
-    def on_fsize_change(self, param, value):
+    def on_fsize_change(self, param: Any, value: Any) -> None:
         self.setFontSize(value)
 
     @staticmethod
-    def get_name():
+    def get_name() -> str:
         return "Text"

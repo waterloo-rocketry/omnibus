@@ -4,7 +4,7 @@ from parsers import daq_parser
 from parsers import can_parser
 
 @pytest.fixture(autouse=True)
-def _reset_parser_state():
+def _reset_parser_state():  # pyright: ignore[reportUnusedFunction]
     import parsers
     parsers.last_timestamp.clear()
     parsers.offset_timestamp.clear()

@@ -57,15 +57,15 @@ exit_program = False  # Exit flag
 
 
 # Define a handler for graceful exit
-def graceful_exit(signum, frame):
+def graceful_exit(signum: int, frame: object) -> None:
     global exit_program
     print("\nSignal received (SIGINT), exiting gracefully...")
     exit_program = True
 
 
 # Set up signal handlers for SIGINT (Ctrl + C) and SIGTERM
-signal.signal(signal.SIGINT, graceful_exit)  # Handles Ctrl + C
-signal.signal(signal.SIGTERM, graceful_exit)  # Handles termination signal
+_ = signal.signal(signal.SIGINT, graceful_exit)  # Handles Ctrl + C
+_ = signal.signal(signal.SIGTERM, graceful_exit)  # Handles termination signal
 
 # Creates new file
 with open(fname, "wb") as f:

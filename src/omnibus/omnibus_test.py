@@ -1,19 +1,27 @@
 import io
 import multiprocessing as mp
+from collections.abc import Callable, Generator
 from multiprocessing.context import SpawnProcess
 import sys
 import time
-from typing import Callable
+from typing import TypeAlias, cast
 
 import pytest
 
-from omnibus import Sender, Receiver, Message, server
-from omnibus.omnibus import OmnibusCommunicator
+from . import Sender, Receiver, Message, server
+from .omnibus import OmnibusCommunicator
+
+SenderFactory: TypeAlias = Callable[[], Sender]
+ReceiverFactory: TypeAlias = Callable[..., Receiver]
+
+
+def reset_receiver(receiver: Receiver) -> None:
+    cast("Callable[[], None]", getattr(receiver, "_reset"))()
 
 
 class TestOmnibus:
     @pytest.fixture(autouse=True, scope="class")
-    def server(self):
+    def server(self) -> Generator[None, None, None]:
         # start server
         ctx = mp.get_context("spawn")  # threadsafe multiprocess method
         p = ctx.Process(target=server.server)
@@ -33,12 +41,12 @@ class TestOmnibus:
         p.join()
 
     @pytest.fixture()
-    def sender(self):
+    def sender(self) -> SenderFactory:
         return Sender  # for consistency with receiver
 
     @pytest.fixture()
-    def receiver(self):
-        def _receiver(*channels):
+    def receiver(self) -> ReceiverFactory:
+        def _receiver(*channels: str) -> Receiver:
             r = Receiver(*channels)
             time.sleep(
                 0.05
@@ -47,13 +55,13 @@ class TestOmnibus:
 
         return _receiver
 
-    def test_nominal(self, sender, receiver):
+    def test_nominal(self, sender: SenderFactory, receiver: ReceiverFactory) -> None:
         s = sender()
         r = receiver("CHAN")
         s.send("CHAN", "A")
         assert r.recv(10) == "A"
 
-    def test_channels(self, sender, receiver):
+    def test_channels(self, sender: SenderFactory, receiver: ReceiverFactory) -> None:
         s1 = sender()
         r1 = receiver("CHAN1")
         s2 = sender()
@@ -68,16 +76,19 @@ class TestOmnibus:
         assert r3.recv(10) == "B"
         assert r1.recv(10) is None
 
-    def test_msg_objects(self, sender, receiver):
+    def test_msg_objects(self, sender: SenderFactory, receiver: ReceiverFactory) -> None:
         s = sender()
         r = receiver("CHAN")
         s.send_message(Message("CHAN", 10, "PAYLOAD"))
         m = r.recv_message(10)
+        assert m is not None
         assert m.channel == "CHAN"
         assert m.timestamp == 10
         assert m.payload == "PAYLOAD"
 
-    def test_multi_channel_recieving(self, sender, receiver):
+    def test_multi_channel_recieving(
+        self, sender: SenderFactory, receiver: ReceiverFactory
+    ) -> None:
         s = sender()
         r = receiver("CHAN1", "CHAN2", "CHAN3")
         s.send("CHAN1", "A")
@@ -88,7 +99,7 @@ class TestOmnibus:
         assert r.recv(10) == "C"
 
     def test_non_blocking_receive(
-        self, sender: Callable[[], Sender], receiver: Callable[..., Receiver]
+        self, sender: SenderFactory, receiver: ReceiverFactory
     ) -> None:
         s: Sender = sender()
         r: Receiver = receiver("CHAN")
@@ -102,7 +113,7 @@ class TestOmnibus:
                 raise AssertionError("Non Blocking Receive Failed")
 
     def test_long_timeout_receiving(
-        self, sender: Callable[[], Sender], receiver: Callable[..., Receiver]
+        self, sender: SenderFactory, receiver: ReceiverFactory
     ) -> None:
         s: Sender = sender()
         r: Receiver = receiver("CHAN")
@@ -112,7 +123,7 @@ class TestOmnibus:
 
 class TestIPBroadcast:
     @pytest.fixture()
-    def broadcaster(self):
+    def broadcaster(self) -> Generator[None, None, None]:
         ctx = mp.get_context("spawn")
         p = ctx.Process(target=server.ip_broadcast)
         p.start()
@@ -120,7 +131,9 @@ class TestIPBroadcast:
         p.terminate()
         p.join()
 
-    def test_broadcast(self, broadcaster, monkeypatch):
+    def test_broadcast(
+        self, broadcaster: Generator[None, None, None], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         # respond to the IP prompt if discovery times out
         monkeypatch.setattr(sys, "stdin", io.StringIO("timeout"))
         # make sure the server_ip isn't stored from previous tests
@@ -129,7 +142,7 @@ class TestIPBroadcast:
         c = OmnibusCommunicator()
         assert c.server_ip == server.get_ip()
 
-    def test_timeout(self, monkeypatch):
+    def test_timeout(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # respond to the IP prompt if discovery times out
         monkeypatch.setattr(sys, "stdin", io.StringIO("timeout"))
         # make sure the server_ip isn't stored from previous tests
@@ -141,13 +154,13 @@ class TestIPBroadcast:
 
 class TestExplicitServerIP:
     @pytest.fixture(autouse=True)
-    def reset_server_ip(self):
+    def reset_server_ip(self) -> None:
         OmnibusCommunicator.server_ip = None
 
     def test_communicator_skips_discovery_when_server_ip_provided(
-        self, monkeypatch
-    ):
-        def fail_recv_ip(_self):
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_recv_ip(_self: object) -> None:
             pytest.fail("_recv_ip should not be called when server_ip is provided")
 
         monkeypatch.setattr(OmnibusCommunicator, "_recv_ip", fail_recv_ip)
@@ -157,46 +170,46 @@ class TestExplicitServerIP:
         assert communicator.server_ip == "10.0.0.42"
 
     def test_sender_does_not_reset_matching_server_ip(
-        self, monkeypatch
-    ):
-        def fail_recv_ip(_self):
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_recv_ip(_self: object) -> None:
             pytest.fail("_recv_ip should not be called when server_ip is provided")
 
         monkeypatch.setattr(OmnibusCommunicator, "_recv_ip", fail_recv_ip)
 
-        Sender(server_ip="10.0.0.42")
-        Sender(server_ip="10.0.0.42")
+        _ = Sender(server_ip="10.0.0.42")
+        _ = Sender(server_ip="10.0.0.42")
 
         assert OmnibusCommunicator.server_ip == "10.0.0.42"
 
     def test_receiver_does_not_reset_matching_server_ip(
-        self, monkeypatch
-    ):
-        def fail_recv_ip(_self):
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def fail_recv_ip(_self: object) -> None:
             pytest.fail("_recv_ip should not be called when server_ip is provided")
 
         monkeypatch.setattr(OmnibusCommunicator, "_recv_ip", fail_recv_ip)
 
-        Receiver("CHAN", server_ip="10.0.0.42")
-        Receiver("CHAN", server_ip="10.0.0.42")
+        _ = Receiver("CHAN", server_ip="10.0.0.42")
+        _ = Receiver("CHAN", server_ip="10.0.0.42")
 
         assert OmnibusCommunicator.server_ip == "10.0.0.42"
 
     def test_rejects_changing_server_ip_after_it_has_been_cached(
         self,
-    ):
-        OmnibusCommunicator(server_ip="10.0.0.42")
+    ) -> None:
+        _ = OmnibusCommunicator(server_ip="10.0.0.42")
 
         with pytest.raises(
             ValueError, match="Cannot change server IP after it has been set"
         ):
-            Sender(server_ip="10.0.0.99")
+            _ = Sender(server_ip="10.0.0.99")
 
 
 class TestNetworkReset:
     @pytest.fixture()
-    def start_stop_capable_server(self):
-        def __server():
+    def start_stop_capable_server(self) -> Callable[[], SpawnProcess]:
+        def __server() -> SpawnProcess:
             # start server
             ctx = mp.get_context("spawn")  # threadsafe multiprocess method
             p = ctx.Process(target=server.server)
@@ -214,12 +227,12 @@ class TestNetworkReset:
         return __server
 
     @pytest.fixture()
-    def sender(self):
+    def sender(self) -> SenderFactory:
         return Sender  # for consistency with receiver
 
     @pytest.fixture()
-    def receiver(self):
-        def _receiver(*channels):
+    def receiver(self) -> ReceiverFactory:
+        def _receiver(*channels: str) -> Receiver:
             r = Receiver(*channels, seconds_until_reconnect_attempt=2)
             time.sleep(
                 0.05
@@ -235,9 +248,9 @@ class TestNetworkReset:
     def test_receive_message_after_server_restart(
         self,
         start_stop_capable_server: Callable[[], SpawnProcess],
-        sender: Callable[[], Sender],
-        receiver: Callable[..., Receiver],
-    ):
+        sender: SenderFactory,
+        receiver: ReceiverFactory,
+    ) -> None:
         server_process: SpawnProcess | None = None
         try:
             server_process = start_stop_capable_server()
@@ -262,20 +275,20 @@ class TestNetworkReset:
     def test_receive_after_switching_network(
         self,
         start_stop_capable_server: Callable[[], SpawnProcess],
-        sender: Callable[[], Sender],
-        receiver: Callable[..., Receiver],
-    ):
-        server_process = None
+        sender: SenderFactory,
+        receiver: ReceiverFactory,
+    ) -> None:
+        server_process: SpawnProcess | None = None
         try:
             server_process = start_stop_capable_server()
             source: Sender = sender()
             OmnibusCommunicator.server_ip = "1.1.1.1"  # Set to some bad IP
             sink: Receiver = receiver("_TESTING")
             source.send("_TESTING", "PAYLOAD")
-            sink.recv(10)
-            sink.recv(10)  # Run 2 receives with the bad IP
+            _ = sink.recv(10)
+            _ = sink.recv(10)  # Run 2 receives with the bad IP
             OmnibusCommunicator.server_ip = "127.0.0.1"  # Switch back to a good IP
-            sink._reset()
+            reset_receiver(sink)
             time.sleep(0.05)  # Let it reconnect
             source.send("_TESTING", "PAYLOAD2")
             assert sink.recv(10) == "PAYLOAD2"
@@ -287,18 +300,18 @@ class TestNetworkReset:
     def test_autorecover_from_network_switch(
         self,
         start_stop_capable_server: Callable[[], SpawnProcess],
-        sender: Callable[[], Sender],
-        receiver: Callable[..., Receiver],
-    ):
-        server_process = None
+        sender: SenderFactory,
+        receiver: ReceiverFactory,
+    ) -> None:
+        server_process: SpawnProcess | None = None
         try:
             server_process = start_stop_capable_server()
             source: Sender = sender()
             OmnibusCommunicator.server_ip = "1.1.1.1"  # Set to some bad IP
             sink: Receiver = receiver("_TESTING")
             source.send("_TESTING", "PAYLOAD")
-            sink.recv(10)
-            sink.recv(10)  # Run 2 receives with the bad IP
+            _ = sink.recv(10)
+            _ = sink.recv(10)  # Run 2 receives with the bad IP
             OmnibusCommunicator.server_ip = "127.0.0.1"  # Switch back to a good IP
             i = 0
             connection_regained_time = time.time()  # Connection regained
@@ -323,9 +336,9 @@ class TestNetworkReset:
     def test_missed_msg(
         self,
         start_stop_capable_server: Callable[[], SpawnProcess],
-        sender: Callable[[], Sender],
-        receiver: Callable[..., Receiver],
-    ):
+        sender: SenderFactory,
+        receiver: ReceiverFactory,
+    ) -> None:
         server_process: SpawnProcess | None = None
         try:
             server_process = start_stop_capable_server()
@@ -338,7 +351,7 @@ class TestNetworkReset:
             # message is being received. Therefore, you should never need to
             # respond to a message after a reset.
             a = time.time()
-            sink._reset()
+            reset_receiver(sink)
             b = time.time()
             print(b - a)
             # The Receiver needs about 0.05 seconds to reconnect
@@ -353,8 +366,8 @@ class TestNetworkReset:
 
 class TestTimeouts:
     @pytest.fixture()
-    def start_stop_capable_server(self):
-        def __server():
+    def start_stop_capable_server(self) -> Callable[[], SpawnProcess]:
+        def __server() -> SpawnProcess:
             # start server
             ctx = mp.get_context("spawn")  # threadsafe multiprocess method
             p = ctx.Process(target=server.server)
@@ -372,12 +385,12 @@ class TestTimeouts:
         return __server
 
     @pytest.fixture()
-    def sender(self):
+    def sender(self) -> SenderFactory:
         return Sender  # for consistency with receiver
 
     @pytest.fixture()
-    def receiver(self):
-        def _receiver(*channels):
+    def receiver(self) -> ReceiverFactory:
+        def _receiver(*channels: str) -> Receiver:
             r = Receiver(*channels, seconds_until_reconnect_attempt=2)
             time.sleep(
                 0.05
@@ -386,22 +399,22 @@ class TestTimeouts:
 
         return _receiver
 
-    def test_receiver_non_blocking(self, receiver: Callable[..., Receiver]):
+    def test_receiver_non_blocking(self, receiver: ReceiverFactory) -> None:
         OmnibusCommunicator.server_ip = "127.0.0.1"
         sink = receiver("TEST")
         curr_time = time.perf_counter()
-        sink.recv_message(0)
+        _ = sink.recv_message(0)
         after_receive_time = time.perf_counter()
         print(after_receive_time - curr_time)
         assert (
             after_receive_time - curr_time < 0.001
         )  # Less than 1 ms is acceptable, as that would be the minimum timeout otherwise
 
-    def test_receiver_timeout_less_than_reset(self, receiver: Callable[..., Receiver]):
+    def test_receiver_timeout_less_than_reset(self, receiver: ReceiverFactory) -> None:
         OmnibusCommunicator.server_ip = "127.0.0.1"
         sink = receiver("TEST")
         curr_time = time.perf_counter()
-        sink.recv_message(20)
+        _ = sink.recv_message(20)
         after_receive_time = time.perf_counter()
         print(after_receive_time - curr_time)
         assert after_receive_time - curr_time >= 0.019
@@ -409,11 +422,11 @@ class TestTimeouts:
         # it's not that important anyways so this is just a basic sanity check to ensure it didn't get stuck
         assert after_receive_time - curr_time <= 0.1
 
-    def test_receiver_timeout_more_than_reset(self, receiver: Callable[..., Receiver]):
+    def test_receiver_timeout_more_than_reset(self, receiver: ReceiverFactory) -> None:
         OmnibusCommunicator.server_ip = "127.0.0.1"
         sink = receiver("TEST")
         curr_time = time.perf_counter()
-        sink.recv_message(timeout=4010)
+        _ = sink.recv_message(timeout=4010)
         after_receive_time = time.perf_counter()
         print(after_receive_time - curr_time)
         assert after_receive_time - curr_time >= 4.007
@@ -424,9 +437,9 @@ class TestTimeouts:
     def test_infinite_time(
         self,
         start_stop_capable_server: Callable[[], SpawnProcess],
-        sender: Callable[[], Sender],
-        receiver: Callable[..., Receiver],
-    ):
+        sender: SenderFactory,
+        receiver: ReceiverFactory,
+    ) -> None:
         server_process: SpawnProcess | None = None
 
         try:

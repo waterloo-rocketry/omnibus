@@ -1,10 +1,12 @@
-import geocoder
+from typing import Any, cast
 
-def get_current_location(): # TODO: Only test function, not used in the final code
+import geocoder  # pyright: ignore[reportMissingTypeStubs]
+
+def get_current_location() -> list[float] | None: # TODO: Only test function, not used in the final code
     """Function to get the current location using geocoder and mark it on the map."""
     try:
         # Get the current location using geocoder (based on IP)
-        g = geocoder.ip("me")
+        g = cast(Any, geocoder.ip("me"))  # pyright: ignore[reportUnknownMemberType]
         if g.ok and g.latlng:
             lat, lon = g.latlng
             return [lat, lon]

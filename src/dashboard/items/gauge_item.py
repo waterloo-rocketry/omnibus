@@ -2,17 +2,18 @@ from publisher import publisher
 from pyqtgraph.Qt.QtCore import Qt, QLineF, QRectF
 from pyqtgraph.Qt.QtGui import QBrush, QFont, QPainter, QPainterPath, QPaintEvent
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
-from pyqtgraph.parametertree.parameterTypes import ChecklistParameter
+from pyqtgraph.parametertree.parameterTypes import ChecklistParameter  # pyright: ignore[reportMissingTypeStubs]
 
 from .dashboard_item import DashboardItem
 from .registry import Register
 
 from decimal import Decimal
 import numbers
+from typing import Any, cast
 
 @Register
 class GaugeItem(DashboardItem):
-    def __init__(self, *args):
+    def __init__(self, *args: Any) -> None:
         super().__init__(*args)
         
         layout = QHBoxLayout()
@@ -34,11 +35,11 @@ class GaugeItem(DashboardItem):
 
         self.min_value: float = 0.0
         self.max_value: float = 10.0
-        self.label = ""
+        self.label: str = ""
 
-        self.value = "Not connected"
+        self.value: str = "Not connected"
 
-    def add_parameters(self):
+    def add_parameters(self) -> list[Any]:
         value_param = ChecklistParameter(name="value",
                                           type="list",
                                           value=[],
@@ -50,15 +51,15 @@ class GaugeItem(DashboardItem):
         return [value_param, min_value_param, max_value_param, label_param]
 
     @staticmethod
-    def get_name():
+    def get_name() -> str:
         return "Gauge"
     
-    def on_value_change(self, param, value):
-        publisher.unsubscribe_from_all(self.on_data_update)
+    def on_value_change(self, param: Any, value: Any) -> None:
+        cast(Any, publisher).unsubscribe_from_all(self.on_data_update)
         self.value = self.parameters.param('value').value()
-        publisher.subscribe(self.value, self.on_data_update)
+        cast(Any, publisher).subscribe(self.value, self.on_data_update)
 
-    def on_min_value_change(self, param, value):
+    def on_min_value_change(self, param: Any, value: Any) -> None:
         new = self.parameters.param("min_value").value()
         if new >= self.max_value:
             self.parameters.param("min_value").setValue(self.min_value)
@@ -66,7 +67,7 @@ class GaugeItem(DashboardItem):
         self.min_value = new
         self.widget.update()
 
-    def on_max_value_change(self, param, value):
+    def on_max_value_change(self, param: Any, value: Any) -> None:
         new = self.parameters.param("max_value").value()
         if new <= self.min_value:
             self.parameters.param("max_value").setValue(self.max_value)
@@ -74,28 +75,28 @@ class GaugeItem(DashboardItem):
         self.max_value = new
         self.widget.update()
 
-    def on_label_change(self, param, value):
+    def on_label_change(self, param: Any, value: Any) -> None:
         self.label = self.parameters.param("label").value()
         self.widget.update()
     
-    def on_data_update(self, stream, payload):
-        time, point = payload
+    def on_data_update(self, stream: str, payload: tuple[float, float]) -> None:
+        _time, point = payload
         # Plots can only render numeric values, streams have string data, skip those
         if not isinstance(point, numbers.Real):
             return
         self.data = float(point)
         self.widget.update()
 
-    def on_delete(self):
-        publisher.unsubscribe_from_all(self.on_data_update)
+    def on_delete(self) -> None:
+        cast(Any, publisher).unsubscribe_from_all(self.on_data_update)
         super().on_delete()
 
 class GaugeWidget(QWidget):
-    def __init__(self, item):
+    def __init__(self, item: Any) -> None:
         super().__init__()
-        self.item = item
+        self.item: Any = item
 
-    def paintEvent(self, event: QPaintEvent | None):
+    def paintEvent(self, event: QPaintEvent | None) -> None:
         width = self.width()
         height = self.height()
         if width < 100 or height < 100:

@@ -1,7 +1,7 @@
 import argparse
 import time
 import serial
-import crc8
+import crc8  # pyright: ignore[reportMissingTypeStubs]
 from socket import gethostname
 import os
 import random
@@ -12,15 +12,15 @@ from collections.abc import Iterator
 from typing import Any, cast
 
 from omnibus import Sender, Receiver
-import parsley
+import parsley  # pyright: ignore[reportMissingTypeStubs]
 
-from omnibus.omnibus import Message
+from omnibus.omnibus import Message  # pyright: ignore[reportMissingTypeStubs]
 
 if sys.platform == "win32":
     import win_precise_time  # pyright: ignore[reportMissingImports]
 
     def get_host_time() -> float:
-        return win_precise_time.time()
+        return win_precise_time.time()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
 else:
 
@@ -40,12 +40,12 @@ KEEPALIVE_TIME = 10
 FAKE_MESSAGE_SPACING = 0.2
 
 
-def print_info(*args, **kwargs):
+def print_info(*args: object, **kwargs: Any) -> None:
     if not quiet_flag:
         print(*args, **kwargs)
 
 
-def print_error(*args, **kwargs):
+def print_error(*args: object, **kwargs: Any) -> None:
     kwargs.setdefault("file", sys.stderr)
     print(*args, **kwargs)
 
@@ -85,7 +85,7 @@ class FileCommunicator:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         if not self.file.closed:
             self.file.close()
 
@@ -137,7 +137,7 @@ class FakeSerialCommunicator:
         else:
             return b""
 
-    def write(self, msg):
+    def write(self, msg: bytes) -> None:
         print_info(f"Fake serial write out: {msg}")
 
 
@@ -378,7 +378,7 @@ def main():
 
 
 if __name__ == "__main__":
-    def handle_exit(*_):
+    def handle_exit(*_args: object) -> None:
         _ = sys.exit(0)
     _ = signal.signal(signal.SIGINT, handle_exit)
     _ = signal.signal(signal.SIGTERM, handle_exit)

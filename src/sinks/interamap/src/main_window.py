@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QMouseEvent
 
 from src.map_view import MapView
 
@@ -80,18 +81,18 @@ class MapWindow(QMainWindow):
         # HTTP Share Server
         self.share_server = ThreadedHTTPServer(os.path.join(self.relative_path, "shared"))
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.old_pos = event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self.old_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
             new_pos = event.globalPosition().toPoint() if hasattr(event, "globalPosition") else event.globalPos()
             delta = new_pos - self.old_pos
             self.move(self.x() + delta.x(), self.y() + delta.y())
             self.old_pos = new_pos
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         self.old_pos = None
 
     def init_side_toolbar(self):
@@ -197,7 +198,7 @@ class MapWindow(QMainWindow):
         
         return self.side_toolbar
     
-    def update_gps_status(self, gps_status):
+    def update_gps_status(self, gps_status: str) -> None:
         # Slot to handle the update for MainWindow's label
         if self.gps_status_label is not None:
             self.gps_status_label.setText(gps_status)
@@ -312,7 +313,7 @@ class MapWindow(QMainWindow):
         )
         if file_path:
             self.kmz_file_label = file_path  # TODO: Update the label with the file name
-            self.map_view.load_kmz_file(file_path)
+            self.map_view.load_kmz_file(file_path)  # pyright: ignore[reportUnknownMemberType]
 
     def toggle_dark_mode(self):
         self.mode = "dark" if self.mode=="light" else "light"
@@ -325,15 +326,15 @@ class MapWindow(QMainWindow):
             self.load_stylesheet(self.relative_path + "/resources/styles/darkmode.qss")
             self.toggle_button.setText("Dark")
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(True))
-            self.map_view.toggle_map_theme(True)  # Enable dark mode tiles for the map
+            self.map_view.toggle_map_theme(True)  # pyright: ignore[reportUnknownMemberType]  # Enable dark mode tiles for the map
         else:
             # Switch to Light Mode
             self.load_stylesheet(self.relative_path + "/resources/styles/lightmode.qss")
             self.toggle_button.setText("Light")
             self.toggle_button.setStyleSheet(self.get_toggle_button_stylesheet(False))
-            self.map_view.toggle_map_theme(False)  # Enable light mode tiles for the map
+            self.map_view.toggle_map_theme(False)  # pyright: ignore[reportUnknownMemberType]  # Enable light mode tiles for the map
 
-    def get_toggle_button_stylesheet(self, is_dark_mode):
+    def get_toggle_button_stylesheet(self, is_dark_mode: bool) -> str:
         """Return the QSS stylesheet for the toggle button based on the mode."""
         if is_dark_mode:
             return """
@@ -364,7 +365,7 @@ class MapWindow(QMainWindow):
                 }
             """
 
-    def load_stylesheet(self, stylesheet_path):
+    def load_stylesheet(self, stylesheet_path: str) -> None:
         """Load and apply the stylesheet from the provided path."""
         with open(stylesheet_path, "r") as file:
             self.setStyleSheet(file.read())
@@ -378,7 +379,7 @@ class MapWindow(QMainWindow):
         self.center_markers_button.setEnabled(bool(has_markers))
 
         # Update styles based on enabled state
-        def set_button_style(button):
+        def set_button_style(button: QPushButton) -> None:
             if button.isEnabled():
                 button.setStyleSheet("")
             else:

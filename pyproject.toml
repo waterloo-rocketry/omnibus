@@ -84,7 +84,7 @@ members = [
 failOnWarnings = false
 include = ["src/**"]
 exclude = ["**/__pycache__", "**/node_modules", "**/__init__.py"]
-# strict = ["src/**"] # Eventually omnibus library should do strict type checking
+strict = ["src/**"]
 extraPaths = [
     "src/bridge",
     "src/dashboard",

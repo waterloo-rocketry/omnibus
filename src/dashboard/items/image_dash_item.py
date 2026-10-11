@@ -1,20 +1,22 @@
 from pyqtgraph.Qt.QtCore import QRect, QRectF
 from pyqtgraph.Qt.QtGui import QImage, QPainter, QPaintEvent
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QWidget
-from pyqtgraph.parametertree.parameterTypes import FileParameter
+from pyqtgraph.parametertree.parameterTypes import FileParameter  # pyright: ignore[reportMissingTypeStubs]
 from PySide6.QtSvg import QSvgRenderer
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .dashboard_item import DashboardItem
 from .no_text_action_parameter import NoTextActionParameter
 from .registry import Register
 
+if TYPE_CHECKING:
+    from dashboard import Dashboard
 
-@Register
+
 class ImageDashItem(DashboardItem):
-    def __init__(self, *args):
+    def __init__(self, dashboard: "Dashboard", params: str | None = None):
         # Call this in **every** dash item constructor
-        super().__init__(*args)
+        super().__init__(dashboard, params)
 
         # Specify the layout
         self.main_layout = QHBoxLayout()
@@ -26,10 +28,10 @@ class ImageDashItem(DashboardItem):
         self.widget = ImageWidget(self)
         self.resize(100, 100)
 
-        self.image_path = self.parameters.child("file").value()
-        self.image = None
-        self.is_svg = False
-        self.svg_renderer = None  
+        self.image_path: str = self.parameters.child("file").value()
+        self.image: QImage | None = None
+        self.is_svg: bool = False
+        self.svg_renderer: QSvgRenderer | None = None  
 
         if self.image_path:
             self.on_file_change()
@@ -73,8 +75,11 @@ class ImageDashItem(DashboardItem):
         return "Image"
 
 
+Register(ImageDashItem)
+
+
 class ImageWidget(QWidget):
-    def __init__(self, item):
+    def __init__(self, item: ImageDashItem):
         super().__init__()
         self.item = item
 

@@ -1,8 +1,9 @@
 import signal
 import sys
 import os
+from typing import Any
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, QEvent
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
 from tileserver import start_tileserver, stop_tileserver
@@ -12,7 +13,8 @@ from settings import ONLINE_MODE, MBTILES_PATH
 
 should_force_close = False
 
-def handle_sigint(window, *args):
+
+def handle_sigint(window: Any, *args: Any) -> None:
     """Handle Ctrl+C gracefully."""
     global should_force_close
     print("Ctrl+C detected. Exiting gracefully...")
@@ -21,7 +23,7 @@ def handle_sigint(window, *args):
         QApplication.quit()
 
 
-def load_stylesheet(file_name):
+def load_stylesheet(file_name: str) -> str:
     """Load QSS stylesheet from the provided file."""
     with open(file_name, "r") as file:
         return file.read()
@@ -60,10 +62,10 @@ def interamap_driver():
             print(f"Failed to start TileServer: {e}")
 
     # Set up signal handling for graceful shutdown
-    signal.signal(signal.SIGINT, lambda *args: handle_sigint(window, *args))
+    signal.signal(signal.SIGINT, lambda *args: handle_sigint(window, *args))  # pyright: ignore[reportUnknownArgumentType,reportUnknownLambdaType]  # type: ignore[arg-type]
 
     # Override closeEvent to show confirm dialog
-    def custom_close_event(event):
+    def custom_close_event(event: QEvent) -> None:
         if should_force_close:
             event.accept()  # Allow close without asking
         elif window.confirm_quit():
