@@ -39,9 +39,9 @@ def reader(port: str):
             c = s.read()
 
             if c == b'M':
-                output = b'M' + s.read(7 + 1) # Data + 'T'
+                output = c + s.read(7 + 1) # Data + 'T'
             elif c == b'S':
-                output = b'S' + s.read(8 + 1) # Data + 'T'
+                output = c + s.read(8 + 1) # Data + 'T'
             else:
                 continue
 
@@ -56,23 +56,23 @@ def reader(port: str):
 def parse_fydp27sensor(line: str | bytes) -> dict[str, str] | None:
     res = {}
 
-    if(line[0] == b'M'):
+    if(line[0] == ord('M')):
         res['rpm'] = (line[2] << 8 | line[1]) * 10
         res['battery_voltage'] = (line[4] << 8 | line[3]) / 10
         res['current'] = (line[6] << 8 | line[5]) / 10
         res['esc_temp'] = line[7] - 20
-    elif(line[0] == b'S'):
-        if(line[1] == 'I'):
+    elif(line[0] == ord('S')):
+        if(line[1] == ord('I')):
             res['state'] = 'INIT'
-        elif(line[1] == 'R'):
+        elif(line[1] == ord('R')):
             res['state'] = 'READY'
-        elif(line[1] == 'V'):
+        elif(line[1] == ord('V')):
             res['state'] = 'VIBRATION_ABORT'
-        elif(line[1] == 'M'):
+        elif(line[1] == ord('M')):
             res['state'] = 'MOTOR_THERM_ABORT'
-        elif(line[1] == 'B'):
+        elif(line[1] == ord('B')):
             res['state'] = 'BATTERY_THERM_ABORT_ABORT'
-        elif(line[1] == 'E'):
+        elif(line[1] == ord('E')):
             res['state'] = 'ESC_ABORT'
         else:
             res['state'] = 'INVALID'
