@@ -18,16 +18,18 @@ from omnibus import Sender
 
 # Sensor Data packet format:
 # Unless otherwise specified, each byte shall be treated as unsigned integer(uint8_t in C)
-# 0 - ASCII Character 'S'
-# 1 - State: ASCII character, INIT(I), READY(R), VIBRATION_ABORT(V), MOTOR_THERM_ABORT(M), BATTERY_THERM_ABORT(B), ESC_ABORT(E, not used)
-# 2 - Acceleration LSB - Unit TBD
-# 3 - Acceleration MSB - Unit TBD
-# 4 - LiPo 1 Temperature - Celsius, added 20 (range -20 - 235)
-# 5 - LiPo 2 Temperature - Celsius, added 20 (range -20 - 235)
-# 6 - FTS-401 Coolant Inlet Temperature - Celsius, added 20 (range -20 - 235)
-# 7 - MTS-402 Motor Temperature - Celsius, added 20 (range -20 - 235)
-# 8 - FTS-403 Coolant Outlet Temperature - Celsius, added 20 (range -20 - 235)
-# 9 - ASCII Character 'T'
+#  0 - ASCII Character 'S'
+#  1 - State: ASCII character, INIT(I), READY(R), VIBRATION_ABORT(V), MOTOR_THERM_ABORT(M), BATTERY_THERM_ABORT(B), ESC_ABORT(E, not used)
+#  2 - Acceleration LSB - Unit TBD
+#  3 - Acceleration MSB - Unit TBD
+#  4 - LiPo 1 Temperature - Celsius, added 20 (range -20 - 235)
+#  5 - LiPo 2 Temperature - Celsius, added 20 (range -20 - 235)
+#  6 - FTS-401 Coolant Inlet Temperature - Celsius, added 20 (range -20 - 235)
+#  7 - MTS-402 Motor Temperature - Celsius, added 20 (range -20 - 235)
+#  8 - FTS-403 Coolant Outlet Temperature - Celsius, added 20 (range -20 - 235)
+#  9 - Acceleration Sample Count LSB - Number of accelerometer data sample since last telemetry packet
+# 10 - Acceleration Sample Count MSB - Number of accelerometer data sample since last telemetry packet
+# 11 - ASCII Character 'T'
 
 def reader(port: str):
     if port == "-":
@@ -41,7 +43,7 @@ def reader(port: str):
             if c == b'M':
                 output = c + s.read(7 + 1) # Data + 'T'
             elif c == b'S':
-                output = c + s.read(8 + 1) # Data + 'T'
+                output = c + s.read(10 + 1) # Data + 'T'
             else:
                 continue
 
@@ -82,6 +84,7 @@ def parse_fydp27sensor(line: str | bytes) -> dict[str, str] | None:
         res['fts401_coolant_inlet_temp'] = line[6] - 20
         res['mts402_motor_temp'] = line[7] - 20
         res['fts403_coolant_outlet_temp'] = line[8] - 20
+        res['accel_sample_count'] = (line[10] << 8 | line[9])
 
     print(res)
     return res
@@ -100,6 +103,7 @@ def fake_parse_fydp27sensor() -> dict[str, str] | None:
     res['fts401_coolant_inlet_temp'] = 34
     res['mts402_motor_temp'] = 45
     res['fts403_coolant_outlet_temp'] = 56
+    res['accel_sample_count'] = 1357
 
     print(res)
     return res
