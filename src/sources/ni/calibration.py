@@ -64,6 +64,8 @@ class ThermistorCalibration(Calibration):
 
     def calibrate(self, value: float | int) -> float | int:
         # thermistor magic pulled from the LabVIEW
+        if value <= 0:  # disconnected/zero-reading channel would divide by zero below
+            return 0
         R_therm = (self.voltage - value) / (value / self.resistance)
         if R_therm <= 0:
             return 0
