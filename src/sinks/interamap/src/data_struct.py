@@ -1,7 +1,6 @@
-from typing import List, Optional
 
 class Point_GPS():
-    def __init__(self, lon: float, lat: float, alt: float, num_sats: int, time_stamp: str, board_id: Optional[str] = None):
+    def __init__(self, lon: float, lat: float, alt: float, num_sats: int, time_stamp: str, board_id: str | None = None):
         self.time_stamp = time_stamp
         self.num_sats = num_sats
         self.lon = lon
@@ -13,7 +12,7 @@ class Point_GPS():
         return f"Point: {self.lat}, {self.lon}, {self.alt}, At {self.time_stamp}, With {self.num_sats} satellites, from {self.board_id}"
 
 class LineString_GPS():
-    def __init__(self, points: Optional[List[Point_GPS]] = None):
+    def __init__(self, points: list[Point_GPS] | None = None):
         self.points = points if points is not None else []
 
     def add_point(self, point: Point_GPS):
@@ -27,7 +26,7 @@ class LineString_GPS():
 
 
 class Info_GPS():
-    def __init__(self, num_sats: int, quality: int, board_id: Optional[str] = None):
+    def __init__(self, num_sats: int, quality: int, board_id: str | None = None):
         self.num_sats = num_sats
         self.quality = quality
         self.board_id = board_id

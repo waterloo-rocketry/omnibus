@@ -1,8 +1,8 @@
 from pathlib import Path
-from datetime import datetime
 import argparse
 import os
 import sys
+from typing import Any
 
 try:
     from .replay_log import replay
@@ -16,12 +16,12 @@ def parse_arguments() -> argparse.Namespace:
     """
     Parses command line arguments.
     """
-    def valid_replay_speed(n):
-        n = float(n)
-        if n <= 0:
-            print(f"Error: replay speed must be greater than zero.")
+    def valid_replay_speed(n: Any) -> float:
+        n_float = float(n)
+        if n_float <= 0:
+            print("Error: replay speed must be greater than zero.")
             sys.exit(1)
-        return n
+        return n_float
 
     parser = argparse.ArgumentParser(prog="PROG")
     parser.add_argument('--replay_speed', '-r', default=1, type=valid_replay_speed,
@@ -62,10 +62,11 @@ def get_replay_log(max_logs: int) -> Path | None:
 
 if __name__ == "__main__":
     args = parse_arguments()
-    max_logs = args.max_logs
-    replay_speed = args.replay_speed
+    max_logs: int = int(args.max_logs)
+    replay_speed: float = float(args.replay_speed)
+    log_file_arg: Any = args.log_file
     log_file: str | Path | None = (
-        args.log_file if args.log_file is not None else get_replay_log(max_logs)
+        log_file_arg if log_file_arg is not None else get_replay_log(max_logs)
     )
 
     if log_file is None:

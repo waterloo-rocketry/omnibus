@@ -1,8 +1,8 @@
 import requests
 
-def check_internet(url='http://www.google.com/', timeout=5):
+def check_internet(url: str = 'http://www.google.com/', timeout: int = 5) -> bool:
     try:
-        response = requests.get(url, timeout=timeout)
+        requests.get(url, timeout=timeout)
         return True
     except (requests.ConnectionError, requests.Timeout):
         return False

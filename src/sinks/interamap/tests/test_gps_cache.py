@@ -1,4 +1,5 @@
 import time
+from typing import Any
 
 import pytest
 
@@ -7,7 +8,7 @@ from src.gps_cache import GPS_Cache
 
 
 class TestGPSCache():
-    mock_gps_point_1 = Point_GPS(
+    mock_gps_point_1: Point_GPS = Point_GPS(
         lon=1.0,
         lat=2.0,
         alt=3.0,
@@ -16,7 +17,7 @@ class TestGPSCache():
         board_id="GPS"
     )
 
-    mock_gps_point_2 = Point_GPS(
+    mock_gps_point_2: Point_GPS = Point_GPS(
         lon=2.0,
         lat=3.0,
         alt=4.0,
@@ -26,16 +27,16 @@ class TestGPSCache():
     )
     
 
-    received_point = None
+    received_point: Any = None
 
     @pytest.fixture(autouse=True)
-    def reset_point(self):
+    def reset_point(self) -> None:
         self.received_point = None
 
-    def receive_point(self, point):
+    def receive_point(self, point: Any) -> None:
         self.received_point = point
 
-    def test_storage_add(self):
+    def test_storage_add(self) -> None:
         point_storage = GPS_Cache()
 
         point_storage.storage_update.connect(self.receive_point)
@@ -45,7 +46,7 @@ class TestGPSCache():
         assert (point_storage.StorageUpdateType.ADD, self.mock_gps_point_1) == self.received_point
         assert [self.mock_gps_point_1] == point_storage.get_gps_points()
 
-    def test_storage_remove(self):
+    def test_storage_remove(self) -> None:
         point_storage = GPS_Cache()
 
         point_storage.storage_update.connect(self.receive_point)
@@ -59,7 +60,7 @@ class TestGPSCache():
         assert (point_storage.StorageUpdateType.REMOVE, self.mock_gps_point_2) == self.received_point
         assert [self.mock_gps_point_1] == point_storage.get_gps_points()
 
-    def test_storage_clear(self):
+    def test_storage_clear(self) -> None:
         point_storage = GPS_Cache()
 
         point_storage.storage_update.connect(self.receive_point)

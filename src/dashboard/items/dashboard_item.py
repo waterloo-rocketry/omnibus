@@ -1,15 +1,16 @@
-from pyqtgraph.Qt.QtGui import QPainter, QColor, QResizeEvent
+from pyqtgraph.Qt.QtGui import QPainter, QColor, QResizeEvent, QMouseEvent, QPaintEvent
 from pyqtgraph.Qt.QtWidgets import QWidget, QHeaderView
-from pyqtgraph.parametertree import Parameter, ParameterTree
-from pyqtgraph.parametertree.parameterTypes import ActionParameter, ActionParameterItem
-from pyqtgraph.Qt.QtCore import QRect, QPointF, Qt
+from pyqtgraph.parametertree import Parameter, ParameterTree  # pyright: ignore[reportMissingTypeStubs]
+from pyqtgraph.Qt.QtCore import QRect, QPointF, QPoint, Qt
 
 from collections import OrderedDict
-from typing import Any
+from typing import TYPE_CHECKING, Any, Callable, cast
 import json
 
-from .no_text_action_parameter import NoTextActionParameter
 from .series_parameter import SeriesChecklistParameter, SeriesListParameter
+
+if TYPE_CHECKING:
+    from dashboard import Dashboard
 
 
 class DashboardItem(QWidget):
@@ -20,18 +21,18 @@ class DashboardItem(QWidget):
         - add_parameters() ; return a list of pyqtgraph Parameter objects specific to the widget
     """
 
-    def __init__(self, dashboard, params=None):
+    def __init__(self, dashboard: "Dashboard", params: str | None = None):
         super().__init__()
-        self.dashboard = dashboard
+        self.dashboard: "Dashboard" = dashboard
         self.setMouseTracking(True)
-        self.corner_grabbed = False
-        self.corner_in = False
-        self.corner_size = self.dynamic_corner_size()
-        self.corner_index = 3 # 0: left up, 1: right up, 2: left down, 3: right down
-        self.temp_pos = None # Used to store the temp position of the widget when resizing
-        self.grab_start_pos = QPointF()
-        self.start_rect = QRect()
-        self.resize_callback = dashboard.on_item_resize
+        self.corner_grabbed: bool = False
+        self.corner_in: bool = False
+        self.corner_size: int | float = self.dynamic_corner_size()
+        self.corner_index: int = 3 # 0: left up, 1: right up, 2: left down, 3: right down
+        self.temp_pos: QPoint | None = None # Used to store the temp position of the widget when resizing
+        self.grab_start_pos: QPointF = QPointF()
+        self.start_rect: QRect = QRect()
+        self.resize_callback: Callable[[Any], None] = cast(Any, dashboard).on_item_resize
         """
         We use pyqtgraph's ParameterTree functionality to make an easy interface for setting
         parameters. Subclasses should add their own parameters in their __init__ as follows:
@@ -44,45 +45,45 @@ class DashboardItem(QWidget):
         Subclasses should then set up their sigValueChanged listeners to properly respond to
         when parameters change, just like how we listen to the size values here:
         """
-        self.parameters = Parameter.create(name=self.get_name(), type='group', children=[
+        self.parameters: Any = cast(Any, Parameter).create(name=self.get_name(), type='group', children=[
             {"name": "width", "type": "int", "value": 100},
             {"name": "height", "type": "int", "value": 100}
         ])
 
         # add widget specific parameters
-        parameters = self.add_parameters()
+        parameters: list[Any] = self.add_parameters()
         self.parameters.addChildren(parameters)
 
         refreshable = [p for p in parameters if isinstance(p, SeriesListParameter) or isinstance(p, SeriesChecklistParameter)]
 
         class CustomParameterTree(ParameterTree):
             def __init__(self):
-                super().__init__(showHeader=True)
+                super().__init__(showHeader=True)  # pyright: ignore[reportUnknownMemberType]
 
             def show(self):
                 super().show()
                 for r in refreshable:
                     r.refresh_limits()            
 
-        self.parameter_tree = CustomParameterTree()
+        self.parameter_tree: Any = CustomParameterTree()
         self.parameter_tree.setParameters(self.parameters, showTop=False)
         self.parameter_tree.header().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
         # add listeners before restoring state so that the
         # dimensions are set correctly from the saved state
-        self.parameters.child("width").sigValueChanged.connect(lambda _, val:
-                                                                self.resize(
-                                                                    val, self.size().height())
-                                                                )
-        self.parameters.child("height").sigValueChanged.connect(lambda _, val:
-                                                                self.resize(
-                                                                    self.size().width(), val)
-                                                                )
+        self.parameters.child("width").sigValueChanged.connect(self._on_width_changed)
+        self.parameters.child("height").sigValueChanged.connect(self._on_height_changed)
 
         # restore state is params are provided
         if params:
             state = json.loads(params, object_pairs_hook=OrderedDict)
             self.parameters.restoreState(state, addChildren=False, removeChildren=False)
+
+    def _on_width_changed(self, _param: Any, value: Any) -> None:
+        self.resize(value, self.size().height())
+
+    def _on_height_changed(self, _param: Any, value: Any) -> None:
+        self.resize(self.size().width(), value)
 
     def resizeEvent(self, event: QResizeEvent | None):
         # These will trigger our lambdas above, but that's not an issue.
@@ -98,7 +99,7 @@ class DashboardItem(QWidget):
         return []
 
     @staticmethod
-    def get_name():
+    def get_name() -> str:
         '''
         Return a nicer name for the Dash Item instead of the class name
         '''
@@ -110,14 +111,14 @@ class DashboardItem(QWidget):
         """
         return self.parameters
 
-    def get_serialized_parameters(self):
+    def get_serialized_parameters(self) -> str:
         """
         This function is called when a dashitem is saved to the config file. It should return a dictionary of
         properties that are required to recreate the dashitem.
         """
         return json.dumps(self.parameters.saveState(filter='user'))
 
-    def on_delete(self):
+    def on_delete(self) -> None:
         """
         This function is called when a dashitem is removed from the screen. In practice, this will likely be used to
         remove subscriptions from series
@@ -132,7 +133,7 @@ class DashboardItem(QWidget):
         else:
             return 0
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QMouseEvent):
         """ Starts resizing the widget when the mouse is pressed in the bottom right corner.
         Notes:
             if the mouse is not in the corner, the event is passed to the base class method for normal processing.
@@ -150,7 +151,7 @@ class DashboardItem(QWidget):
         else:
             super().mousePressEvent(event)  # Call the base class method for normal processing
 
-    def mouseMoveEvent(self, event): # This function is called when the mouse is move in the widget
+    def mouseMoveEvent(self, event: QMouseEvent): # This function is called when the mouse is move in the widget
         """
         When the mouse is move in the corner, the cursor shape is changed to indicate that the widget can be resized
         """
@@ -166,21 +167,21 @@ class DashboardItem(QWidget):
                 self.temp_pos = self.pos()
             delta = self.dashboard.view.mapToScene(event.globalPos()) - self.grab_start_pos
             
-            new_width =  max(self.start_rect.width() + delta.x(), self.minimumWidth()) if self.corner_index == 1 or self.corner_index == 3 else max(self.start_rect.width() - delta.x(), self.minimumWidth())
-            new_height = max(self.start_rect.height() + delta.y(), self.minimumHeight()) if self.corner_index == 2 or self.corner_index == 3 else max(self.start_rect.height() - delta.y(), self.minimumHeight())
+            new_width =  int(max(self.start_rect.width() + delta.x(), self.minimumWidth())) if self.corner_index == 1 or self.corner_index == 3 else int(max(self.start_rect.width() - delta.x(), self.minimumWidth()))
+            new_height = int(max(self.start_rect.height() + delta.y(), self.minimumHeight())) if self.corner_index == 2 or self.corner_index == 3 else int(max(self.start_rect.height() - delta.y(), self.minimumHeight()))
             
             if self.corner_index == 0:
-                self.setGeometry(self.temp_pos.x() + delta.x(), self.temp_pos.y() + delta.y(), new_width, new_height)
+                self.setGeometry(int(self.temp_pos.x() + delta.x()), int(self.temp_pos.y() + delta.y()), new_width, new_height)
             elif self.corner_index == 1:
-                self.setGeometry(self.pos().x(), self.temp_pos.y() + delta.y(), new_width, new_height)
+                self.setGeometry(self.pos().x(), int(self.temp_pos.y() + delta.y()), new_width, new_height)
             elif self.corner_index == 2:
-                self.setGeometry(self.temp_pos.x() + delta.x(), self.pos().y(), new_width, new_height)
+                self.setGeometry(int(self.temp_pos.x() + delta.x()), self.pos().y(), new_width, new_height)
             elif self.corner_index == 3:
                 self.setGeometry(self.pos().x(), self.pos().y(), new_width, new_height)
         else:
             super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: QMouseEvent):
         """
         Stops resizing the widget when the mouse is released.
         """
@@ -194,7 +195,7 @@ class DashboardItem(QWidget):
         else:
             super().mouseReleaseEvent(event)
 
-    def corner_hit(self, pos):
+    def corner_hit(self, pos: QPoint) -> bool:
         """
         Checks if the mouse is in the corner and updates the corner_index.
         """
@@ -213,13 +214,13 @@ class DashboardItem(QWidget):
         else:
             return False
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: QPaintEvent):
         painter = QPainter(self)
         if self.corner_in: # Draw the corner grabber when the mouse is in the corner
             self.draw_corner(painter)
 
 
-    def draw_corner(self, painter):
+    def draw_corner(self, painter: QPainter) -> None:
         """
         Draws a corner grabber in the bottom right corner of the widget.
         """
@@ -241,4 +242,3 @@ class DashboardItem(QWidget):
         if self.corner_in:
             painter.setBrush(QColor(100, 100, 100))
             painter.drawRect(rect_lst[self.corner_index])
-

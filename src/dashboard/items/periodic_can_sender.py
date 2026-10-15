@@ -1,17 +1,31 @@
-from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QCheckBox, QLabel, QRadioButton, QButtonGroup, QVBoxLayout, QMessageBox
+from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QRadioButton, QButtonGroup, QVBoxLayout, QMessageBox
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-from pyqtgraph.parametertree.parameterTypes import ListParameter
-from typing import Any
+from pyqtgraph.parametertree.parameterTypes import ListParameter  # pyright: ignore[reportMissingTypeStubs]
+from typing import Any, cast
 from .dashboard_item import DashboardItem
 from .registry import Register
 import time
-import parsley.message_types as mt
+import parsley.message_types as mt  # pyright: ignore[reportMissingTypeStubs]
 from publisher import publisher
 
 
 @Register
 class PeriodicCanSender(DashboardItem):
-    def __init__(self, *args):
+    period: int
+    actuator: str
+    main_layout: QVBoxLayout
+    label: QLabel
+    title: QLabel
+    status_label: QLabel
+    radio_on: QRadioButton
+    radio_off: QRadioButton
+    button_group: QButtonGroup
+    h_layout: QHBoxLayout
+    pulse_timer: QTimer
+    pulse_count: int
+    pulse_period: int
+
+    def __init__(self, *args: Any) -> None:
         # Call this in **every** dash item constructor
         super().__init__(*args)
 
@@ -72,9 +86,9 @@ class PeriodicCanSender(DashboardItem):
             "\nPlease select a Parsley instance using the Parsley dropdown.")
             return
 
-        publisher.subscribe_clock(60, self.on_clock_update)
+        cast(Any, publisher).subscribe_clock(60, self.on_clock_update)
 
-    def on_clock_update(self, _):
+    def on_clock_update(self, _ticks: int) -> None:
         can_message = {
             'data': {
                 'time': time.time(),
@@ -90,7 +104,7 @@ class PeriodicCanSender(DashboardItem):
 
             }
         }
-        publisher.update('outgoing_can_messages', can_message)
+        cast(Any, publisher).update('outgoing_can_messages', can_message)
         self.pulse_count = 2
         self.pulse_timer.start(self.pulse_period)
 
@@ -102,7 +116,7 @@ class PeriodicCanSender(DashboardItem):
         return [series_param, period_param]
 
 
-    def pulse_widgets(self):
+    def pulse_widgets(self) -> None:
         if self.pulse_count > 0:
             if self.period != 0 and self.pulse_count % 2 == 0:
                 if self.radio_on.isChecked():
@@ -115,26 +129,26 @@ class PeriodicCanSender(DashboardItem):
         else:
             self.pulse_timer.stop()
 
-    def set_status(self):
+    def set_status(self) -> None:
         if self.period != 0:
             self.status_label.setText("ACTIVE")
         elif self.period == 0:
             self.status_label.setText("INACTIVE")
 
-    def on_period_change(self, _, value):
+    def on_period_change(self, _param: object, value: int) -> None:
         if value >= 0:
             self.period = value
         else:
             self.period = 0  # Set the period to 0 if the value is less than 0
         self.set_status()
 
-    def on_actuator_change(self, _, value):
+    def on_actuator_change(self, _param: object, value: str) -> None:
         self.actuator = value
         self.label.setText(self.actuator)
 
     @staticmethod
-    def get_name():
+    def get_name() -> str:
         return "Periodic CAN Sender"
 
-    def on_delete(self):
-        publisher.unsubscribe_from_all(self.on_clock_update)
+    def on_delete(self) -> None:
+        cast(Any, publisher).unsubscribe_from_all(self.on_clock_update)

@@ -1,7 +1,7 @@
 from enum import Enum
 import math
 
-import nidaqmx
+import nidaqmx  # pyright: ignore[reportMissingTypeStubs]
 
 from typing import ClassVar, Self
 
@@ -10,8 +10,8 @@ class Connection(Enum):
     Represents how a sensor is wired into the NI box.
     """
     # ground referenced single ended
-    SINGLE = nidaqmx.constants.TerminalConfiguration.RSE  # pyright: ignore[reportAttributeAccessIssue]
-    DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.DIFF # pyright: ignore[reportAttributeAccessIssue]
+    SINGLE = nidaqmx.constants.TerminalConfiguration.RSE  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownVariableType]
+    DIFFERENTIAL = nidaqmx.constants.TerminalConfiguration.DIFF # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownVariableType]
 
 
 class Calibration:
@@ -108,9 +108,9 @@ class Sensor:
         Set up the NI analog input task with the initialized sensors.
         """
         for sensor in Sensor.sensors:
-            ai.ai_channels.add_ai_voltage_chan(f"Dev1/{sensor.channel}",
+            ai.ai_channels.add_ai_voltage_chan(f"Dev1/{sensor.channel}",  # pyright: ignore[reportUnknownMemberType]
                                                min_val=-sensor.input_range, max_val=sensor.input_range,
-                                               terminal_config=sensor.connection.value)
+                                               terminal_config=sensor.connection.value)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
 
     @staticmethod
     def print() -> None:

@@ -4,6 +4,7 @@ import http.server
 import socketserver
 import socket
 import threading
+from typing import Any
 from settings import HTTP_SERVER_PORT
 
 def check_permissions(folder: str) -> bool:
@@ -72,7 +73,7 @@ class ThreadedHTTPServer:
     def _make_handler(shared_dir: str):
         """Generate a request handler class that serves files from the shared directory."""
         class CustomHandler(http.server.SimpleHTTPRequestHandler):
-            def __init__(self, *args, **kwargs):
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
                 super().__init__(*args, directory=shared_dir, **kwargs)
         return CustomHandler
 

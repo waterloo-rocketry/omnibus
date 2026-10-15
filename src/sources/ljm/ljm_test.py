@@ -41,39 +41,39 @@ def process_wide_mocks():
     sys.modules["config"] = fake_config
 
     # Ensure Omnibus server IP does not leak between tests
-    from omnibus.omnibus import OmnibusCommunicator
+    from omnibus.omnibus import OmnibusCommunicator  # pyright: ignore[reportMissingTypeStubs]
 
     previous_ip = OmnibusCommunicator.server_ip
-    OmnibusCommunicator.server_ip = "127.0.0.1"
+    OmnibusCommunicator.server_ip = "127.0.0.1"  # pyright: ignore[reportUnknownMemberType]
 
     try:
         yield
     finally:
-        # restore sys.modules entries
-        if original_labjack is None:
-            sys.modules.pop("labjack", None)
-        else:
-            sys.modules["labjack"] = original_labjack
+            # restore sys.modules entries
+            if original_labjack is None:
+                sys.modules.pop("labjack", None)
+            else:
+                sys.modules["labjack"] = original_labjack
 
-        if original_labjack_ljm is None:
-            sys.modules.pop("labjack.ljm", None)
-        else:
-            sys.modules["labjack.ljm"] = original_labjack_ljm
+            if original_labjack_ljm is None:
+                sys.modules.pop("labjack.ljm", None)
+            else:
+                sys.modules["labjack.ljm"] = original_labjack_ljm
 
-        if original_config is None:
-            sys.modules.pop("config", None)
-        else:
-            sys.modules["config"] = original_config
+            if original_config is None:
+                sys.modules.pop("config", None)
+            else:
+                sys.modules["config"] = original_config
 
-        # restore Omnibus IP
-        OmnibusCommunicator.server_ip = previous_ip
-
-
-from omnibus import Receiver, server
-from omnibus.omnibus import OmnibusCommunicator
+            # restore Omnibus IP
+            OmnibusCommunicator.server_ip = previous_ip  # pyright: ignore[reportUnknownMemberType]
 
 
-def _is_sync_payload(payload):
+from omnibus import Receiver  # pyright: ignore[reportMissingTypeStubs]
+from omnibus.omnibus import OmnibusCommunicator  # pyright: ignore[reportMissingTypeStubs]
+
+
+def _is_sync_payload(payload: object) -> bool:
     return isinstance(payload, str) and payload.startswith("_SYNC:")
 
 
@@ -116,13 +116,15 @@ def run_server():
 
 
 @pytest.fixture(scope="module")
-def main_module(process_wide_mocks):
+def main_module(process_wide_mocks: object):
     # Ensure module-scoped process patching is installed before importing main.
     return get_main()
 
 
+from types import ModuleType
+
 @pytest.fixture(scope="module", autouse=True)
-def omnibus_server(main_module):
+def omnibus_server(main_module: ModuleType):
     # Start the Omnibus server in a separate process
     ctx = mp.get_context("spawn")
     server_process = ctx.Process(target=run_server)
@@ -131,7 +133,7 @@ def omnibus_server(main_module):
 
     # `sender` is now created inside `main()` rather than at module import, so
     # construct one here for the tests to share.
-    main_module.sender = main_module.Sender()
+    setattr(main_module, "sender", main_module.Sender())  # pyright: ignore[reportUnknownMemberType]
 
     try:
         start = time.time()
@@ -152,9 +154,9 @@ def omnibus_server(main_module):
 
 
 @pytest.fixture
-def test_setup(main_module, monkeypatch):
+def test_setup(main_module: ModuleType, monkeypatch: pytest.MonkeyPatch):
     mock_ljm = MagicMock()
-    main_module.ljm = mock_ljm
+    setattr(main_module, "ljm", mock_ljm)
 
     receiver = Receiver(main_module.CHANNEL)
 
@@ -207,7 +209,7 @@ def test_setup(main_module, monkeypatch):
     return main_module, mock_ljm, receiver
 
 
-def test_read_data_processes_interleaved_sensor_values(test_setup):
+def test_read_data_processes_interleaved_sensor_values(test_setup: tuple[ModuleType, MagicMock, Receiver]):
     main_module, mock_ljm, receiver = test_setup
 
     mock_ljm.eStreamRead.side_effect = [
@@ -240,4 +242,4 @@ def test_read_data_processes_interleaved_sensor_values(test_setup):
     # sample_rate reflects config.SCAN_RATE (the configured rate), not the
     # scan_rate argument passed to read_data.
     assert message.payload["sample_rate"] == main_module.config.SCAN_RATE
-    assert message.payload["relative_timestamps"] == pytest.approx([1.0, 1.001, 1.002])
+    assert message.payload["relative_timestamps"] == pytest.approx([1.0, 1.001, 1.002])  # pyright: ignore[reportUnknownMemberType]

@@ -1,6 +1,11 @@
 from publisher import publisher
 
 import time
+from collections.abc import Callable
+from typing import Any, TypeVar
+
+_ParserFn = Callable[[Any], list[tuple[str, float, Any]]]
+_P = TypeVar("_P", bound=_ParserFn)
 
 # decorator for parse functions to save a massive if chain
 # https://peps.python.org/pep-0318/#current-syntax
@@ -29,15 +34,15 @@ func = Register("Chan").__call__(func)
 
 
 class Register:
-    func_map = {}
+    func_map: dict[str, list[Callable[..., Any]]] = {}
 
-    def __init__(self, msg_channels):
+    def __init__(self, msg_channels: str | list[str]) -> None:
         if isinstance(msg_channels, str):
-            self.msg_channels = [msg_channels]
+            self.msg_channels: list[str] = [msg_channels]
         else:
             self.msg_channels = msg_channels
 
-    def __call__(self, func):
+    def __call__(self, func: _P) -> _P:
         for msg_channel in self.msg_channels:
             if msg_channel not in Register.func_map:
                 Register.func_map[msg_channel] = [func]
@@ -47,7 +52,7 @@ class Register:
         return func
 
 
-def parse(msg_channel, msg_payload):
+def parse(msg_channel: str, msg_payload: Any) -> None:
     for channel in Register.func_map:
         if msg_channel.startswith(channel):
             for func in Register.func_map[channel]:
@@ -69,9 +74,9 @@ def parse(msg_channel, msg_payload):
 
 
 @Register("DAQ")
-def daq_parser(msg_data):
+def daq_parser(msg_data: dict[str, Any]) -> list[tuple[str, float, Any]]:
     timestamp = msg_data["timestamp"]
-    parsed_messages = []
+    parsed_messages: list[tuple[str, float, Any]] = []
 
     for sensor, data in msg_data["data"].items():
         parsed_messages.append((sensor, timestamp, sum(data)/len(data)))
@@ -79,12 +84,12 @@ def daq_parser(msg_data):
     return parsed_messages
 
 
-last_timestamp = {}  # Last timestamp seen for each board + message type
-offset_timestamp = {}  # per-board-and-message offset to account for time rollovers
+last_timestamp: dict[str, float] = {}  # Last timestamp seen for each board + message type
+offset_timestamp: dict[str, float] = {}  # per-board-and-message offset to account for time rollovers
 
 
 @Register("CAN/Parsley")
-def can_parser(payload):
+def can_parser(payload: dict[str, Any]) -> list[tuple[str, float, Any]]:
     # Payload is a dictionary representing the parsed CAN message. We need to break
     # it into individual streams of data so we can plot / display / etc.
     # In parsley 2026.3 msg_metadata carries the per-message identity (sensor/actuator/
@@ -94,17 +99,17 @@ def can_parser(payload):
     #   'msg_prio': 'LOW', 'msg_type': 'SENSOR_ANALOG32',
     #   'msg_metadata': 'SENSOR_PT_CHANNEL_1', 'data': {'time': 37.595, 'value': 1310}}
 
-    message_type = payload["msg_type"]
-    board_type_id = payload["board_type_id"]
-    board_inst_id = payload["board_inst_id"]
-    metadata = payload["msg_metadata"]
-    data = payload["data"]
+    message_type: str = payload["msg_type"]
+    board_type_id: str = payload["board_type_id"]
+    board_inst_id: str = payload["board_inst_id"]
+    metadata: Any = payload["msg_metadata"]
+    data: dict[str, Any] = payload["data"]
 
     prefix = f"{board_type_id}/{board_inst_id}/{message_type}/{metadata}"
 
-    error_series = []  # additional series to publish to on error
+    error_series: list[tuple[str, float, Any]] = []  # additional series to publish to on error
 
-    timestamp = data.pop("time", time.time())  # default back to system time
+    timestamp: float = data.pop("time", time.time())  # default back to system time
     time_key = board_type_id + board_inst_id + message_type
     if time_key not in last_timestamp:
         last_timestamp[time_key] = 0
@@ -129,19 +134,19 @@ def can_parser(payload):
 
 
 @Register("RLCS")
-def rlcs_parser(payload):
+def rlcs_parser(payload: dict[str, Any]) -> list[tuple[str, float, Any]]:
     timestamp = time.time()
     return [(f"RLCS/{k}", timestamp, v) for k, v in payload.items()]
 
 
 @Register("Parsley/Health")
-def parsley_health(payload):
+def parsley_health(payload: dict[str, Any]) -> list[tuple[str, float, Any]]:
     return [(f"Parsley health {payload['id']}", time.time(), payload["healthy"])]
 
 
 @Register("StateEstimation")
-def state_est_parser(payload):
-    timestamp = payload["timestamp"]
+def state_est_parser(payload: dict[str, Any]) -> list[tuple[str, float, Any]]:
+    timestamp: float = payload["timestamp"]
     return [
         ("StateEstimation/Orientation", timestamp, payload["data"]["orientation"]),
         ("StateEstimation/Position", timestamp, payload["data"]["position"])
@@ -149,5 +154,5 @@ def state_est_parser(payload):
 
 
 @Register("")
-def all_parser(_):
+def all_parser(_: Any) -> list[tuple[str, float, Any]]:
     return [("ALL", 0, -1)]

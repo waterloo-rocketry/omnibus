@@ -3,7 +3,7 @@ import sys
 from omnibus import Receiver
 
 
-def print_console(channels_filter):
+def print_console(channels_filter: list[str]) -> None:
     receiver = Receiver(CHANNEL)
     print('Filter/Cmd line arguments entered: ')
     print(channels_filter)

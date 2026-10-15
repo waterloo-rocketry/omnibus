@@ -1,7 +1,7 @@
 from omnibus import Receiver
 
 import parsers
-from dashboard import dashboard_driver
+from dashboard import dashboard_driver  # pyright: ignore[reportUnknownVariableType]
 
 receiver = Receiver("")  # subscribe to all channels
 

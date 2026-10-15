@@ -1,7 +1,11 @@
 from dataclasses import dataclass
+from typing import Any, cast
 from pyqtgraph.Qt import QtWidgets
-from pyqtgraph.Qt.QtCore import Qt, Signal, QEvent, QObject
+from pyqtgraph.Qt.QtCore import Qt, QEvent, QObject
+from pyqtgraph.Qt.QtCore import Signal as _Signal  # pyright: ignore[reportUnknownVariableType]
 from pyqtgraph.Qt.QtGui import QKeyEvent
+
+Signal = cast(Any, _Signal)
 
 
 class EventTracker(QObject):
@@ -16,28 +20,28 @@ class EventTracker(QObject):
     quite freqently, it would be nice to centeralize everything in one class.
     """
     # Key presses
-    backspace_pressed = Signal(QtWidgets.QWidget)
-    tab_pressed = Signal(QtWidgets.QWidget)
-    reverse_tab_pressed = Signal(QtWidgets.QWidget)
-    enter_pressed = Signal()
-    zoom_in = Signal()
-    zoom_out = Signal()
-    zoom_reset = Signal()
-    save_file_keys_pressed = Signal()
-    save_as_file_keys_pressed = Signal()
-    open_file_keys_pressed = Signal()
-    duplicate = Signal()
-    lock_dashboard = Signal()
-    lock_selected = Signal()
-    send_forward = Signal()
-    send_backward = Signal()
-    send_to_front = Signal()
-    send_to_back = Signal()
-    remove_all = Signal()
-    mouse_resize = Signal()
-    escape_pressed = Signal(QtWidgets.QWidget)
+    backspace_pressed: Any = Signal(QtWidgets.QWidget)  # pyright: ignore[reportUnknownMemberType]
+    tab_pressed: Any = Signal(QtWidgets.QWidget)  # pyright: ignore[reportUnknownMemberType]
+    reverse_tab_pressed: Any = Signal(QtWidgets.QWidget)  # pyright: ignore[reportUnknownMemberType]
+    enter_pressed: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    zoom_in: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    zoom_out: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    zoom_reset: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    save_file_keys_pressed: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    save_as_file_keys_pressed: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    open_file_keys_pressed: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    duplicate: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    lock_dashboard: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    lock_selected: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    send_forward: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    send_backward: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    send_to_front: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    send_to_back: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    remove_all: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    mouse_resize: Any = Signal()  # pyright: ignore[reportUnknownMemberType]
+    escape_pressed: Any = Signal(QtWidgets.QWidget)  # pyright: ignore[reportUnknownMemberType]
 
-    def eventFilter(self, watched, event):
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         """
         After we intercept the event, propagate it down the event
         chain so that we don't disturb any default behaviours or return True
@@ -90,6 +94,8 @@ class EventTracker(QObject):
                     self.mouse_resize.emit()
                 case KeyEvent(Qt.Key.Key_Escape, _):
                     self.escape_pressed.emit(watched)
+                case _:
+                    pass
         return super().eventFilter(watched, event)
 
 
@@ -100,7 +106,7 @@ class KeyEvent:
 
 
 class ConfirmDialog(QtWidgets.QDialog):
-    def __init__(self, property_name, description, parent=None):
+    def __init__(self, property_name: str, description: str, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
 
         self.setWindowTitle(property_name)

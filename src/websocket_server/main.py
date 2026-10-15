@@ -16,7 +16,7 @@ def main():
     _ = Sender(server_ip=args.omnibus_server_host)
     start_relay_sender()
     print(f">>> Starting SocketIO server on {args.host}:{args.port}")
-    socketio.run(app, host=args.host, port=args.port)
+    socketio.run(app, host=args.host, port=args.port)  # pyright: ignore[reportUnknownMemberType]
 
 if __name__ == "__main__":
     main()
