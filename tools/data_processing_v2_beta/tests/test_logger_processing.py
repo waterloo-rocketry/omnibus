@@ -66,7 +66,7 @@ def test_process_success(mock_parsley, temp_csv_file):
         lines = f.readlines()
 
     assert len(lines) == 4  # Header + 2 data lines
-    assert "Timestamp (ns) +- 10ns,board_type_id,board_inst_id,msg_prio,msg_type,data" == lines[0].strip()
+    assert "Timestamp (s) +- 10s,board_type_id,board_inst_id,msg_prio,msg_type,data" == lines[0].strip()
     assert """1.794,GPS,ROCKET,HIGH,GPS_LATITUDE,"{'hrs': 23, 'mins': 59, 'secs': 44, 'dsecs': 26}\"""" == lines[1].strip()
     assert """2.505,TELEMETRY,GROUND,MEDIUM,SENSOR_ANALOG,"{'sensor_id': 'SENSOR_MOTOR_CURR', 'value': 110}\"""" == lines[2].strip()
     assert """0,TELEMETRY,GROUND,MEDIUM,SENSOR_ANALOG,"{'sensor_id': 'SENSOR_MOTOR_CURR', 'value': 110}\"""" == lines[3].strip()
@@ -80,7 +80,7 @@ def test_process_empty_log(mock_parsley, temp_csv_file):
     with open(temp_csv_file, "r") as f:
         lines = f.readlines()
     assert len(lines) == 1  # Only header
-    assert "Timestamp (ns) +- 10ns,board_type_id,board_inst_id,msg_prio,msg_type,data" == lines[0].strip()
+    assert "Timestamp (s) +- 10s,board_type_id,board_inst_id,msg_prio,msg_type,data" == lines[0].strip()
 
 @patch("tools.data_processing_v2_beta.processors.logger_processing.parsley")
 def test_process_malformed_data(mock_parsley, temp_csv_file):
@@ -92,4 +92,4 @@ def test_process_malformed_data(mock_parsley, temp_csv_file):
     with open(temp_csv_file, "r") as f:
         lines = f.readlines()
     assert len(lines) == 1  # Only header
-    assert "Timestamp (ns) +- 10ns,board_type_id,board_inst_id,msg_prio,msg_type,data" == lines[0].strip()
+    assert "Timestamp (s) +- 10s,board_type_id,board_inst_id,msg_prio,msg_type,data" == lines[0].strip()

@@ -37,7 +37,7 @@ class DAQFormatConfig(Generic[PayloadT]):
 V2_FORMAT = DAQFormatConfig[DAQReceivedMessageV2](
     message_format_version=MESSAGE_FORMAT_VERSION,
     timestamp_field="relative_timestamps_nanoseconds",
-    timestamp_header="Timestamp (ns) +- 10ns",
+    timestamp_header="Timestamp (s) +- 10s",
     expected_data_shape={
         "timestamp": float,
         "data": dict,

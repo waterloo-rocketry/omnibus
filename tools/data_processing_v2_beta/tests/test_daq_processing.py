@@ -129,7 +129,7 @@ class TestUnpackAndStreamToCSV:
 
         lines = buf.getvalue().splitlines()
 
-        assert lines[0] == "Timestamp (ns) +- 10ns,sensor1,sensor2"
+        assert lines[0] == "Timestamp (s) +- 10s,sensor1,sensor2"
         assert lines[1] == "100,1.1,2.1"
         assert lines[2] == "200,1.2,2.2"
 
@@ -169,7 +169,7 @@ class TestUnpackAndStreamToCSV:
 
         lines = buf.getvalue().splitlines()
 
-        assert lines[0] == "Timestamp (ns) +- 10ns,sensor1,sensor2"
+        assert lines[0] == "Timestamp (s) +- 10s,sensor1,sensor2"
         assert lines[1] == "100,1.1,2.1"
 
 
@@ -204,7 +204,7 @@ def test_multiple_valid_messages():
     lines = buf.getvalue().splitlines()
 
     assert lines == [
-        "Timestamp (ns) +- 10ns,s",
+        "Timestamp (s) +- 10s,s",
         "100,1",
         "200,2",
     ]
@@ -269,7 +269,7 @@ def test_auto_detects_first_v2_daq_source_and_skips_alternates(capsys):
     stderr = capsys.readouterr().err
 
     assert lines == [
-        "Timestamp (ns) +- 10ns,s",
+        "Timestamp (s) +- 10s,s",
         "100,1",
         "300,3",
     ]
@@ -305,7 +305,7 @@ def test_explicit_v2_daq_source_filters_other_sources():
     processor.unpack_and_stream_to_csv(buf)
 
     assert buf.getvalue().splitlines() == [
-        "Timestamp (ns) +- 10ns,s",
+        "Timestamp (s) +- 10s,s",
         "200,2",
     ]
 
