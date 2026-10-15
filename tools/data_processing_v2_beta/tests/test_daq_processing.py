@@ -129,7 +129,7 @@ class TestUnpackAndStreamToCSV:
 
         lines = buf.getvalue().splitlines()
 
-        assert lines[0] == "Timestamp (s) +- 10ns,sensor1,sensor2"
+        assert lines[0] == "Timestamp (s) +- 10s,sensor1,sensor2"
         assert lines[1] == "100,1.1,2.1"
         assert lines[2] == "200,1.2,2.2"
 

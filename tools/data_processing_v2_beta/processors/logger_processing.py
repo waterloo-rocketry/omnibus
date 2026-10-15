@@ -30,7 +30,7 @@ class LoggerDataProcessor:
     def _unpack_and_stream_to_csv(self, output_file_path: str) -> str:
         with (open(output_file_path, "w", newline="") as outfile):
             writer = csv.writer(outfile)
-            writer.writerow(["Timestamp (s) +- 10ns"] + list(LOGGER_EXPECTED_RECEIVE_DATA_FORMAT.keys()))
+            writer.writerow(["Timestamp (s) +- 10s"] + list(LOGGER_EXPECTED_RECEIVE_DATA_FORMAT.keys()))
 
             page_number = 0
             while (page := self._log_file_reader.read()) != b"":
