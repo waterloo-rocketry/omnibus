@@ -1,5 +1,5 @@
 import parsley
-from parsley.fields import Enum, Field, Numeric
+from parsley.fields import ASCII, Enum, Field, Numeric
 import math
 
 Number = int | float
@@ -47,10 +47,30 @@ MESSAGE_FORMAT: list[Field] = [
     Numeric("Heater Kelvin High 2 Voltage", 16, scale=1/1000, big_endian=False),
 ]
 
-# Frames the firmware accepts over USB: 'W', qd301_override, qd301, 'R'.
+OVERRIDE = {"RELEASED": 0, "OVERRIDE": 1}
+
+# Frame the firmware accepts over USB (config::USBCommand in rlcsv3), host -> RLCS.
+# While "QD301 Override" is OVERRIDE, "QD301 Command" replaces the missile switch.
 # The firmware drops the override after 3 s without bytes, so it must be resent.
-QD301_OVERRIDE_OPEN = b"W\x01\x01R"
-QD301_OVERRIDE_RELEASE = b"W\x00\x00R"
+OVERRIDE_FORMAT: list[Field] = [
+    ASCII("Frame Start", 8),
+    Enum("QD301 Override", 8, OVERRIDE),
+    Enum("QD301 Command", 8, VALVE_COMMAND),
+    ASCII("Frame End", 8),
+]
+
+
+def encode_override(qd301_override: str, qd301_command: str) -> bytes:
+    values = {"Frame Start": "W", "QD301 Override": qd301_override,
+              "QD301 Command": qd301_command, "Frame End": "R"}
+    bit_str = parsley.BitString()
+    for field in OVERRIDE_FORMAT:
+        bit_str.push(*field.encode(values[field.name]))
+    return bit_str.pop(bit_str.length)
+
+
+QD301_OVERRIDE_OPEN = encode_override("OVERRIDE", "OPEN")
+QD301_OVERRIDE_RELEASE = encode_override("RELEASED", "CLOSED")
 
 EXPECTED_SIZE = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
 
