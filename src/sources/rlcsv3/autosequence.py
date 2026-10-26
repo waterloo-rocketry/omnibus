@@ -124,3 +124,24 @@ class AutoSequencer:
             self._last_unconfirmed_warning_s = now_s
             print(f"[AUTO-SEQUENCE] WARNING: QD301 not reported OPEN "
                   f"{since_fired_s:.1f} s after firing.")
+
+
+CONFIRMATION_PHRASE = "FIRE QD301 AUTOMATICALLY"
+
+
+def require_operator_confirmation(pt_name: str, target_pressure_psi: float,
+                                  time_to_fire_ms: int):
+    """Print the warning banner and exit unless the operator types the confirmation phrase."""
+    print(f"""
+================================ WARNING ================================
+AUTO-SEQUENCE IS ENABLED. This program will OPEN QD301 over USB with no
+manual command once ALL of these hold continuously for {time_to_fire_ms} ms:
+  - Towerside is armed
+  - Ignition Primary Command is OPEN (primary ignition armed and held)
+  - {pt_name} reads at least {target_pressure_psi} PSI
+
+Once fired, QD301 stays open until this program exits. Disarming or
+releasing the fire button will NOT close it. Quit this program to release.
+==========================================================================""")
+    if input(f"Type '{CONFIRMATION_PHRASE}' to continue: ").strip() != CONFIRMATION_PHRASE:
+        raise SystemExit("Confirmation not given; auto-sequence not started.")

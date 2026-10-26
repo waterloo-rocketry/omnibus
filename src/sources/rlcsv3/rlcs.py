@@ -47,6 +47,11 @@ MESSAGE_FORMAT: list[Field] = [
     Numeric("Heater Kelvin High 2 Voltage", 16, scale=1/1000, big_endian=False),
 ]
 
+# Frames the firmware accepts over USB: 'W', qd301_override, qd301, 'R'.
+# The firmware drops the override after 3 s without bytes, so it must be resent.
+QD301_OVERRIDE_OPEN = b"W\x01\x01R"
+QD301_OVERRIDE_RELEASE = b"W\x00\x00R"
+
 EXPECTED_SIZE = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
 
 def print_data(parsed: dict[str, str | Number]):
