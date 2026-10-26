@@ -1,3 +1,4 @@
+import statistics
 import threading
 import time
 from typing import Any
@@ -11,10 +12,11 @@ FIRST_MESSAGE_TIMEOUT_MS = 10_000
 RECEIVE_TIMEOUT_MS = 1000
 
 
-def latest_pressure_psi(daq_payload: Any, pt_name: str) -> float | None:
-    """The newest reading of `pt_name` in a DAQ message, or None if the message has none."""
+def average_pressure_psi(daq_payload: Any, pt_name: str) -> float | None:
+    """The mean of `pt_name`'s readings in a DAQ message, to smooth out sensor noise, or None
+    if the message has none."""
     readings = daq_payload["data"].get(pt_name)
-    return readings[-1] if readings else None
+    return statistics.fmean(readings) if readings else None
 
 
 class PressureFeed:
@@ -47,6 +49,6 @@ class PressureFeed:
                 self._record(payload)
 
     def _record(self, payload: Any):
-        psi = latest_pressure_psi(payload, self._pt_name)
+        psi = average_pressure_psi(payload, self._pt_name)
         if psi is not None:
             self._latest = PressureSample(psi, time.monotonic())
