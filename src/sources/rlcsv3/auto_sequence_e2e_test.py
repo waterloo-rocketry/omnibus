@@ -1,5 +1,5 @@
 """End to end: real Omnibus server, real main.py, and a pseudo-terminal standing in for the
-RLCS firmware's USB port. Everything started here is stopped when the test ends."""
+RLCS firmware's USB port."""
 import os
 import pty
 import select

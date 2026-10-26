@@ -18,8 +18,6 @@ def latest_pressure_psi(daq_payload: Any, pt_name: str) -> float | None:
 
 
 class PressureFeed:
-    """Tracks the newest reading of one PT from the DAQ messages on Omnibus."""
-
     def __init__(self, pt_name: str):
         self._pt_name = pt_name
         self._receiver = Receiver(DAQ_CHANNEL)

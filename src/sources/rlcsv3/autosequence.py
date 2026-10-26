@@ -131,7 +131,6 @@ CONFIRMATION_PHRASE = "FIRE QD301 AUTOMATICALLY"
 
 def require_operator_confirmation(pt_name: str, target_pressure_psi: float,
                                   time_to_fire_ms: int):
-    """Print the warning banner and exit unless the operator types the confirmation phrase."""
     print(f"""
 ================================ WARNING ================================
 AUTO-SEQUENCE IS ENABLED. This program will OPEN QD301 over USB with no
