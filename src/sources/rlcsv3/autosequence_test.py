@@ -1,5 +1,8 @@
+import math
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -60,6 +63,24 @@ def test_does_not_fire_on_missing_or_stale_pressure():
 
     assert not seq.update(10.0, True, True, None, False)
     assert not seq.update(10.0, True, True, PressureSample(AT_TARGET, 5.0), False)
+    assert seq.phase is Phase.WAITING_FOR_PRESSURE
+
+
+@pytest.mark.parametrize("invalid_psi", [math.nan, math.inf, -math.inf])
+def test_does_not_fire_on_non_finite_pressure(invalid_psi):
+    seq = sequencer(time_to_fire_ms=0)
+
+    assert not seq.update(0.0, True, True, PressureSample(invalid_psi, 0.0), False)
+    assert seq.phase is Phase.WAITING_FOR_PRESSURE
+
+
+def test_nan_pressure_mid_countdown_aborts_it():
+    seq = sequencer(time_to_fire_ms=500)
+    seq.update(0.0, True, True, PressureSample(AT_TARGET, 0.0), False)
+
+    fired = seq.update(0.5, True, True, PressureSample(math.nan, 0.5), False)
+
+    assert not fired
     assert seq.phase is Phase.WAITING_FOR_PRESSURE
 
 

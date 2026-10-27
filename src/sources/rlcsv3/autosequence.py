@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from enum import Enum, auto
 
@@ -54,29 +55,40 @@ class AutoSequencer:
             self._report_qd301_confirmation(now_s, qd301_reported_open)
             return True
 
+        match self._reason_not_to_count_down(now_s, armed, ignition_held, pressure):
+            case (phase, reason):
+                self._enter(phase, reason)
+                return False
+            case _:
+                return self._count_down(now_s)
+
+    def _reason_not_to_count_down(self, now_s: float, armed: bool, ignition_held: bool,
+                                  pressure: PressureSample | None) -> tuple[Phase, str] | None:
+        """The phase to wait in and why, or None when every fire condition holds."""
         missing_ignition = [name for name, ok in (("armed", armed), ("held", ignition_held))
                             if not ok]
         if missing_ignition:
-            self._enter(Phase.WAITING_FOR_IGNITION,
-                        f"Ignition not {' and '.join(missing_ignition)}.")
-            return False
+            return Phase.WAITING_FOR_IGNITION, f"Ignition not {' and '.join(missing_ignition)}."
 
         if pressure is None or now_s - pressure.received_at_s > MAX_PRESSURE_SAMPLE_AGE_S:
-            self._enter(Phase.WAITING_FOR_PRESSURE, "No recent pressure reading.")
-            return False
+            return Phase.WAITING_FOR_PRESSURE, "No recent pressure reading."
+
+        # NaN fails every comparison, so it would otherwise slip past the target check.
+        if not math.isfinite(pressure.psi):
+            return Phase.WAITING_FOR_PRESSURE, f"Invalid pressure reading ({pressure.psi})."
 
         if pressure.psi < self.target_pressure_psi:
-            self._enter(Phase.WAITING_FOR_PRESSURE,
-                        f"Pressure {pressure.psi:.1f} PSI below target "
-                        f"{self.target_pressure_psi} PSI.")
-            return False
+            return (Phase.WAITING_FOR_PRESSURE,
+                    f"Pressure {pressure.psi:.1f} PSI below target {self.target_pressure_psi} PSI.")
+        return None
 
+    def _count_down(self, now_s: float) -> bool:
         if self.phase is not Phase.COUNTING_DOWN:
             self._countdown_started_at_s = now_s
             self._last_countdown_print_s = now_s
             self._enter(Phase.COUNTING_DOWN,
-                        f"Armed, held, {pressure.psi:.1f} PSI at target: "
-                        f"firing in {self.time_to_fire_s * 1000:.0f} ms.")
+                        f"Armed, held, pressure at target: firing in "
+                        f"{self.time_to_fire_s * 1000:.0f} ms.")
 
         remaining_s = self.time_to_fire_s - (now_s - self._countdown_started_at_s)
         if remaining_s <= 0:
