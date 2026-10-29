@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 
 # Name of the pressure transducer to watch, exactly as it appears in the DAQ data.
-AUTO_SEQUENCE_PT_NAME = "PLACEHOLDER-PT: replace with the PT name from the DAQ config"
+AUTO_SEQUENCE_PT_NAME = "Fake0"
 AUTO_SEQUENCE_TARGET_PRESSURE_VALUE = 40  # PSI
 # How long both fire conditions must keep holding before QD301 is opened.
 AUTO_SEQUENCE_TIME_TO_FIRE_MS = 500
