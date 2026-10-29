@@ -8,9 +8,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from autosequence import (  # noqa: E402
     AUTO_SEQUENCE_TARGET_PRESSURE_VALUE,
+    CONFIRMATION_PHRASE,
     AutoSequencer,
     Phase,
     PressureSample,
+    require_operator_confirmation,
 )
 
 AT_TARGET = AUTO_SEQUENCE_TARGET_PRESSURE_VALUE
@@ -131,3 +133,19 @@ def test_warns_when_qd301_is_not_reported_open_after_firing(capsys):
 
     seq.update(1.6, True, True, None, True)
     assert "QD301 OPEN" in capsys.readouterr().out
+
+
+def test_confirmation_continues_only_on_exact_phrase(monkeypatch, capsys):
+    monkeypatch.setattr("builtins.input", lambda _prompt: CONFIRMATION_PHRASE)
+
+    require_operator_confirmation("PT-1 (psi)", 40, 500)
+
+    banner = capsys.readouterr().out
+    assert "WARNING" in banner and "PT-1 (psi)" in banner and "500 ms" in banner
+
+
+def test_confirmation_exits_on_anything_else(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda _prompt: "yes")
+
+    with pytest.raises(SystemExit):
+        require_operator_confirmation("PT-1 (psi)", 40, 500)

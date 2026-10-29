@@ -67,6 +67,7 @@ parsley = { git = "https://github.com/waterloo-rocketry/parsley.git"}
 [tool.uv.workspace]
 members = [
     "src/sources/fakeni",
+    "src/sources/fakePressureSource",
     "src/sources/ni",
     "src/sources/ljm",
     "src/sources/parsley",

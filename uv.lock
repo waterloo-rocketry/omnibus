@@ -1,11 +1,12 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.11.*"
 
 [manifest]
 members = [
     "data-processing-v2",
     "fakeni-source",
+    "fakepressure-source",
     "globallog",
     "interamap",
     "ljm-source",
@@ -331,6 +332,17 @@ wheels = [
 name = "fakeni-source"
 version = "0.1.0"
 source = { virtual = "src/sources/fakeni" }
+dependencies = [
+    { name = "omnibus" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "omnibus", editable = "." }]
+
+[[package]]
+name = "fakepressure-source"
+version = "0.1.0"
+source = { virtual = "src/sources/fakePressureSource" }
 dependencies = [
     { name = "omnibus" },
 ]
