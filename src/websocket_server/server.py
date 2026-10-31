@@ -25,7 +25,8 @@ class _State:
 
 state = _State()
 
-_relay_queue: queue.Queue[OmnibusMessage] = queue.Queue()
+_relay_queue = cast("queue.Queue[OmnibusMessage]",
+                    socketio.server.eio.create_queue())  # pyright: ignore[reportAttributeAccessIssue] -- set by init_app, missing from stubs
 _thread = None
 
 class _RequestWithSid(Protocol):
