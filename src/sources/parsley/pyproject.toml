@@ -13,4 +13,4 @@ dependencies = [
 
 [tool.uv.sources]
 omnibus = {workspace = true}
-parsley = { git = "https://github.com/waterloo-rocketry/parsley.git" }
+parsley = { git = "https://github.com/waterloo-rocketry/universe.git", subdirectory = "areas/sw_libs/parsley" }
