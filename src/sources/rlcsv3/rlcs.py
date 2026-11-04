@@ -17,6 +17,7 @@ MESSAGE_FORMAT: list[Field] = [
     Enum("QD301 Command", 8, VALVE_COMMAND),
     Enum("OV302 Command", 8, VALVE_COMMAND),
     Enum("Pyro Valve Command", 8, VALVE_COMMAND),
+    Enum("Rocket Charging Command", 8, VALVE_COMMAND),
 
     Enum("Tank Heating 1 Command", 8, VALVE_COMMAND),
     Enum("Tank Heating 2 Command", 8, VALVE_COMMAND),
