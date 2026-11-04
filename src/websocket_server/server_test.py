@@ -263,10 +263,10 @@ class TestClientMessages:
         with patch("server.request", new=mock_request), \
              patch("server.emit") as mock_emit, \
              patch.object(
-                 server._relay_queue, "put",
-                 side_effect=lambda msg: (
+                 server, "_relay_queue",
+                 Mock(put=Mock(side_effect=lambda msg: (
                      call_order.append("zmq_enqueue"), original_put(msg)
-                 ),
+                 ))),
              ):
             mock_emit.side_effect = lambda *a, **kw: call_order.append("sio")
             server.handle_channel_message("ch", 1.0, "data")
