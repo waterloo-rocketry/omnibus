@@ -1,12 +1,11 @@
 from publisher import publisher
 from pyqtgraph.Qt.QtWidgets import QGridLayout, QLabel
-from pyqtgraph.parametertree.parameterTypes import ListParameter
 from pyqtgraph.Qt.QtGui import QFont
 from pyqtgraph.Qt.QtCore import Qt, QTimer
-import pyqtgraph as pg
+import pyqtgraph as pg  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import numbers
-from typing import Any
+from typing import Any, cast
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
@@ -16,7 +15,25 @@ EXPIRED_TIME = 1.2  # time in seconds after which data "expires"
 
 @Register
 class StandardDisplayItem(DashboardItem):
-    def __init__(self, *args):
+    last: dict[str, float]
+    times: dict[str, list[float]]
+    points: dict[str, list[float]]
+    curves: dict[str, Any]
+    warning_line: Any
+    data: float
+    text: Any
+    main_layout: QGridLayout
+    expired_timeout: QTimer
+    series: list[Any]
+    offset: Any
+    color: list[str]
+    plot: Any
+    widget: Any
+    label: QLabel
+    numRead: QLabel
+    decimals: int
+
+    def __init__(self, *args: Any) -> None:
         # Call this in **every** dash item constructor
         super().__init__(*args)
 
@@ -55,7 +72,7 @@ class StandardDisplayItem(DashboardItem):
 
         # subscribe to stream dictated by properties
         for series in self.series:
-            publisher.subscribe(series, self.on_data_update)
+            cast(Any, publisher).subscribe(series, self.on_data_update)
 
         # a default color list for plotting multiple curves
         # yellow green cyan white blue magenta
@@ -115,12 +132,12 @@ class StandardDisplayItem(DashboardItem):
         return p.convert().coef[1]
     
     
-    def on_series_change(self, param, value):
+    def on_series_change(self, param: Any, value: Any) -> None:
         self.series = [value]
         # resubscribe to the new stream
-        publisher.unsubscribe_from_all(self.on_data_update)
+        cast(Any, publisher).unsubscribe_from_all(self.on_data_update)
         for series in self.series:
-            publisher.subscribe(series, self.on_data_update)
+            cast(Any, publisher).subscribe(series, self.on_data_update)
         # recreate the plot with new series and add it to the layout
         self.main_layout.removeWidget(self.widget)
         self.plot.close()
@@ -131,14 +148,14 @@ class StandardDisplayItem(DashboardItem):
         self.resize(self.parameters.param('width').value(),
                     self.parameters.param('height').value())
 
-    def on_offset_change(self, _, offset):
+    def on_offset_change(self, _param: Any, offset: Any) -> None:
         self.offset = offset
     
-    def on_label_change(self, param, value):
+    def on_label_change(self, param: Any, value: Any) -> None:
         self.text = value
         self.label.setText(self.text)
     
-    def on_font_size_change(self, param, value):
+    def on_font_size_change(self, param: Any, value: Any) -> None:
         # Change font size for label
         label_font = self.label.font()
         label_font.setPointSize(value)
@@ -149,10 +166,10 @@ class StandardDisplayItem(DashboardItem):
         num_read_font.setPointSize(value)
         self.numRead.setFont(num_read_font)
 
-    def on_decimal_change(self, param, value):
+    def on_decimal_change(self, param: Any, value: Any) -> None:
         self.decimals = value
 
-    def on_display_sparkline_change(self, param, value):
+    def on_display_sparkline_change(self, param: Any, value: Any) -> None:
         if value:
             self.hide_size = self.size()
             self.widget.show()
@@ -163,8 +180,8 @@ class StandardDisplayItem(DashboardItem):
             self.resize(self.hide_size)
 
     # Create the plot item
-    def create_plot(self):
-        plot = pg.PlotItem(left="Data", bottom="Seconds")
+    def create_plot(self) -> Any:
+        plot: Any = pg.PlotItem(left="Data", bottom="Seconds")
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
         plot.getViewBox().setMouseEnabled(x=False, y=False)
         plot.hideButtons()
@@ -189,7 +206,7 @@ class StandardDisplayItem(DashboardItem):
 
         return plot
 
-    def on_data_update(self, stream, payload):
+    def on_data_update(self, stream: str, payload: tuple[Any, Any]) -> None:
         time, point = payload
         if not isinstance(point, numbers.Real):
             return
@@ -213,10 +230,9 @@ class StandardDisplayItem(DashboardItem):
         values = [ self.points[v] for v in self.points.keys() if v in self.series]
         
         # get the min/max point in the whole data set
-        if not any(values):
-            min_point = 0
-            max_point = 0
-        else:
+        min_point: float = 0
+        max_point: float = 0
+        if any(values):
             min_point = min(min(v) for v in values if v)
             max_point = max(max(v) for v in values if v)
 
@@ -256,15 +272,15 @@ class StandardDisplayItem(DashboardItem):
         self.expired_timeout.stop()
         self.expired_timeout.start(int(EXPIRED_TIME * 1000))
 
-    def expire(self):
+    def expire(self) -> None:
         self.setStyleSheet("color: red")
 
     @staticmethod
-    def get_name():
+    def get_name() -> str:
         return "Standard Display Item"
 
-    def on_delete(self):
-        publisher.unsubscribe_from_all(self.on_data_update)
+    def on_delete(self) -> None:
+        cast(Any, publisher).unsubscribe_from_all(self.on_data_update)
         self.plot.close()
         self.widget.close()
         super().on_delete()

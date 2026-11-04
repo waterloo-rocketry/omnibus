@@ -1,55 +1,55 @@
 from publisher import publisher
 from pyqtgraph.Qt.QtWidgets import QGridLayout
-import pyqtgraph as pg
+import pyqtgraph as pg  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 from .dashboard_item import DashboardItem
 import config
 from .registry import Register
 from .series_parameter import SeriesChecklistParameter
 import numbers
-from typing import Any
+from typing import Any, cast
 
 
 @Register
 class PlotDashItem(DashboardItem):
-    def __init__(self, *args):
+    def __init__(self, *args: Any) -> None:
         # Call this in **every** dash item constructor
         super().__init__(*args)
 
-        self.last = {}
+        self.last: dict[str, float] = {}
 
         # storing the series name as key, its time and points as value
         # since each PlotDashItem can contain more than one curve
-        self.times = {}
-        self.points = {}
+        self.times: dict[str, list[float]] = {}
+        self.points: dict[str, list[float]] = {}
 
-        self.curves = {}
-        self.warning_line = pg.PlotDataItem()
+        self.curves: dict[str, Any] = {}
+        self.warning_line: Any = pg.PlotDataItem()
 
         # Specify the layout
-        self.main_layout = QGridLayout()
+        self.main_layout: QGridLayout = QGridLayout()
         self.setLayout(self.main_layout)
 
         self.parameters.param('series').sigValueChanged.connect(self.on_series_change)
         self.parameters.param('offset').sigValueChanged.connect(self.on_offset_change)
     
-        self.series = self.parameters.param('series').value()
+        self.series: list[str] = self.parameters.param('series').value()
         # just a single global offset for now
-        self.offset = self.parameters.param('offset').value()
+        self.offset: float = self.parameters.param('offset').value()
     
         # subscribe to stream dictated by properties
         for series in self.series:
-            publisher.subscribe(series, self.on_data_update)
+            cast(Any, publisher).subscribe(series, self.on_data_update)
 
         # a default color list for plotting multiple curves
         # black blue magenta green cyan white
-        self.color = ['k', 'b', 'm', 'g', 'c', 'w']
+        self.color: list[str] = ['k', 'b', 'm', 'g', 'c', 'w']
 
         # create the plot
-        self.plot = self.create_plot()
+        self.plot: Any = self.create_plot()
 
         # create the plot widget
-        self.widget = pg.PlotWidget(plotItem=self.plot)
+        self.widget: Any = pg.PlotWidget(plotItem=self.plot)
 
         # add it to the layout
         self.main_layout.addWidget(self.widget, 0, 0)
@@ -71,7 +71,7 @@ class PlotDashItem(DashboardItem):
         # The slope is the coefficient of the linear term
         return p.convert().coef[1]
 
-    def on_series_change(self, param, value):
+    def on_series_change(self, param: Any, value: Any) -> None:
         if len(value) > 2:
             self.parameters.param('Show Slope of Linear Approx.').setValue(False)
             self.parameters.param('Show Slope of Linear Approx.').setOpts(enabled=False)
@@ -81,9 +81,9 @@ class PlotDashItem(DashboardItem):
             self.parameters.param('series').setValue(value[:6])
         self.series = self.parameters.param('series').childrenValue()
         # resubscribe to the new streams
-        publisher.unsubscribe_from_all(self.on_data_update)
+        cast(Any, publisher).unsubscribe_from_all(self.on_data_update)
         for series in self.series:
-            publisher.subscribe(series, self.on_data_update)
+            cast(Any, publisher).subscribe(series, self.on_data_update)
         # recreate the plot with new series and add it to the layout
         self.plot = self.create_plot()
         self.widget = pg.PlotWidget(plotItem=self.plot)
@@ -91,12 +91,12 @@ class PlotDashItem(DashboardItem):
         self.resize(self.parameters.param('width').value(),
                     self.parameters.param('height').value())
 
-    def on_offset_change(self, _, offset):
+    def on_offset_change(self, _: Any, offset: float) -> None:
         self.offset = offset
 
     # Create the plot item
-    def create_plot(self):
-        plot = pg.PlotItem(title=f"<div style='font-size: 16pt;'><br/><b>{' / '.join(self.series)}</b><br/></div>", left="Data", bottom="Seconds")
+    def create_plot(self) -> Any:
+        plot: Any = pg.PlotItem(title=f"<div style='font-size: 16pt;'><br/><b>{' / '.join(self.series)}</b><br/></div>", left="Data", bottom="Seconds")
         plot.setMenuEnabled(False)     # hide the default context menu when right-clicked
         plot.getViewBox().setMouseEnabled(x=False, y=False)
         plot.hideButtons()
@@ -117,7 +117,7 @@ class PlotDashItem(DashboardItem):
         self.warning_line = plot.plot([], [], brush=(255, 0, 0, 50), pen='r')
         return plot
 
-    def on_data_update(self, stream, payload):
+    def on_data_update(self, stream: str, payload: tuple[float, float]) -> None:
         time, point = payload
         # Plots can only render numeric values, streams have string data, skip those
         if not isinstance(point, numbers.Real):
@@ -140,6 +140,8 @@ class PlotDashItem(DashboardItem):
         values = [ self.points[v] for v in self.points.keys() if v in self.series]
         
         # get the min/max point in the whole data set
+        min_point: float
+        max_point: float
         if not any(values):
             min_point = 0
             max_point = 0
@@ -150,7 +152,7 @@ class PlotDashItem(DashboardItem):
         # set the displayed range of Y axis
         self.plot.getViewBox().setYRange(min_point, max_point, padding=0.1)
 
-        limit = self.parameters.param('limit').value()
+        limit: float = self.parameters.param('limit').value()
         if limit != 0:
             # plot the warning line, using two points (start and end)
             self.warning_line.setData(
@@ -195,9 +197,9 @@ class PlotDashItem(DashboardItem):
         self.plot.setTitle(title=f"<div style='font-size: 16pt;'><br/><b>{series_name}</b><br/>{current_values}</div>")
 
     @staticmethod
-    def get_name():
+    def get_name() -> str:
         return "Plot"
 
-    def on_delete(self):
-        publisher.unsubscribe_from_all(self.on_data_update)
+    def on_delete(self) -> None:
+        cast(Any, publisher).unsubscribe_from_all(self.on_data_update)
         super().on_delete()

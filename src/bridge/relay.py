@@ -1,7 +1,7 @@
 import time
-import socketio
+import socketio  # pyright: ignore[reportMissingTypeStubs]
 from omnibus import Receiver
-from socketio import exceptions
+from socketio import exceptions  # pyright: ignore[reportMissingTypeStubs]
 from omnibus import WS_ORIGINATED_SUFFIX
 
 BRIDGE_AUTH = {"role": "bridge"}
@@ -10,7 +10,7 @@ def connect_with_retry(sio: socketio.Client, ws_url: str) -> None:
     # Attempts to reconnect to the WS server if it disconnects
     while True:
         try:
-            sio.connect(ws_url, auth=BRIDGE_AUTH)
+            sio.connect(ws_url, auth=BRIDGE_AUTH)  # pyright: ignore[reportUnknownMemberType]
             print(f">>> Connected to WebSocket server at {ws_url}")
             return
         except exceptions.ConnectionError:
@@ -60,12 +60,12 @@ def main(ws_url: str = "http://127.0.0.1:6767", omnibus_server_host: str | None 
 
         payload = (msg.timestamp, msg.payload)
         try:
-            sio.emit(msg.channel, payload) 
+            sio.emit(msg.channel, payload)  # pyright: ignore[reportUnknownMemberType]
         except (exceptions.ConnectionError, exceptions.BadNamespaceError) as e:
             print(f">>> Error sending message to WS server: {e}")
             reconnect(sio, ws_url)
             try:
-                sio.emit(msg.channel, payload) 
+                sio.emit(msg.channel, payload)  # pyright: ignore[reportUnknownMemberType]
             except (exceptions.ConnectionError, exceptions.BadNamespaceError) as retry_error:
                 print(f"Failed to relay {msg.channel} after reconnect, dropping frame: {retry_error}")
                 continue

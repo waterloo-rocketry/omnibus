@@ -3,8 +3,7 @@ from enum import Enum
 from typing import ClassVar, Self
 
 # Import the LabJack package
-from labjack import ljm
-from msgpack.exceptions import PackException
+from labjack import ljm  # pyright: ignore[reportMissingTypeStubs]
 
 # A map between a channel name and
 # the channel number of its negative channel
@@ -168,11 +167,11 @@ class Sensor:
         and a list of strings, the names of the addresses set up.
         """
 
-        list_of_addresses = []
+        list_of_addresses: list[str] = []
 
         for sensor in Sensor.sensors:
-            ljm.eWriteName(handle, f"{sensor.channel}_RANGE", sensor.input_range)
-            negChannelValue = ljm.constants.GND
+            ljm.eWriteName(handle, f"{sensor.channel}_RANGE", sensor.input_range)  # pyright: ignore[reportUnknownMemberType]
+            negChannelValue = ljm.constants.GND  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
             if sensor.connection == Connection.DIFFERENTIAL:
                 try:
                     negChannelValue = CHANNEL_TO_NEGATIVE_CHANNEL[sensor.channel]
@@ -180,7 +179,7 @@ class Sensor:
                     raise ValueError(
                         f"{sensor.channel} does not have a valid negative channel."
                     )
-            ljm.eWriteName(handle, f"{sensor.channel}_NEGATIVE_CH", negChannelValue)
+            ljm.eWriteName(handle, f"{sensor.channel}_NEGATIVE_CH", negChannelValue)  # pyright: ignore[reportUnknownMemberType]
             list_of_addresses.append(sensor.channel)
 
         assert len(list_of_addresses) == len(Sensor.sensors)

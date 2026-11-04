@@ -1,7 +1,6 @@
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QLabel, QCompleter, QSizePolicy
 from pyqtgraph.Qt.QtCore import QTimer, Qt, QStringListModel
-from pyqtgraph.parametertree.parameterTypes import (
-    SimpleParameter,
+from pyqtgraph.parametertree.parameterTypes import (  # pyright: ignore[reportMissingTypeStubs]
     StrParameterItem,
     ListParameter,
     ActionParameter,
@@ -14,6 +13,7 @@ from .dashboard_item import DashboardItem
 from .registry import Register
 from .series_parameter import SeriesListParameter
 
+from typing import Any, cast
 import operator
 
 EXPIRED_TIME = 2.5  # time in seconds after which data "expires"
@@ -22,12 +22,12 @@ class AutocompleteParameterItem(StrParameterItem):
     completion_model = QStringListModel(publisher.get_all_streams())
     completer = QCompleter(completion_model)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        publisher.register_stream_callback(self.update_completions)
+        cast(Any, publisher).register_stream_callback(self.update_completions)
 
-    def makeWidget(self):
-        w = super().makeWidget()
+    def makeWidget(self) -> Any:
+        w = cast(Any, super()).makeWidget()
         self.completer = QCompleter(publisher.get_all_streams())
         self.completer.setCompletionMode(QCompleter.CompletionMode.UnfilteredPopupCompletion)
         self.completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -35,16 +35,24 @@ class AutocompleteParameterItem(StrParameterItem):
         return w
 
     @staticmethod
-    def update_completions(streams):
+    def update_completions(streams: list[str]) -> None:
         AutocompleteParameterItem.completion_model.setStringList(streams)
 
 
-publisher.register_stream_callback(AutocompleteParameterItem.update_completions)
+cast(Any, publisher).register_stream_callback(AutocompleteParameterItem.update_completions)
 
 
 @Register
 class DynamicTextItem(DashboardItem):
-    def __init__(self, *args):
+    condition_count: int
+    main_layout: QHBoxLayout
+    expired_timeout: QTimer
+    offset: float
+    widget: QLabel
+    buffer_size: int
+    buffer: list[Any]
+
+    def __init__(self, *args: Any) -> None:
         # Call this in **every** dash item constructor
         super().__init__(*args)
 
@@ -69,7 +77,7 @@ class DynamicTextItem(DashboardItem):
 
         series = self.parameters.param('series').value()
         self.offset = self.parameters.param('offset').value()
-        publisher.subscribe(series, self.on_data_update)
+        cast(Any, publisher).subscribe(series, self.on_data_update)
 
         self.widget = QLabel()
         self.update_size_policy(None)  # Set initial size policy
@@ -82,13 +90,13 @@ class DynamicTextItem(DashboardItem):
         self.buffer_size = self.parameters.param('buffer size').value()
         self.buffer = []
 
-    def update_size_policy(self, _):
+    def update_size_policy(self, _param: object) -> None:
         if self.parameters.param('dynamic_size_policy').value():
             self.widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         else:
             self.widget.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
 
-    def add_parameters(self):
+    def add_parameters(self) -> list[Any]:
         font_param = {'name': 'font size', 'type': 'int', 'value': 12}
         series_param = SeriesListParameter()
         offset_param = {'name': 'offset', 'type': 'float', 'value': 0}
@@ -98,12 +106,12 @@ class DynamicTextItem(DashboardItem):
                                                 title="Add New")
         return [dynamic_size_policy_param, font_param, series_param, offset_param, buffer_size_param, new_param_button]
 
-    def on_series_change(self, _, value):
-        publisher.unsubscribe_from_all(self.on_data_update)
-        publisher.subscribe(value, self.on_data_update)
+    def on_series_change(self, _param: object, value: Any) -> None:
+        cast(Any, publisher).unsubscribe_from_all(self.on_data_update)
+        cast(Any, publisher).subscribe(value, self.on_data_update)
 
-    def on_data_update(self, _, payload):
-        time, data = payload
+    def on_data_update(self, _stream: str, payload: tuple[float, Any]) -> None:
+        _time, data = payload
 
         self.buffer.append(data)
         if len(self.buffer) > self.buffer_size:
@@ -132,9 +140,9 @@ class DynamicTextItem(DashboardItem):
         self.expired_timeout.stop()
         self.expired_timeout.start(int(EXPIRED_TIME * 1000))
 
-    def condition_true(self, condition: GroupParameter):
-        comparison = str(condition.childs[0].value())
-        condition_value = str(condition.childs[1].value())
+    def condition_true(self, condition: GroupParameter) -> bool:
+        comparison = str(cast(Any, condition).childs[0].value())
+        condition_value = str(cast(Any, condition).childs[1].value())
         data_text = self.widget.text()
         
         ops = {
@@ -164,16 +172,16 @@ class DynamicTextItem(DashboardItem):
         except (ValueError, TypeError):
             return bool(op_func(data_text.lower(), condition_value.lower()))
     
-    def expire(self):
+    def expire(self) -> None:
         self.setStyleSheet("color: red")
 
-    def on_font_change(self, _, fsize):
+    def on_font_change(self, _param: object, fsize: int) -> None:
         self.widget.setStyleSheet(f"font-size: {fsize}px")
 
-    def on_offset_change(self, _, offset):
+    def on_offset_change(self, _param: object, offset: float) -> None:
         self.offset = offset
 
-    def on_add_new_change(self, _):
+    def on_add_new_change(self, _param: object) -> None:
         # Increment number of conditions and get string representation
         self.condition_count += 1
         cond_count_str = str(self.condition_count)
@@ -198,13 +206,13 @@ class DynamicTextItem(DashboardItem):
                                             'value': '0'})
         condition_reference.addChild(child=ColorParameter(name='color'))
 
-    def on_buffer_size_change(self, _, bufsize):
+    def on_buffer_size_change(self, _param: object, bufsize: int) -> None:
         self.buffer_size = bufsize
         self.buffer = []
 
     @staticmethod
-    def get_name():
+    def get_name() -> str:
         return "Dynamic Text"
 
-    def on_delete(self):
-        publisher.unsubscribe_from_all(self.on_data_update)
+    def on_delete(self) -> None:
+        cast(Any, publisher).unsubscribe_from_all(self.on_data_update)

@@ -1,3 +1,4 @@
+# pyright: reportImportCycles=false
 from enum import Enum
 import os
 import sys
@@ -5,7 +6,7 @@ import json
 import signal
 import time
 
-import pyqtgraph
+import pyqtgraph  # pyright: ignore[reportMissingTypeStubs]
 from pyqtgraph.Qt.QtCore import Qt, QTimer
 from pyqtgraph.Qt.QtGui import QPainter, QAction
 from pyqtgraph.Qt.QtWidgets import (
@@ -29,29 +30,30 @@ from pyqtgraph.Qt.QtWidgets import (
     QGraphicsProxyWidget,
     QMenu
 )
-from pyqtgraph.parametertree import ParameterTree
+from pyqtgraph.parametertree import ParameterTree  # pyright: ignore[reportMissingTypeStubs]
 from items import registry
 from utils import ConfirmDialog, EventTracker
 from publisher import publisher
 from typing import Any, Callable, cast
 from omnibus import Sender
-from omnibus.util import BuildInfoManager
+from omnibus.util import BuildInfoManager  # pyright: ignore[reportMissingTypeStubs]
 from items.dashboard_item import DashboardItem
+from pyqtgraph.Qt.QtGui import QWheelEvent as _QWheelEvent, QMouseEvent as _QMouseEvent  # type: ignore
 
 # These need to be imported to be added to the registry
-from items.plot_dash_item import PlotDashItem
-from items.gauge_item import GaugeItem
-from items.progress_bar import ProgressBarItem
-from items.image_dash_item import ImageDashItem
-from items.text_dash_item import TextDashItem
-from items.dynamic_text import DynamicTextItem
-from items.periodic_can_sender import PeriodicCanSender
-from items.can_sender import CanSender
-from items.standard_display_item import StandardDisplayItem
+from items.plot_dash_item import PlotDashItem  # pyright: ignore[reportUnusedImport]
+from items.gauge_item import GaugeItem  # pyright: ignore[reportUnusedImport]
+from items.progress_bar import ProgressBarItem  # pyright: ignore[reportUnusedImport]
+from items.image_dash_item import ImageDashItem  # pyright: ignore[reportUnusedImport]
+from items.text_dash_item import TextDashItem  # pyright: ignore[reportUnusedImport]
+from items.dynamic_text import DynamicTextItem  # pyright: ignore[reportUnusedImport]
+from items.periodic_can_sender import PeriodicCanSender  # pyright: ignore[reportUnusedImport]
+from items.can_sender import CanSender  # pyright: ignore[reportUnusedImport]
+from items.standard_display_item import StandardDisplayItem  # pyright: ignore[reportUnusedImport]
 
 
-pyqtgraph.setConfigOption('background', 'w')
-pyqtgraph.setConfigOption('foreground', 'k')
+pyqtgraph.setConfigOption('background', 'w')  # pyright: ignore[reportUnknownMemberType]
+pyqtgraph.setConfigOption('foreground', 'k')  # pyright: ignore[reportUnknownMemberType]
 
 
 class QGraphicsViewWrapper(QGraphicsView):
@@ -61,41 +63,42 @@ class QGraphicsViewWrapper(QGraphicsView):
     as scrolling with a mouse while pressing the shift key.
     """
 
-    def __init__(self, scene, dashboard):
+    def __init__(self, scene: QGraphicsScene, dashboard: "Dashboard") -> None:
         super().__init__(scene)  # initialize the super class
-        self.zoomed = 1.0
-        self.SCROLL_SENSITIVITY = 1/3  # scale down the scrolling sensitivity
-        self.dashboard = dashboard
+        self.zoomed: float = 1.0
+        self.SCROLL_SENSITIVITY: float = 1/3  # scale down the scrolling sensitivity
+        self.dashboard: "Dashboard" = dashboard
 
-    def wheelEvent(self, event):
+    def wheelEvent(self, event: _QWheelEvent) -> None:  # pyright: ignore[reportMissingParameterType, reportInvalidTypeVarUse, reportUnknownParameterType]
         """
         Zoom in/out if ctrl/cmd is held
         Scroll horizontally if shift is held
         Scroll vertically otherwise
         """
-        angle = event.angleDelta()
-        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-            self.zoom(angle.y())
-        elif event.source() == Qt.MouseEventSource.MouseEventNotSynthesized:  # event comes from a mouse
-            if event.modifiers() == Qt.KeyboardModifier.ShiftModifier:
+        angle = event.angleDelta()  # pyright: ignore[reportUnknownMemberType]
+        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:  # pyright: ignore[reportUnknownMemberType]
+            self.zoom(angle.y())  # pyright: ignore[reportUnknownMemberType]
+        elif event.source() == Qt.MouseEventSource.MouseEventNotSynthesized:  # pyright: ignore[reportUnknownMemberType]
+            if event.modifiers() == Qt.KeyboardModifier.ShiftModifier:  # pyright: ignore[reportUnknownMemberType]
                 # determining the scrolling orientation based on the larger x/y component value
-                absolute_angle = angle.x() if abs(angle.x()) > abs(angle.y()) else angle.y()
-                numDegrees = absolute_angle * self.SCROLL_SENSITIVITY
-                value = self.horizontalScrollBar().value()
-                self.horizontalScrollBar().setValue(int(value + numDegrees))
+                absolute_angle = angle.x() if abs(angle.x()) > abs(angle.y()) else angle.y()  # pyright: ignore[reportUnknownMemberType]
+                numDegrees = absolute_angle * self.SCROLL_SENSITIVITY  # pyright: ignore[reportUnknownMemberType]
+                value = self.horizontalScrollBar().value()  # pyright: ignore[reportUnknownMemberType]
+                self.horizontalScrollBar().setValue(int(value + numDegrees))  # pyright: ignore[reportUnknownMemberType]
             else:
-                numDegrees = angle.y() * self.SCROLL_SENSITIVITY
-                value = self.verticalScrollBar().value()
-                self.verticalScrollBar().setValue(int(value + numDegrees))
+                numDegrees = angle.y() * self.SCROLL_SENSITIVITY  # pyright: ignore[reportUnknownMemberType]
+                value = self.verticalScrollBar().value()  # pyright: ignore[reportUnknownMemberType]
+                self.verticalScrollBar().setValue(int(value + numDegrees))  # pyright: ignore[reportUnknownMemberType]
         else:  # let the default implementation occur for everything else
             super().wheelEvent(event)
 
     # override the mouseDoubleClickEvent to open the property panel
-    def mouseDoubleClickEvent(self, event):
-        item = self.itemAt(event.pos())
+    def mouseDoubleClickEvent(self, event: _QMouseEvent) -> None:  # pyright: ignore[reportMissingParameterType, reportInvalidTypeVarUse, reportUnknownParameterType]
+        item = self.itemAt(event.pos())  # pyright: ignore[reportUnknownMemberType]
         # if an item is clicked, open the property panel of item
-        if item in self.scene().items():
-            self.dashboard.open_property_panel(item)
+        scene_items = self.scene().items()  # pyright: ignore[reportUnknownMemberType]
+        if item in scene_items:
+            self.dashboard.open_property_panel(item)  # pyright: ignore[reportUnknownArgumentType]
         else:
             #else close the property panel
             self.dashboard.open_property_panel(None)
@@ -114,41 +117,41 @@ class Dashboard(QWidget):
     
     build_info: BuildInfoManager = BuildInfoManager("Omnibus Dashboard")
 
-    def __init__(self, callback):
+    def __init__(self, callback: Callable[[], None]) -> None:
         # Initialize the super class
         super().__init__()
 
         self.omnibus_sender = Sender()
         self.current_parsley_instances: list[str] = []
-        self.refresh_track = False
+        self.refresh_track: bool = False
 
         publisher.subscribe("ALL", self.every_second)
 
         # Stores the selected parsley instance
         self.parsley_instance: str = "None"
-        publisher.subscribe('outgoing_can_messages', self.send_can_message)
+        publisher.subscribe('outgoing_can_messages', cast(Callable[..., None], self.send_can_message))
 
         # Called every frame to get new data
-        self.callback = callback
+        self.callback: Callable[[], None] = callback
 
         # Dictionary to map rectitems to widgets and dashitems
         self.widgets: dict[QGraphicsRectItem, tuple[QGraphicsProxyWidget, DashboardItem]] = {}
 
         # Keep track of if editing is allowed
-        self.locked = False
+        self.locked: bool = False
 
         # Keep track of whether mouse resizing is allowed
-        self.mouse_resize = False
+        self.mouse_resize: bool = False
 
         # Determine the specific directory you want to always open
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.save_directory = os.path.join(script_dir, "saved-files")
+        self.save_directory: str = os.path.join(script_dir, "saved-files")
 
         # The file from which the dashboard is loaded
-        self.file_location = os.path.join(self.save_directory, "savefile.json")
+        self.file_location: str = os.path.join(self.save_directory, "savefile.json")
 
         # Keep track on whether the save popup should be shown on exit.
-        self.should_show_save_popup = True
+        self.should_show_save_popup: bool = True
 
         # Create a GUI
         width = 1100
@@ -158,7 +161,7 @@ class Dashboard(QWidget):
 
         # Create a large scene underneath the view
         self.scene = QGraphicsScene(0, 0, width*100, height*100)
-        self.scene.selectionChanged.connect(self.on_selection_changed)
+        self.scene.selectionChanged.connect(self.on_selection_changed)  # pyright: ignore[reportUnknownMemberType]
 
         # Create a layout manager
         self.main_layout = QVBoxLayout()
@@ -178,7 +181,7 @@ class Dashboard(QWidget):
         # Save will save the layout of the dashboard
         # Save As will prompt a name, then saves the layout of the dashboard
         # Open loads the layout of the dashboard
-        add_file_menu = menubar.addMenu("File")
+        add_file_menu = cast(Any, menubar.addMenu("File"))
 
         file_save_layout_action = add_file_menu.addAction("Save (^s)")
         file_save_layout_action.triggered.connect(self.save)
@@ -197,12 +200,12 @@ class Dashboard(QWidget):
         # to add items to our dash board.
         # For all dash items we support, there will
         # be a corresponding action to add that item
-        add_item_menu = menubar.addMenu("Add Item")
+        add_item_menu = cast(Any, menubar.addMenu("Add Item"))
 
         # Need to create triggers like this
         # because of the way python handles
-        def create_registry_trigger(i):
-            def return_fun():
+        def create_registry_trigger(i: int) -> Callable[[], None]:
+            def return_fun() -> None:
                 if not self.locked:
                     self.add(registry.get_items()[i](self))
             return return_fun
@@ -214,7 +217,7 @@ class Dashboard(QWidget):
 
         # Add an action to the menu bar to lock/unlock
         # the dashboard
-        editing_menu = menubar.addMenu("Editing")
+        editing_menu = cast(Any, menubar.addMenu("Editing"))
         self.lock_action = editing_menu.addAction("Lock Dashboard (^l)")
         self.lock_action.triggered.connect(self.toggle_lock)
         lock_selected = editing_menu.addAction("Lock Selected (l)")
@@ -237,7 +240,7 @@ class Dashboard(QWidget):
 
         # An action to the to the menu bar to duplicate
         # the selected item
-        items_menu = menubar.addMenu("Items")
+        items_menu = cast(Any, menubar.addMenu("Items"))
         duplicate_action = items_menu.addAction("Duplicate Item (^d)")
         duplicate_action.triggered.connect(self.on_duplicate)
         self.lockable_actions.append(duplicate_action)
@@ -247,7 +250,7 @@ class Dashboard(QWidget):
 
         # We have a menu in the top to allow users to change the stacking order
         # of the selected items.
-        order_menu = menubar.addMenu("Order")
+        order_menu = cast(Any, menubar.addMenu("Order"))
         send_to_front_action = order_menu.addAction("Send to Front (^])")
         send_to_front_action.triggered.connect(self.send_to_front)
         self.lockable_actions.append(send_to_front_action)
@@ -266,21 +269,21 @@ class Dashboard(QWidget):
 
         # Add an action to the menu bar to display a
         # help box
-        add_help_menu = menubar.addMenu("Help")
+        add_help_menu = cast(Any, menubar.addMenu("Help"))
         help_action = add_help_menu.addAction("Omnibus Help")
         help_action.triggered.connect(self.help)
 
         self.main_layout.setMenuBar(menubar)
 
         # Create the view and add it to the widget
-        self.view = QGraphicsViewWrapper(self.scene, self)
+        self.view: QGraphicsViewWrapper = QGraphicsViewWrapper(self.scene, self)
         self.view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.view.setRenderHints(QPainter.RenderHint.Antialiasing)
         # zooms to the position of mouse
         self.view.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
+        self.view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)  # pyright: ignore[reportUnknownMemberType]
         self.splitter.addWidget(self.view)
-        self.parameter_tree_placeholder = ParameterTree()
+        self.parameter_tree_placeholder: ParameterTree = ParameterTree()
         self.parameter_tree_placeholder.hide()
         self.splitter.addWidget(self.parameter_tree_placeholder)
 
@@ -293,30 +296,30 @@ class Dashboard(QWidget):
 
         # enable certain keyboard shortcuts
         self.key_press_signals = EventTracker()
-        self.key_press_signals.zoom_in.connect(lambda: self.view.zoom(200))
-        self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))
-        self.key_press_signals.zoom_reset.connect(self.reset_zoom)
-        self.key_press_signals.backspace_pressed.connect(self.remove_selected)
-        self.key_press_signals.save_file_keys_pressed.connect(self.save)
-        self.key_press_signals.save_as_file_keys_pressed.connect(self.save_as)
-        self.key_press_signals.open_file_keys_pressed.connect(self.open)
-        self.key_press_signals.duplicate.connect(self.on_duplicate)
-        self.key_press_signals.lock_dashboard.connect(self.toggle_lock)
-        self.key_press_signals.lock_selected.connect(self.lock_selected)
-        self.key_press_signals.send_forward.connect(self.send_forward)
-        self.key_press_signals.send_backward.connect(self.send_backward)
-        self.key_press_signals.send_to_front.connect(self.send_to_front)
-        self.key_press_signals.send_to_back.connect(self.send_to_back)
-        self.key_press_signals.remove_all.connect(self.remove_all)
-        self.key_press_signals.mouse_resize.connect(self.toggle_mouse)
-        self.key_press_signals.escape_pressed.connect(self.close_property_tree)
+        self.key_press_signals.zoom_in.connect(lambda: self.view.zoom(200))  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.zoom_out.connect(lambda: self.view.zoom(-200))  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.zoom_reset.connect(self.reset_zoom)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.backspace_pressed.connect(self.remove_selected)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.save_file_keys_pressed.connect(self.save)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.save_as_file_keys_pressed.connect(self.save_as)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.open_file_keys_pressed.connect(self.open)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.duplicate.connect(self.on_duplicate)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.lock_dashboard.connect(self.toggle_lock)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.lock_selected.connect(self.lock_selected)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.send_forward.connect(self.send_forward)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.send_backward.connect(self.send_backward)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.send_to_front.connect(self.send_to_front)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.send_to_back.connect(self.send_to_back)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.remove_all.connect(self.remove_all)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.mouse_resize.connect(self.toggle_mouse)  # pyright: ignore[reportUnknownMemberType]
+        self.key_press_signals.escape_pressed.connect(self.close_property_tree)  # pyright: ignore[reportUnknownMemberType]
         self.installEventFilter(self.key_press_signals)
 
         # Data used to check unsaved changes and indicate on the window title
-        self.current_data = self.get_data()["widgets"]
-        self.unsave_indicator = False
+        self.current_data: Any = self.get_data()["widgets"]
+        self.unsave_indicator: bool = False
 
-        publisher.subscribe_clock(7, self.change_detector)
+        publisher.subscribe_clock(7, cast(Callable[..., None], self.change_detector))
 
         # For every 5 second, check if there are any changes
         #self.timer = QTimer(self)
@@ -326,37 +329,37 @@ class Dashboard(QWidget):
         QApplication.setStyle('Fusion')
 
         # Right click menu
-        self.context_menu = QMenu(self)
+        self.context_menu: QMenu = QMenu(self)
         # Creating the options for the right click menu
-        save_menu = self.context_menu.addAction("Save")
-        saveAs_menu = self.context_menu.addAction("Save As")
-        open_menu = self.context_menu.addAction("Open")
-        lockDashboard_menu = self.context_menu.addAction("Lock Dashboard")
-        duplicateItem_menu = self.context_menu.addAction("Duplicate")
-        sendFront_menu = self.context_menu.addAction("Send to Front")
-        sendBack_menu = self.context_menu.addAction("Send to Back")
-        sendForward_menu = self.context_menu.addAction("Send Forward")
-        sendBackward_menu = self.context_menu.addAction("Send Backward")
+        save_menu = self.context_menu.addAction("Save")  # pyright: ignore[reportUnknownMemberType]
+        saveAs_menu = self.context_menu.addAction("Save As")  # pyright: ignore[reportUnknownMemberType]
+        open_menu = self.context_menu.addAction("Open")  # pyright: ignore[reportUnknownMemberType]
+        lockDashboard_menu = self.context_menu.addAction("Lock Dashboard")  # pyright: ignore[reportUnknownMemberType]
+        duplicateItem_menu = self.context_menu.addAction("Duplicate")  # pyright: ignore[reportUnknownMemberType]
+        sendFront_menu = self.context_menu.addAction("Send to Front")  # pyright: ignore[reportUnknownMemberType]
+        sendBack_menu = self.context_menu.addAction("Send to Back")  # pyright: ignore[reportUnknownMemberType]
+        sendForward_menu = self.context_menu.addAction("Send Forward")  # pyright: ignore[reportUnknownMemberType]
+        sendBackward_menu = self.context_menu.addAction("Send Backward")  # pyright: ignore[reportUnknownMemberType]
 
         # Assigning each option to an action
-        save_menu.triggered.connect(self.save)
-        saveAs_menu.triggered.connect(self.save_as)
-        open_menu.triggered.connect(self.open)
-        lockDashboard_menu.triggered.connect(self.toggle_lock)
-        duplicateItem_menu.triggered.connect(self.on_duplicate)
-        sendFront_menu.triggered.connect(self.send_to_front)
-        sendBack_menu.triggered.connect(self.send_to_back)
-        sendForward_menu.triggered.connect(self.send_forward)
-        sendBackward_menu.triggered.connect(self.send_backward)
+        save_menu.triggered.connect(self.save)  # pyright: ignore[reportUnknownMemberType]
+        saveAs_menu.triggered.connect(self.save_as)  # pyright: ignore[reportUnknownMemberType]
+        open_menu.triggered.connect(self.open)  # pyright: ignore[reportUnknownMemberType]
+        lockDashboard_menu.triggered.connect(self.toggle_lock)  # pyright: ignore[reportUnknownMemberType]
+        duplicateItem_menu.triggered.connect(self.on_duplicate)  # pyright: ignore[reportUnknownMemberType]
+        sendFront_menu.triggered.connect(self.send_to_front)  # pyright: ignore[reportUnknownMemberType]
+        sendBack_menu.triggered.connect(self.send_to_back)  # pyright: ignore[reportUnknownMemberType]
+        sendForward_menu.triggered.connect(self.send_forward)  # pyright: ignore[reportUnknownMemberType]
+        sendBackward_menu.triggered.connect(self.send_backward)  # pyright: ignore[reportUnknownMemberType]
 
         # Set the start time for the clock
-        self.start_time = time.time()
+        self.start_time: float = time.time()
 
     # Right click menu
-    def contextMenuEvent(self, event):
-        self.context_menu.exec(event.globalPos())
+    def contextMenuEvent(self, event: Any) -> None:  # pyright: ignore[reportMissingParameterType, reportUnknownParameterType]
+        self.context_menu.exec(event.globalPos())  # pyright: ignore[reportUnknownMemberType]
 
-    def select_instance(self, name):
+    def select_instance(self, name: str) -> None:
         self.parsley_instance = name
         self.refresh_track = True
 
@@ -368,8 +371,8 @@ class Dashboard(QWidget):
             return True
         return False
 
-    UNSAVED_SYMBOL = "⏺"
-    def change_detector(self, _ = None):
+    UNSAVED_SYMBOL: str = "⏺"
+    def change_detector(self, _: Any = None) -> None:
         title = self.windowTitle()
         changed = self.check_for_changes()
         if changed and Dashboard.UNSAVED_SYMBOL not in title:
@@ -377,7 +380,7 @@ class Dashboard(QWidget):
         elif not changed and Dashboard.UNSAVED_SYMBOL in title:
             self.setWindowTitle(title[:-2])
 
-    def every_second(self, payload, stream) -> None:
+    def every_second(self, payload: Any = None, stream: Any = None) -> None:  # pyright: ignore[reportUnusedParameter]
         def on_select(string: str) -> Callable[[], None]:
             def retval() -> None:
                 self.select_instance(string)
@@ -391,46 +394,46 @@ class Dashboard(QWidget):
         if self.current_parsley_instances == parsley_streams and not self.refresh_track:
             return
         
-        for action in self.can_selector.actions():
+        for action in self.can_selector.actions():  # pyright: ignore[reportUnknownMemberType]
             if action not in self.lockable_actions:
                 continue
             self.lockable_actions.remove(action)
-        self.can_selector.clear()
+        self.can_selector.clear()  # pyright: ignore[reportUnknownMemberType]
 
         self.refresh_track = False
 
         self.current_parsley_instances = parsley_streams
 
         for inst in parsley_streams:
-            new_action = self.can_selector.addAction(inst)
-            new_action.triggered.connect(on_select(inst))
-            new_action.setCheckable(True)
+            new_action = self.can_selector.addAction(inst)  # pyright: ignore[reportUnknownMemberType]
+            new_action.triggered.connect(on_select(inst))  # pyright: ignore[reportUnknownMemberType]
+            new_action.setCheckable(True)  # pyright: ignore[reportUnknownMemberType]
 
-            new_action.setChecked(self.parsley_instance == inst)
+            new_action.setChecked(self.parsley_instance == inst)  # pyright: ignore[reportUnknownMemberType]
 
             self.lockable_actions.append(new_action)
 
-    def send_can_message(self, stream, payload):
+    def send_can_message(self, stream: Any = None, payload: Any = None) -> None:  # pyright: ignore[reportUnusedParameter]
         payload['parsley'] = self.parsley_instance
         self.omnibus_sender.send("CAN/Commands", payload)
 
     # Method to open the parameter tree to the selected item
-    def open_property_panel(self, item):
-        items = self.scene.selectedItems()
+    def open_property_panel(self, item: Any = None) -> None:  # pyright: ignore[reportUnusedParameter]
+        items = self.scene.selectedItems()  # pyright: ignore[reportUnknownMemberType]
 
         if len(items) == 0:
             return
 
         # Show the tree
-        item = self.widgets[cast(QGraphicsRectItem, items[0])][1]
-        if self.splitter.widget(1) is not item.parameter_tree:
-            self.splitter.replaceWidget(1, item.parameter_tree)
-        item.parameter_tree.show()
+        dashitem = self.widgets[cast(QGraphicsRectItem, items[0])][1]
+        if self.splitter.widget(1) is not dashitem.parameter_tree:  # pyright: ignore[reportUnknownMemberType]
+            self.splitter.replaceWidget(1, dashitem.parameter_tree)  # pyright: ignore[reportUnknownMemberType]
+        dashitem.parameter_tree.show()  # pyright: ignore[reportUnknownMemberType]
 
         # subtract 100 for some padding, these sizes are relative
-        total_width = self.splitter.size().width() - 100
-        tree_width = item.parameter_tree.sizeHint().width()
-        self.splitter.setSizes([total_width - tree_width, tree_width])
+        total_width = self.splitter.size().width() - 100  # pyright: ignore[reportUnknownMemberType]
+        tree_width = dashitem.parameter_tree.sizeHint().width()  # pyright: ignore[reportUnknownMemberType, reportUnknownMemberType]
+        self.splitter.setSizes([int(total_width - tree_width), int(tree_width)])  # pyright: ignore[reportUnknownMemberType]
 
 
     # On selection changed, hide the parameter tree
@@ -466,9 +469,9 @@ class Dashboard(QWidget):
 
     # method to handle dimension changes in parameter tree
 
-    def on_item_resize(self, item):
-        width = item.parameters.param('width').value() + 1
-        height = item.parameters.param('height').value() + 1
+    def on_item_resize(self, item: DashboardItem) -> None:
+        width = item.parameters.param('width').value() + 1  # pyright: ignore[reportUnknownMemberType]
+        height = item.parameters.param('height').value() + 1  # pyright: ignore[reportUnknownMemberType]
         for proxy, candidate in self.widgets.values():
             if candidate is item:
                 pos = proxy.pos()
@@ -476,17 +479,17 @@ class Dashboard(QWidget):
                 return
 
     # Method to add widgets
-    def add(self, dashitem, pos=None) -> QGraphicsRectItem:
+    def add(self, dashitem: DashboardItem, pos: tuple[float, float] | None = None) -> QGraphicsRectItem:
         # Add the dash item to the scene and get
         # its proxy widget and dimension
-        proxy = self.scene.addWidget(dashitem)
-        height = proxy.size().height()
-        width = proxy.size().width()
+        proxy = self.scene.addWidget(dashitem)  # pyright: ignore[reportUnknownMemberType]
+        height = proxy.size().height()  # pyright: ignore[reportUnknownMemberType]
+        width = proxy.size().width()  # pyright: ignore[reportUnknownMemberType]
 
         # If a position is given, use it. If not, position
         # the widget in the center of the current view
         if pos:
-            mapped = self.view.mapToScene(pos[0], pos[1])
+            mapped = self.view.mapToScene(int(pos[0]), int(pos[1]))
             xpos = mapped.x()
             ypos = mapped.y()
         else:
@@ -521,7 +524,7 @@ class Dashboard(QWidget):
         return rect
 
     # Method to remove a widget
-    def remove(self, item):
+    def remove(self, item: QGraphicsRectItem) -> None:
         # Remove the rectangle from the scene,
         # delete the proxy widget and tell the
         # dashitem to stop sending data
@@ -533,7 +536,7 @@ class Dashboard(QWidget):
         dashitem.on_delete()
 
     # Method to remove all widgets
-    def remove_all(self, hide_confirm=False):
+    def remove_all(self, hide_confirm: bool = False) -> None:
         if len(self.widgets) == 0:
             return
 
@@ -556,7 +559,7 @@ class Dashboard(QWidget):
 
     # Method to load layout from file
 
-    def load(self):
+    def load(self) -> None:
         # First remove all the current widgets
         self.remove_all()
 
@@ -577,7 +580,7 @@ class Dashboard(QWidget):
         if "should_show_save_popup" in data and not data["should_show_save_popup"]:
             self.should_show_save_popup = False
 
-        locked_item_pairs = []
+        locked_item_pairs: list[tuple[int, QGraphicsRectItem]] = []
 
         # Add every widget in the data
         for widget in data["widgets"]:
@@ -694,8 +697,9 @@ class Dashboard(QWidget):
             self.lock_widget(cast(QGraphicsRectItem, widget))
 
     # Method to handle exit
-    def closeEvent(self, event):
+    def closeEvent(self, event: Any) -> None:
         # Get data from savefile.
+        old_data: dict[str, Any]
         if os.path.exists(self.file_location) and os.stat(self.file_location).st_size != 0:
             with open(self.file_location, "r") as savefile:
                 old_data = json.load(savefile)
@@ -751,7 +755,7 @@ class Dashboard(QWidget):
         return data
 
     # Method to display save on exit popup.
-    def show_save_popup(self, old_data, event):
+    def show_save_popup(self, old_data: dict[str, Any], event: Any) -> None:
         # Display Popup that prompts for save.
         popup = QDialog()
         popup.setWindowTitle('Save Work')
@@ -835,7 +839,7 @@ class Dashboard(QWidget):
         help_box.exec()
 
     # Method to get new data for widgets
-    def update(self, arg__1=None, *args, **kwargs):
+    def update(self, arg__1: Any = None, *args: Any, **kwargs: Any) -> None:
         # Note, based on performance testing,
         # we don't need to be worried about
         # the delay caused by the callback,
@@ -859,7 +863,7 @@ class Dashboard(QWidget):
         if self.locked:
             return
         for item in self.scene.selectedItems():
-            self.remove(item)
+            self.remove(cast(QGraphicsRectItem, item))
             self.widgets.pop(cast(QGraphicsRectItem, item))
 
     def send_to_front(self):
@@ -871,7 +875,7 @@ class Dashboard(QWidget):
         if len(selected_items) == 0:
             return
 
-        order_of_items = {}
+        order_of_items: dict[QGraphicsItem, int] = {}
         for i, item in enumerate(self.scene.items(Qt.SortOrder.AscendingOrder)):
             order_of_items[item] = i
         for item in sorted(selected_items, key=lambda item: order_of_items[item]):
@@ -946,9 +950,11 @@ class Dashboard(QWidget):
         self.mouse_resize_action.setChecked(self.mouse_resize)
 
 # Function to launch the dashboard
-def dashboard_driver(callback):
+def dashboard_driver(callback: Callable[[], None]) -> None:
     # quit applicaiton from terminal
-    signal.signal(signal.SIGINT, lambda *args: QApplication.quit())
+    def _handle_sigint(*args: Any) -> None:  # pyright: ignore[reportUnusedParameter]
+        QApplication.quit()
+    signal.signal(signal.SIGINT, _handle_sigint)
     app = QApplication(sys.argv)
     dash = Dashboard(callback)
 

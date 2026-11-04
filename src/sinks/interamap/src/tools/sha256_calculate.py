@@ -1,7 +1,7 @@
 import hashlib
 import sys
 
-def calculate_sha256(file_path):
+def calculate_sha256(file_path: str) -> str:
     sha256_hash = hashlib.sha256()
     with open(file_path, "rb") as f:
         for byte_block in iter(lambda: f.read(4096), b""):

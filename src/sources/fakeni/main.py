@@ -8,7 +8,7 @@ import msgpack
 
 from omnibus import Sender
 
-from typing import cast
+
 
 READ_BULK = 25  # mimic how the real NI box samples in bulk for better performance
 SAMPLE_RATE = 1000  # total samples/second
@@ -25,9 +25,9 @@ CHANNEL = "DAQ/Fake"
 MESSAGE_FORMAT_VERSION = 3 if args.v3 else 2
 
 now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
-log = None
+log_file = None
 if logging:
-    log = open(f"log_{now}.dat", "wb")
+    log_file = open(f"log_{now}.dat", "wb")
 
 # Hides cursor for continous print
 print('\033[?25l', end="")
@@ -69,8 +69,8 @@ try:
         else:
             relative_last_read_time_v2 = relative_timestamps[-1] + READ_PERIOD_v2
 
-        if log:
-            log.write(msgpack.packb([CHANNEL, start, data]))
+        if log_file is not None:
+            _ = log_file.write(msgpack.packb([CHANNEL, start, data]))
 
         # Cool continuously updating print statment
         print("\rSending", end="")
@@ -89,8 +89,8 @@ try:
         sender.send(CHANNEL, data)
         time.sleep(max(READ_BULK/SAMPLE_RATE - (time.time() - start), 0))
 finally:
-    if log:
-        log.close()
+    if log_file is not None:
+        log_file.close()
 
-    # Shows cursor
-    print('\033[?25h', end="")
+# Shows cursor
+print('\033[?25h', end="")

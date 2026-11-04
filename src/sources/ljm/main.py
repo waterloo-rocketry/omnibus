@@ -3,27 +3,28 @@ The main module for the LabJack DAQ source.
 """
 
 import argparse
-import sys, signal
+import sys
+import signal
 import time
-from typing import TypedDict, cast
+from typing import TypedDict
 
 import msgpack
 
 # Import the LabJack package
-from labjack import ljm
+from labjack import ljm  # pyright: ignore[reportMissingTypeStubs]
 from omnibus import Sender
 
 import calibration
 
 if sys.platform == "win32":
-    import win_precise_time # pyright: ignore[reportMissingImports]
+    import win_precise_time  # pyright: ignore[reportMissingImports]
 
     def get_host_time() -> float:
-        return win_precise_time.time()
+        return float(win_precise_time.time())  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
 
 else:
     def get_host_time() -> float:
-        return time.time()
+        return float(time.time())
 
 try:
     import config  # pyright: ignore[reportMissingImports]
@@ -38,7 +39,7 @@ See 'config.py.example' for more info.\n"""
 
 
 try:
-    config.setup()  # pyright: ignore[reportAttributeAccessIssue]  # Initialize the sensors.
+    config.setup()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]  # Initialize the sensors.
 except KeyError as e:
     print(f"Error: {''.join(e.args)}.", file=sys.stderr)
     sys.exit(1)
@@ -85,17 +86,15 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 
 # Function to pass to the callback function. This needs have one
 # parameter/argument, which will be the handle.
-def read_data(handle, num_addresses, scans_per_read, scan_rate, sender, *, quiet=False, no_built_in_log=False):
-    configured_sample_rate = int(config.SCAN_RATE)  # pyright: ignore[reportAttributeAccessIssue]
+def read_data(handle: int, num_addresses: int, scans_per_read: int, scan_rate: float, sender: Sender, *, quiet: bool = False, no_built_in_log: bool = False) -> None:
+    configured_sample_rate = int(config.SCAN_RATE)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownArgumentType, reportUnknownMemberType]
     if configured_sample_rate <= 0:
         raise ValueError("config.SCAN_RATE must cast to a positive integer")
 
     if scan_rate <= 0:
         raise ValueError("scan_rate must be positive")
 
-    read_period_seconds = 1 / scan_rate
-
-    rates = []
+    read_period_seconds: float = 1 / scan_rate
 
     # Starting point for deriving timestamps from the cumulative sample count.
     initial_host_start_time = get_host_time()
@@ -106,6 +105,7 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate, sender, *, quiet
         now = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())  # 2021-07-12_22-35-08
         log = open(f"log_{now}.dat", "wb")
 
+    rates: list[float] = []
     try:
         while True:
             rates.append(time.time())
@@ -113,7 +113,9 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate, sender, *, quiet
                 rates.pop(0)
 
             # Read from the stream.
-            sensor_values, _deviceScanBacklog, _ljmScanBackLog = ljm.eStreamRead(handle)
+            from typing import cast
+            result = cast(tuple[list[float | int], float, float], ljm.eStreamRead(handle))  # pyright: ignore[reportUnknownMemberType]
+            sensor_values = result[0] if result else []  # pyright: ignore[reportUnknownVariableType]
 
             # Convert sensor_values to DAQ data format.
             # sensor_values is a interleaved list of readings,
@@ -129,16 +131,14 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate, sender, *, quiet
             # and M = stream_info.scansPerRead - 1
             data: list[list[float | int]] = []
             for i in range(num_addresses):
-                data.append(
-                    [
-                        sensor_values[j * num_addresses + i]
-                        for j in range(scans_per_read)
-                    ]
-                )
+                row: list[float | int] = []
+                for j in range(scans_per_read):
+                    row.append(sensor_values[j * num_addresses + i])
+                data.append(row)
 
             num_of_messages_read = 0 if not data else len(data[0])
 
-            relative_timestamps = [
+            relative_timestamps: list[float] = [
                 initial_host_start_time
                 + (total_samples_read + sample_index) * read_period_seconds
                 for sample_index in range(num_of_messages_read)
@@ -163,13 +163,14 @@ def read_data(handle, num_addresses, scans_per_read, scan_rate, sender, *, quiet
                 log.write(msgpack.packb(data_parsed))
 
             # Send data to omnibus.
-            sender.send(CHANNEL, data_parsed)
+            sender.send(CHANNEL, data_parsed)  # pyright: ignore[reportUnknownMemberType]
 
             if not quiet:
-                print(
-                    f"\rRate: {scans_per_read * len(rates) / (time.time() - rates[0]): >6.0f}  ",
-                    end="",
-                )
+                if rates:
+                    print(
+                        f"\rRate: {scans_per_read * len(rates) / (time.time() - rates[0]): >6.0f}  ",
+                        end="",
+                    )
     finally:
         if log:
             log.close()
@@ -203,35 +204,35 @@ def main():
         # Open first found LabJack T7 device with any connection type and any indentifier.
         handle = ljm.openS("T7", "ANY", "ANY")
 
-        info = ljm.getHandleInfo(handle)
+        info = ljm.getHandleInfo(handle)  # pyright: ignore[reportUnknownMemberType]
         print(
             "Opened a LabJack with Device type: %i, Connection type: %i,\n"
             "Serial number: %i, IP address: %s, Port: %i,\nMax bytes per MB: %i"
-            % (info[0], info[1], info[2], ljm.numberToIP(info[3]), info[4], info[5])
+            % (info[0], info[1], info[2], ljm.numberToIP(info[3]), info[4], info[5])  # pyright: ignore[reportUnknownMemberType]
         )
 
         # Ensure triggered stream is disabled.
-        ljm.eWriteName(handle, "STREAM_TRIGGER_INDEX", 0)
+        ljm.eWriteName(handle, "STREAM_TRIGGER_INDEX", 0)  # pyright: ignore[reportUnknownMemberType]
         # Enabling internally-clocked stream.
-        ljm.eWriteName(handle, "STREAM_CLOCK_SOURCE", 0)
+        ljm.eWriteName(handle, "STREAM_CLOCK_SOURCE", 0)  # pyright: ignore[reportUnknownMemberType]
 
         # Setup sensors.
-        num_addresses, a_scan_list_names = calibration.Sensor.setup(handle)  # pyright: ignore[reportGeneralTypeIssues, reportArgumentType]
-        a_scan_list = ljm.namesToAddresses(num_addresses, a_scan_list_names)[0]
+        num_addresses, a_scan_list_names = calibration.Sensor.setup(handle)  # pyright: ignore[reportArgumentType, reportGeneralTypeIssues, reportUnknownVariableType]
+        a_scan_list = ljm.namesToAddresses(num_addresses, a_scan_list_names)[0]  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType, reportUnknownVariableType]
 
         # Start LJM stream.
-        scan_rate = ljm.eStreamStart(
-            handle, config.SCANS_PER_READ, num_addresses, a_scan_list, config.SCAN_RATE  # pyright: ignore[reportAttributeAccessIssue]
+        scan_rate = ljm.eStreamStart(  # pyright: ignore[reportUnknownMemberType]
+            handle, config.SCANS_PER_READ, num_addresses, a_scan_list, config.SCAN_RATE  # pyright: ignore[reportAttributeAccessIssue, reportUnknownArgumentType, reportUnknownMemberType]
         )
         print(f"Number of addresses set up: {num_addresses}")
         print(f"Scan list names: {a_scan_list_names}")
         print(f"Stream started with a scan rate of {scan_rate} Hz")
-        if scan_rate != config.SCAN_RATE:  # pyright: ignore[reportAttributeAccessIssue]
+        if scan_rate != config.SCAN_RATE:  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
             print(
-                f"Warning: Configured scan rate ({config.SCAN_RATE} Hz) does not match actual scan rate ({scan_rate} Hz)."  # pyright: ignore[reportAttributeAccessIssue]
+                f"Warning: Configured scan rate ({config.SCAN_RATE} Hz) does not match actual scan rate ({scan_rate} Hz)."  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
             )
         read_data(
-            handle, num_addresses, config.SCANS_PER_READ, scan_rate, sender,  # pyright: ignore[reportAttributeAccessIssue]
+            handle, num_addresses, config.SCANS_PER_READ, scan_rate, sender,  # pyright: ignore[reportAttributeAccessIssue, reportUnknownArgumentType, reportUnknownMemberType]
             quiet=args.quiet, no_built_in_log=args.no_built_in_log,
         )
     except ljm.LJMError as e:
@@ -239,17 +240,17 @@ def main():
         sys.exit(1)
     finally:
         try:
-            ljm.eStreamStop(handle)
+            ljm.eStreamStop(handle)  # pyright: ignore[reportUnknownMemberType]
         except Exception as e:
             pass
         try:
-            ljm.close(handle)
+            ljm.close(handle)  # pyright: ignore[reportUnknownMemberType]
         except Exception as e:
             pass
 
 if __name__ == "__main__":
-    def handle_exit(*_):
-        _ = sys.exit(0)
-    _ = signal.signal(signal.SIGTERM, handle_exit)
-    _ = signal.signal(signal.SIGINT, handle_exit)
+    def handle_exit(*_args: object) -> None:
+        sys.exit(0)
+    signal.signal(signal.SIGTERM, handle_exit)
+    signal.signal(signal.SIGINT, handle_exit)
     main()

@@ -33,10 +33,10 @@ class TestThermistorCalibration:
     def test_thermistor(self):
         c = ThermistorCalibration(5, 10000, 3434, 0.099524)
         assert c.calibrate(5) == 0
-        assert c.calibrate(4) == pytest.approx(65.8, 0.1)
-        assert c.calibrate(3) == pytest.approx(35.9, 0.1)
-        assert c.calibrate(2) == pytest.approx(14.9, 0.1)
-        assert c.calibrate(1) == pytest.approx(-7, 0.1)
+        assert c.calibrate(4) == pytest.approx(65.8, 0.1)  # pyright: ignore[reportUnknownMemberType]
+        assert c.calibrate(3) == pytest.approx(35.9, 0.1)  # pyright: ignore[reportUnknownMemberType]
+        assert c.calibrate(2) == pytest.approx(14.9, 0.1)  # pyright: ignore[reportUnknownMemberType]
+        assert c.calibrate(1) == pytest.approx(-7, 0.1)  # pyright: ignore[reportUnknownMemberType]
 
 
 class TestSensorParser:

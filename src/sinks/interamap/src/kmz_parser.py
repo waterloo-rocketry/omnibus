@@ -1,18 +1,19 @@
 import zipfile
+from typing import Any
+
 from fastkml import kml
-from pygeoif import MultiLineString
 
 from src.data_struct import Point_GPS, LineString_GPS
 
 
 class KMZParser:
-    def __init__(self, kmz_file_path):
+    def __init__(self, kmz_file_path: str) -> None:
         self.kmz_file_path = kmz_file_path
         self.kml_obj = self.parse_kmz()
-        self.gps_data = []
+        self.gps_data: list[Any] = []
         self.parse_kml_features(self.kml_obj)
 
-    def parse_kmz(self):
+    def parse_kmz(self) -> Any:
         with zipfile.ZipFile(self.kmz_file_path, "r") as kmz:
             # List all files in the KMZ archive
             kml_files = [f for f in kmz.namelist() if f.endswith(".kml")]
@@ -28,7 +29,7 @@ class KMZParser:
         print(k.to_string())
         return k
 
-    def parse_kml_features(self, kml_obj):
+    def parse_kml_features(self, kml_obj: Any) -> None:
         """Display the KML features on the map."""
         for feature in list(kml_obj.features):
             if hasattr(feature, "geometry") and feature.geometry:
@@ -36,7 +37,7 @@ class KMZParser:
             if hasattr(feature, "features"):
                 self.parse_kml_features(feature)
 
-    def parse_detail_geometry(self, feature):
+    def parse_detail_geometry(self, feature: Any) -> Any:
         geom = feature.geometry
         geom_type = geom.geom_type
         timestamp = ( # point will never have a timestamp, only Placemark will
@@ -50,14 +51,14 @@ class KMZParser:
         elif geom_type == "LineString":
             return self.parse_linestring(geom, timestamp)
         elif geom_type == "MultiLineString":
-            multilinestring = []
+            multilinestring: list[LineString_GPS] = []
             for linestring in list(geom.geoms):
                 multilinestring.append(self.parse_linestring(linestring, timestamp))
             return multilinestring
         else:
             print(f"Unhandled geometry type: {geom_type}")
 
-    def parse_linestring(self, geom, timestamp):
+    def parse_linestring(self, geom: Any, timestamp: str) -> LineString_GPS:
         linestring = LineString_GPS()
         coords = [coord[:3] for coord in geom.coords]  # Extract lon and lat
         for coord in coords:

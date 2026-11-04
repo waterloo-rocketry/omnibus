@@ -1,7 +1,7 @@
 import time
 import sys
 import msgpack
-import nidaqmx
+import nidaqmx  # pyright: ignore[reportMissingTypeStubs]
 
 from omnibus import Sender
 import calibration
@@ -12,7 +12,7 @@ if sys.platform == "win32":
     import win_precise_time as wpt # pyright: ignore[reportMissingImports]
 
     def get_host_time() -> float:
-        return wpt.time()
+        return wpt.time()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
 else:
 
@@ -32,21 +32,21 @@ See 'config.py.example' for more info.\n"""
 
 
 try:
-    config.setup()  # pyright: ignore[reportAttributeAccessIssue]  # initialize the sensors
+    config.setup()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]  # initialize the sensors
 except KeyError as e:
     print(f"Error: {''.join(e.args)}.", file=sys.stderr)
     sys.exit(1)
 
 calibration.Sensor.print()  # print out sensors and their ai channels
 
-system = nidaqmx.system.System.local()  # pyright: ignore[reportAttributeAccessIssue]
-if len(system.devices) == 0:
+system = nidaqmx.system.System.local()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownVariableType]
+if len(system.devices) == 0:  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
     print("Error: No device detected.")
     sys.exit(1)
-if len(system.devices) > 1:
+if len(system.devices) > 1:  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
     print("Error: Multiple devices detected. Please only connect one device.")
     sys.exit(1)
-print(f"Found device {system.devices[0].product_type}.")
+print(f"Found device {system.devices[0].product_type}.")  # pyright: ignore[reportUnknownMemberType]
 
 sender = Sender()  # omnibus channel
 CHANNEL = "DAQ/ni"
@@ -86,17 +86,17 @@ class DAQ_SEND_MESSAGE_TYPE(TypedDict):
 
 
 def read_data(ai: nidaqmx.Task) -> NoReturn:
-    configured_sample_rate = int(config.RATE)  # pyright: ignore[reportAttributeAccessIssue]
+    configured_sample_rate = int(config.RATE)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownArgumentType, reportUnknownMemberType]
     if configured_sample_rate <= 0:
         raise ValueError("config.RATE must cast to a positive integer")
 
-    actual_sample_rate = ai.timing.samp_clk_rate
+    actual_sample_rate = cast(float, ai.timing.samp_clk_rate)  # pyright: ignore[reportUnknownMemberType]
     if actual_sample_rate <= 0:
         raise ValueError("task.timing.samp_clk_rate must be positive")
 
     read_period_seconds = 1 / actual_sample_rate
 
-    rates = []
+    rates: list[float] = []
 
     # Starting point for deriving timestamps from the cumulative sample count.
     initial_host_start_time = get_host_time()
@@ -114,7 +114,7 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
             # ai.read returns a single array if there is only one sensor and a nested array otherwise
             data: list[float | int] | list[list[float | int]] = cast(
                 list[float | int] | list[list[float | int]],
-                ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5),  # pyright: ignore[reportAttributeAccessIssue]
+                ai.read(number_of_samples_per_channel=config.READ_BULK, timeout=5),  # pyright: ignore[reportAttributeAccessIssue, reportUnknownArgumentType, reportUnknownMemberType]
             )
             assert type(data) is list  # Ensure the above behaviour is enforced
 
@@ -143,7 +143,7 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
             }
 
             # Reset the timestamp baseline if there were problems reading.
-            if not data or num_of_messages_read < config.READ_BULK:  # pyright: ignore[reportAttributeAccessIssue]
+            if not data or num_of_messages_read < config.READ_BULK:  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
                 initial_host_start_time = get_host_time()
                 total_samples_read = 0
             else:
@@ -155,7 +155,7 @@ def read_data(ai: nidaqmx.Task) -> NoReturn:
             sender.send(CHANNEL, data_parsed)  # send data to omnibus
 
             print(
-                f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ",  # pyright: ignore[reportAttributeAccessIssue]
+                f"\rRate: {config.READ_BULK*len(rates)/(time.time() - rates[0]): >6.0f}  ",  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
                 end="",
             )
 
@@ -164,9 +164,9 @@ with nidaqmx.Task() as ai:
     calibration.Sensor.setup(ai)
 
     # continuously sample at config.RATE samps/sec
-    ai.timing.cfg_samp_clk_timing(
-        rate=config.RATE,  # pyright: ignore[reportAttributeAccessIssue]
-        sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,  # pyright: ignore[reportAttributeAccessIssue]
+    ai.timing.cfg_samp_clk_timing(  # pyright: ignore[reportUnknownMemberType]
+        rate=config.RATE,  # pyright: ignore[reportAttributeAccessIssue, reportUnknownArgumentType, reportUnknownMemberType]
+        sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,  # pyright: ignore[reportAttributeAccessIssue, reportUnknownArgumentType, reportUnknownMemberType]
     )
     ai.start()
 

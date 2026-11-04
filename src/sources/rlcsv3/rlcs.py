@@ -1,12 +1,14 @@
-import parsley
-from parsley.fields import Enum, Field, Numeric
 import math
+from typing import cast
+
+import parsley  # pyright: ignore[reportMissingTypeStubs]
+from parsley.fields import Enum, Field, Numeric  # pyright: ignore[reportMissingTypeStubs]
 
 Number = int | float
 
-VALVE_COMMAND = {"CLOSED": 0, "OPEN": 1}
-BOOLEAN = {"FALSE": 0, "TRUE": 1}
-LIMIT_SWITCHES = {"UNKNOWN": 0, "OPEN": 1, "CLOSED": 2, "ERROR": 3}
+VALVE_COMMAND: dict[str, int] = {"CLOSED": 0, "OPEN": 1}
+BOOLEAN: dict[str, int] = {"FALSE": 0, "TRUE": 1}
+LIMIT_SWITCHES: dict[str, int] = {"UNKNOWN": 0, "OPEN": 1, "CLOSED": 2, "ERROR": 3}
 
 MESSAGE_FORMAT: list[Field] = [
     Enum("OV101 Command", 8, VALVE_COMMAND),
@@ -48,7 +50,7 @@ MESSAGE_FORMAT: list[Field] = [
 
 EXPECTED_SIZE = 2 + parsley.calculate_msg_bit_len(MESSAGE_FORMAT) // 8
 
-def print_data(parsed: dict[str, str | Number]):
+def print_data(parsed: dict[str, str | Number]) -> None:
     for k, v in parsed.items():
         print(f"{k}:\t{v}")
 
@@ -58,41 +60,61 @@ def parse_rlcs(line: str | bytes) -> dict[str, str | Number] | None:
         returns none if data is invalid
     '''
     data = line.encode() if isinstance(line, str) else line
-    bit_str = parsley.BitString(data=data[1:-1])
-    key_list_kelvin=["Heater Kelvin Low 1 Voltage","Heater Kelvin Low 2 Voltage", "Heater Kelvin High 1 Voltage","Heater Kelvin High 2 Voltage"]
+    bit_str = parsley.BitString(data=data[1:-1])  # pyright: ignore[reportMissingTypeStubs]
+    key_list_kelvin = ["Heater Kelvin Low 1 Voltage", "Heater Kelvin Low 2 Voltage", "Heater Kelvin High 1 Voltage", "Heater Kelvin High 2 Voltage"]
     try:
-        res=parsley.parse_fields(bit_str, MESSAGE_FORMAT)
+        res = parsley.parse_fields(bit_str, MESSAGE_FORMAT)  # pyright: ignore[reportMissingTypeStubs]
     except ValueError as e:
         print("Invalid data: " + str(e))
-        return
-    #Convert adc bits to voltage to allow for kelvin resistance calculation
-    for key in ["Heater Thermistor Voltage 1","Heater Thermistor Voltage 2"]:
+        return None
+    # Convert adc bits to voltage to allow for kelvin resistance calculation
+    for key in ["Heater Thermistor Voltage 1", "Heater Thermistor Voltage 2"]:
         if key in res:
-            res[key] = parse_adc_to_voltage(res[key], 10, 4.096)
-    for index, key in enumerate(["Heater Resistance 1","Heater Resistance 2"]):
-        if key in res and 2+index < len(key_list_kelvin):
-            res[key] = parse_kelvin_resistance(res[key],key_list_kelvin[2+index],key_list_kelvin[index])
+            res[key] = parse_adc_to_voltage(cast(Number, res[key]), 10, 4.096)
+    for index, key in enumerate(["Heater Resistance 1", "Heater Resistance 2"]):
+        if key in res and 2 + index < len(key_list_kelvin):
+            res[key] = parse_kelvin_resistance(
+                cast(Number, res[key]),
+                cast(Number, res[key_list_kelvin[2 + index]]),
+                cast(Number, res[key_list_kelvin[index]]),
+            )
 
     if "Heater Thermistor Voltage 1" in res:
-        res.update({"Heater Thermistor Temp 1": parse_thermistor(res["Heater Thermistor Voltage 1"])})
+        res.update({"Heater Thermistor Temp 1": parse_thermistor(cast(Number, res["Heater Thermistor Voltage 1"]))})
     if "Heater Thermistor Voltage 2" in res:
-        res.update({"Heater Thermistor Temp 2": parse_thermistor(res["Heater Thermistor Voltage 2"])})
+        res.update({"Heater Thermistor Temp 2": parse_thermistor(cast(Number, res["Heater Thermistor Voltage 2"]))})
 
-    if res["Heater Current 1"] != 0:
-        res.update({"Heater Resistance 1": (res["Heater Kelvin High 1 Voltage"] - res["Heater Kelvin Low 1 Voltage"])/res["Heater Current 1"]})
+    if cast(Number, res["Heater Current 1"]) != 0:
+        res.update(
+            {
+                "Heater Resistance 1": (
+                    cast(Number, res["Heater Kelvin High 1 Voltage"])
+                    - cast(Number, res["Heater Kelvin Low 1 Voltage"])
+                )
+                / cast(Number, res["Heater Current 1"])
+            }
+        )
     else:
-        res.update({"Heater Resistance 1": 0.0})  
+        res.update({"Heater Resistance 1": 0.0})
 
-    if res["Heater Current 2"] != 0:
-        res.update({"Heater Resistance 2": (res["Heater Kelvin High 2 Voltage"] - res["Heater Kelvin Low 2 Voltage"])/res["Heater Current 2"]})
+    if cast(Number, res["Heater Current 2"]) != 0:
+        res.update(
+            {
+                "Heater Resistance 2": (
+                    cast(Number, res["Heater Kelvin High 2 Voltage"])
+                    - cast(Number, res["Heater Kelvin Low 2 Voltage"])
+                )
+                / cast(Number, res["Heater Current 2"])
+            }
+        )
     else:
-        res.update({"Heater Resistance 2": 0.0})    
+        res.update({"Heater Resistance 2": 0.0})
 
     return res
         
  
     
-def parse_thermistor(divider_vlt):
+def parse_thermistor(divider_vlt: Number) -> float:
     # Second resistor in voltage divider
     VOLTAGE_DIVIDER_RES = 5000.0
     # resistance of the thermistor
@@ -105,22 +127,22 @@ def parse_thermistor(divider_vlt):
     INPUT_VLT = 5.0
 
     if 0.0 < divider_vlt < INPUT_VLT:
-        #resistance of the thermistor calculated using voltage divider
+        # resistance of the thermistor calculated using voltage divider
         thrmstr_rstnce = (VOLTAGE_DIVIDER_RES * INPUT_VLT / divider_vlt) - VOLTAGE_DIVIDER_RES
-        # uses thermistor beta value to convert 
+        # uses thermistor beta value to convert
         # Formula: Beta=(ln(R1/R2))/((1/T1)-(1/T2))
         therm_temp_cel = ((math.log(thrmstr_rstnce / ST_RES) / BETA_VALUE) + 1.0 / ST_TEMP_KEL) ** -1 - 273.15
-        return therm_temp_cel
+        return float(therm_temp_cel)
     else:
         return 0.0
 
 # resistance calculation is performed with voltages taken in from parsley
-def parse_kelvin_resistance(voltageP,voltageN,current):
+def parse_kelvin_resistance(voltageP: Number, voltageN: Number, current: Number) -> float:
     if current != 0:
-        return (voltageP - voltageN) / current 
+        return float((voltageP - voltageN) / current)
     else:
         return 0.0
 
 
-def parse_adc_to_voltage(adc_value,adc_bits, vref):
-    return float(adc_value) / (2 ** adc_bits) * vref
+def parse_adc_to_voltage(adc_value: Number, adc_bits: int, vref: Number) -> float:
+    return float(adc_value) / (2 ** adc_bits) * float(vref)

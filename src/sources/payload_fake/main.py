@@ -1,23 +1,22 @@
 from omnibus import Sender
-import random
 import time
 import math
+from collections.abc import MutableSequence
 
 SAMPLE_RATE = 10  # total samples/second
 
-running_angles = [0, 0, 0]
+running_angles: list[float] = [0.0, 0.0, 0.0]
 count = 0
 
 sender = Sender()
 CHANNEL = "StateEstimation"
 
 
-def shift_angle(angle):
+def shift_angle(angle: MutableSequence[float]) -> list[float]:
     angle[0] = (angle[0] + math.pi + 0.01) % (2 * math.pi) - math.pi
     angle[1] = (angle[1] + math.pi + 0.01) % (2 * math.pi) - math.pi
     angle[2] = (angle[2] + math.pi + 0.01) % (2 * math.pi) - math.pi
-
-    return angle
+    return list(angle)
 
 
 dots = 0

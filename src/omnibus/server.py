@@ -1,23 +1,24 @@
 import socket
 import threading
 import time
-from typing import NoReturn
+from collections.abc import Callable
+from typing import NoReturn, cast
 import argparse
 
 import zmq
-from zmq.devices import ThreadProxy
+from zmq.devices.proxydevice import ThreadProxy
 
 try:
     from .util import BuildInfoManager
 except ImportError:
-    from util import BuildInfoManager  # pyright: ignore[reportImplicitRelativeImport]
+    from util import BuildInfoManager
 
 SOURCE_PORT = 5075
 SINK_PORT = 5076
 BROADCAST_PORT = 5077
 
 
-def get_ip():
+def get_ip() -> str:
     """
     Return our best guess for this machine's IP on the LAN.
     """
@@ -26,7 +27,7 @@ def get_ip():
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         # doesn't need to be reachable
         s.connect(("255.255.255.255", 1))
-        return s.getsockname()[0]
+        return str(s.getsockname()[0])
     except Exception as e:
         print(f"Could not get local IP address, defaulting to localhost: {e}")
         return "127.0.0.1"
@@ -49,7 +50,7 @@ def ip_broadcast() -> NoReturn:
         # This runs in a separate thread so we can loop
         while True:
             # 255.255.255.255 is a magic IP that means 'broadcast to the LAN'
-            sock.sendto(b"omnibus", ("255.255.255.255", BROADCAST_PORT))
+            _ = sock.sendto(b"omnibus", ("255.255.255.255", BROADCAST_PORT))
             time.sleep(0.5)
 
 
@@ -59,14 +60,14 @@ def server() -> NoReturn:
     """
     # Use argparse to handle the `--quiet` flag.
     parser = argparse.ArgumentParser()
-    parser.add_argument(
+    _ = parser.add_argument(
         "-q",
         "--quiet",
         action="store_true",
         help="Suppress messages/sec output",
     )
     args = parser.parse_args()
-    quiet = args.quiet
+    quiet = cast(bool, args.quiet)
 
     # Initialize BuildInfoManager to print build info
     bim = BuildInfoManager("Omnibus Server")
@@ -80,7 +81,8 @@ def server() -> NoReturn:
     proxy.setsockopt_in(zmq.SUBSCRIBE, b"")
     proxy.bind_out(f"tcp://*:{SINK_PORT}")
     # Use in-process communication for the monitor socket
-    proxy.bind_mon("inproc://mon")
+    bind_mon = cast("Callable[[str], None]", proxy.bind_mon)
+    bind_mon("inproc://mon")
     proxy.daemon = True
     proxy.context_factory = lambda: context
 
@@ -95,14 +97,14 @@ def server() -> NoReturn:
     # messages going in both directions, but since this is a pub/sub proxy it
     # just receives the same messages as any other sink.
     monitor = context.socket(zmq.SUB)
-    monitor.connect("inproc://mon")
+    _ = monitor.connect("inproc://mon")
     monitor.setsockopt(zmq.SUBSCRIBE, b"")
 
     t = time.time()
     count = 0
     while True:
         if monitor.poll(200):  # 200ms timeout
-            monitor.recv_multipart()
+            _ = monitor.recv_multipart()
             count += 1
         if time.time() - t > 0.2:
             if not quiet:

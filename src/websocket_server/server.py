@@ -3,7 +3,7 @@ import queue
 import sys
 from dataclasses import dataclass
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit  # pyright: ignore[reportUnknownVariableType]
 from typing import Protocol, SupportsFloat, cast
 from omnibus import Message as OmnibusMessage
 from omnibus import Sender
@@ -44,7 +44,7 @@ def sender_loop():
             while True:
                 msg = _relay_queue.get()
                 sender.send_message(msg)
-                socketio.sleep(0)  # Yield to the SocketIO event loop to prevent blocking
+                socketio.sleep(0)  # pyright: ignore[reportUnknownMemberType]  # Yield to the SocketIO event loop to prevent blocking
         except Exception:
             logger.exception("Relay sender loop failed; restarting")
     print(f">>> Relay sender thread failed after {MAX_RESTARTS} attempts", file=sys.stderr)
@@ -67,7 +67,7 @@ def index():
 @socketio.on("connect")  
 def handle_connect(auth: object):
     # handles client connection including bridge
-    if isinstance(auth, dict) and auth.get("role") == "bridge":
+    if isinstance(auth, dict) and cast(dict[str, object], auth).get("role") == "bridge":
         if state.bridge_sid is not None:
             raise ConnectionRefusedError("Only one bridge connection allowed")
         state.bridge_sid = request_sid()

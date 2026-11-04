@@ -1,33 +1,34 @@
 # Printer - Prints payload of all messages on a channel.
 import sys
+from typing import Any
 from omnibus import Receiver
 
 stdout = sys.stdout
 sys.stdout = sys.stderr
 
 receiver = Receiver("")
-gps = {}
+gps: dict[str, Any] = {}
 
 while True:
-    data = receiver.recv()
+    data: Any = receiver.recv()
     if data is None:
         continue
     msgtype = data.get("msg_type")
     if msgtype in ["GPS_INFO", "GPS_TIMESTAMP", "GPS_ALTITUDE", "GPS_LATITUDE", "GPS_LONGITUDE"]:
-        gps[msgtype] = data["data"]
+        gps[str(msgtype)] = data["data"]
 
     if msgtype == "GPS_ALTITUDE":
         msg = "$GPGGA,"
-        msg += "{hrs:02}{mins:02}{secs:02}.{dsecs:02},".format(
-            **gps.get("GPS_TIMESTAMP", {"hrs": 0, "mins": 0, "secs": 0, "dsecs": 0}))
-        msg += "{degs:02}{mins:02}.{dmins:02},{direction},".format(
-            **gps.get("GPS_LATITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "N"}))
-        msg += "{degs:02}{mins:02}.{dmins:02},{direction},".format(
-            **gps.get("GPS_LONGITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "E"}))
-        msg += "{quality},{num_sats:02},1.0,".format(
-            **gps.get("GPS_INFO", {"quality": 0, "num_sats": 0}))
+        ts = gps.get("GPS_TIMESTAMP", {"hrs": 0, "mins": 0, "secs": 0, "dsecs": 0})
+        msg += "{hrs:02}{mins:02}{secs:02}.{dsecs:02},".format(**ts)  # pyright: ignore[reportAny]
+        lat = gps.get("GPS_LATITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "N"})
+        msg += "{degs:02}{mins:02}.{dmins:02},{direction},".format(**lat)  # pyright: ignore[reportAny]
+        lon = gps.get("GPS_LONGITUDE", {"degs": 0, "mins": 0, "dmins": 0, "direction": "E"})
+        msg += "{degs:02}{mins:02}.{dmins:02},{direction},".format(**lon)  # pyright: ignore[reportAny]
+        info = gps.get("GPS_INFO", {"quality": 0, "num_sats": 0})
+        msg += "{quality},{num_sats:02},1.0,".format(**info)  # pyright: ignore[reportAny]
         gps_alt = gps.get("GPS_ALTITUDE", {"altitude": 0, "daltitude": 0})
-        alt_m = (gps_alt["altitude"] + gps_alt["daltitude"] / 10000) * 0.3048
+        alt_m = (int(gps_alt["altitude"]) + int(gps_alt["daltitude"]) / 10000) * 0.3048
         msg += f"{alt_m:.1f},M,"
         msg += "0,M,,,"
         gps = {}

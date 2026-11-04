@@ -6,7 +6,8 @@ import msgpack
 import zmq
 from datetime import datetime
 
-from typing import Any, ClassVar
+from collections.abc import Callable, Sequence
+from typing import Any, ClassVar, cast
 
 from . import server
 
@@ -61,7 +62,7 @@ class OmnibusCommunicator:
             # components on the same machine
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.settimeout(0.6)  # 0.6 second timeout
-            sock.bind(("", server.BROADCAST_PORT))  # listen for broadcasts  # pyright: ignore [reportAttributeAccessIssue]
+            sock.bind(("", server.BROADCAST_PORT))  # listen for broadcasts
             print("Listening for server IP...")
             while True:
                 try:
@@ -94,8 +95,8 @@ class Sender(OmnibusCommunicator):
             and OmnibusCommunicator.server_ip is not None
         )
         self._publisher = OmnibusCommunicator.context.socket(zmq.PUB)
-        self._publisher.connect(
-            f"tcp://{OmnibusCommunicator.server_ip}:{server.SOURCE_PORT}" # pyright: ignore [reportAttributeAccessIssue]
+        _ = self._publisher.connect(
+            f"tcp://{OmnibusCommunicator.server_ip}:{server.SOURCE_PORT}"
         )
 
     def send_message(self, message: Message) -> None:
@@ -105,15 +106,17 @@ class Sender(OmnibusCommunicator):
         Note that channel used is specified by the message object rather than
         the sender.
         """
-        self._publisher.send_multipart(
-            [
-                message.channel.encode("utf-8"),
-                msgpack.packb(message.timestamp),
-                msgpack.packb(message.payload),
-            ]
+        parts: list[bytes] = [
+            message.channel.encode("utf-8"),
+            msgpack.packb(message.timestamp),
+            msgpack.packb(message.payload),
+        ]
+        send_multipart = cast(
+            "Callable[[Sequence[bytes]], object]", self._publisher.send_multipart
         )
+        _ = send_multipart(parts)
 
-    def send(self, channel: str, payload) -> None:
+    def send(self, channel: str, payload: Any) -> None:
         """
         Wrap a payload in a message object and send it on a provided channel.
         """
@@ -177,8 +180,8 @@ class Receiver(OmnibusCommunicator):
             and OmnibusCommunicator.context is not None
         )
         self._subscriber = OmnibusCommunicator.context.socket(zmq.SUB)
-        self._subscriber.connect(
-            f"tcp://{OmnibusCommunicator.server_ip}:{server.SINK_PORT}" # pyright: ignore [reportAttributeAccessIssue]
+        _ = self._subscriber.connect(
+            f"tcp://{OmnibusCommunicator.server_ip}:{server.SINK_PORT}"
         )
         for channel in self._channels:
             self._subscriber.setsockopt(zmq.SUBSCRIBE, channel.encode("utf-8"))

@@ -1,61 +1,64 @@
 import math
 import json
 
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from pyqtgraph.Qt.QtWidgets import QHBoxLayout, QTableWidget, QTableWidgetItem, \
-    QComboBox, QApplication, QHeaderView, QItemDelegate, QAbstractItemView, QSizePolicy
-from pyqtgraph.Qt.QtCore import Qt, QTimer, QEvent, QByteArray
+    QComboBox, QApplication, QHeaderView, QItemDelegate, QAbstractItemView, QSizePolicy, QStyleOptionViewItem, QWidget
+from pyqtgraph.Qt.QtCore import Qt, QTimer, QEvent, QByteArray, QModelIndex, QPersistentModelIndex, QAbstractItemModel, QObject
 from pyqtgraph.Qt.QtGui import QColorConstants, QFocusEvent, QKeyEvent
-from pyqtgraph.parametertree.parameterTypes import ListParameter
 
 from publisher import publisher
 from .dashboard_item import DashboardItem
 from .registry import Register
 
+if TYPE_CHECKING:
+    from dashboard import Dashboard
+
 EXPIRED_TIME = 2  # time in seconds after which data "expires"
 
 
-def get_boards():
+def get_boards() -> list[str]:
     series = publisher.get_all_streams()
     return sorted(set(s.split('/', 1)[0] for s in series))
 
 
-def get_paths(board):
+def get_paths(board: str | None) -> list[str]:
     if not board:
         return []
+    prefix: str = board + '/'
 
-    def filter(s):
+    def filter(s: str) -> str | None:
         if s.count('/') == 0:
             return '/'
-        if s.startswith(board + '/'):
+        if s.startswith(prefix):
             return s.split('/', 1)[1]
         return None
 
     series = publisher.get_all_streams()
-    paths = sorted(set(t for t in (filter(s) for s in series) if t))
+    paths: list[str] = sorted(set(t for t in (filter(s) for s in series) if t))
     return paths or ['/']
 
 # proper way is to use QTableView and setModel(), but this is easier
 
 
 class TVTableWidgetItem(QTableWidgetItem):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-        self.board = None
-        self.path = None
-        self.value = ''
-        self.first_col = True
+        self.board: str | None = None
+        self.path: str | None = None
+        self.value: str = ''
+        self.first_col: bool = True
 
         self.expired_timeout = QTimer()
         self.expired_timeout.setSingleShot(True)
         self.expired_timeout.timeout.connect(self.expire)
 
         # run post_init after the widget is added
-        QTimer.singleShot(0, self.post_init)
+        QTimer.singleShot(0, self.post_init)  # pyright: ignore[reportUnknownMemberType]
 
-    def post_init(self):
+    def post_init(self) -> None:
         try:
             tableWidget = self.tableWidget()
         except RuntimeError:
@@ -74,7 +77,7 @@ class TVTableWidgetItem(QTableWidgetItem):
         else:
             self.first_col = True
 
-    def setData(self, role, value):
+    def setData(self, role: int, value: Any) -> None:
         super().setData(role, value)
         if role == Qt.ItemDataRole.EditRole:
             if not value:
@@ -94,29 +97,29 @@ class TVTableWidgetItem(QTableWidgetItem):
                 self.expired_timeout.start(EXPIRED_TIME * 1000)
             self.resubscribe()
 
-    def data(self, role):
+    def data(self, role: int) -> Any:
         if role == Qt.ItemDataRole.DisplayRole:
             return self.value.removeprefix('=')
         return super().data(role)
 
-    def expire(self):
+    def expire(self) -> None:
         self.setForeground(QColorConstants.Gray)
 
-    def set_board(self, board):
+    def set_board(self, board: str) -> None:
         self.board = board
         self.resubscribe()
 
-    def resubscribe(self):
-        publisher.unsubscribe_from_all(self.on_data_update)
+    def resubscribe(self) -> None:
+        cast(Any, publisher).unsubscribe_from_all(self.on_data_update)
         if self.board and self.path is not None:
             if self.path == '/':
-                serie = self.board
+                serie: str = self.board
             else:
                 serie = f'{self.board}/{self.path.strip("/")}'
-            publisher.subscribe(serie, self.on_data_update)
+            cast(Any, publisher).subscribe(serie, self.on_data_update)
 
-    def on_data_update(self, _, payload):
-        time, data = payload
+    def on_data_update(self, _stream: str, payload: tuple[float, Any]) -> None:
+        _, data = payload
 
         if isinstance(data, int):
             self.value = f"{data:.0f}"
@@ -129,28 +132,26 @@ class TVTableWidgetItem(QTableWidgetItem):
         self.expired_timeout.start(EXPIRED_TIME * 1000)
         self.tableWidget().viewport().update()
 
-    def on_delete(self):
-        publisher.unsubscribe_from_all(self.on_data_update)
+    def on_delete(self) -> None:
+        cast(Any, publisher).unsubscribe_from_all(self.on_data_update)
         self.expired_timeout.stop()
 
     # workaround for pyqt bug where reference ownership is not transferred and gets gc
     # this adds memory leak but should be fine as lone as it is triggered manually
-    clones = []
+    clones: list["TVTableWidgetItem"] = []
 
-    def clone(self):
-        clone = TVTableWidgetItem()
-        TVTableWidgetItem.clones.append(clone)
-        return clone
+    def clone(self) -> "TVTableWidgetItem":
+        new_clone = TVTableWidgetItem()
+        TVTableWidgetItem.clones.append(new_clone)
+        return new_clone
 
 
 class TVItemDelegate(QItemDelegate):
-    def __init__(self, onchange=None):
+    def __init__(self, onchange: Callable[[int, int, str], None] | None = None) -> None:
         super().__init__()
         self.onchange = onchange
 
-    def createEditor(self, parent, option, index):
-
-        items = sorted(set(s.split('/')[0] for s in publisher.get_all_streams()))
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex) -> QWidget:
 
         editor = QComboBox(parent)
         editor.setEditable(True)
@@ -166,15 +167,19 @@ class TVItemDelegate(QItemDelegate):
             paths = get_paths(board)
             editor.addItems(paths)
 
-        if self.onchange:
-            onchange = self.onchange
+        onchange = self.onchange
+        if onchange:
             row = index.row()
             col = index.column()
-            editor.currentTextChanged.connect(lambda text: onchange(row, col, text))
+
+            def handle_text(text: str) -> None:
+                onchange(row, col, text)
+
+            editor.currentTextChanged.connect(handle_text)
 
         return editor
 
-    def eventFilter(self, object, event):
+    def eventFilter(self, object: QObject, event: QEvent) -> bool:
         if (
             isinstance(event, QFocusEvent) and
             event.type() == QEvent.Type.FocusOut and
@@ -183,16 +188,16 @@ class TVItemDelegate(QItemDelegate):
             return False
         return super().eventFilter(object, event)
 
-    def setEditorData(self, editor, index):
+    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
         cast(QComboBox, editor).setCurrentText(index.data(Qt.ItemDataRole.EditRole))
 
-    def setModelData(self, editor, model, index):
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex) -> None:
         model.setData(index, cast(QComboBox, editor).currentText(), Qt.ItemDataRole.EditRole)
 
 
 @Register
 class TableViewItem(DashboardItem):
-    def __init__(self, dashboard, params=None):
+    def __init__(self, dashboard: "Dashboard", params: str | None = None) -> None:
         # Call this in **every** dash item constructor
         super().__init__(dashboard, params)
 
@@ -207,7 +212,7 @@ class TableViewItem(DashboardItem):
 
         self.widget.setSelectionMode(QAbstractItemView.SelectionMode.ContiguousSelection)
         self.widget.setItemPrototype(TVTableWidgetItem())
-        self.widget.setItemDelegate(TVItemDelegate(False))
+        self.widget.setItemDelegate(TVItemDelegate())
         self.widget.setItemDelegateForColumn(0, TVItemDelegate(self.change_row_board))
         self.widget.verticalHeader().setSectionsMovable(True)
 
@@ -230,7 +235,7 @@ class TableViewItem(DashboardItem):
                                    0, self.widget.columnCount())
             self.update_size()
 
-    def eventFilter(self, watched, event):
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if not isinstance(event, QKeyEvent) or event.type() != QEvent.Type.KeyPress:
             return False
 
@@ -245,21 +250,21 @@ class TableViewItem(DashboardItem):
             minrow = maxrow = mincol = maxcol = 0
 
         # copy cells
-        if event.key() == Qt.Key.Key_C and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+        if event.key() == Qt.Key.Key_C and (event.modifiers() & Qt.KeyboardModifier.ControlModifier) != Qt.KeyboardModifier.NoModifier:
             if not indexes:
                 return True
             QApplication.clipboard().setText(self.serialize_range(minrow, maxrow, mincol, maxcol))
             return True
 
         # paste cells
-        if event.key() == Qt.Key.Key_V and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+        if event.key() == Qt.Key.Key_V and (event.modifiers() & Qt.KeyboardModifier.ControlModifier) != Qt.KeyboardModifier.NoModifier:
             self.deserialize_range(
                 QApplication.clipboard().text(),
                 minrow, maxrow, mincol, maxcol)
             return True
 
         # cut cells
-        if event.key() == Qt.Key.Key_X and (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+        if event.key() == Qt.Key.Key_X and (event.modifiers() & Qt.KeyboardModifier.ControlModifier) != Qt.KeyboardModifier.NoModifier:
             if not indexes:
                 return True
 
@@ -278,7 +283,7 @@ class TableViewItem(DashboardItem):
             if not indexes:
                 return False
 
-            if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            if (event.modifiers() & Qt.KeyboardModifier.ControlModifier) != Qt.KeyboardModifier.NoModifier:
                 # allow ctrl-delete to remove widget
                 return False
 
@@ -292,9 +297,9 @@ class TableViewItem(DashboardItem):
 
         return False
 
-    def serialize_range(self, minrow, maxrow, mincol, maxcol):
+    def serialize_range(self, minrow: int, maxrow: int, mincol: int, maxcol: int) -> str:
 
-        def get_item_data(row, col):
+        def get_item_data(row: int, col: int) -> str:
             item = self.widget.item(row, col)
             return item and item.data(Qt.ItemDataRole.EditRole) or ''
 
@@ -304,7 +309,7 @@ class TableViewItem(DashboardItem):
                 for j in range(mincol, maxcol+1))
             for i in range(minrow, maxrow+1))
 
-    def deserialize_range(self, data, minrow, maxrow, mincol, maxcol):
+    def deserialize_range(self, data: str, minrow: int, maxrow: int, mincol: int, maxcol: int) -> None:
         if not data:
             return
 
@@ -330,7 +335,7 @@ class TableViewItem(DashboardItem):
                             self.widget.setItem(row, col, item)
                         item.setData(Qt.ItemDataRole.EditRole, cell)
 
-    def update_size(self):
+    def update_size(self) -> None:
         row = self.widget.rowCount()
         col = self.widget.columnCount()
 
@@ -348,29 +353,28 @@ class TableViewItem(DashboardItem):
             {'name': 'cols', 'type': 'int', 'value': 5},
         ]
 
-    def change_row_board(self, row, col, text):
+    def change_row_board(self, row: int, col: int, text: str) -> None:
         for i in range(1, self.widget.columnCount()):
             item = self.widget.item(row, i)
             if isinstance(item, TVTableWidgetItem):
                 item.set_board(text)
 
-    def on_rows_change(self, _, rows):
-        oldrow = self.widget.rowCount()
+    def on_rows_change(self, _: Any, rows: int) -> None:
         self.widget.setRowCount(rows)
         self.update_size()
 
-    def on_cols_change(self, _, cols):
+    def on_cols_change(self, _: Any, cols: int) -> None:
         self.widget.setColumnCount(cols)
         self.update_size()
 
-    def on_delete(self):
+    def on_delete(self) -> None:
         for i in range(self.widget.rowCount()):
             for j in range(1, self.widget.columnCount()):
                 widget = self.widget.item(i, j)
                 if isinstance(widget, TVTableWidgetItem):
                     widget.on_delete()
 
-    def get_serialized_parameters(self):
+    def get_serialized_parameters(self) -> str:
         params: dict[str, Any] = self.parameters.saveState(filter='user')
         params['table_view'] = {
             'cells': self.serialize_range(
@@ -381,5 +385,5 @@ class TableViewItem(DashboardItem):
         return json.dumps(params)
 
     @staticmethod
-    def get_name():
+    def get_name() -> str:
         return "Table View"

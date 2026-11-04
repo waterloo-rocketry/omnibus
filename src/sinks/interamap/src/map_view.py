@@ -1,8 +1,9 @@
+from collections.abc import Sequence
 import logging
 import random
 import threading
 import time
-from typing import List, Sequence
+from typing import Any
 
 import flask
 from PySide6.QtCore import Signal
@@ -18,7 +19,7 @@ if not ONLINE_MODE:
     Need to run the following command to download required js and css files (only once, with internet connection):
     $ python -m offline_folium
     """
-    from offline_folium import offline
+    from offline_folium import offline  # pyright: ignore[reportMissingTypeStubs,reportUnusedImport,import-untyped]
 
 import folium
 from folium.plugins import Realtime
@@ -35,7 +36,20 @@ class MapView(QWebEngineView):
     update_gps_label = Signal(str)
     gradient_count = 0
 
-    def __init__(self, parent=None):
+    online: bool
+    kmz_parser: KMZParser | None
+    coordinate: list[float] | None
+    map_html: str
+    is_dark_mode: bool
+    rt_parser: RTParser
+    parse_state: bool
+    point_storage: GPS_Cache
+    last_map_point_update: float
+    realtime_source_thread: threading.Thread | None
+    source: str | None
+    m: folium.Map
+
+    def __init__(self, parent: Any = None) -> None:
         super().__init__(parent)
 
         # Online Mode
@@ -44,7 +58,7 @@ class MapView(QWebEngineView):
         self.kmz_parser = None
 
         self.coordinate = None
-        self.map_html: str = ""
+        self.map_html = ""
 
         print("Online Mode:", self.online)
 
@@ -68,27 +82,27 @@ class MapView(QWebEngineView):
         self.last_map_point_update = 0
         self.realtime_source_thread = None
 
-        self.source: str | None = None
+        self.source = None
 
         self.initialize_realtime_source()  # For real-time update of GPS data
 
         self.refresh_map()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.quit()
 
-    def quit(self):
+    def quit(self) -> None:
         self.stop_realtime_data()
         self.rt_parser.wait(1000) # join rt_parser thread with timeout of 1s
 
-    def refresh_map(self):
+    def refresh_map(self) -> None:
         """Create a folium map with the current tile style."""
 
         if (self.point_storage.get_gps_points() and len(self.filter_point(self.point_storage.get_gps_points(), self.source)) > 5):
+            sample = random.sample(self.filter_point(self.point_storage.get_gps_points(), self.source), 5)
             self.coordinate = [
-                sum(map(attr, random.sample(self.filter_point(self.point_storage.get_gps_points(), self.source), 5)))
-                / 5
-                for attr in [lambda p: p.lat, lambda p: p.lon]
+                sum(point.lat for point in sample) / 5,
+                sum(point.lon for point in sample) / 5,
             ]
 
         if self.coordinate is None:
@@ -119,13 +133,13 @@ class MapView(QWebEngineView):
 
         self.update_map()
 
-    def initialize_realtime_source_server(self):
+    def initialize_realtime_source_server(self) -> None:
         """Initialize a Flask server to serve real-time GPS data."""
 
         app = flask.Flask(__name__)
 
         @app.route("/")
-        def get_realtime_gps():
+        def get_realtime_gps():  # pyright: ignore[reportUnusedFunction]
 
             point_id = 0
 
@@ -157,7 +171,7 @@ class MapView(QWebEngineView):
 
         app.run(debug=False)
 
-    def initialize_realtime_source(self):
+    def initialize_realtime_source(self) -> None:
         """Initialize real-time map updates from a Flask server."""
 
         if not self.realtime_source_thread:
@@ -167,7 +181,7 @@ class MapView(QWebEngineView):
             self.realtime_source_thread.daemon = True
             self.realtime_source_thread.start()
 
-    def add_realtime_layer(self):
+    def add_realtime_layer(self) -> None:
         rt = Realtime(
             "http://127.0.0.1:5000",
             point_to_layer=folium.JsCode(
@@ -186,7 +200,7 @@ class MapView(QWebEngineView):
             ]
         rt.add_to(self.m)
 
-    def add_offline_layer(self):
+    def add_offline_layer(self) -> None:
         """Add a offline tile layer to the map."""
 
         # Note: If local server is not running, and internet is available, it will use online tiles
@@ -198,7 +212,7 @@ class MapView(QWebEngineView):
                 overlay=False,
             ).add_to(self.m)
 
-    def update_map(self):
+    def update_map(self) -> None:
         """Update the map with the current GPS data."""
         if self.parse_state:
             self.add_realtime_layer()
@@ -210,7 +224,7 @@ class MapView(QWebEngineView):
 
         self.map_html = (
             self.m.get_root()
-            .render()
+            .render()  # pyright: ignore[reportUnknownMemberType]
             .replace(
                 '<div style="width:100%;height:100%"></div>',
                 '<div style="width:100%;height:100%;position:absolute;top:0;bottom:0;right:0;left:0;"></div>',
@@ -221,42 +235,42 @@ class MapView(QWebEngineView):
         # For Debugging
         # self.m.save('offline_map.html')
 
-    def clear_all_markers(self):
+    def clear_all_markers(self) -> None:
         """Clear all markers from the map."""
         self.point_storage.clear_points()
         self.point_storage.clear_linestrings()
         self.refresh_map()
 
-    def toggle_map_theme(self, is_dark_mode):
+    def toggle_map_theme(self, is_dark_mode: bool) -> None:
         """Toggle the map theme between light and dark mode."""
         # Only working for online mode
         self.is_dark_mode = is_dark_mode
         self.refresh_map()
 
-    def load_kmz_file(self, kmz_file_path):
+    def load_kmz_file(self, kmz_file_path: str) -> None:
         """Load a KMZ file and display the contents on the map."""
         self.kmz_parser = KMZParser(kmz_file_path)
         self.clear_all_markers()
         self.point_storage.store_infos(self.kmz_parser.gps_data)
         self.refresh_map()
 
-    def stop_realtime_data(self):
+    def stop_realtime_data(self) -> None:
         self.emit_update_signal("Stopped")
         print("Stopping real-time data...")
         self.rt_parser.stop()
 
-    def start_stop_realtime_data(self):
+    def start_stop_realtime_data(self) -> None:
         if self.rt_parser.running:
             self.stop_realtime_data()
         else:
             self.rt_parser.start()
         self.refresh_map()
 
-    def emit_update_signal(self, gps_text):
+    def emit_update_signal(self, gps_text: str) -> None:
         # Emit the signal with the new text when the button is clicked
         self.update_gps_label.emit(f"GPS Status:\n\n{gps_text}")
 
-    def storage_rt_info(self, info):
+    def storage_rt_info(self, info: Point_GPS | Info_GPS) -> None:
         self.point_storage.store_info(info)
         if isinstance(info, Info_GPS):
             self.emit_update_signal(
@@ -273,12 +287,11 @@ class MapView(QWebEngineView):
 
     def draw_gps_data(
         self, points: Sequence[Point_GPS | LineString_GPS] | None = None
-    ):
+    ) -> None:
         if points is None:
             points = []
 
         total_points = len(points)
-        step = 1
         low_alt = min(
             [point.alt for point in points if isinstance(point, Point_GPS)], default=0
         )
@@ -303,8 +316,9 @@ class MapView(QWebEngineView):
                     fill_color=marker_color,
                     popup=f"Height: {data.alt}m, Timestamp: {data.time_stamp}",
                 ).add_to(self.m)
-            elif isinstance(data, LineString_GPS):
-                line_points, color_idx = [], []
+            elif isinstance(data, LineString_GPS):  # pyright: ignore[reportUnnecessaryIsInstance]
+                line_points: list[list[float]] = []
+                color_idx: list[int] = []
                 for i, point in enumerate(data.points):
                     line_points.append([point.lat, point.lon])
                     color_idx.append(self.gradient_count)
@@ -326,19 +340,19 @@ class MapView(QWebEngineView):
             else:
                 print("Unhandled data type:", type(data))
 
-    def filter_point(self, data: List[Point_GPS], board_id: str | None):
+    def filter_point(self, data: list[Point_GPS], board_id: str | None) -> list[Point_GPS]:
         return (
             [point for point in data if point.board_id == board_id]
             if board_id
             else data
         )
 
-    def toggle_parse_state(self, state: bool):
+    def toggle_parse_state(self, state: bool) -> None:
         """Toggle the state of the real-time parser."""
         self.parse_state = state
         self.update_map()
 
-    def change_data_source(self, data_source: str):
+    def change_data_source(self, data_source: str) -> None:
         if data_source == "All":
             self.source = None
         else:

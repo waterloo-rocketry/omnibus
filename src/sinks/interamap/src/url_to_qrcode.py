@@ -4,14 +4,14 @@ import sys
 import webbrowser
 import os
 
-from PIL.ImageQt import QPixmap
 from qrcode.image.pil import PilImage
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap, QResizeEvent
 from PySide6.QtWidgets import QMainWindow, QLabel, QApplication, QVBoxLayout, QWidget
 from settings import TERMINAL_QR_CODE
 
 
-def generate_qr_code(qr_code_url):
+def generate_qr_code(qr_code_url: str) -> str:
     # init qr code object
     qr = qrcode.QRCode(version=3, box_size=20, border=10, error_correction=qrcode.constants.ERROR_CORRECT_H)
     qr.add_data(qr_code_url)
@@ -34,7 +34,7 @@ def generate_qr_code(qr_code_url):
 
 
 class QRCodeWindow(QMainWindow):
-    def __init__(self, qr_code_url):
+    def __init__(self, qr_code_url: str) -> None:
         super().__init__()
 
         # Generate QR code and load into a QPixmap
@@ -59,7 +59,7 @@ class QRCodeWindow(QMainWindow):
         # scaling pixmap with resizing of the window
         self.update_pixmap_size()
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event: QResizeEvent) -> None:
         # Update the pixmap size every time the window resizes
         self.update_pixmap_size()
         event.accept()

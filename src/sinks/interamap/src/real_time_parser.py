@@ -1,8 +1,9 @@
 from collections import defaultdict
+from collections.abc import Callable
 import queue
 import sys
 import time
-from typing import Any
+from typing import Any, cast
 import traceback
 
 from omnibus import Receiver
@@ -16,7 +17,7 @@ except ImportError:
     from settings import BoardID, BOARD_FIELDS # type: ignore
 
 
-def parse_gps_data(gps_data, board_id):
+def parse_gps_data(gps_data: dict[str, Any], board_id: str) -> Point_GPS:
     gps_timestamp = gps_data.get("GPS_TIMESTAMP", {"hrs": 0, "mins": 0, "secs": 0, "dsecs": 0})
     timestamp = "{hrs:02}:{mins:02}:{secs:02}.{dsecs:02}".format(**gps_timestamp)
 
@@ -35,7 +36,7 @@ def parse_gps_data(gps_data, board_id):
     return Point_GPS(lon=lon, lat=lat, alt=alt, num_sats=num_sats, time_stamp=timestamp, board_id=board_id)
 
 
-def parse_gps_info(data):
+def parse_gps_info(data: dict[str, Any]) -> Info_GPS:
     info_data = data.get("data", {"num_sats": 0, "quality": 0})
     num_sats = info_data.get("num_sats", 0)
     quality = info_data.get("quality", 0)
@@ -43,7 +44,7 @@ def parse_gps_info(data):
     return Info_GPS(num_sats=num_sats, quality=quality, board_id=board_id)
 
 
-def convert_to_decimal_degrees(coord):
+def convert_to_decimal_degrees(coord: dict[str, Any]) -> float:
     degs = coord.get("degs", 0)
     mins = coord.get("mins", 0) / 60
     dmins = coord.get("dmins", 0) / 600000
@@ -53,7 +54,11 @@ def convert_to_decimal_degrees(coord):
     return decimal
 
 
-def process_gps_loop(receiver, process_func, running_checker=lambda: True):
+def process_gps_loop(
+    receiver: Receiver,
+    process_func: Callable[[Point_GPS | Info_GPS], None],
+    running_checker: Callable[[], bool] = lambda: True,
+) -> None:
     """
     Process incoming GPS messages from a receiver.
     
@@ -66,13 +71,13 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
     MIN_SATELLITE:int = 2   # minimal satellites requires to report a Point_GPS
 
     gps: dict[str, dict[str, Any]] = {board.value: {} for board in BoardID}
-    last_seen_ts = defaultdict(lambda: time.monotonic())
+    last_seen_ts: defaultdict[str, float] = defaultdict(lambda: time.monotonic())
 
     # Clear any initial data from the buffer
     receiver.recv()
 
     # Combine all fields from BOARD_FIELDS into GENERAL_FIELDS
-    GENERAL_FIELDS = set()
+    GENERAL_FIELDS: set[str] = set()
     for fields in BOARD_FIELDS.values():
         GENERAL_FIELDS.update(fields)
 
@@ -81,11 +86,11 @@ def process_gps_loop(receiver, process_func, running_checker=lambda: True):
     while running_checker():
         now = time.monotonic()
         try:
-            data = receiver.recv()
-            msgtype = data.get("msg_type")
+            data = cast(dict[str, Any], receiver.recv())
+            msgtype = cast(str, data.get("msg_type"))
 
             if msgtype in GENERAL_FIELDS:
-                board_id = data.get("board_type_id")
+                board_id = cast(str, data.get("board_type_id"))
                 last_seen_ts[board_id] = now
                 # Immediately process GPS_INFO messages
                 if msgtype == "GPS_INFO":
@@ -120,25 +125,28 @@ class RTParser(QThread):
     gps_RT_data = Signal(object)
     state = Signal(bool)
 
-    def __init__(self):
+    receiver: Receiver
+    running: bool
+
+    def __init__(self) -> None:
         super().__init__()
         self.setObjectName("RTParserThread")
         self.receiver = Receiver("")
         self.running = False
 
-    def run(self):
+    def run(self) -> None:
         self.running = True
         self.state.emit(True) # Used for updating UI state
         self.extract_gps_data()
 
-    def stop(self):
+    def stop(self) -> None:
         self.state.emit(False) # Used for updating UI state
         self.running = False
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.stop()
 
-    def extract_gps_data(self):
+    def extract_gps_data(self) -> None:
         # Use process_gps_loop with a running_checker based on self.running
         process_gps_loop(self.receiver, self.gps_RT_data.emit, running_checker=lambda: self.running)
 

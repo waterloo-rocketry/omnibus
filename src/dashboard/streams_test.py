@@ -1,7 +1,10 @@
-import pytest
+from typing import Any, cast
 
-import config
-from publisher import Publisher
+from publisher import Publisher, StreamCallback
+
+
+def _as_callback(value: object) -> StreamCallback:
+    return cast(StreamCallback, value)
 
 
 class TestPublisher:
@@ -9,33 +12,33 @@ class TestPublisher:
         p = Publisher()
         assert len(p.streams) == 0
 
-        p.subscribe("test1", True)
+        p.subscribe("test1", _as_callback(True))
         assert p.streams["test1"] == [True]
 
-        p.subscribe("test2", False)
+        p.subscribe("test2", _as_callback(False))
         assert p.streams["test2"] == [False]
         assert p.streams["test1"] == [True]
 
-        p.subscribe("test1", False)
+        p.subscribe("test1", _as_callback(False))
         assert p.streams["test1"] == [True, False]
 
     def test_unsubscribe_from_all(self):
         p = Publisher()
-        p.subscribe("test1", True)
-        p.subscribe("test2", True)
+        p.subscribe("test1", _as_callback(True))
+        p.subscribe("test2", _as_callback(True))
         assert p.streams["test1"] == [True]
         assert p.streams["test2"] == [True]
 
-        p.unsubscribe_from_all(True)
+        p.unsubscribe_from_all(_as_callback(True))
         assert p.streams["test1"] == []
         assert p.streams["test2"] == []
 
-        p.subscribe("test1", True)
-        p.subscribe("test2", False)
+        p.subscribe("test1", _as_callback(True))
+        p.subscribe("test2", _as_callback(False))
         assert p.streams["test1"] == [True]
         assert p.streams["test2"] == [False]
 
-        p.unsubscribe_from_all(True)
+        p.unsubscribe_from_all(_as_callback(True))
         assert p.streams["test1"] == []
         assert p.streams["test2"] == [False]
 
@@ -43,7 +46,7 @@ class TestPublisher:
         p = Publisher()
         data = [0]
 
-        def mutate_counter(stream, payload):
+        def mutate_counter(stream: str, payload: Any) -> None:
             data[0] = payload
 
         p.subscribe("test1", mutate_counter)

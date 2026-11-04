@@ -2,6 +2,7 @@ import zipfile
 from datetime import datetime
 from enum import IntEnum
 import os
+from typing import Any, cast
 
 from PySide6.QtWidgets import QMessageBox, QApplication
 from PySide6.QtCore import QThread, Signal, Qt
@@ -9,6 +10,7 @@ from fastkml import kml, geometry, times
 
 from src.data_struct import Point_GPS, Info_GPS, LineString_GPS
 import webbrowser
+
 
 
 class GPS_Cache(QThread):
@@ -22,16 +24,16 @@ class GPS_Cache(QThread):
         REMOVE = 1
         CLEAR = 2
 
-    def __init__(self):
+    def __init__(self) -> None:
         QThread.__init__(self)
         self.setObjectName("GPS_Cache")
-        self.gps_points = []
-        self.gps_linestrings = []
+        self.gps_points: list[Point_GPS] = []
+        self.gps_linestrings: list[LineString_GPS] = []
         self.relative_path = os.path.dirname(
             os.path.dirname(os.path.realpath(__file__))
         )
 
-    def store_info(self, info_stream):
+    def store_info(self, info_stream: Any) -> None:
         if isinstance(info_stream, Point_GPS):
             self.gps_points.append(info_stream)
         elif isinstance(info_stream, Info_GPS):
@@ -40,7 +42,7 @@ class GPS_Cache(QThread):
         elif isinstance(info_stream, LineString_GPS):
             self.gps_linestrings.append(info_stream)
         elif isinstance(info_stream, list):
-            for info in info_stream:
+            for info in cast(Any, info_stream):
                 self.store_info(info)
         else:
             print("Unknown info type", info_stream)
@@ -48,28 +50,28 @@ class GPS_Cache(QThread):
 
         self.storage_update.emit((self.StorageUpdateType.ADD, info_stream))
 
-    def store_infos(self, infos):
+    def store_infos(self, infos: list[Any]) -> None:
         """
         Store a list of points
         """
         for info in infos:
             self.store_info(info)
 
-    def get_gps_points(self):
+    def get_gps_points(self) -> list["Point_GPS"]:
         return self.gps_points
 
-    def get_linestring_gps(self):
+    def get_linestring_gps(self) -> list[LineString_GPS]:
         return self.gps_linestrings
 
-    def clear_points(self):
+    def clear_points(self) -> None:
         self.gps_points.clear()
         self.storage_update.emit((self.StorageUpdateType.CLEAR, None))
     
-    def clear_linestrings(self):
+    def clear_linestrings(self) -> None:
         self.gps_linestrings.clear()
         self.storage_update.emit((self.StorageUpdateType.CLEAR, None))
 
-    def remove_info(self, info):
+    def remove_info(self, info: Any) -> None:
         try:
             if isinstance(info, Point_GPS):
                 self.gps_points.remove(info)
@@ -83,12 +85,12 @@ class GPS_Cache(QThread):
         except KeyError:
             raise KeyError(f"Error: Unstored info to be removed {info}")
 
-    def export_points(self):
+    def export_points(self) -> None:
         """Export the map to KML file."""
         file_name = f"waterloo_rocketry_gps_{datetime.now().strftime('%Y%m%d_%H%M%S')}.kmz"
         file_path = os.path.join(self.relative_path, "shared", file_name)
-        gps_points_placemarks: dict[str, kml.Folder] = {}
-        gps_linestring_placemarks = kml.Folder()
+        gps_points_placemarks: dict[str, Any] = {}
+        gps_linestring_placemarks = kml.Folder()  # pyright: ignore[reportPrivateImportUsage,reportAttributeAccessIssue]
 
         # add points to placemarks
         for p in self.gps_points:
@@ -101,11 +103,15 @@ class GPS_Cache(QThread):
                     datetime.today(),
                     datetime.strptime(p.time_stamp, '%H:%M:%S.%f').time())
 
-            if p.board_id not in gps_points_placemarks.keys():
-                gps_points_placemarks[p.board_id] = kml.Folder(name=p.board_id)
+            if p.board_id is None:
+                board_key = "unknown"
+            else:
+                board_key = p.board_id
+            if board_key not in gps_points_placemarks.keys():
+                gps_points_placemarks[board_key] = kml.Folder(name=board_key)  # pyright: ignore[reportPrivateImportUsage]  # pyright: ignore[reportPrivateImportUsage]
 
-            gps_points_placemarks[p.board_id].append(
-                kml.Placemark(
+            gps_points_placemarks[board_key].append(  # type: ignore[union-attr]
+                kml.Placemark(  # pyright: ignore[reportPrivateImportUsage]  # pyright: ignore[reportPrivateImportUsage]
                     name="GPS Point",
                     description=f"Time: {time} Board ID: {p.board_id}",
                     times=times.TimeStamp(timestamp=times.KmlDateTime(time)) if time else None,
@@ -129,8 +135,8 @@ class GPS_Cache(QThread):
                     datetime.today(),
                     datetime.strptime(sample_point.time_stamp, '%H:%M:%S.%f').time())
 
-            gps_linestring_placemarks.append(
-                kml.Placemark(
+            gps_linestring_placemarks.append(  # type: ignore[union-attr]
+                kml.Placemark(  # pyright: ignore[reportPrivateImportUsage]  # pyright: ignore[reportPrivateImportUsage]
                     name="GPS Linestring",
                     description=f"Time: {sample_point.time_stamp} Board ID: {sample_point.board_id}",
                     times=times.TimeStamp(timestamp=times.KmlDateTime(time)) if time else None,
@@ -143,10 +149,10 @@ class GPS_Cache(QThread):
             )
 
         # Flatten Documents into one
-        main_doc = kml.Document(name="Waterloo Rocketry GPS")
+        main_doc = kml.Document(name="Waterloo Rocketry GPS")  # pyright: ignore[reportPrivateImportUsage]
         for folder in gps_points_placemarks.values():
-            main_doc.append(folder)
-        main_doc.append(gps_linestring_placemarks)
+            main_doc.append(folder)  # type: ignore[union-attr]
+        main_doc.append(gps_linestring_placemarks)  # type: ignore[union-attr]
 
         k = kml.KML(features=[main_doc])
 
@@ -169,12 +175,13 @@ class GPS_Cache(QThread):
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.setTextFormat(Qt.TextFormat.RichText)
         msg.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
-        msg.buttonClicked.connect(lambda btn: webbrowser.open(f"file://{os.path.abspath(os.path.join(self.relative_path, 'shared'))}"))
+        _ = msg.buttonClicked.connect(cast(Any, lambda btn:  # pyright: ignore[reportUnknownLambdaType,reportUnknownParameterType]
+                                            webbrowser.open(f"file://{os.path.abspath(os.path.join(self.relative_path, 'shared'))}")))
         msg.exec()
         
         print(f"Exported points to {file_path}")
 
-    def __str__(self):
+    def __str__(self) -> str:
         string = ""
         string += "GPS Points:\n"
         for point in self.gps_points:
