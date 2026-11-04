@@ -62,7 +62,7 @@ omnibus-ws-server = "main:main"
 omnibus-ws-bridge = "bridge.relay:main"
 
 [tool.uv.sources]
-parsley = { git = "https://github.com/waterloo-rocketry/parsley.git"}
+parsley = { git = "https://github.com/waterloo-rocketry/universe.git", subdirectory = "areas/sw_libs/parsley" }
 
 [tool.uv.workspace]
 members = [
