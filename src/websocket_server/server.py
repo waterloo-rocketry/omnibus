@@ -2,7 +2,7 @@ import logging
 import queue
 import sys
 from dataclasses import dataclass
-from flask import Flask, request
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 from typing import Protocol, SupportsFloat, cast
 from omnibus import Message as OmnibusMessage
@@ -59,6 +59,10 @@ def start_relay_sender():
     global _thread
     if _thread is None:
         _thread = socketio.start_background_task(sender_loop)
+
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 @socketio.on("connect")  
 def handle_connect(auth: object):
